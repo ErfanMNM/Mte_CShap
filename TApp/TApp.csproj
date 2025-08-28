@@ -12,10 +12,4 @@
     <PackageReference Include="SunnyUI" Version="3.8.7" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="testMacrofilters">
-      <HintPath>..\..\..\..\Downloads\testMacrofilters.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>

@@ -165,7 +165,7 @@ namespace MTs.Communication
         {
             try
             {
-                var socketPacket = (SocketPacket)asyncResult.AsyncState;
+                var socketPacket = asyncResult.AsyncState as SocketPacket;
                 if (socketPacket?.Socket == null)
                     return;
 
