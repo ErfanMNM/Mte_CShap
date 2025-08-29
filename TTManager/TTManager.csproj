@@ -8,12 +8,4 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="SunnyUI" Version="3.8.7" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\MTs\MTs.csproj" />
-  </ItemGroup>
-
 </Project>

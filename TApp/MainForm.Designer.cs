@@ -29,11 +29,17 @@
         private void InitializeComponent()
         {
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
-            NavMenu = new Sunny.UI.UINavMenu();
-            MainTab = new Sunny.UI.UITabControl();
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
+            NavMenu = new Sunny.UI.UINavMenu();
+            uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
+            MainTab = new Sunny.UI.UITabControl();
+            uiTableLayoutPanel4 = new Sunny.UI.UITableLayoutPanel();
+            uiImageButton1 = new Sunny.UI.UIImageButton();
             uiTableLayoutPanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
+            uiTableLayoutPanel3.SuspendLayout();
+            uiTableLayoutPanel4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)uiImageButton1).BeginInit();
             SuspendLayout();
             // 
             // uiTableLayoutPanel1
@@ -41,22 +47,40 @@
             uiTableLayoutPanel1.ColumnCount = 1;
             uiTableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             uiTableLayoutPanel1.Controls.Add(uiTableLayoutPanel2, 0, 1);
+            uiTableLayoutPanel1.Controls.Add(uiTableLayoutPanel4, 0, 0);
             uiTableLayoutPanel1.Dock = DockStyle.Fill;
             uiTableLayoutPanel1.Location = new Point(0, 0);
             uiTableLayoutPanel1.Margin = new Padding(0);
             uiTableLayoutPanel1.Name = "uiTableLayoutPanel1";
-            uiTableLayoutPanel1.RowCount = 3;
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 6.77165365F));
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 87.55905F));
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 5.51181126F));
-            uiTableLayoutPanel1.Size = new Size(1137, 635);
+            uiTableLayoutPanel1.RowCount = 2;
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 45F));
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel1.Size = new Size(1112, 650);
             uiTableLayoutPanel1.TabIndex = 2;
             uiTableLayoutPanel1.TagString = null;
+            // 
+            // uiTableLayoutPanel2
+            // 
+            uiTableLayoutPanel2.ColumnCount = 2;
+            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 17.2383461F));
+            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 82.76165F));
+            uiTableLayoutPanel2.Controls.Add(NavMenu, 0, 0);
+            uiTableLayoutPanel2.Controls.Add(uiTableLayoutPanel3, 1, 0);
+            uiTableLayoutPanel2.Dock = DockStyle.Fill;
+            uiTableLayoutPanel2.Location = new Point(0, 45);
+            uiTableLayoutPanel2.Margin = new Padding(0);
+            uiTableLayoutPanel2.Name = "uiTableLayoutPanel2";
+            uiTableLayoutPanel2.RowCount = 1;
+            uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel2.Size = new Size(1112, 605);
+            uiTableLayoutPanel2.TabIndex = 2;
+            uiTableLayoutPanel2.TagString = null;
             // 
             // NavMenu
             // 
             NavMenu.BackColor = Color.Teal;
             NavMenu.BorderStyle = BorderStyle.None;
+            NavMenu.Dock = DockStyle.Fill;
             NavMenu.DrawMode = TreeViewDrawMode.OwnerDrawAll;
             NavMenu.Font = new Font("Microsoft Sans Serif", 12F);
             NavMenu.FullRowSelect = true;
@@ -69,51 +93,79 @@
             NavMenu.ShowLines = false;
             NavMenu.ShowPlusMinus = false;
             NavMenu.ShowRootLines = false;
-            NavMenu.Size = new Size(179, 550);
+            NavMenu.Size = new Size(187, 601);
             NavMenu.TabIndex = 1;
             NavMenu.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
+            // uiTableLayoutPanel3
+            // 
+            uiTableLayoutPanel3.ColumnCount = 1;
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel3.Controls.Add(MainTab, 0, 0);
+            uiTableLayoutPanel3.Dock = DockStyle.Fill;
+            uiTableLayoutPanel3.Location = new Point(191, 0);
+            uiTableLayoutPanel3.Margin = new Padding(0);
+            uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
+            uiTableLayoutPanel3.RowCount = 2;
+            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 44F));
+            uiTableLayoutPanel3.Size = new Size(921, 605);
+            uiTableLayoutPanel3.TabIndex = 2;
+            uiTableLayoutPanel3.TagString = null;
+            // 
             // MainTab
             // 
+            MainTab.Dock = DockStyle.Fill;
             MainTab.DrawMode = TabDrawMode.OwnerDrawFixed;
             MainTab.FillColor = Color.FromArgb(192, 255, 255);
             MainTab.Font = new Font("Microsoft Sans Serif", 12F);
             MainTab.ItemSize = new Size(150, 40);
-            MainTab.Location = new Point(185, 2);
+            MainTab.Location = new Point(2, 2);
             MainTab.MainPage = "";
             MainTab.Margin = new Padding(2);
             MainTab.MenuStyle = Sunny.UI.UIMenuStyle.Custom;
             MainTab.Name = "MainTab";
             MainTab.SelectedIndex = 0;
-            MainTab.Size = new Size(948, 550);
+            MainTab.Size = new Size(917, 557);
             MainTab.SizeMode = TabSizeMode.Fixed;
             MainTab.TabBackColor = Color.FromArgb(192, 255, 255);
-            MainTab.TabIndex = 0;
+            MainTab.TabIndex = 1;
             MainTab.TabUnSelectedForeColor = Color.FromArgb(240, 240, 240);
             MainTab.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
-            // uiTableLayoutPanel2
+            // uiTableLayoutPanel4
             // 
-            uiTableLayoutPanel2.ColumnCount = 2;
-            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.094986F));
-            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 83.905014F));
-            uiTableLayoutPanel2.Controls.Add(MainTab, 1, 0);
-            uiTableLayoutPanel2.Controls.Add(NavMenu, 0, 0);
-            uiTableLayoutPanel2.Dock = DockStyle.Fill;
-            uiTableLayoutPanel2.Location = new Point(0, 43);
-            uiTableLayoutPanel2.Margin = new Padding(0);
-            uiTableLayoutPanel2.Name = "uiTableLayoutPanel2";
-            uiTableLayoutPanel2.RowCount = 1;
-            uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel2.Size = new Size(1137, 556);
-            uiTableLayoutPanel2.TabIndex = 2;
-            uiTableLayoutPanel2.TagString = null;
+            uiTableLayoutPanel4.ColumnCount = 2;
+            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 17.0577621F));
+            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 82.94224F));
+            uiTableLayoutPanel4.Controls.Add(uiImageButton1, 0, 0);
+            uiTableLayoutPanel4.Dock = DockStyle.Fill;
+            uiTableLayoutPanel4.Location = new Point(2, 2);
+            uiTableLayoutPanel4.Margin = new Padding(2);
+            uiTableLayoutPanel4.Name = "uiTableLayoutPanel4";
+            uiTableLayoutPanel4.RowCount = 1;
+            uiTableLayoutPanel4.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel4.Size = new Size(1108, 41);
+            uiTableLayoutPanel4.TabIndex = 3;
+            uiTableLayoutPanel4.TagString = null;
+            // 
+            // uiImageButton1
+            // 
+            uiImageButton1.Dock = DockStyle.Fill;
+            uiImageButton1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiImageButton1.Location = new Point(0, 0);
+            uiImageButton1.Margin = new Padding(0);
+            uiImageButton1.Name = "uiImageButton1";
+            uiImageButton1.Size = new Size(189, 41);
+            uiImageButton1.TabIndex = 4;
+            uiImageButton1.TabStop = false;
+            uiImageButton1.Text = "Logo Image";
             // 
             // MainForm
             // 
             AllowShowTitle = false;
             AutoScaleMode = AutoScaleMode.None;
-            ClientSize = new Size(1137, 635);
+            ClientSize = new Size(1112, 650);
             Controls.Add(uiTableLayoutPanel1);
             Name = "MainForm";
             Padding = new Padding(0);
@@ -122,13 +174,19 @@
             ZoomScaleRect = new Rectangle(15, 15, 852, 482);
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTableLayoutPanel2.ResumeLayout(false);
+            uiTableLayoutPanel3.ResumeLayout(false);
+            uiTableLayoutPanel4.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)uiImageButton1).EndInit();
             ResumeLayout(false);
         }
 
         #endregion
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel1;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel2;
-        private Sunny.UI.UITabControl MainTab;
         private Sunny.UI.UINavMenu NavMenu;
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel3;
+        private Sunny.UI.UITabControl MainTab;
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel4;
+        private Sunny.UI.UIImageButton uiImageButton1;
     }
 }
