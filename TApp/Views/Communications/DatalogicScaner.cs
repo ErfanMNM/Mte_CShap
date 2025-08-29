@@ -13,9 +13,16 @@ namespace TApp.Views.Communications
 {
     public partial class DatalogicScaner : UIPage
     {
+        public MTs.Datalogic.DatalogicCamera camera { get; set; } = new MTs.Datalogic.DatalogicCamera("127.0.0.1",51236);
+
         public DatalogicScaner()
         {
             InitializeComponent();
+        }
+
+        public void Setup()
+        {
+            
         }
     }
 }
