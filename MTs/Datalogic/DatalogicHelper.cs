@@ -1,23 +1,23 @@
+﻿using MTs.Communication;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace MTs.Communication
+namespace MTs.Datalogic
 {
-    public enum TcpClientState
+    public enum eDatalogicCameraState
     {
         Connected,
         Disconnected,
         Received,
         Reconnecting
     }
-
-    public sealed class TcpClientHelper
+    public sealed class DatalogicCamera
     {
         #region Fields
         private Socket? _client;
@@ -31,12 +31,12 @@ namespace MTs.Communication
         #endregion
 
         #region Events
-        public delegate void ClientEventHandler(TcpClientState state, string data);
+        public delegate void ClientEventHandler(eDatalogicCameraState state, string data);
         public event ClientEventHandler? ClientCallback;
         #endregion
 
         #region Constructors
-        public TcpClientHelper(string ip, int port)
+        public DatalogicCamera(string ip, int port)
         {
             IP = ip;
             Port = port;
@@ -53,7 +53,7 @@ namespace MTs.Communication
                 {
                     if (!Connected)
                     {
-                        OnClientCallback(TcpClientState.Reconnecting, "Attempting to reconnect...");
+                        OnClientCallback(eDatalogicCameraState.Reconnecting, "Attempting to reconnect...");
                         await ConnectInternalAsync();
                     }
                     await Task.Delay(3000, _cancellationTokenSource.Token);
@@ -102,7 +102,7 @@ namespace MTs.Communication
                 if (_client.Connected)
                 {
                     Connected = true;
-                    OnClientCallback(TcpClientState.Connected, "Connected successfully");
+                    OnClientCallback(eDatalogicCameraState.Connected, "Connected successfully");
                     _cancellationTokenSource?.Cancel(); // Stop reconnection attempts
                     _ = Task.Run(WaitForData); // Start listening for data
                 }
@@ -131,7 +131,7 @@ namespace MTs.Communication
                     string receivedData = Encoding.UTF8.GetString(buffer, 0, bytesReceived);
                     if (!string.IsNullOrEmpty(receivedData))
                     {
-                        OnClientCallback(TcpClientState.Received, receivedData);
+                        OnClientCallback(eDatalogicCameraState.Received, receivedData);
                     }
                 }
             }
@@ -146,7 +146,7 @@ namespace MTs.Communication
             if (!Connected) return; // Avoid redundant actions
 
             Connected = false;
-            OnClientCallback(TcpClientState.Disconnected, reason);
+            OnClientCallback(eDatalogicCameraState.Disconnected, reason);
             CleanupSocket();
             StartReconnection();
         }
@@ -158,7 +158,7 @@ namespace MTs.Communication
             _client = null;
         }
 
-        private void OnClientCallback(TcpClientState state, string data)
+        private void OnClientCallback(eDatalogicCameraState state, string data)
         {
             ClientCallback?.Invoke(state, data);
         }
@@ -169,7 +169,7 @@ namespace MTs.Communication
         {
             if (string.IsNullOrEmpty(IP) || Port <= 0)
             {
-                OnClientCallback(TcpClientState.Disconnected, "Invalid IP address or port");
+                OnClientCallback(eDatalogicCameraState.Disconnected, "Invalid IP address or port");
                 return;
             }
 
