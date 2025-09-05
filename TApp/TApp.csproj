@@ -16,4 +16,8 @@
     <ProjectReference Include="..\MTs\MTs.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Dialogs\" />
+  </ItemGroup>
+
 </Project>

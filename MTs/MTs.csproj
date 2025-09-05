@@ -7,7 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="HslCommunication" Version="12.3.3" />
     <PackageReference Include="System.IO.Ports" Version="9.0.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Hls\" />
+    <Folder Include="Auditrails\" />
   </ItemGroup>
 
 </Project>
