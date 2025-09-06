@@ -1,5 +1,6 @@
 ﻿using Sunny.UI;
 using TApp.Configs;
+using TApp.Views.Settings;
 
 namespace TApp
 {
@@ -8,9 +9,21 @@ namespace TApp
         private NotifyIcon? trayIcon;
         private ContextMenuStrip? trayMenu;
 
+        private PAppSetting PAppSetting = new PAppSetting();
+
         public MainForm()
         {
             InitializeComponent();
+            UIStyles.CultureInfo = CultureInfos.en_US;
+            UIStyles.GlobalFont = true;
+            UIStyles.GlobalFontName = "Tahoma";
+
+            MainTabControl = MainTab;
+            NavMenu.TabControl = MainTab;
+            NavMenu.Nodes.Clear();
+
+            NavMenu.CreateNode(AddPage(PAppSetting, 1001));
+
             ToggleFullScreen();
             HideToTray();
             InitializeConfigs();
@@ -76,6 +89,7 @@ namespace TApp
             AppConfigs.Current.Load();
 
         }
+
         private void MainForm_Resize(object sender, EventArgs e)
         {
             if(AppConfigs.Current.AppHideEnable)

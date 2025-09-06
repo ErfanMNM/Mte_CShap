@@ -1,4 +1,5 @@
-﻿using Sunny.UI;
+﻿using MASAN_SERIALIZATION.Diaglogs;
+using Sunny.UI;
 using System.Reflection;
 using TApp.Configs;
 
@@ -160,7 +161,7 @@ namespace TApp.Views.Settings
                 return new Size(200, 30);
         }
 
-        private Control CreateControlForProperty(PropertyInfo property)
+        private Control? CreateControlForProperty(PropertyInfo property)
         {
             var propertyType = property.PropertyType;
 
@@ -350,38 +351,56 @@ namespace TApp.Views.Settings
             }
         }
 
-        private object GetControlValue(Control control, Type targetType)
+        private void ShowVirtualKeyboard(Control textControl, string propertyName)
         {
-            if (control is UISwitch uiSwitch && targetType == typeof(bool))
+            try
             {
-                return uiSwitch.Active;
-            }
-            else if (control is UINumPadTextBox numPadTextBox && targetType == typeof(int))
-            {
-                if (int.TryParse(numPadTextBox.Text, out int result))
-                    return result;
-                return 0;
-            }
-            else if (control is UITextBox numTextBox && targetType == typeof(int) && numTextBox.Name.StartsWith("txt_") && !numTextBox.Name.Contains("password") && !numTextBox.Name.Contains("path") && !numTextBox.Name.Contains("host") && !numTextBox.Name.Contains("client") && !numTextBox.Name.Contains("CA") && !numTextBox.Name.Contains("COM"))
-            {
-                if (int.TryParse(numTextBox.Text, out int result))
-                    return result;
-                return 0;
-            }
-            else if (control is UITextBox textBox && targetType == typeof(string))
-            {
-                return textBox.Text;
-            }
-            else if (control is Panel panel && targetType == typeof(string))
-            {
-                // Handle path controls with browse button
-                var textBoxInPanel = panel.Controls.OfType<UITextBox>().FirstOrDefault();
-                return textBoxInPanel?.Text ?? string.Empty;
-            }
+                var displayName = GetDisplayName(propertyName);
+                var isPassword = propertyName.ToLower().Contains("password");
 
-            return null;
+                string currentText = "";
+                if (textControl is UITextBox textBox)
+                {
+                    currentText = textBox.Text;
+                }
+                else if (textControl is UINumPadTextBox numPadBox)
+                {
+                    currentText = numPadBox.Text;
+                }
+
+                var keyboard = new Entertext()
+                {
+                    TileText = $"Nhập giá trị cho {displayName}",
+                    TextValue = currentText,
+                    IsPassword = isPassword
+                };
+
+                if (keyboard.ShowDialog() == DialogResult.OK)
+                {
+                    if (textControl is UITextBox tb)
+                    {
+                        // Nếu là path field và readonly, cần bỏ readonly tạm thời để update
+                        if (tb.ReadOnly)
+                        {
+                            tb.ReadOnly = false;
+                            tb.Text = keyboard.TextValue;
+                            tb.ReadOnly = true;
+                        }
+                        else
+                        {
+                            tb.Text = keyboard.TextValue;
+                        }
+                    }
+                    else if (textControl is UINumPadTextBox npb)
+                    {
+                        npb.Text = keyboard.TextValue;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.ShowErrorTip($"Lỗi hiện thị bàn phím: {ex.Message}");
+            }
         }
-
-
     }
 }
