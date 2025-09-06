@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="HslCommunication" Version="12.3.3" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.8" />
     <PackageReference Include="System.IO.Ports" Version="9.0.8" />
   </ItemGroup>
 
