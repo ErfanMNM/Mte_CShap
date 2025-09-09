@@ -97,17 +97,17 @@ namespace MTs.Auditrails
             using (var command = connection.CreateCommand())
             {
                 command.CommandText = @"
-CREATE TABLE IF NOT EXISTS Logs (
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    User TEXT NOT NULL,
-    LogType TEXT NOT NULL,
-    Message TEXT,
-    Content TEXT,
-    IsoTime TEXT NOT NULL,
-    EpochTicks INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS IX_Logs_Time ON Logs(EpochTicks);
-";
+                    CREATE TABLE IF NOT EXISTS Logs (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        User TEXT NOT NULL,
+                        LogType TEXT NOT NULL,
+                        Message TEXT,
+                        Content TEXT,
+                        IsoTime TEXT NOT NULL,
+                        EpochTicks INTEGER NOT NULL
+                    );
+                    CREATE INDEX IF NOT EXISTS IX_Logs_Time ON Logs(EpochTicks);
+                    ";
                 command.ExecuteNonQuery();
             }
 
@@ -138,9 +138,9 @@ CREATE INDEX IF NOT EXISTS IX_Logs_Time ON Logs(EpochTicks);
 
             using var cmd = connection.CreateCommand();
             cmd.CommandText = @"
-INSERT INTO Logs (User, LogType, Message, Content, IsoTime, EpochTicks)
-VALUES ($user, $type, $message, $content, $iso, $ticks);
-";
+                        INSERT INTO Logs (User, LogType, Message, Content, IsoTime, EpochTicks)
+                        VALUES ($user, $type, $message, $content, $iso, $ticks);
+                        ";
 
             cmd.Parameters.AddWithValue("$user", user);
             cmd.Parameters.AddWithValue("$type", logType);
@@ -171,10 +171,10 @@ VALUES ($user, $type, $message, $content, $iso, $ticks);
 
             using var cmd = connection.CreateCommand();
             cmd.CommandText = @"
-INSERT INTO Logs (User, LogType, Message, Content, IsoTime, EpochTicks)
-VALUES ($user, $type, $message, $content, $iso, $ticks);
-SELECT last_insert_rowid();
-";
+                INSERT INTO Logs (User, LogType, Message, Content, IsoTime, EpochTicks)
+                VALUES ($user, $type, $message, $content, $iso, $ticks);
+                SELECT last_insert_rowid();
+                ";
 
             cmd.Parameters.AddWithValue("$user", user);
             cmd.Parameters.AddWithValue("$type", logType);
