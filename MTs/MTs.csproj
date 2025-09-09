@@ -15,6 +15,7 @@
   <ItemGroup>
     <Folder Include="Hls\" />
     <Folder Include="Auditrails\" />
+    <Folder Include="Printers\" />
   </ItemGroup>
 
 </Project>
