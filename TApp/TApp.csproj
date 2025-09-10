@@ -15,7 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\MASANSolution\PRINTER\Printer\Printer.csproj" />
+    <ProjectReference Include="..\..\..\MASANSolution\PRINTER\Unoplus\Norwix\Norwix.csproj" />
     <ProjectReference Include="..\MTs\MTs.csproj" />
+    <ProjectReference Include="..\PRINTERs\NorwixV2\NorwixV2.csproj" />
   </ItemGroup>
 
   <ItemGroup>
