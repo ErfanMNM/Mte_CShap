@@ -1,72 +1,127 @@
 ﻿using Sunny.UI;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using TApp.Views;
-using TApp.Views.Communications;
+using TApp.Configs;
+using TApp.Views.Settings;
 
 namespace TApp
 {
     public partial class MainForm : UIForm
     {
-        #region Private Fields - Page Controls
-                DatalogicScaner PageDatalogicScaner = new DatalogicScaner();
-        FlowControl PageFlowControl = new FlowControl();
-        #endregion
+        private NotifyIcon? trayIcon;
+        private ContextMenuStrip? trayMenu;
 
-        #region Constructors
+        private PAppSetting PAppSetting = new PAppSetting();
+
         public MainForm()
         {
             InitializeComponent();
-            InitializationUI();
-            RenderControlForm();
+            UIStyles.CultureInfo = CultureInfos.en_US;
+            UIStyles.GlobalFont = true;
+            UIStyles.GlobalFontName = "Tahoma";
+
+            MainTabControl = MainTab;
+            NavMenu.TabControl = MainTab;
+            NavMenu.Nodes.Clear();
+
+            NavMenu.CreateNode(AddPage(PAppSetting, 1001));
+
+            ToggleFullScreen();
+            HideToTray();
+            InitializeConfigs();
+            LogBootstrap.EnsureInitialized();
+            LogBootstrap.Logger.Log("System", "INFO", "App Opened", "Ứng dụng khởi động thành công");
         }
 
-        #endregion
-
-        #region Private Methods - Form Events
-
-        #endregion
-
-        #region Private Methods - InitializationUI
-        private void InitializationUI()
+        private void btnClose_Click(object sender, EventArgs e)
         {
-            try
-            {
-                UIStyles.CultureInfo = CultureInfos.en_US;
-                UIStyles.GlobalFont = true;
-                UIStyles.GlobalFontName = "Tahoma";
-
-                MainTabControl = MainTab;
-                NavMenu.TabControl = MainTab;
-            }
-            catch (Exception ex)
-            {
-                UIMessageBox.ShowError($"InitializationUI Exception: {ex.Message}");
-            }
+            CloseApplication();
         }
 
-        private void RenderControlForm()
+        private void CloseApplication()
         {
-            try
+            Application.Exit();
+        }
+
+        private void ToggleFullScreen()
+        {
+            if (WindowState != FormWindowState.Maximized)
             {
-                // Add Pages to Tab Control
-                NavMenu.Nodes.Clear();
-                NavMenu.CreateNode(AddPage(PageDatalogicScaner, 1001));
-                NavMenu.CreateNode(AddPage(PageFlowControl, 1002));
-                MainTab.SelectedIndex = 0;
+                Tag = WindowState;
+                WindowState = FormWindowState.Normal;
+                FormBorderStyle = FormBorderStyle.None;
+                WindowState = FormWindowState.Maximized;
             }
-            catch (Exception ex)
+            else
             {
-                UIMessageBox.ShowError($"RenderControlForm Exception: {ex.Message}");
+                if (Tag is FormWindowState previousState)
+                {
+                    WindowState = previousState;
+                }
+                else
+                {
+                    WindowState = FormWindowState.Normal;
+                }
+                FormBorderStyle = FormBorderStyle.Sizable;
             }
         }
-            #endregion
+
+        private void HideToTray()
+        {
+            // Tạo menu chuột phải ở tray
+            trayMenu = new ContextMenuStrip();
+            trayMenu.Items.Add("Mở lại", null, OnShowClicked);
+            trayMenu.Items.Add("Thoát", null, OnExitClicked);
+
+            // Tạo icon tray
+            trayIcon = new NotifyIcon();
+            trayIcon.Text = "Ứng dụng của tôi";
+            trayIcon.Icon = Icon; // dùng icon của form, bạn có thể set icon riêng .ico
+
+            trayIcon.ContextMenuStrip = trayMenu;
+            trayIcon.Visible = true;
+
+            // Double click icon tray => mở lại
+            trayIcon.DoubleClick += OnShowClicked;
+
         }
+
+        private void InitializeConfigs()
+        {
+            AppConfigs.Current.Load();
+
+        }
+
+        private void MainForm_Resize(object sender, EventArgs e)
+        {
+            if(AppConfigs.Current.AppHideEnable)
+            {
+                if (WindowState == FormWindowState.Minimized)
+                {
+                    Hide();
+                }
+            }
+                
+        }
+
+        private void OnShowClicked(object? sender, EventArgs e)
+        {
+            
+            ToggleFullScreen();
+            Show();
+            BringToFront();
+        }
+
+        private void OnExitClicked(object? sender, EventArgs e)
+        {
+            if (trayIcon != null)
+            {
+                trayIcon.Visible = false; // dọn icon trước khi thoát
+            }
+            Application.Exit();
+        }
+
+        private void btnHide_Click(object sender, EventArgs e)
+        {
+            WindowState = FormWindowState.Minimized;
+        }
+    }
 }

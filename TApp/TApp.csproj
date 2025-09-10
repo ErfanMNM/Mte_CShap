@@ -9,7 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="SQLite" Version="3.13.0" />
     <PackageReference Include="SunnyUI" Version="3.8.7" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,18 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Views\FlowControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Update="Views\FlowControl.Designer.cs">
-      <DependentUpon>FlowControl.cs</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Views\FlowControl.resx">
-      <DependentUpon>FlowControl.cs</DependentUpon>
-    </EmbeddedResource>
+    <Folder Include="Dialogs\" />
   </ItemGroup>
 
 </Project>
