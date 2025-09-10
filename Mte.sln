@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MTs", "MTs\MTs.csproj", "{E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TTManager", "TTManager\TTManager.csproj", "{D4DA6D96-8FBE-4C98-A32B-31B7B1497EDF}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PRINTERs", "PRINTERs", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NorwixV2", "PRINTERs\NorwixV2\NorwixV2.csproj", "{98F832B6-660A-4B00-B201-0B5A0479EDF2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,9 +31,16 @@ Global
 		{D4DA6D96-8FBE-4C98-A32B-31B7B1497EDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4DA6D96-8FBE-4C98-A32B-31B7B1497EDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4DA6D96-8FBE-4C98-A32B-31B7B1497EDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98F832B6-660A-4B00-B201-0B5A0479EDF2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98F832B6-660A-4B00-B201-0B5A0479EDF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98F832B6-660A-4B00-B201-0B5A0479EDF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98F832B6-660A-4B00-B201-0B5A0479EDF2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{98F832B6-660A-4B00-B201-0B5A0479EDF2} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {052B4080-771E-44D4-B8CF-DB99DE3B5D16}
