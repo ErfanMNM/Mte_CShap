@@ -16,4 +16,19 @@
     <ProjectReference Include="..\MTs\MTs.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="Views\FlowControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Views\FlowControl.Designer.cs">
+      <DependentUpon>FlowControl.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Views\FlowControl.resx">
+      <DependentUpon>FlowControl.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>
