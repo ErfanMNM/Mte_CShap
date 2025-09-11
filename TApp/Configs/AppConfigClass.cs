@@ -17,11 +17,16 @@ namespace TApp.Configs
     {
 
         public bool AppHideEnable { get; set; }
+        public bool AppStartWithWindows { get; set; }
+
+        public string PLC_IP { get; set; } = string.Empty;
 
         public override void SetDefault()
         {
             base.SetDefault();
             AppHideEnable = true;
+            AppStartWithWindows = false;
+            PLC_IP = "127.0.0.1";
         }
     }
 }

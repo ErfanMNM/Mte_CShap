@@ -104,7 +104,7 @@
             MainTab.DrawMode = TabDrawMode.OwnerDrawFixed;
             MainTab.FillColor = Color.FromArgb(192, 255, 255);
             MainTab.Font = new Font("Microsoft Sans Serif", 12F);
-            MainTab.ItemSize = new Size(150, 40);
+            MainTab.ItemSize = new Size(0, 1);
             MainTab.Location = new Point(2, 2);
             MainTab.MainPage = "";
             MainTab.Margin = new Padding(2);
@@ -116,6 +116,7 @@
             MainTab.TabBackColor = Color.FromArgb(192, 255, 255);
             MainTab.TabIndex = 1;
             MainTab.TabUnSelectedForeColor = Color.FromArgb(240, 240, 240);
+            MainTab.TabVisible = false;
             MainTab.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
             // uiTableLayoutPanel5

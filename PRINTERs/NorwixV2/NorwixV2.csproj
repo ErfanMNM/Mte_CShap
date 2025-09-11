@@ -24,7 +24,7 @@
     <OutputPath>bin\x64\Release\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\MASANSolution\PRINTER\Unoplus\Norwix\Norwix.csproj" />
+    <ProjectReference Include="..\Unoplus\Norwix\Norwix.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="uc_NorwixV2.cs">

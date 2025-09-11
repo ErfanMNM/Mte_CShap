@@ -30,8 +30,8 @@
         {
             uiTabControl1 = new Sunny.UI.UITabControl();
             tabPage1 = new TabPage();
-            tabPage2 = new TabPage();
             opAppConfig = new Sunny.UI.UIPanel();
+            tabPage2 = new TabPage();
             uiTabControl1.SuspendLayout();
             tabPage1.SuspendLayout();
             SuspendLayout();
@@ -44,11 +44,11 @@
             uiTabControl1.DrawMode = TabDrawMode.OwnerDrawFixed;
             uiTabControl1.Font = new Font("Microsoft Sans Serif", 12F);
             uiTabControl1.ItemSize = new Size(150, 40);
-            uiTabControl1.Location = new Point(0, 0);
+            uiTabControl1.Location = new Point(0, 35);
             uiTabControl1.MainPage = "";
             uiTabControl1.Name = "uiTabControl1";
             uiTabControl1.SelectedIndex = 0;
-            uiTabControl1.Size = new Size(992, 662);
+            uiTabControl1.Size = new Size(992, 627);
             uiTabControl1.SizeMode = TabSizeMode.Fixed;
             uiTabControl1.TabIndex = 0;
             uiTabControl1.TabUnSelectedForeColor = Color.FromArgb(240, 240, 240);
@@ -59,10 +59,24 @@
             tabPage1.Controls.Add(opAppConfig);
             tabPage1.Location = new Point(0, 40);
             tabPage1.Name = "tabPage1";
-            tabPage1.Size = new Size(992, 622);
+            tabPage1.Size = new Size(992, 587);
             tabPage1.TabIndex = 0;
-            tabPage1.Text = "tabPage1";
+            tabPage1.Text = "Setting";
             tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // opAppConfig
+            // 
+            opAppConfig.AutoSize = true;
+            opAppConfig.Dock = DockStyle.Fill;
+            opAppConfig.Font = new Font("Microsoft Sans Serif", 12F);
+            opAppConfig.Location = new Point(0, 0);
+            opAppConfig.Margin = new Padding(0);
+            opAppConfig.MinimumSize = new Size(1, 1);
+            opAppConfig.Name = "opAppConfig";
+            opAppConfig.Size = new Size(992, 587);
+            opAppConfig.TabIndex = 0;
+            opAppConfig.Text = null;
+            opAppConfig.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // tabPage2
             // 
@@ -70,32 +84,25 @@
             tabPage2.Name = "tabPage2";
             tabPage2.Size = new Size(200, 60);
             tabPage2.TabIndex = 1;
-            tabPage2.Text = "tabPage2";
+            tabPage2.Text = "Người dùng";
             tabPage2.UseVisualStyleBackColor = true;
-            // 
-            // opAppConfig
-            // 
-            opAppConfig.Dock = DockStyle.Fill;
-            opAppConfig.Font = new Font("Microsoft Sans Serif", 12F);
-            opAppConfig.Location = new Point(0, 0);
-            opAppConfig.Margin = new Padding(0);
-            opAppConfig.MinimumSize = new Size(1, 1);
-            opAppConfig.Name = "opAppConfig";
-            opAppConfig.Size = new Size(992, 622);
-            opAppConfig.TabIndex = 0;
-            opAppConfig.Text = "uiPanel1";
-            opAppConfig.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // PAppSetting
             // 
+            AllowShowTitle = true;
             AutoScaleMode = AutoScaleMode.None;
             AutoSize = true;
             ClientSize = new Size(992, 662);
             Controls.Add(uiTabControl1);
             Name = "PAppSetting";
-            Text = "PAppSetting";
+            Padding = new Padding(0, 35, 0, 0);
+            ShowTitle = true;
+            Symbol = 559576;
+            Text = "Cài Đặt";
+            TitleFillColor = Color.FromArgb(0, 192, 192);
             uiTabControl1.ResumeLayout(false);
             tabPage1.ResumeLayout(false);
+            tabPage1.PerformLayout();
             ResumeLayout(false);
         }
 

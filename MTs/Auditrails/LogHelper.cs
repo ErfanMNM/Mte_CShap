@@ -1,15 +1,14 @@
 using System;
 using System.Data;
 using System.IO;
-using Microsoft.Data.Sqlite;
+using System.Data.SQLite; // <-- dùng System.Data.SQLite
 
 namespace MTs.Auditrails
 {
     /// <summary>
-    /// LogHelper: Ghi log vào SQLite (.mtl) để dễ tái sử dụng.
-    /// - Lưu tại vị trí tùy chọn khi khởi tạo.
+    /// LogHelper: Ghi log vào SQLite (.mtl) để tái sử dụng.
     /// - Trường bắt buộc: User, LogType; thêm Message, Content.
-    /// - Thời gian: ISO-8601 (Utc) và EpochTicks (ticks từ 1970-01-01).
+    /// - Thời gian: ISO-8601 (Utc) + EpochTicks (ticks từ 1970-01-01).
     /// </summary>
     public sealed class LogHelper : IDisposable
     {
@@ -18,22 +17,14 @@ namespace MTs.Auditrails
         private bool _initialized;
         private bool _disposed;
 
-        /// <summary>
-        /// Đường dẫn file CSDL SQLite (.mtl).
-        /// </summary>
         public string DatabasePath => _dbPath;
 
-        /// <summary>
-        /// Khởi tạo LogHelper với đường dẫn file hoặc thư mục lưu.
-        /// - Nếu truyền thư mục, file mặc định: auditrail.mtl
-        /// - Đảm bảo đuôi .mtl
-        /// </summary>
         public LogHelper(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
                 throw new ArgumentException("Path cannot be empty.", nameof(path));
 
-            // Nếu là thư mục hoặc có dấu kết thúc thư mục -> gắn tên file mặc định
+            // Nếu là thư mục hoặc kết thúc bằng dấu slash -> gắn file mặc định
             if (Directory.Exists(path) || path.EndsWith(Path.DirectorySeparatorChar) || path.EndsWith(Path.AltDirectorySeparatorChar))
             {
                 path = Path.Combine(path, "auditrail.mtl");
@@ -42,36 +33,30 @@ namespace MTs.Auditrails
             // Đảm bảo đuôi .mtl
             var ext = Path.GetExtension(path);
             if (string.IsNullOrEmpty(ext))
-            {
-                path = path + ".mtl";
-            }
-            else if (!string.Equals(ext, ".mtl", StringComparison.OrdinalIgnoreCase))
-            {
+                path += ".mtl";
+            else if (!ext.Equals(".mtl", StringComparison.OrdinalIgnoreCase))
                 path = Path.ChangeExtension(path, ".mtl");
-            }
 
             // Tạo thư mục nếu chưa có
             var dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-            {
                 Directory.CreateDirectory(dir);
-            }
 
             _dbPath = Path.GetFullPath(path);
 
-            _connectionString = new SqliteConnectionStringBuilder
+            // System.Data.SQLite builder
+            var csb = new SQLiteConnectionStringBuilder
             {
                 DataSource = _dbPath,
-                Mode = SqliteOpenMode.ReadWriteCreate,
-                Cache = SqliteCacheMode.Default
-            }.ToString();
+                Version = 3,
+                // FailIfMissing = false, // mặc định tạo file nếu chưa có
+                // JournalMode có thể đặt ở đây, nhưng ta bật bằng PRAGMA cho chắc kèo
+            };
+            _connectionString = csb.ToString();
 
             Initialize();
         }
 
-        /// <summary>
-        /// Tạo LogHelper từ thư mục và tên file (không kèm đuôi).
-        /// </summary>
         public static LogHelper FromDirectory(string directoryPath, string fileNameWithoutExtension = "auditrail")
         {
             var fileName = (fileNameWithoutExtension ?? "auditrail").Trim();
@@ -84,43 +69,39 @@ namespace MTs.Auditrails
         {
             if (_initialized) return;
 
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SQLiteConnection(_connectionString);
             connection.Open();
 
-            // Cải thiện độ bền và hỗ trợ ghi song song cơ bản
-            using (var pragma = connection.CreateCommand())
-            {
-                pragma.CommandText = "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;";
-                pragma.ExecuteNonQuery();
-            }
+            // Bật WAL + FK (tách lệnh cho an toàn)
+            using (var pragma1 = new SQLiteCommand("PRAGMA journal_mode=WAL;", connection))
+                pragma1.ExecuteNonQuery();
+            using (var pragma2 = new SQLiteCommand("PRAGMA foreign_keys=ON;", connection))
+                pragma2.ExecuteNonQuery();
 
-            using (var command = connection.CreateCommand())
+            // Tạo bảng + index
+            using (var createTable = new SQLiteCommand(@"
+                CREATE TABLE IF NOT EXISTS Logs (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    User TEXT NOT NULL,
+                    LogType TEXT NOT NULL,
+                    Message TEXT,
+                    Content TEXT,
+                    IsoTime TEXT NOT NULL,
+                    EpochTicks INTEGER NOT NULL
+                );", connection))
             {
-                command.CommandText = @"
-                    CREATE TABLE IF NOT EXISTS Logs (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        User TEXT NOT NULL,
-                        LogType TEXT NOT NULL,
-                        Message TEXT,
-                        Content TEXT,
-                        IsoTime TEXT NOT NULL,
-                        EpochTicks INTEGER NOT NULL
-                    );
-                    CREATE INDEX IF NOT EXISTS IX_Logs_Time ON Logs(EpochTicks);
-                    ";
-                command.ExecuteNonQuery();
+                createTable.ExecuteNonQuery();
+            }
+            using (var createIdx = new SQLiteCommand(
+                "CREATE INDEX IF NOT EXISTS IX_Logs_Time ON Logs(EpochTicks);", connection))
+            {
+                createIdx.ExecuteNonQuery();
             }
 
             _initialized = true;
         }
 
-        /// <summary>
-        /// Ghi một dòng log.
-        /// </summary>
-        /// <param name="user">Người dùng (bắt buộc, mặc định "unknown").</param>
-        /// <param name="logType">Loại log (bắt buộc, mặc định "INFO").</param>
-        /// <param name="message">Tiêu đề / thông điệp ngắn.</param>
-        /// <param name="content">Nội dung chi tiết.</param>
+        /// <summary>Ghi một dòng log.</summary>
         public void Log(string user, string logType, string message, string content)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(LogHelper));
@@ -129,32 +110,28 @@ namespace MTs.Auditrails
             logType = string.IsNullOrWhiteSpace(logType) ? "INFO" : logType;
 
             var utcNow = DateTime.UtcNow;
-            var iso = utcNow.ToString("o"); // ISO 8601 (UTC)
-            // Ticks đếm từ mốc 1970-01-01 (Unix epoch) theo đơn vị tick .NET (100ns)
+            var iso = utcNow.ToString("o");
             var epochTicks = (utcNow - DateTime.UnixEpoch).Ticks;
 
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SQLiteConnection(_connectionString);
             connection.Open();
 
-            using var cmd = connection.CreateCommand();
-            cmd.CommandText = @"
-                        INSERT INTO Logs (User, LogType, Message, Content, IsoTime, EpochTicks)
-                        VALUES ($user, $type, $message, $content, $iso, $ticks);
-                        ";
+            using var cmd = new SQLiteCommand(@"
+                INSERT INTO Logs (User, LogType, Message, Content, IsoTime, EpochTicks)
+                VALUES (@user, @type, @message, @content, @iso, @ticks);
+            ", connection);
 
-            cmd.Parameters.AddWithValue("$user", user);
-            cmd.Parameters.AddWithValue("$type", logType);
-            cmd.Parameters.AddWithValue("$message", (object?)message ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("$content", (object?)content ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("$iso", iso);
-            cmd.Parameters.AddWithValue("$ticks", epochTicks);
+            cmd.Parameters.AddWithValue("@user", user);
+            cmd.Parameters.AddWithValue("@type", logType);
+            cmd.Parameters.AddWithValue("@message", (object?)message ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@content", (object?)content ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@iso", iso);
+            cmd.Parameters.AddWithValue("@ticks", epochTicks);
 
             cmd.ExecuteNonQuery();
         }
 
-        /// <summary>
-        /// Ghi log và trả về Id tự tăng vừa tạo.
-        /// </summary>
+        /// <summary>Ghi log và trả về Id tự tăng.</summary>
         public long LogAndReturnId(string user, string logType, string message, string content)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(LogHelper));
@@ -166,41 +143,31 @@ namespace MTs.Auditrails
             var iso = utcNow.ToString("o");
             var epochTicks = (utcNow - DateTime.UnixEpoch).Ticks;
 
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SQLiteConnection(_connectionString);
             connection.Open();
 
-            using var cmd = connection.CreateCommand();
-            cmd.CommandText = @"
+            using (var insert = new SQLiteCommand(@"
                 INSERT INTO Logs (User, LogType, Message, Content, IsoTime, EpochTicks)
-                VALUES ($user, $type, $message, $content, $iso, $ticks);
-                SELECT last_insert_rowid();
-                ";
+                VALUES (@user, @type, @message, @content, @iso, @ticks);
+            ", connection))
+            {
+                insert.Parameters.AddWithValue("@user", user);
+                insert.Parameters.AddWithValue("@type", logType);
+                insert.Parameters.AddWithValue("@message", (object?)message ?? DBNull.Value);
+                insert.Parameters.AddWithValue("@content", (object?)content ?? DBNull.Value);
+                insert.Parameters.AddWithValue("@iso", iso);
+                insert.Parameters.AddWithValue("@ticks", epochTicks);
+                insert.ExecuteNonQuery();
+            }
 
-            cmd.Parameters.AddWithValue("$user", user);
-            cmd.Parameters.AddWithValue("$type", logType);
-            cmd.Parameters.AddWithValue("$message", (object?)message ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("$content", (object?)content ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("$iso", iso);
-            cmd.Parameters.AddWithValue("$ticks", epochTicks);
-
-            var result = cmd.ExecuteScalar();
+            // Lấy Id vừa chèn (cùng connection)
+            using var getId = new SQLiteCommand("SELECT last_insert_rowid();", connection);
+            var result = getId.ExecuteScalar();
             return (result is long id) ? id : Convert.ToInt64(result);
         }
 
-        public void Dispose()
-        {
-            _disposed = true;
-        }
+        public void Dispose() => _disposed = true;
 
-        /// <summary>
-        /// Ví dụ sử dụng:
-        /// var logger = new MTs.Auditrails.LogHelper(@"C:\\Logs\\myapp.mtl");
-        /// logger.Log("thuc", "ERROR", "Lỗi khi xử lý", "StackTrace/Chi tiết...");
-        /// 
-        /// Hoặc:
-        /// var logger = MTs.Auditrails.LogHelper.FromDirectory(@"C:\\Logs", "audit");
-        /// </summary>
         private static void _exampleUsage() { }
     }
 }
-

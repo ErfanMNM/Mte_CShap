@@ -5,21 +5,34 @@ using TApp.Configs;
 
 namespace TApp.Views.Settings
 {
+    /// <summary>
+    /// UI page for displaying and editing application settings.
+    /// Builds dynamic controls from <see cref="AppConfigs"/> and binds values.
+    /// </summary>
     public partial class PAppSetting : UIPage
     {
+        #region Fields
         private Dictionary<string, Control> _configControls = new Dictionary<string, Control>();
         private Dictionary<string, PropertyInfo> _configProperties = new Dictionary<string, PropertyInfo>();
+        #endregion
+
+        #region Constructor
         public PAppSetting()
         {
             InitializeComponent();
         }
+        #endregion
 
+        /// <summary>
+        /// Initializes dynamic controls and loads current configuration values.
+        /// </summary>
         public void START()
         {
             GenerateConfigControls();
             LoadCurrentConfig();
         }
 
+        #region UI Building
         private void GenerateConfigControls()
         {
             var configType = typeof(AppConfigs);
@@ -270,8 +283,10 @@ namespace TApp.Views.Settings
 
             return null;
         }
+        #endregion
 
 
+        #region Data Binding
         private void LoadCurrentConfig()
         {
             var config = AppConfigs.Current;
@@ -295,6 +310,7 @@ namespace TApp.Views.Settings
             }
         }
 
+        #region File Dialog
         private void BrowseForFile(UITextBox textBox, string propertyName)
         {
             using (var openFileDialog = new OpenFileDialog())
@@ -350,7 +366,10 @@ namespace TApp.Views.Settings
                 }
             }
         }
+        #endregion
+        #endregion
 
+        #region Virtual Keyboard
         private void ShowVirtualKeyboard(Control textControl, string propertyName)
         {
             try
@@ -402,5 +421,6 @@ namespace TApp.Views.Settings
                 this.ShowErrorTip($"Lỗi hiện thị bàn phím: {ex.Message}");
             }
         }
+        #endregion
     }
 }

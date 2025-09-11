@@ -37,13 +37,13 @@ namespace MASAN_SERIALIZATION.Diaglogs
             uiTitlePanel1.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
             
             // Style cho text box
-            StyleTextBox();
+            //StyleTextBox();
             
             // Style cho các phím
-            StyleKeyboardButtons();
+            //StyleKeyboardButtons();
             
             // Style cho các nút chức năng
-            StyleFunctionButtons();
+            //StyleFunctionButtons();
         }
         
         private void StyleTextBox()
@@ -211,8 +211,8 @@ namespace MASAN_SERIALIZATION.Diaglogs
                 
                 // Thêm ký tự tại vị trí con trỏ
                 textPadTextBox.Text = textPadTextBox.Text.Insert(cursorPosition, key);
-                textPadTextBox.SelectionStart = cursorPosition + key.Length; // Di chuyển con trỏ
                 textPadTextBox.Focus(); // Giữ focus cho textbox
+                textPadTextBox.SelectionStart = cursorPosition + 1; // Di chuyển con trỏ
             }
         }
 
@@ -304,8 +304,9 @@ namespace MASAN_SERIALIZATION.Diaglogs
             int cursorPosition = textPadTextBox.SelectionStart; // Vị trí con trỏ
             // Thêm khoảng trắng tại vị trí con trỏ
             textPadTextBox.Text = textPadTextBox.Text.Insert(cursorPosition, " ");
-            textPadTextBox.SelectionStart = cursorPosition + 1; // Di chuyển con trỏ
+            
             textPadTextBox.Focus(); // Giữ focus cho textbox
+            textPadTextBox.SelectionStart = cursorPosition + 1; // Di chuyển con trỏ
         }
 
         private void uiSymbolButton2_Click(object sender, EventArgs e)
@@ -315,8 +316,9 @@ namespace MASAN_SERIALIZATION.Diaglogs
             {
                 // Xóa ký tự trước con trỏ
                 textPadTextBox.Text = textPadTextBox.Text.Remove(cursorPosition - 1, 1);
-                textPadTextBox.SelectionStart = cursorPosition - 1; // Cập nhật lại vị trí con trỏ
+                
                 textPadTextBox.Focus(); // Giữ focus cho textbox
+                textPadTextBox.SelectionStart = cursorPosition - 1; // Cập nhật lại vị trí con trỏ
             }
         }
 
