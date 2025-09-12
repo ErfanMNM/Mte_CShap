@@ -1,9 +1,4 @@
 ﻿using Sunny.UI;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using MTs.Communication;
 using HslCommunication.Profinet.Siemens;
 using TApp.Configs;
@@ -18,7 +13,7 @@ namespace TApp.Views.Communications
         private readonly HashSet<string> _clientKeys = new();
         private readonly SynchronizationContext? _ui;
         private const int MaxLogItems = 1000; // tránh phình ListBox
-        SiemensS7Net plc = new SiemensS7Net(SiemensPLCS.S1200);
+        public SiemensS7Net plc = new SiemensS7Net(SiemensPLCS.S1200);
 
         public SocketTranferSiemen()
         {
@@ -28,6 +23,9 @@ namespace TApp.Views.Communications
             // Forward server logs to UI list
             OnLog += AppendLog;
 
+            plc.Rack = 0;
+            plc.Slot = 0;
+            
 
         }
 
@@ -203,7 +201,14 @@ namespace TApp.Views.Communications
 
         private void Log(string message)
         {
-            try { OnLog?.Invoke(message); } catch { }
+            try
+            {
+
+                OnLog?.Invoke(message);
+                LogBootstrap.Logger.Log("SocketServer", "INFO", message, "SocketTranferSiemen");
+
+            }
+            catch { }
         }
 
         private void AppendLog(string message)
@@ -218,6 +223,7 @@ namespace TApp.Views.Communications
                     opShow.Items.RemoveAt(0);
                 }
 
+                //invoke UI thread nếu cần
                 opShow.Items.Add($"{DateTime.Now:HH:mm:ss} | {message}");
                 var count = opShow.Items.Count;
                 if (count > 0) opShow.TopIndex = count - 1;
@@ -285,27 +291,27 @@ namespace TApp.Views.Communications
 
             try
             {
-                
-                plc.Rack = 0;
-                plc.Slot = 0;
-                plc.CommunicationPipe = new HslCommunication.Core.Pipe.PipeTcpNet("127.0.0.1", 102)
+                AppendLog($"Bắt đầu kết nối PLC");
+                plc.CommunicationPipe = new HslCommunication.Core.Pipe.PipeTcpNet(ipPLCIP.Text, ipPLCPort.Text.ToInt())
                 {
                     ConnectTimeOut = 5000,
                     ReceiveTimeOut = 10000,
                 };
-
-                OperateResult result = plc.ConnectServer();
-
-                if (result.IsSuccess)
+                Task.Run(() =>
                 {
-                    PTranferSiemenGlobals.PLCState = ePLCState.Connected;
-                }
-                else
-                {
-                    PTranferSiemenGlobals.PLCState = ePLCState.Error;
-                }
+                    OperateResult result = plc.ConnectServer();
 
-                AppendLog($"Kết nối PLC: {result.Message}");
+                    if (result.IsSuccess)
+                    {
+                        PTranferSiemenGlobals.PLCState = ePLCState.Connected;
+                    }
+                    else
+                    {
+                        PTranferSiemenGlobals.PLCState = ePLCState.Error;
+                    }
+                    this.Invoke(new Action(() => { AppendLog($"Kết nối PLC: {result.Message}"); }));
+                });
+                
             }
             catch (Exception ex)
             {
@@ -331,11 +337,11 @@ namespace TApp.Views.Communications
             {
                 write = plc.Write(MemoryAddress, Value.ToStringArray<uint>());
             }
-            else 
+            else
             {
                 write = plc.Write(MemoryAddress, uint.Parse(Value));
             }
-            
+
             if (write.IsSuccess)
             {
                 AppendLog("Ghi [M100] thành công");
@@ -344,6 +350,11 @@ namespace TApp.Views.Communications
             {
                 AppendLog($"Ghi [M100] thất bại: {write.Message}");
             }
+        }
+
+        private void opShow_DoubleClick(object sender, EventArgs e)
+        {
+            this.ShowInfoDialog(opShow.SelectedItem.ToString());
         }
     }
 }

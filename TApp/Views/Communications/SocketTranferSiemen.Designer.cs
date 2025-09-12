@@ -55,6 +55,7 @@
             opShow.Size = new Size(982, 471);
             opShow.TabIndex = 0;
             opShow.Text = "uiListBox1";
+            opShow.DoubleClick += opShow_DoubleClick;
             // 
             // ipPort
             // 
@@ -112,7 +113,9 @@
             // 
             // ipPLCValue
             // 
+            ipPLCValue.DoubleValue = 1234D;
             ipPLCValue.Font = new Font("Microsoft Sans Serif", 12F);
+            ipPLCValue.IntValue = 1234;
             ipPLCValue.Location = new Point(702, 546);
             ipPLCValue.Margin = new Padding(4, 5, 4, 5);
             ipPLCValue.MinimumSize = new Size(1, 16);
@@ -121,6 +124,7 @@
             ipPLCValue.ShowText = false;
             ipPLCValue.Size = new Size(197, 38);
             ipPLCValue.TabIndex = 6;
+            ipPLCValue.Text = "1234";
             ipPLCValue.TextAlignment = ContentAlignment.MiddleLeft;
             ipPLCValue.Watermark = "";
             // 
@@ -147,6 +151,7 @@
             ipPLCMemory.ShowText = false;
             ipPLCMemory.Size = new Size(186, 38);
             ipPLCMemory.TabIndex = 7;
+            ipPLCMemory.Text = "M100";
             ipPLCMemory.TextAlignment = ContentAlignment.MiddleLeft;
             ipPLCMemory.Watermark = "";
             // 
