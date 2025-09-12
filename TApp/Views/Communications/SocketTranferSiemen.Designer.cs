@@ -88,7 +88,7 @@
             // btnSend
             // 
             btnSend.Font = new Font("Microsoft Sans Serif", 12F);
-            btnSend.Location = new Point(411, 541);
+            btnSend.Location = new Point(411, 546);
             btnSend.MinimumSize = new Size(1, 1);
             btnSend.Name = "btnSend";
             btnSend.Size = new Size(89, 40);
@@ -100,7 +100,7 @@
             // ipConten
             // 
             ipConten.Font = new Font("Microsoft Sans Serif", 12F);
-            ipConten.Location = new Point(13, 543);
+            ipConten.Location = new Point(13, 546);
             ipConten.Margin = new Padding(4, 5, 4, 5);
             ipConten.MinimumSize = new Size(1, 16);
             ipConten.Name = "ipConten";
@@ -202,7 +202,7 @@
             // 
             AutoScaleMode = AutoScaleMode.None;
             AutoSize = true;
-            ClientSize = new Size(1014, 598);
+            ClientSize = new Size(1186, 598);
             Controls.Add(btnConnectPLC);
             Controls.Add(ipPLCIP);
             Controls.Add(ipPLCPort);

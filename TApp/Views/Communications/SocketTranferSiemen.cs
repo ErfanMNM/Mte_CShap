@@ -179,7 +179,140 @@ namespace TApp.Views.Communications
 
         private void HandleContent(string content)
         {
+            // chuyển đổi từ utf-8 sang ký tự đặc biệt
+            content = content.Replace("\u0001", "<SOH>")
+                             .Replace("\u0002", "<STX>")
+                             .Replace("\u0003", "<ETX>")
+                             .Replace("\u0004", "<EOT>")
+                             .Replace("\n", "<LF>")
+                             .Replace("\r", "<CR>");
+            //chặt nội dung lấy các thông số
 
+            string[] parts1 = content.Split("<STX>");
+
+
+            if (parts1.Length < 2) return; // Không có phần sau <STX>
+            string afterStx = parts1[1];
+            //phần trước <STX>
+            string beforeStx = parts1[0];
+            //tách block phần trước <STX> |B|
+            string[] parts2 = beforeStx.Split("|B|");
+            //lấy block đầu tiên là MesageID
+            string MesageID = parts2[0].Replace("<SOH>","");
+            //lấy block thứ 2 là FunctionCode
+            string FunctionCode = parts2.Length > 1 ? parts2[1] : "";
+
+            //xóa <LF> ở cuối
+            afterStx = afterStx.Replace("<LF>", "");
+            //tách block phần sau <STX> |B|
+            string[] parts3 = afterStx.Split("|B|");
+            //lấy block thứ 1 là Address
+            string Address = parts3.Length > 0 ? parts3[0] : "";
+            //lấy block thứ 2 là Data
+            string Data = parts3.Length > 1 ? parts3[1] : "";
+
+            //xử lý FunctionCode
+
+            //chuyển FunctionCode về enum
+            if (!Enum.TryParse(FunctionCode, out eFunctionCode func))
+            {
+                Log($"FunctionCode không hợp lệ: {FunctionCode}");
+                return;
+            }
+
+            //xử lý theo FunctionCode dùng switch case
+
+            switch (func)
+            {
+                case eFunctionCode.WP:
+                    //Ghi từ Client
+                    Log($"Ghi từ Client: MesageID={MesageID}, Address={Address}, Data={Data}");
+                    //Gửi giá trị Data đến PLC tại địa chỉ Address
+                    OperateResult? write = new OperateResult();
+                    if (Data.Contains("[") && Data.Contains("]"))
+                    {
+                        write = plc.Write(Address, Data.ToStringArray<uint>());
+                    }
+                    else
+                    {
+                        write = plc.Write(Address, uint.Parse(Data));
+                    }
+                    if (write.IsSuccess)
+                    {
+                        Log($"Ghi đến PLC thành công: Address={Address}, Data={Data}");
+                    }
+                    else
+                    {
+                        Log($"Ghi đến PLC thất bại: Address={Address}, Data={Data}, Error={write.Message}");
+                    }
+                    //gửi phản hồi về Client
+                    var response = $"<SOH>{MesageID}|B|RP<STX>{write.IsSuccess}|B|{write.Message}<LF>";
+                    var ok = SendToAsync(_clientKeys.First(), response);
+                    if (ok.Result)
+                    {
+                        Log($"Đã gửi phản hồi đến Client: {response}");
+                    }
+                    else
+                    {
+                        Log($"Gửi phản hồi đến Client thất bại: {response}");
+                    }
+
+                    break;
+                case eFunctionCode.RP:
+                    //Đọc từ Client
+                    Log($"Đọc từ Client: MesageID={MesageID}, Address={Address}, Data={Data}");
+                    //đổi Data về số lượng từ cần đọc ushort
+                    ushort length = 1;
+                    if (!string.IsNullOrWhiteSpace(Data))
+                    {
+                        if (!ushort.TryParse(Data, out length) || length <= 0)
+                        {
+                            Log($"Data không hợp lệ, không thể chuyển về số lượng từ cần đọc: {Data}");
+                            //return;
+                        }
+                    }
+
+                    //Đọc giá trị từ PLC tại địa chỉ Address
+                    OperateResult<uint[]> read = plc.ReadUInt32(Address, length);
+                    if (read.IsSuccess)
+                    {
+                        Log($"Đọc từ PLC thành công: Address={Address}, Value={read.Content}");
+                    }
+                    else
+                    {
+                        Log($"Đọc từ PLC thất bại: Address={Address}, Error={read.Message}");
+                    }
+
+                    break;
+                case eFunctionCode.GS:
+                    //Lấy trạng thái
+                    Log($"Lấy trạng thái: MesageID={MesageID}, Address={Address}, Data={Data}");
+                    break;
+                case eFunctionCode.QS:
+                    //Truy vấn nhanh
+                    Log($"Truy vấn nhanh: MesageID={MesageID}, Address={Address}, Data={Data}");
+                    break;
+                case eFunctionCode.ST:
+                    //Dừng
+                    Log($"Gán giá trị: MesageID={MesageID}, Address={Address}, Data={Data}");
+                    break;
+                default:
+                    Log($"FunctionCode không được hỗ trợ: {FunctionCode}");
+                    break;
+            }
+
+
+
+
+        }
+
+        private enum eFunctionCode
+        {
+            WP,
+            RP,
+            GS,
+            QS,
+            ST
         }
 
         private void PostToUI(Action a)
@@ -292,6 +425,7 @@ namespace TApp.Views.Communications
             try
             {
                 AppendLog($"Bắt đầu kết nối PLC");
+
                 plc.CommunicationPipe = new HslCommunication.Core.Pipe.PipeTcpNet(ipPLCIP.Text, ipPLCPort.Text.ToInt())
                 {
                     ConnectTimeOut = 5000,
