@@ -13,8 +13,8 @@ namespace MASAN_SERIALIZATION.Diaglogs
 {
     public partial class Entertext : Form
     {
-        public event EventHandler EnterClicked;
-        public string TextValue { get; set; }
+        public event EventHandler ? EnterClicked;
+        public string TextValue { get; set; } = string.Empty; // Giá trị văn bản nhập vào
         private bool isShiftEnabled = true; // Trạng thái Shift
         private bool isSymbolEnabled = false; // Trạng thái Symbol
         public string TileText { get; set; } = "Nhập văn bản";
@@ -36,146 +36,8 @@ namespace MASAN_SERIALIZATION.Diaglogs
             uiTitlePanel1.ForeColor = Color.White;
             uiTitlePanel1.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
             
-            // Style cho text box
-            //StyleTextBox();
-            
-            // Style cho các phím
-            //StyleKeyboardButtons();
-            
-            // Style cho các nút chức năng
-            //StyleFunctionButtons();
         }
         
-        private void StyleTextBox()
-        {
-            textPadTextBox.Font = new Font("Segoe UI", 14F);
-            textPadTextBox.FillColor = Color.White;
-            textPadTextBox.RectColor = Color.FromArgb(189, 195, 199);
-            textPadTextBox.Radius = 10;
-            textPadTextBox.RectSize = 2;
-            textPadTextBox.Padding = new Padding(10, 8, 10, 8);
-        }
-        
-        private void StyleKeyboardButtons()
-        {
-            // Style cho các phím chữ
-            var letterButtons = new[] { Q, W, E, R, T, Y, U, I, O, P, A, S, D, F, G, H, J, K, L, Z, X, C, V, B, N, M };
-            foreach (var button in letterButtons)
-            {
-                StyleLetterButton(button);
-            }
-            
-            // Style cho các phím đặc biệt
-            StyleSpecialButton(Space, "🔲 Dấu Cách");
-            StyleSpecialButton(Dot, ".");
-            StyleSpecialButton(Dot2, ",");
-        }
-        
-        private void StyleLetterButton(UIButton button)
-        {
-            button.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            button.FillColor = Color.White;
-            button.FillHoverColor = Color.FromArgb(240, 244, 248);
-            button.FillPressColor = Color.FromArgb(224, 232, 240);
-            button.RectColor = Color.FromArgb(189, 195, 199);
-            button.ForeColor = Color.FromArgb(52, 73, 94);
-            button.Radius = 8;
-            button.RectSize = 1;
-        }
-        
-        private void StyleSpecialButton(UIButton button, string text)
-        {
-            button.Text = text;
-            button.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-            button.FillColor = Color.FromArgb(236, 240, 241);
-            button.FillHoverColor = Color.FromArgb(220, 226, 227);
-            button.FillPressColor = Color.FromArgb(189, 195, 199);
-            button.RectColor = Color.FromArgb(149, 165, 166);
-            button.ForeColor = Color.FromArgb(52, 73, 94);
-            button.Radius = 8;
-            button.RectSize = 1;
-        }
-        
-        private void StyleFunctionButtons()
-        {
-            // Nút Shift
-            Shift.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            Shift.FillColor = Color.FromArgb(69, 90, 100);
-            Shift.FillHoverColor = Color.FromArgb(96, 125, 139);
-            Shift.FillPressColor = Color.FromArgb(55, 71, 79);
-            Shift.RectColor = Color.FromArgb(69, 90, 100);
-            Shift.ForeColor = Color.White;
-            Shift.Radius = 10;
-            Shift.RectSize = 0;
-            Shift.Text = " Shift";
-            
-            // Nút 123
-            S123.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            S123.FillColor = Color.FromArgb(69, 90, 100);
-            S123.FillHoverColor = Color.FromArgb(96, 125, 139);
-            S123.FillPressColor = Color.FromArgb(55, 71, 79);
-            S123.RectColor = Color.FromArgb(69, 90, 100);
-            S123.ForeColor = Color.White;
-            S123.Radius = 10;
-            S123.RectSize = 0;
-            S123.Text = "🔢 123";
-            
-            // Nút Backspace
-            uiSymbolButton2.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            uiSymbolButton2.FillColor = Color.FromArgb(231, 76, 60);
-            uiSymbolButton2.FillHoverColor = Color.FromArgb(241, 148, 138);
-            uiSymbolButton2.FillPressColor = Color.FromArgb(192, 57, 43);
-            uiSymbolButton2.RectColor = Color.FromArgb(231, 76, 60);
-            uiSymbolButton2.ForeColor = Color.White;
-            uiSymbolButton2.Radius = 10;
-            uiSymbolButton2.RectSize = 0;
-            uiSymbolButton2.Symbol = 61703; // Backspace icon
-            
-            // Nút Enter
-            uiSymbolButton1.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-            uiSymbolButton1.FillColor = Color.FromArgb(46, 125, 50);
-            uiSymbolButton1.FillHoverColor = Color.FromArgb(67, 160, 71);
-            uiSymbolButton1.FillPressColor = Color.FromArgb(27, 94, 32);
-            uiSymbolButton1.RectColor = Color.FromArgb(46, 125, 50);
-            uiSymbolButton1.ForeColor = Color.White;
-            uiSymbolButton1.Radius = 12;
-            uiSymbolButton1.RectSize = 0;
-            uiSymbolButton1.Text = " Xác nhận";
-            
-            // Nút Clear
-            btnClear.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            btnClear.FillColor = Color.FromArgb(245, 124, 0);
-            btnClear.FillHoverColor = Color.FromArgb(255, 149, 0);
-            btnClear.FillPressColor = Color.FromArgb(230, 116, 0);
-            btnClear.RectColor = Color.FromArgb(245, 124, 0);
-            btnClear.ForeColor = Color.White;
-            btnClear.Radius = 10;
-            btnClear.RectSize = 0;
-            btnClear.Symbol = 61460; // Clear icon
-            
-            // Nút Close
-            Close.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            Close.FillColor = Color.FromArgb(158, 158, 158);
-            Close.FillHoverColor = Color.FromArgb(183, 28, 28);
-            Close.FillPressColor = Color.FromArgb(136, 14, 79);
-            Close.RectColor = Color.FromArgb(158, 158, 158);
-            Close.ForeColor = Color.White;
-            Close.Radius = 10;
-            Close.RectSize = 0;
-            Close.Symbol = 61453; // Close icon
-            
-            // Nút Eye Password
-            btnEyePass.Font = new Font("Segoe UI", 10F);
-            btnEyePass.FillColor = Color.FromArgb(158, 158, 158);
-            btnEyePass.FillHoverColor = Color.FromArgb(126, 126, 126);
-            btnEyePass.FillPressColor = Color.FromArgb(97, 97, 97);
-            btnEyePass.RectColor = Color.FromArgb(158, 158, 158);
-            btnEyePass.ForeColor = Color.White;
-            btnEyePass.Radius = 8;
-            btnEyePass.RectSize = 0;
-            btnEyePass.Symbol = 361552; // Eye closed icon
-        }
-
         private void uiSymbolButton1_Click(object sender, EventArgs e)
         {
             //// Gửi phím về MainForm

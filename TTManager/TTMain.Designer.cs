@@ -34,7 +34,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(912, 542);
+            ClientSize = new Size(854, 472);
             Name = "TTMain";
             Text = "TTMain";
             ResumeLayout(false);

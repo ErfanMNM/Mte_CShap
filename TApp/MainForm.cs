@@ -1,5 +1,6 @@
 ﻿using Sunny.UI;
 using TApp.Configs;
+using TApp.Views.Communications;
 using TApp.Views.Settings;
 
 namespace TApp
@@ -10,6 +11,7 @@ namespace TApp
         private ContextMenuStrip? trayMenu;
 
         private PAppSetting PAppSetting = new PAppSetting();
+        private SocketTranferSiemen PSocketTransfer = new SocketTranferSiemen();
 
         public MainForm()
         {
@@ -23,6 +25,7 @@ namespace TApp
             NavMenu.Nodes.Clear();
 
             NavMenu.CreateNode(AddPage(PAppSetting, 1001));
+            NavMenu.CreateNode(AddPage(PSocketTransfer, 2001));
 
             ToggleFullScreen();
             HideToTray();
@@ -36,6 +39,7 @@ namespace TApp
         {
             PAppSetting.ShowTitle = false;
             PAppSetting.START();
+            PSocketTransfer.START();
         }
 
         private void btnClose_Click(object sender, EventArgs e)

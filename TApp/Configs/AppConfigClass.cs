@@ -19,7 +19,13 @@ namespace TApp.Configs
         public bool AppHideEnable { get; set; }
         public bool AppStartWithWindows { get; set; }
 
+        public bool TCP_AutoStart { get; set; } = false;
+
+        public int TCP_Port { get; set; } = 51236;
+
         public string PLC_IP { get; set; } = string.Empty;
+        public int PLC_Port { get; set; } = 102;
+        public bool PLC_Auto_Connect { get; set; } = false;
 
         public override void SetDefault()
         {
@@ -27,6 +33,10 @@ namespace TApp.Configs
             AppHideEnable = true;
             AppStartWithWindows = false;
             PLC_IP = "127.0.0.1";
+            TCP_Port = 51236;
+            TCP_AutoStart = false;
+            PLC_Port = 102;
+            PLC_Auto_Connect = false;
         }
     }
 }

@@ -150,6 +150,8 @@ namespace TApp.Views.Settings
                 return "☁️ Đám Mây";
             if (propertyName.Contains("PLC"))
                 return "📦 Cấu hình PLC";
+            if (propertyName.Contains("TCP"))
+                return "🔧 Cấu hình truyền thông";
             return "⚙️ Cài đặt chung";
         }
 
@@ -158,7 +160,11 @@ namespace TApp.Views.Settings
             // Convert property names to user-friendly display names
             var displayNames = new Dictionary<string, string>()
             {
-                { "AppHideEnable", "Ẩn ứng dụng khi tắt" }
+                { "AppHideEnable", "Ẩn ứng dụng khi tắt" },
+                { "AppStartWithWindows", "Khởi động cùng Windows" },
+                { "TCP_Port", "Cổng TCP" },
+                { "PLC_IP", "Địa chỉ IP PLC" },
+
             };
 
             return displayNames.ContainsKey(propertyName) ? displayNames[propertyName] : propertyName;
