@@ -290,7 +290,7 @@ namespace TApp.Views.Communications
 
         private void HandleWrite(ParsedFrame f, string clientKey)
         {
-            Log($"Ghi từ Client: MesageID={f.MessageId}, Address={f.Address}, Data={f.Data}");
+            //Log($"Ghi từ Client: MesageID={f.MessageId}, Address={f.Address}, Data={f.Data}");
 
             OperateResult write;
             try
