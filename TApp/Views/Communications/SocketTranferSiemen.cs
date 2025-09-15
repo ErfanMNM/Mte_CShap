@@ -296,7 +296,6 @@ namespace TApp.Views.Communications
 
         private void HandleWrite(ParsedFrame f, string clientKey)
         {
-            //Log($"Ghi từ Client: MesageID={f.MessageId}, Address={f.Address}, Data={f.Data}");
 
             OperateResult write;
             try
@@ -333,7 +332,7 @@ namespace TApp.Views.Communications
 
         private void HandleRead(ParsedFrame f, string clientKey, Stopwatch sw)
         {
-            //Log($"Đọc từ Client: MesageID={f.MessageId}, Address={f.Address}, Data={f.Data}");
+
 
             // Data = số lượng word (UInt32) cần đọc
             ushort length = 1;
@@ -344,9 +343,9 @@ namespace TApp.Views.Communications
                 length = 1;
             }
 
-            var plc = f.PlcId == "01" ? this.plc : this.plc02;
+            var plcz = f.PlcId == "01" ? this.plc : plc02;
 
-            var read = plc.ReadUInt32(f.Address, length);
+            var read = plcz.ReadUInt32(f.Address, length);
             string dataString = string.Empty;
 
             if (read.IsSuccess)
