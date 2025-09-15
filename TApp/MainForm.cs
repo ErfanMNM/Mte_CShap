@@ -33,8 +33,6 @@ namespace TApp
             StartPage();
             LogBootstrap.EnsureInitialized();
             LogBootstrap.Logger.Log("System", "INFO", "App Opened", "Ứng dụng khởi động thành công");
-            Hide();
-            WindowState = FormWindowState.Minimized;
         }
 
         public void StartPage()

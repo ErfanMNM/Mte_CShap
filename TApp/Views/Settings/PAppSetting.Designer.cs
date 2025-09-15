@@ -32,8 +32,8 @@
             tabPage1 = new TabPage();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             opAppConfig = new Sunny.UI.UIPanel();
-            tabPage2 = new TabPage();
             btnSaveConfig = new Sunny.UI.UISymbolButton();
+            tabPage2 = new TabPage();
             uiTabControl1.SuspendLayout();
             tabPage1.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
@@ -99,26 +99,28 @@
             opAppConfig.Text = null;
             opAppConfig.TextAlignment = ContentAlignment.MiddleCenter;
             // 
-            // tabPage2
-            // 
-            tabPage2.Location = new Point(0, 40);
-            tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(200, 60);
-            tabPage2.TabIndex = 1;
-            tabPage2.Text = "Người dùng";
-            tabPage2.UseVisualStyleBackColor = true;
-            // 
             // btnSaveConfig
             // 
+            btnSaveConfig.Dock = DockStyle.Fill;
             btnSaveConfig.Font = new Font("Microsoft Sans Serif", 12F);
-            btnSaveConfig.Location = new Point(3, 542);
+            btnSaveConfig.Location = new Point(2, 541);
+            btnSaveConfig.Margin = new Padding(2);
             btnSaveConfig.MinimumSize = new Size(1, 1);
             btnSaveConfig.Name = "btnSaveConfig";
-            btnSaveConfig.Size = new Size(986, 42);
+            btnSaveConfig.Size = new Size(988, 44);
             btnSaveConfig.TabIndex = 2;
             btnSaveConfig.Text = "Lưu Lại";
             btnSaveConfig.TipsFont = new Font("Microsoft Sans Serif", 9F);
             btnSaveConfig.Click += btnSaveConfig_Click;
+            // 
+            // tabPage2
+            // 
+            tabPage2.Location = new Point(0, 40);
+            tabPage2.Name = "tabPage2";
+            tabPage2.Size = new Size(992, 587);
+            tabPage2.TabIndex = 1;
+            tabPage2.Text = "Người dùng";
+            tabPage2.UseVisualStyleBackColor = true;
             // 
             // PAppSetting
             // 
