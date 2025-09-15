@@ -432,7 +432,7 @@ namespace TApp.Views.Settings
 
         private void btnSaveConfig_Click(object sender, EventArgs e)
         {
-
+            AppConfigs.Current.Save();
         }
     }
 }
