@@ -316,7 +316,7 @@ namespace TApp.Views.Communications
 
         private void HandleRead(ParsedFrame f, string clientKey, Stopwatch sw)
         {
-            Log($"Đọc từ Client: MesageID={f.MessageId}, Address={f.Address}, Data={f.Data}");
+            //Log($"Đọc từ Client: MesageID={f.MessageId}, Address={f.Address}, Data={f.Data}");
 
             // Data = số lượng word (UInt32) cần đọc
             ushort length = 1;
@@ -342,6 +342,7 @@ namespace TApp.Views.Communications
             sw.Stop();
             var response = BuildResponse(f.MessageId, "RP", read.IsSuccess, read.IsSuccess ? dataString : read.Message);
             _ = SafeSendAsync(clientKey, response, onSent: ok =>
+
             {
                 if (ok) Log($"Đã gửi phản hồi đến Client: {response}, tốn {sw.ElapsedMilliseconds} ms");
                 else Log($"Gửi phản hồi đến Client thất bại: {response}");
