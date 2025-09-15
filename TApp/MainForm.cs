@@ -28,7 +28,7 @@ namespace TApp
             NavMenu.CreateNode(AddPage(PSocketTransfer, 2001));
 
             ToggleFullScreen();
-
+            this.Hide();
             HideToTray();
             InitializeConfigs();
             StartPage();
