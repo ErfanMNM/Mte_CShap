@@ -28,6 +28,7 @@ namespace TApp
             NavMenu.CreateNode(AddPage(PSocketTransfer, 2001));
 
             ToggleFullScreen();
+
             HideToTray();
             InitializeConfigs();
             StartPage();
@@ -44,11 +45,18 @@ namespace TApp
 
         private void btnClose_Click(object sender, EventArgs e)
         {
-            CloseApplication();
+            WindowState = FormWindowState.Minimized;
+            //CloseApplication();
         }
 
         private void CloseApplication()
         {
+            if (trayIcon != null)
+            {
+                trayIcon.Visible = false; // dọn icon trước khi thoát
+            }
+            //tắt các tiến trình đang chạy
+            PSocketTransfer.CloseApp();
             Application.Exit();
         }
 
@@ -127,7 +135,7 @@ namespace TApp
             {
                 trayIcon.Visible = false; // dọn icon trước khi thoát
             }
-            Application.Exit();
+            CloseApplication();
         }
 
         private void btnHide_Click(object sender, EventArgs e)

@@ -214,7 +214,8 @@ namespace TApp.Views.Settings
 
                 // UINumPadTextBox tự động có numpad dialog khi double click
                 // Thêm thêm option cho bàn phím chữ bằng Ctrl+Double Click
-                numPadTextBox.MouseDoubleClick += (s, e) => {
+                numPadTextBox.MouseDoubleClick += (s, e) =>
+                {
                     if (Control.ModifierKeys == Keys.Control)
                     {
                         ShowVirtualKeyboard(numPadTextBox, property.Name);
@@ -428,5 +429,10 @@ namespace TApp.Views.Settings
             }
         }
         #endregion
+
+        private void btnSaveConfig_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

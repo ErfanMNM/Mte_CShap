@@ -251,6 +251,7 @@
             Padding = new Padding(0);
             ShowTitle = false;
             Text = "TApp";
+            WindowState = FormWindowState.Minimized;
             ZoomScaleRect = new Rectangle(15, 15, 852, 482);
             Resize += MainForm_Resize;
             uiTableLayoutPanel1.ResumeLayout(false);

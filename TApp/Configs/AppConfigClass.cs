@@ -32,7 +32,7 @@ namespace TApp.Configs
             base.SetDefault();
             AppHideEnable = true;
             AppStartWithWindows = false;
-            PLC_IP = "127.0.0.1";
+            PLC_IP = "192.168.250.12";
             TCP_Port = 51236;
             TCP_AutoStart = false;
             PLC_Port = 102;

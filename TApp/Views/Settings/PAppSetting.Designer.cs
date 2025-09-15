@@ -30,10 +30,13 @@
         {
             uiTabControl1 = new Sunny.UI.UITabControl();
             tabPage1 = new TabPage();
+            uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             opAppConfig = new Sunny.UI.UIPanel();
             tabPage2 = new TabPage();
+            btnSaveConfig = new Sunny.UI.UISymbolButton();
             uiTabControl1.SuspendLayout();
             tabPage1.SuspendLayout();
+            uiTableLayoutPanel1.SuspendLayout();
             SuspendLayout();
             // 
             // uiTabControl1
@@ -56,13 +59,31 @@
             // 
             // tabPage1
             // 
-            tabPage1.Controls.Add(opAppConfig);
+            tabPage1.Controls.Add(uiTableLayoutPanel1);
             tabPage1.Location = new Point(0, 40);
             tabPage1.Name = "tabPage1";
             tabPage1.Size = new Size(992, 587);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Setting";
             tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // uiTableLayoutPanel1
+            // 
+            uiTableLayoutPanel1.AutoSize = true;
+            uiTableLayoutPanel1.ColumnCount = 1;
+            uiTableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel1.Controls.Add(opAppConfig, 0, 0);
+            uiTableLayoutPanel1.Controls.Add(btnSaveConfig, 0, 1);
+            uiTableLayoutPanel1.Dock = DockStyle.Fill;
+            uiTableLayoutPanel1.Location = new Point(0, 0);
+            uiTableLayoutPanel1.Margin = new Padding(2);
+            uiTableLayoutPanel1.Name = "uiTableLayoutPanel1";
+            uiTableLayoutPanel1.RowCount = 2;
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 91.82283F));
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 8.177172F));
+            uiTableLayoutPanel1.Size = new Size(992, 587);
+            uiTableLayoutPanel1.TabIndex = 0;
+            uiTableLayoutPanel1.TagString = null;
             // 
             // opAppConfig
             // 
@@ -73,8 +94,8 @@
             opAppConfig.Margin = new Padding(0);
             opAppConfig.MinimumSize = new Size(1, 1);
             opAppConfig.Name = "opAppConfig";
-            opAppConfig.Size = new Size(992, 587);
-            opAppConfig.TabIndex = 0;
+            opAppConfig.Size = new Size(992, 539);
+            opAppConfig.TabIndex = 1;
             opAppConfig.Text = null;
             opAppConfig.TextAlignment = ContentAlignment.MiddleCenter;
             // 
@@ -86,6 +107,18 @@
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Người dùng";
             tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // btnSaveConfig
+            // 
+            btnSaveConfig.Font = new Font("Microsoft Sans Serif", 12F);
+            btnSaveConfig.Location = new Point(3, 542);
+            btnSaveConfig.MinimumSize = new Size(1, 1);
+            btnSaveConfig.Name = "btnSaveConfig";
+            btnSaveConfig.Size = new Size(986, 42);
+            btnSaveConfig.TabIndex = 2;
+            btnSaveConfig.Text = "Lưu Lại";
+            btnSaveConfig.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnSaveConfig.Click += btnSaveConfig_Click;
             // 
             // PAppSetting
             // 
@@ -103,6 +136,8 @@
             uiTabControl1.ResumeLayout(false);
             tabPage1.ResumeLayout(false);
             tabPage1.PerformLayout();
+            uiTableLayoutPanel1.ResumeLayout(false);
+            uiTableLayoutPanel1.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -110,7 +145,9 @@
 
         private Sunny.UI.UITabControl uiTabControl1;
         private TabPage tabPage1;
-        private Sunny.UI.UIPanel opAppConfig;
         private TabPage tabPage2;
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel1;
+        private Sunny.UI.UIPanel opAppConfig;
+        private Sunny.UI.UISymbolButton btnSaveConfig;
     }
 }

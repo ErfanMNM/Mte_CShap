@@ -39,6 +39,7 @@
             ipPLCPort = new Sunny.UI.UINumPadTextBox();
             ipPLCIP = new Sunny.UI.UIIPTextBox();
             btnConnectPLC = new Sunny.UI.UISymbolButton();
+            btnPLCRead = new Sunny.UI.UISymbolButton();
             SuspendLayout();
             // 
             // opShow
@@ -52,7 +53,7 @@
             opShow.Name = "opShow";
             opShow.Padding = new Padding(2);
             opShow.ShowText = false;
-            opShow.Size = new Size(982, 471);
+            opShow.Size = new Size(1077, 471);
             opShow.TabIndex = 0;
             opShow.Text = "uiListBox1";
             opShow.DoubleClick += opShow_DoubleClick;
@@ -183,7 +184,7 @@
             ipPLCIP.ShowText = false;
             ipPLCIP.Size = new Size(277, 40);
             ipPLCIP.TabIndex = 3;
-            ipPLCIP.Text = "127.0.0.1";
+            ipPLCIP.Text = "192.168.250.12";
             ipPLCIP.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // btnConnectPLC
@@ -192,17 +193,29 @@
             btnConnectPLC.Location = new Point(895, 14);
             btnConnectPLC.MinimumSize = new Size(1, 1);
             btnConnectPLC.Name = "btnConnectPLC";
-            btnConnectPLC.Size = new Size(100, 40);
+            btnConnectPLC.Size = new Size(195, 40);
             btnConnectPLC.TabIndex = 8;
             btnConnectPLC.Text = "Kết Nối";
             btnConnectPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
             btnConnectPLC.Click += btnConnectPLC_Click;
             // 
+            // btnPLCRead
+            // 
+            btnPLCRead.Font = new Font("Microsoft Sans Serif", 12F);
+            btnPLCRead.Location = new Point(1001, 544);
+            btnPLCRead.MinimumSize = new Size(1, 1);
+            btnPLCRead.Name = "btnPLCRead";
+            btnPLCRead.Size = new Size(89, 40);
+            btnPLCRead.TabIndex = 9;
+            btnPLCRead.Text = "Đọc lên";
+            btnPLCRead.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            // 
             // SocketTranferSiemen
             // 
             AutoScaleMode = AutoScaleMode.None;
             AutoSize = true;
-            ClientSize = new Size(1186, 598);
+            ClientSize = new Size(1102, 598);
+            Controls.Add(btnPLCRead);
             Controls.Add(btnConnectPLC);
             Controls.Add(ipPLCIP);
             Controls.Add(ipPLCPort);
@@ -233,5 +246,6 @@
         private Sunny.UI.UINumPadTextBox ipPLCPort;
         private Sunny.UI.UIIPTextBox ipPLCIP;
         private Sunny.UI.UISymbolButton btnConnectPLC;
+        private Sunny.UI.UISymbolButton btnPLCRead;
     }
 }
