@@ -36,6 +36,7 @@ namespace TApp.Views.Communications
         private readonly HashSet<string> _clientKeys = new();
         private readonly SynchronizationContext? _ui;
         public SiemensS7Net plc = new SiemensS7Net(SiemensPLCS.S1200) { Rack = 0, Slot = 0 };
+        public SiemensS7Net plc02 = new SiemensS7Net(SiemensPLCS.S1200) { Rack = 0, Slot = 0 };
 
         #endregion
 
@@ -73,6 +74,8 @@ namespace TApp.Views.Communications
             if (PTranferSiemenGlobals.PLCState != ePLCState.Connected)
                 _ = ConnectPlcAsync(ipPLCIP.Text, ipPLCPort.Text);
 
+            if (PTranferSiemenGlobals.PLCState02 != ePLCState.Connected)
+                _ = ConnectPlcAsync(ipIPPLC02.Text, ipPORTPCL02.Text);
             // Toggle server theo trạng thái hiện tại
             try
             {
@@ -141,6 +144,7 @@ namespace TApp.Views.Communications
             {
                 StopServer();
                 plc.ConnectClose();
+                plc02.ConnectClose();
             }
             catch { /* nuốt lỗi */ }
         }
@@ -235,6 +239,7 @@ namespace TApp.Views.Communications
 
         private sealed record ParsedFrame(
             string MessageId,
+            string PlcId,
             string FunctionCode,
             string Address,
             string Data
@@ -242,6 +247,7 @@ namespace TApp.Views.Communications
 
         private void HandleContent(string rawContent, string clientKey)
         {
+            
             var sw = Stopwatch.StartNew();
 
             // Chuẩn hoá control chars → token
@@ -295,10 +301,21 @@ namespace TApp.Views.Communications
             OperateResult write;
             try
             {
-                if (f.Data.Contains('[') && f.Data.Contains(']'))
-                    write = plc.Write(f.Address, f.Data.ToStringArray<uint>());
+                if(f.PlcId == "01")
+                {
+                    if (f.Data.Contains('[') && f.Data.Contains(']'))
+                        write = plc.Write(f.Address, f.Data.ToStringArray<uint>());
+                    else
+                        write = plc.Write(f.Address, uint.Parse(f.Data));
+                }
                 else
-                    write = plc.Write(f.Address, uint.Parse(f.Data));
+                {
+                    if (f.Data.Contains('[') && f.Data.Contains(']'))
+                        write = plc02.Write(f.Address, f.Data.ToStringArray<uint>());
+                    else
+                        write = plc02.Write(f.Address, uint.Parse(f.Data));
+                }
+
             }
             catch (Exception ex)
             {
@@ -326,6 +343,8 @@ namespace TApp.Views.Communications
                 Log($"Data không hợp lệ, không thể chuyển về số lượng từ cần đọc: {f.Data}");
                 length = 1;
             }
+
+            var plc = f.PlcId == "01" ? this.plc : this.plc02;
 
             var read = plc.ReadUInt32(f.Address, length);
             string dataString = string.Empty;
@@ -370,17 +389,18 @@ namespace TApp.Views.Communications
             var beforeStx = parts1[0];
             var afterStx = parts1[1].Replace(LF, string.Empty);
 
-            // Trước STX: SOH + MessageId |B| FunctionCode
+            // Trước STX: SOH + MessageId |B| plcid |B| FunctionCode
             var parts2 = beforeStx.Split(BLOCK);
             var messageId = parts2[0].Replace(SOH, string.Empty);
-            var function = parts2.Length > 1 ? parts2[1] : string.Empty;
+            var plcid = parts2.Length > 1 ? parts2[1] : string.Empty;
+            var function = parts2.Length > 2 ? parts2[2] : string.Empty;
 
             // Sau STX: Address |B| Data
             var parts3 = afterStx.Split(BLOCK);
             var address = parts3.Length > 0 ? parts3[0] : string.Empty;
             var data = parts3.Length > 1 ? parts3[1] : string.Empty;
 
-            frame = new ParsedFrame(messageId, function, address, data);
+            frame = new ParsedFrame(messageId, plcid, function, address, data);
             return !string.IsNullOrWhiteSpace(messageId) && !string.IsNullOrWhiteSpace(function);
         }
 
@@ -407,13 +427,51 @@ namespace TApp.Views.Communications
 
         #region PLC
 
-        private async Task ConnectPlcAsync(string ip, string portText)
+        private async Task ConnectPlcAsync(string ip, string portText, bool plc02true = false)
         {
+            if (plc02true)
+            {
+                if (PTranferSiemenGlobals.PLCState02 == ePLCState.Connected)
+                {
+                    AppendLog("Đã kết nối PLC02");
+                    return;
+                }
+
+                AppendLog("Bắt đầu kết nối PLC 02");
+
+                if (!int.TryParse(portText, out var port) || port <= 0 || port > 65535)
+                    throw new ArgumentException("PLC02 Port không hợp lệ");
+
+                plc02.CommunicationPipe = new HslCommunication.Core.Pipe.PipeTcpNet(ip, port)
+                {
+                    ConnectTimeOut = 5000,
+                    ReceiveTimeOut = 10000,
+                };
+
+                var result = await Task.Run(() => plc.ConnectServer()).ConfigureAwait(false);
+
+                PTranferSiemenGlobals.PLCState = result.IsSuccess ? ePLCState.Connected : ePLCState.Error;
+
+                // Quay về UI
+                this.Invoke(new Action(() => AppendLog($"Kết nối PLC: {result.Message}")));
+
+                if (PTranferSiemenGlobals.PLCState02 == ePLCState.Connected)
+                {
+                    AppendLog("Đã kết nối PLC 02");
+                    return;
+                }
+
+                return;
+            }
+
+
             if (PTranferSiemenGlobals.PLCState == ePLCState.Connected)
             {
                 AppendLog("Đã kết nối PLC");
                 return;
             }
+
+            
 
             try
             {
@@ -472,7 +530,6 @@ namespace TApp.Views.Communications
             try
             {
                 OnLog?.Invoke(message);
-                LogBootstrap.Logger.Log("SocketServer", "INFO", message, "SocketTranferSiemen");
             }
             catch { }
         }
@@ -592,5 +649,10 @@ namespace TApp.Views.Communications
         }
 
         #endregion
+
+        private void btnConnectPLC02_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

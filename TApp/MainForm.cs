@@ -31,8 +31,6 @@ namespace TApp
             HideToTray();
             InitializeConfigs();
             StartPage();
-            LogBootstrap.EnsureInitialized();
-            LogBootstrap.Logger.Log("System", "INFO", "App Opened", "Ứng dụng khởi động thành công");
         }
 
         public void StartPage()

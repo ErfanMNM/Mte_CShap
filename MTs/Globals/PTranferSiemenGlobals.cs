@@ -5,6 +5,7 @@ namespace MTs.Globals
     public class PTranferSiemenGlobals
     {
         public static ePLCState PLCState = ePLCState.Disconnected;
+        public static ePLCState PLCState02 = ePLCState.Disconnected;
     }
 
     public enum ePTranferSiemenState

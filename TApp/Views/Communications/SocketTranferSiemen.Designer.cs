@@ -40,6 +40,9 @@
             ipPLCIP = new Sunny.UI.UIIPTextBox();
             btnConnectPLC = new Sunny.UI.UISymbolButton();
             btnPLCRead = new Sunny.UI.UISymbolButton();
+            ipPORTPCL02 = new Sunny.UI.UINumPadTextBox();
+            ipIPPLC02 = new Sunny.UI.UIIPTextBox();
+            btnConnectPLC02 = new Sunny.UI.UISymbolButton();
             SuspendLayout();
             // 
             // opShow
@@ -47,13 +50,13 @@
             opShow.Font = new Font("Microsoft Sans Serif", 12F);
             opShow.HoverColor = Color.FromArgb(155, 200, 255);
             opShow.ItemSelectForeColor = Color.White;
-            opShow.Location = new Point(13, 62);
+            opShow.Location = new Point(13, 116);
             opShow.Margin = new Padding(4, 5, 4, 5);
             opShow.MinimumSize = new Size(1, 1);
             opShow.Name = "opShow";
             opShow.Padding = new Padding(2);
             opShow.ShowText = false;
-            opShow.Size = new Size(1077, 471);
+            opShow.Size = new Size(1077, 417);
             opShow.TabIndex = 0;
             opShow.Text = "uiListBox1";
             opShow.DoubleClick += opShow_DoubleClick;
@@ -210,14 +213,60 @@
             btnPLCRead.Text = "Đọc lên";
             btnPLCRead.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
+            // ipPORTPCL02
+            // 
+            ipPORTPCL02.FillColor = Color.White;
+            ipPORTPCL02.Font = new Font("Microsoft Sans Serif", 12F);
+            ipPORTPCL02.Location = new Point(793, 66);
+            ipPORTPCL02.Margin = new Padding(4, 5, 4, 5);
+            ipPORTPCL02.MinimumSize = new Size(63, 0);
+            ipPORTPCL02.Name = "ipPORTPCL02";
+            ipPORTPCL02.Padding = new Padding(0, 0, 30, 2);
+            ipPORTPCL02.Size = new Size(95, 40);
+            ipPORTPCL02.SymbolSize = 24;
+            ipPORTPCL02.TabIndex = 2;
+            ipPORTPCL02.Text = "102";
+            ipPORTPCL02.TextAlignment = ContentAlignment.MiddleLeft;
+            ipPORTPCL02.Watermark = "";
+            // 
+            // ipIPPLC02
+            // 
+            ipIPPLC02.FillColor2 = Color.FromArgb(235, 243, 255);
+            ipIPPLC02.Font = new Font("Microsoft Sans Serif", 12F);
+            ipIPPLC02.Location = new Point(508, 66);
+            ipIPPLC02.Margin = new Padding(4, 5, 4, 5);
+            ipIPPLC02.MinimumSize = new Size(1, 1);
+            ipIPPLC02.Name = "ipIPPLC02";
+            ipIPPLC02.Padding = new Padding(1);
+            ipIPPLC02.ShowText = false;
+            ipIPPLC02.Size = new Size(277, 40);
+            ipIPPLC02.TabIndex = 3;
+            ipIPPLC02.Text = "127.0.0.1";
+            ipIPPLC02.TextAlignment = ContentAlignment.MiddleCenter;
+            // 
+            // btnConnectPLC02
+            // 
+            btnConnectPLC02.Font = new Font("Microsoft Sans Serif", 12F);
+            btnConnectPLC02.Location = new Point(895, 66);
+            btnConnectPLC02.MinimumSize = new Size(1, 1);
+            btnConnectPLC02.Name = "btnConnectPLC02";
+            btnConnectPLC02.Size = new Size(195, 40);
+            btnConnectPLC02.TabIndex = 8;
+            btnConnectPLC02.Text = "Kết Nối";
+            btnConnectPLC02.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnConnectPLC02.Click += btnConnectPLC02_Click;
+            // 
             // SocketTranferSiemen
             // 
             AutoScaleMode = AutoScaleMode.None;
             AutoSize = true;
             ClientSize = new Size(1102, 598);
             Controls.Add(btnPLCRead);
+            Controls.Add(btnConnectPLC02);
             Controls.Add(btnConnectPLC);
+            Controls.Add(ipIPPLC02);
             Controls.Add(ipPLCIP);
+            Controls.Add(ipPORTPCL02);
             Controls.Add(ipPLCPort);
             Controls.Add(ipPLCMemory);
             Controls.Add(ipPLCValue);
@@ -247,5 +296,8 @@
         private Sunny.UI.UIIPTextBox ipPLCIP;
         private Sunny.UI.UISymbolButton btnConnectPLC;
         private Sunny.UI.UISymbolButton btnPLCRead;
+        private Sunny.UI.UINumPadTextBox ipPORTPCL02;
+        private Sunny.UI.UIIPTextBox ipIPPLC02;
+        private Sunny.UI.UISymbolButton btnConnectPLC02;
     }
 }
