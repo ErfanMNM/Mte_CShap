@@ -303,7 +303,12 @@ namespace TApp.Views.Communications
                 if(f.PlcId == "01")
                 {
                     if (f.Data.Contains('[') && f.Data.Contains(']'))
-                        write = plc.Write(f.Address, f.Data.ToStringArray<uint>());
+                        //nếu address có . thì gửi bit  
+
+                        if (f.Data.Contains('.'))
+                            write = plc.Write(f.Address, f.Data.ToStringArray<bool>());
+                        else
+                            write = plc.Write(f.Address, f.Data.ToStringArray<uint>());
                     else
                         write = plc.Write(f.Address, uint.Parse(f.Data));
                 }
@@ -380,7 +385,7 @@ namespace TApp.Views.Communications
             frame = default!;
 
             // content format:
-            // <SOH>{MessageId}|B|{FunctionCode}<STX>{Address}|B|{Data}<LF>
+            // <SOH>{MessageId}|B|{plcid}|B|{FunctionCode}<STX>{Address}|B|{Data}<LF>
             // Tách phần trước/ sau STX
             var parts1 = content.Split(STX);
             if (parts1.Length < 2) return false;
@@ -388,7 +393,7 @@ namespace TApp.Views.Communications
             var beforeStx = parts1[0];
             var afterStx = parts1[1].Replace(LF, string.Empty);
 
-            // Trước STX: SOH + MessageId |B| plcid |B| FunctionCode
+            // Trước STX: <SOH> + MessageId |B| plcid |B| FunctionCode
             var parts2 = beforeStx.Split(BLOCK);
             var messageId = parts2[0].Replace(SOH, string.Empty);
             var plcid = parts2.Length > 1 ? parts2[1] : string.Empty;
