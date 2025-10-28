@@ -43,9 +43,10 @@ namespace MTs.Auditrails
         }
 
         private void InitDatabase()
-        {
-            var directory = Path.GetDirectoryName(_dbPath);
-            if (!Directory.Exists(directory))
+        { 
+            string? directory = Path.GetDirectoryName(_dbPath);
+
+            if (!Directory.Exists(directory) && directory != null)
             {
                 Directory.CreateDirectory(directory);
             }
@@ -111,7 +112,8 @@ namespace MTs.Auditrails
 
                 while (!_cts.IsCancellationRequested || !_logQueue.IsCompleted)
                 {
-                    LogEntry<TAction> entry = null;
+                    LogEntry<TAction> ?entry;
+                    entry = null;
                     try
                     {
                         if (!_logQueue.TryTake(out entry, Timeout.Infinite, _cts.Token))
@@ -140,7 +142,13 @@ namespace MTs.Auditrails
                     {
                         try
                         {
-                            var fallbackPath = Path.Combine(Path.GetDirectoryName(_dbPath), "fallback_log.txt");
+                            string ? path = Path.GetDirectoryName(_dbPath);
+
+                            if (path == null)
+                            {
+                                path = string.Empty;
+                            }
+                            var fallbackPath = Path.Combine(path, "fallback_log.txt");
                             var sb = new StringBuilder();
                             sb.AppendLine($"[{DateTime.UtcNow:o}] FAIL TO WRITE LOG");
                             if (entry != null)

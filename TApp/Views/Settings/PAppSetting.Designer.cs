@@ -101,13 +101,13 @@
             // 
             // btnSaveConfig
             // 
-            btnSaveConfig.Dock = DockStyle.Fill;
+            btnSaveConfig.Dock = DockStyle.Right;
             btnSaveConfig.Font = new Font("Microsoft Sans Serif", 12F);
-            btnSaveConfig.Location = new Point(2, 541);
+            btnSaveConfig.Location = new Point(884, 541);
             btnSaveConfig.Margin = new Padding(2);
             btnSaveConfig.MinimumSize = new Size(1, 1);
             btnSaveConfig.Name = "btnSaveConfig";
-            btnSaveConfig.Size = new Size(988, 44);
+            btnSaveConfig.Size = new Size(106, 44);
             btnSaveConfig.TabIndex = 2;
             btnSaveConfig.Text = "Lưu Lại";
             btnSaveConfig.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -117,7 +117,7 @@
             // 
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(992, 587);
+            tabPage2.Size = new Size(200, 60);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Người dùng";
             tabPage2.UseVisualStyleBackColor = true;

@@ -1,9 +1,4 @@
 ﻿using Sunny.UI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TApp.Configs
 {
@@ -18,11 +13,13 @@ namespace TApp.Configs
 
         public bool AppHideEnable { get; set; }
         public bool AppStartWithWindows { get; set; }
-        public bool TCP_AutoStart { get; set; } = false;
+        public bool TCP_AutoStart { get; set; }
         public int TCP_Port { get; set; } = 51236;
-        public string PLC_IP { get; set; } = string.Empty;
-        public int PLC_Port { get; set; } = 102;
-        public bool PLC_Auto_Connect { get; set; } = false;
+        public string ? PLC_IP { get; set; }
+        public int PLC_Port { get; set; }
+        public bool PLC_Auto_Connect { get; set; }
+        public string ? Camera_IP { get; set; }
+        public int Camera_Port { get; set; }
 
         public override void SetDefault()
         {
@@ -34,6 +31,8 @@ namespace TApp.Configs
             TCP_AutoStart = false;
             PLC_Port = 102;
             PLC_Auto_Connect = false;
+            Camera_IP = "192.69.0.1";
+            Camera_Port = 50001;
         }
     }
 }

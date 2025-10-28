@@ -94,7 +94,7 @@
             uiTitlePanel1.Margin = new Padding(5, 6, 5, 6);
             uiTitlePanel1.MinimumSize = new Size(1, 1);
             uiTitlePanel1.Name = "uiTitlePanel1";
-            uiTitlePanel1.Padding = new Padding(1, 52, 1, 1);
+            uiTitlePanel1.Padding = new Padding(1, 45, 1, 1);
             uiTitlePanel1.ShowText = false;
             uiTitlePanel1.Size = new Size(782, 368);
             uiTitlePanel1.TabIndex = 0;
@@ -113,15 +113,15 @@
             uiTableLayoutPanel1.Controls.Add(uiTableLayoutPanel2, 0, 1);
             uiTableLayoutPanel1.Controls.Add(uiTableLayoutPanel6, 0, 0);
             uiTableLayoutPanel1.Dock = DockStyle.Fill;
-            uiTableLayoutPanel1.Location = new Point(1, 52);
+            uiTableLayoutPanel1.Location = new Point(1, 45);
             uiTableLayoutPanel1.Name = "uiTableLayoutPanel1";
             uiTableLayoutPanel1.RowCount = 5;
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 23.80952F));
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 18.68132F));
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 19.04762F));
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 19.41392F));
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 18.6335411F));
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 18.32298F));
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 20.14652F));
-            uiTableLayoutPanel1.Size = new Size(780, 315);
+            uiTableLayoutPanel1.Size = new Size(780, 322);
             uiTableLayoutPanel1.TabIndex = 2;
             uiTableLayoutPanel1.TagString = null;
             // 
@@ -139,11 +139,11 @@
             uiTableLayoutPanel5.Controls.Add(S123, 0, 0);
             uiTableLayoutPanel5.Controls.Add(uiSymbolButton1, 4, 0);
             uiTableLayoutPanel5.Dock = DockStyle.Fill;
-            uiTableLayoutPanel5.Location = new Point(3, 254);
+            uiTableLayoutPanel5.Location = new Point(3, 258);
             uiTableLayoutPanel5.Name = "uiTableLayoutPanel5";
             uiTableLayoutPanel5.RowCount = 1;
             uiTableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel5.Size = new Size(774, 58);
+            uiTableLayoutPanel5.Size = new Size(774, 61);
             uiTableLayoutPanel5.TabIndex = 5;
             uiTableLayoutPanel5.TagString = null;
             // 
@@ -159,7 +159,7 @@
             Dot.Name = "Dot";
             Dot.RectColor = Color.DeepSkyBlue;
             Dot.RectSize = 2;
-            Dot.Size = new Size(69, 52);
+            Dot.Size = new Size(69, 55);
             Dot.TabIndex = 8;
             Dot.Text = ".";
             Dot.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -177,7 +177,7 @@
             Space.Name = "Space";
             Space.RectColor = Color.DeepSkyBlue;
             Space.RectSize = 2;
-            Space.Size = new Size(341, 52);
+            Space.Size = new Size(341, 55);
             Space.TabIndex = 5;
             Space.Text = "_";
             Space.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -193,7 +193,7 @@
             Dot2.Location = new Point(118, 3);
             Dot2.MinimumSize = new Size(1, 1);
             Dot2.Name = "Dot2";
-            Dot2.Size = new Size(71, 52);
+            Dot2.Size = new Size(71, 55);
             Dot2.TabIndex = 2;
             Dot2.Text = ",";
             Dot2.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -210,7 +210,7 @@
             S123.MinimumSize = new Size(1, 1);
             S123.Name = "S123";
             S123.Radius = 28;
-            S123.Size = new Size(109, 52);
+            S123.Size = new Size(109, 55);
             S123.TabIndex = 1;
             S123.Text = "?123";
             S123.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -227,7 +227,7 @@
             uiSymbolButton1.MinimumSize = new Size(1, 1);
             uiSymbolButton1.Name = "uiSymbolButton1";
             uiSymbolButton1.Radius = 28;
-            uiSymbolButton1.Size = new Size(154, 52);
+            uiSymbolButton1.Size = new Size(154, 55);
             uiSymbolButton1.Symbol = 61452;
             uiSymbolButton1.TabIndex = 9;
             uiSymbolButton1.Text = "Enter";
@@ -256,11 +256,11 @@
             uiTableLayoutPanel4.Controls.Add(Shift, 0, 0);
             uiTableLayoutPanel4.Controls.Add(uiSymbolButton2, 8, 0);
             uiTableLayoutPanel4.Dock = DockStyle.Fill;
-            uiTableLayoutPanel4.Location = new Point(3, 194);
+            uiTableLayoutPanel4.Location = new Point(3, 199);
             uiTableLayoutPanel4.Name = "uiTableLayoutPanel4";
             uiTableLayoutPanel4.RowCount = 1;
             uiTableLayoutPanel4.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel4.Size = new Size(774, 54);
+            uiTableLayoutPanel4.Size = new Size(774, 53);
             uiTableLayoutPanel4.TabIndex = 4;
             uiTableLayoutPanel4.TagString = null;
             // 
@@ -276,7 +276,7 @@
             M.Name = "M";
             M.RectColor = Color.DeepSkyBlue;
             M.RectSize = 2;
-            M.Size = new Size(71, 48);
+            M.Size = new Size(71, 47);
             M.TabIndex = 8;
             M.Text = "M";
             M.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -294,7 +294,7 @@
             N.Name = "N";
             N.RectColor = Color.DeepSkyBlue;
             N.RectSize = 2;
-            N.Size = new Size(71, 48);
+            N.Size = new Size(71, 47);
             N.TabIndex = 7;
             N.Text = "N";
             N.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -312,7 +312,7 @@
             B.Name = "B";
             B.RectColor = Color.DeepSkyBlue;
             B.RectSize = 2;
-            B.Size = new Size(71, 48);
+            B.Size = new Size(71, 47);
             B.TabIndex = 6;
             B.Text = "B";
             B.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -330,7 +330,7 @@
             V.Name = "V";
             V.RectColor = Color.DeepSkyBlue;
             V.RectSize = 2;
-            V.Size = new Size(71, 48);
+            V.Size = new Size(71, 47);
             V.TabIndex = 5;
             V.Text = "V";
             V.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -348,7 +348,7 @@
             C.Name = "C";
             C.RectColor = Color.DeepSkyBlue;
             C.RectSize = 2;
-            C.Size = new Size(71, 48);
+            C.Size = new Size(71, 47);
             C.TabIndex = 4;
             C.Text = "C";
             C.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -366,7 +366,7 @@
             X.Name = "X";
             X.RectColor = Color.DeepSkyBlue;
             X.RectSize = 2;
-            X.Size = new Size(71, 48);
+            X.Size = new Size(71, 47);
             X.TabIndex = 3;
             X.Text = "X";
             X.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -384,7 +384,7 @@
             Z.Name = "Z";
             Z.RectColor = Color.DeepSkyBlue;
             Z.RectSize = 2;
-            Z.Size = new Size(71, 48);
+            Z.Size = new Size(71, 47);
             Z.TabIndex = 2;
             Z.Text = "Z";
             Z.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -400,7 +400,7 @@
             Shift.Location = new Point(3, 3);
             Shift.MinimumSize = new Size(1, 1);
             Shift.Name = "Shift";
-            Shift.Size = new Size(110, 48);
+            Shift.Size = new Size(110, 47);
             Shift.Symbol = 57411;
             Shift.TabIndex = 10;
             Shift.Text = "Shift";
@@ -418,7 +418,7 @@
             uiSymbolButton2.Name = "uiSymbolButton2";
             uiSymbolButton2.RectColor = Color.DeepSkyBlue;
             uiSymbolButton2.RectSize = 2;
-            uiSymbolButton2.Size = new Size(113, 48);
+            uiSymbolButton2.Size = new Size(113, 47);
             uiSymbolButton2.Symbol = 557674;
             uiSymbolButton2.TabIndex = 11;
             uiSymbolButton2.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -448,11 +448,11 @@
             uiTableLayoutPanel3.Controls.Add(S, 2, 0);
             uiTableLayoutPanel3.Controls.Add(A, 1, 0);
             uiTableLayoutPanel3.Dock = DockStyle.Fill;
-            uiTableLayoutPanel3.Location = new Point(3, 135);
+            uiTableLayoutPanel3.Location = new Point(3, 139);
             uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
             uiTableLayoutPanel3.RowCount = 1;
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel3.Size = new Size(774, 53);
+            uiTableLayoutPanel3.Size = new Size(774, 54);
             uiTableLayoutPanel3.TabIndex = 1;
             uiTableLayoutPanel3.TagString = null;
             // 
@@ -468,7 +468,7 @@
             L.Name = "L";
             L.RectColor = Color.DeepSkyBlue;
             L.RectSize = 2;
-            L.Size = new Size(71, 47);
+            L.Size = new Size(71, 48);
             L.TabIndex = 9;
             L.Text = "L";
             L.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -486,7 +486,7 @@
             K.Name = "K";
             K.RectColor = Color.DeepSkyBlue;
             K.RectSize = 2;
-            K.Size = new Size(71, 47);
+            K.Size = new Size(71, 48);
             K.TabIndex = 8;
             K.Text = "K";
             K.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -504,7 +504,7 @@
             J.Name = "J";
             J.RectColor = Color.DeepSkyBlue;
             J.RectSize = 2;
-            J.Size = new Size(71, 47);
+            J.Size = new Size(71, 48);
             J.TabIndex = 7;
             J.Text = "J";
             J.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -522,7 +522,7 @@
             H.Name = "H";
             H.RectColor = Color.DeepSkyBlue;
             H.RectSize = 2;
-            H.Size = new Size(71, 47);
+            H.Size = new Size(71, 48);
             H.TabIndex = 6;
             H.Text = "H";
             H.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -540,7 +540,7 @@
             G.Name = "G";
             G.RectColor = Color.DeepSkyBlue;
             G.RectSize = 2;
-            G.Size = new Size(71, 47);
+            G.Size = new Size(71, 48);
             G.TabIndex = 5;
             G.Text = "G";
             G.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -558,7 +558,7 @@
             F.Name = "F";
             F.RectColor = Color.DeepSkyBlue;
             F.RectSize = 2;
-            F.Size = new Size(71, 47);
+            F.Size = new Size(71, 48);
             F.TabIndex = 4;
             F.Text = "F";
             F.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -576,7 +576,7 @@
             D.Name = "D";
             D.RectColor = Color.DeepSkyBlue;
             D.RectSize = 2;
-            D.Size = new Size(71, 47);
+            D.Size = new Size(71, 48);
             D.TabIndex = 3;
             D.Text = "D";
             D.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -594,7 +594,7 @@
             S.Name = "S";
             S.RectColor = Color.DeepSkyBlue;
             S.RectSize = 2;
-            S.Size = new Size(71, 47);
+            S.Size = new Size(71, 48);
             S.TabIndex = 2;
             S.Text = "S";
             S.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -612,7 +612,7 @@
             A.Name = "A";
             A.RectColor = Color.DeepSkyBlue;
             A.RectSize = 2;
-            A.Size = new Size(71, 47);
+            A.Size = new Size(71, 48);
             A.TabIndex = 1;
             A.Text = "A";
             A.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -642,11 +642,11 @@
             uiTableLayoutPanel2.Controls.Add(W, 1, 0);
             uiTableLayoutPanel2.Controls.Add(Q, 0, 0);
             uiTableLayoutPanel2.Dock = DockStyle.Fill;
-            uiTableLayoutPanel2.Location = new Point(3, 77);
+            uiTableLayoutPanel2.Location = new Point(3, 79);
             uiTableLayoutPanel2.Name = "uiTableLayoutPanel2";
             uiTableLayoutPanel2.RowCount = 1;
             uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel2.Size = new Size(774, 52);
+            uiTableLayoutPanel2.Size = new Size(774, 54);
             uiTableLayoutPanel2.TabIndex = 0;
             uiTableLayoutPanel2.TagString = null;
             // 
@@ -662,7 +662,7 @@
             P.Name = "P";
             P.RectColor = Color.DeepSkyBlue;
             P.RectSize = 2;
-            P.Size = new Size(75, 46);
+            P.Size = new Size(75, 48);
             P.TabIndex = 9;
             P.Text = "P";
             P.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -680,7 +680,7 @@
             O.Name = "O";
             O.RectColor = Color.DeepSkyBlue;
             O.RectSize = 2;
-            O.Size = new Size(71, 46);
+            O.Size = new Size(71, 48);
             O.TabIndex = 8;
             O.Text = "O";
             O.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -698,7 +698,7 @@
             I.Name = "I";
             I.RectColor = Color.DeepSkyBlue;
             I.RectSize = 2;
-            I.Size = new Size(71, 46);
+            I.Size = new Size(71, 48);
             I.TabIndex = 7;
             I.Text = "I";
             I.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -716,7 +716,7 @@
             U.Name = "U";
             U.RectColor = Color.DeepSkyBlue;
             U.RectSize = 2;
-            U.Size = new Size(71, 46);
+            U.Size = new Size(71, 48);
             U.TabIndex = 6;
             U.Text = "U";
             U.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -734,7 +734,7 @@
             Y.Name = "Y";
             Y.RectColor = Color.DeepSkyBlue;
             Y.RectSize = 2;
-            Y.Size = new Size(71, 46);
+            Y.Size = new Size(71, 48);
             Y.TabIndex = 5;
             Y.Text = "Y";
             Y.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -752,7 +752,7 @@
             T.Name = "T";
             T.RectColor = Color.DeepSkyBlue;
             T.RectSize = 2;
-            T.Size = new Size(71, 46);
+            T.Size = new Size(71, 48);
             T.TabIndex = 4;
             T.Text = "T";
             T.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -770,7 +770,7 @@
             R.Name = "R";
             R.RectColor = Color.DeepSkyBlue;
             R.RectSize = 2;
-            R.Size = new Size(71, 46);
+            R.Size = new Size(71, 48);
             R.TabIndex = 3;
             R.Text = "R";
             R.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -788,7 +788,7 @@
             E.Name = "E";
             E.RectColor = Color.DeepSkyBlue;
             E.RectSize = 2;
-            E.Size = new Size(71, 46);
+            E.Size = new Size(71, 48);
             E.TabIndex = 2;
             E.Text = "E";
             E.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -806,7 +806,7 @@
             W.Name = "W";
             W.RectColor = Color.DeepSkyBlue;
             W.RectSize = 2;
-            W.Size = new Size(71, 46);
+            W.Size = new Size(71, 48);
             W.TabIndex = 1;
             W.Text = "W";
             W.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -824,7 +824,7 @@
             Q.Name = "Q";
             Q.RectColor = Color.DeepSkyBlue;
             Q.RectSize = 2;
-            Q.Size = new Size(71, 46);
+            Q.Size = new Size(71, 48);
             Q.TabIndex = 0;
             Q.Text = "Q";
             Q.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -844,7 +844,7 @@
             uiTableLayoutPanel6.Name = "uiTableLayoutPanel6";
             uiTableLayoutPanel6.RowCount = 1;
             uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel6.Size = new Size(774, 68);
+            uiTableLayoutPanel6.Size = new Size(774, 70);
             uiTableLayoutPanel6.TabIndex = 6;
             uiTableLayoutPanel6.TagString = null;
             // 
@@ -858,7 +858,7 @@
             btnClear.Location = new Point(614, 3);
             btnClear.MinimumSize = new Size(1, 1);
             btnClear.Name = "btnClear";
-            btnClear.Size = new Size(109, 62);
+            btnClear.Size = new Size(109, 64);
             btnClear.Symbol = 61460;
             btnClear.SymbolColor = SystemColors.WindowText;
             btnClear.TabIndex = 8;
@@ -875,7 +875,7 @@
             Close.Location = new Point(729, 3);
             Close.MinimumSize = new Size(1, 1);
             Close.Name = "Close";
-            Close.Size = new Size(42, 62);
+            Close.Size = new Size(42, 64);
             Close.Symbol = 61453;
             Close.TabIndex = 3;
             Close.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -894,7 +894,7 @@
             uiTableLayoutPanel7.Name = "uiTableLayoutPanel7";
             uiTableLayoutPanel7.RowCount = 1;
             uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel7.Size = new Size(607, 64);
+            uiTableLayoutPanel7.Size = new Size(607, 66);
             uiTableLayoutPanel7.TabIndex = 9;
             uiTableLayoutPanel7.TagString = null;
             // 
@@ -908,7 +908,7 @@
             btnEyePass.Location = new Point(563, 3);
             btnEyePass.MinimumSize = new Size(1, 1);
             btnEyePass.Name = "btnEyePass";
-            btnEyePass.Size = new Size(41, 58);
+            btnEyePass.Size = new Size(41, 60);
             btnEyePass.Symbol = 361552;
             btnEyePass.SymbolColor = SystemColors.WindowText;
             btnEyePass.SymbolOffset = new Point(-4, 0);
@@ -928,7 +928,7 @@
             textPadTextBox.Name = "textPadTextBox";
             textPadTextBox.Padding = new Padding(5);
             textPadTextBox.ShowText = false;
-            textPadTextBox.Size = new Size(556, 60);
+            textPadTextBox.Size = new Size(556, 62);
             textPadTextBox.TabIndex = 8;
             textPadTextBox.TextAlignment = ContentAlignment.MiddleLeft;
             textPadTextBox.Watermark = "";

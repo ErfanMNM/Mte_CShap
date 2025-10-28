@@ -25,7 +25,7 @@ namespace MTs.Datalogic
         #endregion
 
         #region Properties
-        public string IP { get; set; } = string.Empty;
+        public string ? IP { get; set; } = string.Empty;
         public int Port { get; set; }
         public bool Connected { get; private set; } = false;
         #endregion

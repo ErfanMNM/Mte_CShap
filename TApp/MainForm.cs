@@ -1,4 +1,5 @@
 ﻿using Sunny.UI;
+using System.Windows.Forms;
 using TApp.Configs;
 using TApp.Views.Communications;
 using TApp.Views.Settings;
@@ -19,13 +20,23 @@ namespace TApp
             UIStyles.CultureInfo = CultureInfos.en_US;
             UIStyles.GlobalFont = true;
             UIStyles.GlobalFontName = "Tahoma";
+            //UIStyles.InitColorful(Color.Green, Color.White);
 
             MainTabControl = MainTab;
             NavMenu.TabControl = MainTab;
-            NavMenu.Nodes.Clear();
+            headNav.TabControl = MainTab;
 
+            NavMenu.Nodes.Clear();
             NavMenu.CreateNode(AddPage(PAppSetting, 1001));
-            NavMenu.CreateNode(AddPage(PSocketTransfer, 2001));
+            NavMenu.SelectPage(1001);
+            //NavMenu.CreateNode(AddPage(PSocketTransfer, 2001));
+
+            headNav.Nodes.Clear();
+            headNav.Nodes.Add("");
+            headNav.SetNodeSymbol(headNav.Nodes[0], 559585);
+            var node = headNav.CreateChildNode(headNav.Nodes[0], "Tắt máy", 3001);
+            headNav.SetNodeSymbol(node, 61457);
+
 
             ToggleFullScreen();
             HideToTray();
@@ -42,12 +53,15 @@ namespace TApp
 
         private void btnClose_Click(object sender, EventArgs e)
         {
-            WindowState = FormWindowState.Minimized;
-            //CloseApplication();
+
+            //WindowState = FormWindowState.Minimized;
+            CloseApplication();
         }
 
         private void CloseApplication()
         {
+            //hỏi trước khi thoát
+            
             if (trayIcon != null)
             {
                 trayIcon.Visible = false; // dọn icon trước khi thoát
@@ -108,19 +122,19 @@ namespace TApp
 
         private void MainForm_Resize(object sender, EventArgs e)
         {
-            if(AppConfigs.Current.AppHideEnable)
+            if (AppConfigs.Current.AppHideEnable)
             {
                 if (WindowState == FormWindowState.Minimized)
                 {
                     Hide();
                 }
             }
-                
+
         }
 
         private void OnShowClicked(object? sender, EventArgs e)
         {
-            
+
             ToggleFullScreen();
             Show();
             BringToFront();
@@ -138,6 +152,19 @@ namespace TApp
         private void btnHide_Click(object sender, EventArgs e)
         {
             WindowState = FormWindowState.Minimized;
+        }
+
+
+        private void headNav_MenuItemClick(string itemText, int menuIndex, int pageIndex)
+        {
+            switch (pageIndex)
+            {
+                case 3001:
+                    CloseApplication();
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }
