@@ -33,7 +33,7 @@
             // FDashboard
             // 
             AutoScaleMode = AutoScaleMode.None;
-            ClientSize = new Size(1019, 563);
+            ClientSize = new Size(1022, 564);
             Name = "FDashboard";
             Text = "Bảng chính";
             ResumeLayout(false);

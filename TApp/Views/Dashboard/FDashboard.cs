@@ -19,11 +19,8 @@ namespace TApp.Views.Dashboard
 
         private void InitializeDevices()
         {
-            
-            _datalogicCamera.IP = AppConfigs.Current.Camera_IP;
-            _datalogicCamera.Port = 0;
+            _datalogicCamera = new DatalogicCamera(AppConfigs.Current.Camera_IP, AppConfigs.Current.Camera_Port);
             _datalogicCamera.ClientCallback += DatalogicCamera_ClientCallback;
-
         }
 
         private void DatalogicCamera_ClientCallback(eDatalogicCameraState state, string data)
@@ -39,6 +36,12 @@ namespace TApp.Views.Dashboard
                 case eDatalogicCameraState.Reconnecting:
                     break;
             }
+        }
+
+        private void Camera_ProcessData(string data)
+        {
+            // Xử lý dữ liệu nhận được từ camera Datalogic
+
         }
     }
 }

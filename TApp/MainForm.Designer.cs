@@ -59,7 +59,7 @@
             uiTableLayoutPanel1.RowCount = 2;
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 45F));
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel1.Size = new Size(1112, 650);
+            uiTableLayoutPanel1.Size = new Size(1028, 768);
             uiTableLayoutPanel1.TabIndex = 2;
             uiTableLayoutPanel1.TagString = null;
             // 
@@ -76,7 +76,7 @@
             uiTableLayoutPanel2.Name = "uiTableLayoutPanel2";
             uiTableLayoutPanel2.RowCount = 1;
             uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel2.Size = new Size(1112, 605);
+            uiTableLayoutPanel2.Size = new Size(1028, 723);
             uiTableLayoutPanel2.TabIndex = 2;
             uiTableLayoutPanel2.TagString = null;
             // 
@@ -92,7 +92,7 @@
             uiTableLayoutPanel3.RowCount = 2;
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
-            uiTableLayoutPanel3.Size = new Size(962, 605);
+            uiTableLayoutPanel3.Size = new Size(878, 723);
             uiTableLayoutPanel3.TabIndex = 2;
             uiTableLayoutPanel3.TagString = null;
             // 
@@ -108,7 +108,7 @@
             MainTab.MenuStyle = Sunny.UI.UIMenuStyle.Custom;
             MainTab.Name = "MainTab";
             MainTab.SelectedIndex = 0;
-            MainTab.Size = new Size(958, 561);
+            MainTab.Size = new Size(874, 679);
             MainTab.SizeMode = TabSizeMode.Fixed;
             MainTab.TabBackColor = Color.FromArgb(243, 249, 255);
             MainTab.TabIndex = 1;
@@ -128,7 +128,7 @@
             uiTableLayoutPanel5.RowCount = 2;
             uiTableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             uiTableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
-            uiTableLayoutPanel5.Size = new Size(150, 605);
+            uiTableLayoutPanel5.Size = new Size(150, 723);
             uiTableLayoutPanel5.TabIndex = 3;
             uiTableLayoutPanel5.TagString = null;
             // 
@@ -147,7 +147,7 @@
             NavMenu.ShowLines = false;
             NavMenu.ShowPlusMinus = false;
             NavMenu.ShowRootLines = false;
-            NavMenu.Size = new Size(144, 559);
+            NavMenu.Size = new Size(144, 677);
             NavMenu.TabIndex = 2;
             NavMenu.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
@@ -171,7 +171,7 @@
             headNav.SelectedHighColor = Color.White;
             headNav.SelectedHighColorSize = 0;
             headNav.ShowItemsArrow = false;
-            headNav.Size = new Size(1112, 45);
+            headNav.Size = new Size(1028, 45);
             headNav.TabIndex = 3;
             headNav.MenuItemClick += headNav_MenuItemClick;
             // 
@@ -205,9 +205,9 @@
             // 
             AllowShowTitle = false;
             AutoScaleMode = AutoScaleMode.None;
-            ClientSize = new Size(1112, 650);
+            ClientSize = new Size(1028, 768);
             Controls.Add(uiTableLayoutPanel1);
-            MaximumSize = new Size(1920, 1080);
+            MaximumSize = new Size(1028, 768);
             Name = "MainForm";
             Padding = new Padding(0);
             ShowTitle = false;

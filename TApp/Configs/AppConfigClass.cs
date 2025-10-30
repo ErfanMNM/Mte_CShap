@@ -18,7 +18,7 @@ namespace TApp.Configs
         public string ? PLC_IP { get; set; }
         public int PLC_Port { get; set; }
         public bool PLC_Auto_Connect { get; set; }
-        public string ? Camera_IP { get; set; }
+        public string Camera_IP { get; set; } = string.Empty;
         public int Camera_Port { get; set; }
 
         public override void SetDefault()
