@@ -28,16 +28,34 @@
         /// </summary>
         private void InitializeComponent()
         {
+            uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiTabControl1 = new Sunny.UI.UITabControl();
             tabPage1 = new TabPage();
-            uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
-            opAppConfig = new Sunny.UI.UIPanel();
-            btnSaveConfig = new Sunny.UI.UISymbolButton();
             tabPage2 = new TabPage();
-            uiTabControl1.SuspendLayout();
-            tabPage1.SuspendLayout();
+            uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
+            btnSave = new Sunny.UI.UISymbolButton();
+            btnDefault = new Sunny.UI.UISymbolButton();
             uiTableLayoutPanel1.SuspendLayout();
+            uiTabControl1.SuspendLayout();
+            uiTableLayoutPanel2.SuspendLayout();
             SuspendLayout();
+            // 
+            // uiTableLayoutPanel1
+            // 
+            uiTableLayoutPanel1.ColumnCount = 1;
+            uiTableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel1.Controls.Add(uiTabControl1, 0, 0);
+            uiTableLayoutPanel1.Controls.Add(uiTableLayoutPanel2, 0, 1);
+            uiTableLayoutPanel1.Dock = DockStyle.Fill;
+            uiTableLayoutPanel1.Location = new Point(0, 35);
+            uiTableLayoutPanel1.Margin = new Padding(2);
+            uiTableLayoutPanel1.Name = "uiTableLayoutPanel1";
+            uiTableLayoutPanel1.RowCount = 2;
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 91.77019F));
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 8.229814F));
+            uiTableLayoutPanel1.Size = new Size(874, 644);
+            uiTableLayoutPanel1.TabIndex = 0;
+            uiTableLayoutPanel1.TagString = null;
             // 
             // uiTabControl1
             // 
@@ -47,71 +65,25 @@
             uiTabControl1.DrawMode = TabDrawMode.OwnerDrawFixed;
             uiTabControl1.Font = new Font("Microsoft Sans Serif", 12F);
             uiTabControl1.ItemSize = new Size(150, 40);
-            uiTabControl1.Location = new Point(0, 35);
+            uiTabControl1.Location = new Point(3, 3);
             uiTabControl1.MainPage = "";
             uiTabControl1.Name = "uiTabControl1";
             uiTabControl1.SelectedIndex = 0;
-            uiTabControl1.Size = new Size(992, 627);
+            uiTabControl1.Size = new Size(868, 585);
             uiTabControl1.SizeMode = TabSizeMode.Fixed;
-            uiTabControl1.TabIndex = 0;
+            uiTabControl1.TabIndex = 1;
             uiTabControl1.TabUnSelectedForeColor = Color.FromArgb(240, 240, 240);
             uiTabControl1.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
             // tabPage1
             // 
-            tabPage1.Controls.Add(uiTableLayoutPanel1);
+            tabPage1.AutoScroll = true;
             tabPage1.Location = new Point(0, 40);
             tabPage1.Name = "tabPage1";
-            tabPage1.Size = new Size(992, 587);
+            tabPage1.Size = new Size(868, 545);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Setting";
             tabPage1.UseVisualStyleBackColor = true;
-            // 
-            // uiTableLayoutPanel1
-            // 
-            uiTableLayoutPanel1.AutoSize = true;
-            uiTableLayoutPanel1.ColumnCount = 1;
-            uiTableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel1.Controls.Add(opAppConfig, 0, 0);
-            uiTableLayoutPanel1.Controls.Add(btnSaveConfig, 0, 1);
-            uiTableLayoutPanel1.Dock = DockStyle.Fill;
-            uiTableLayoutPanel1.Location = new Point(0, 0);
-            uiTableLayoutPanel1.Margin = new Padding(2);
-            uiTableLayoutPanel1.Name = "uiTableLayoutPanel1";
-            uiTableLayoutPanel1.RowCount = 2;
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 91.82283F));
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 8.177172F));
-            uiTableLayoutPanel1.Size = new Size(992, 587);
-            uiTableLayoutPanel1.TabIndex = 0;
-            uiTableLayoutPanel1.TagString = null;
-            // 
-            // opAppConfig
-            // 
-            opAppConfig.AutoSize = true;
-            opAppConfig.Dock = DockStyle.Fill;
-            opAppConfig.Font = new Font("Microsoft Sans Serif", 12F);
-            opAppConfig.Location = new Point(0, 0);
-            opAppConfig.Margin = new Padding(0);
-            opAppConfig.MinimumSize = new Size(1, 1);
-            opAppConfig.Name = "opAppConfig";
-            opAppConfig.Size = new Size(992, 539);
-            opAppConfig.TabIndex = 1;
-            opAppConfig.Text = null;
-            opAppConfig.TextAlignment = ContentAlignment.MiddleCenter;
-            // 
-            // btnSaveConfig
-            // 
-            btnSaveConfig.Dock = DockStyle.Right;
-            btnSaveConfig.Font = new Font("Microsoft Sans Serif", 12F);
-            btnSaveConfig.Location = new Point(884, 541);
-            btnSaveConfig.Margin = new Padding(2);
-            btnSaveConfig.MinimumSize = new Size(1, 1);
-            btnSaveConfig.Name = "btnSaveConfig";
-            btnSaveConfig.Size = new Size(106, 44);
-            btnSaveConfig.TabIndex = 2;
-            btnSaveConfig.Text = "Lưu Lại";
-            btnSaveConfig.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            btnSaveConfig.Click += btnSaveConfig_Click;
             // 
             // tabPage2
             // 
@@ -122,34 +94,80 @@
             tabPage2.Text = "Người dùng";
             tabPage2.UseVisualStyleBackColor = true;
             // 
+            // uiTableLayoutPanel2
+            // 
+            uiTableLayoutPanel2.ColumnCount = 3;
+            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 115F));
+            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100F));
+            uiTableLayoutPanel2.Controls.Add(btnSave, 2, 0);
+            uiTableLayoutPanel2.Controls.Add(btnDefault, 1, 0);
+            uiTableLayoutPanel2.Dock = DockStyle.Fill;
+            uiTableLayoutPanel2.Location = new Point(2, 593);
+            uiTableLayoutPanel2.Margin = new Padding(2);
+            uiTableLayoutPanel2.Name = "uiTableLayoutPanel2";
+            uiTableLayoutPanel2.RowCount = 1;
+            uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel2.Size = new Size(870, 49);
+            uiTableLayoutPanel2.TabIndex = 2;
+            uiTableLayoutPanel2.TagString = null;
+            // 
+            // btnSave
+            // 
+            btnSave.Dock = DockStyle.Fill;
+            btnSave.FillColor = Color.FromArgb(0, 192, 192);
+            btnSave.Font = new Font("Microsoft Sans Serif", 12F);
+            btnSave.Location = new Point(773, 3);
+            btnSave.MinimumSize = new Size(1, 1);
+            btnSave.Name = "btnSave";
+            btnSave.Size = new Size(94, 43);
+            btnSave.Symbol = 61639;
+            btnSave.TabIndex = 0;
+            btnSave.Text = "Lưu Lại";
+            btnSave.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnSave.Click += btnSave_Click;
+            // 
+            // btnDefault
+            // 
+            btnDefault.Dock = DockStyle.Fill;
+            btnDefault.FillColor = Color.FromArgb(255, 192, 128);
+            btnDefault.Font = new Font("Microsoft Sans Serif", 12F);
+            btnDefault.Location = new Point(658, 3);
+            btnDefault.MinimumSize = new Size(1, 1);
+            btnDefault.Name = "btnDefault";
+            btnDefault.Size = new Size(109, 43);
+            btnDefault.Symbol = 61473;
+            btnDefault.TabIndex = 1;
+            btnDefault.Text = "Khôi phục";
+            btnDefault.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            // 
             // PAppSetting
             // 
             AllowShowTitle = true;
             AutoScaleMode = AutoScaleMode.None;
             AutoSize = true;
-            ClientSize = new Size(992, 662);
-            Controls.Add(uiTabControl1);
+            ClientSize = new Size(874, 679);
+            Controls.Add(uiTableLayoutPanel1);
             Name = "PAppSetting";
             Padding = new Padding(0, 35, 0, 0);
             ShowTitle = true;
             Symbol = 559576;
             Text = "Cài Đặt";
             TitleFillColor = Color.FromArgb(0, 192, 192);
-            uiTabControl1.ResumeLayout(false);
-            tabPage1.ResumeLayout(false);
-            tabPage1.PerformLayout();
             uiTableLayoutPanel1.ResumeLayout(false);
-            uiTableLayoutPanel1.PerformLayout();
+            uiTabControl1.ResumeLayout(false);
+            uiTableLayoutPanel2.ResumeLayout(false);
             ResumeLayout(false);
         }
 
         #endregion
 
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel1;
         private Sunny.UI.UITabControl uiTabControl1;
         private TabPage tabPage1;
         private TabPage tabPage2;
-        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel1;
-        private Sunny.UI.UIPanel opAppConfig;
-        private Sunny.UI.UISymbolButton btnSaveConfig;
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel2;
+        private Sunny.UI.UISymbolButton btnSave;
+        private Sunny.UI.UISymbolButton btnDefault;
     }
 }

@@ -2,6 +2,7 @@
 using System.Windows.Forms;
 using TApp.Configs;
 using TApp.Views.Communications;
+using TApp.Views.Dashboard;
 using TApp.Views.Settings;
 
 namespace TApp
@@ -12,7 +13,8 @@ namespace TApp
         private ContextMenuStrip? trayMenu;
 
         private PAppSetting PAppSetting = new PAppSetting();
-        private SocketTranferSiemen PSocketTransfer = new SocketTranferSiemen();
+
+        private FDashboard fDashboard = new FDashboard();
 
         public MainForm()
         {
@@ -27,9 +29,11 @@ namespace TApp
             headNav.TabControl = MainTab;
 
             NavMenu.Nodes.Clear();
+            
+            NavMenu.CreateNode(AddPage(fDashboard, 1002));
             NavMenu.CreateNode(AddPage(PAppSetting, 1001));
-            NavMenu.SelectPage(1001);
-            //NavMenu.CreateNode(AddPage(PSocketTransfer, 2001));
+
+            NavMenu.SelectPage(1002);
 
             headNav.Nodes.Clear();
             headNav.Nodes.Add("");
@@ -48,7 +52,7 @@ namespace TApp
         {
             PAppSetting.ShowTitle = false;
             PAppSetting.START();
-            PSocketTransfer.START();
+            fDashboard.Start();
         }
 
         private void btnClose_Click(object sender, EventArgs e)
@@ -67,7 +71,6 @@ namespace TApp
                 trayIcon.Visible = false; // dọn icon trước khi thoát
             }
             //tắt các tiến trình đang chạy
-            PSocketTransfer.CloseApp();
             Application.Exit();
         }
 

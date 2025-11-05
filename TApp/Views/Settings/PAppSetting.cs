@@ -43,7 +43,7 @@ namespace TApp.Views.Settings
                 .ToList();
 
             // Clear existing dynamic controls
-            opAppConfig.Controls.Clear();
+            tabPage1.Controls.Clear();
             _configControls.Clear();
             _configProperties.Clear();
 
@@ -67,7 +67,7 @@ namespace TApp.Views.Settings
                     Radius = 8,
                     RectSize = 1
                 };
-                opAppConfig.Controls.Add(groupBox);
+                tabPage1.Controls.Add(groupBox);
 
                 int itemYPos = 35;
 
@@ -100,7 +100,7 @@ namespace TApp.Views.Settings
                     itemPanel.Controls.Add(label);
 
                     // Create control based on property type
-                    Control control = CreateControlForProperty(property);
+                    Control? control = CreateControlForProperty(property);
                     if (control != null)
                     {
                         control.Location = new Point(480, 5);
@@ -164,6 +164,7 @@ namespace TApp.Views.Settings
                 { "AppStartWithWindows", "Khởi động cùng Windows" },
                 { "TCP_Port", "Cổng TCP" },
                 { "PLC_IP", "Địa chỉ IP PLC" },
+                { "Description", "Description" },
 
             };
 
@@ -430,9 +431,10 @@ namespace TApp.Views.Settings
         }
         #endregion
 
-        private void btnSaveConfig_Click(object sender, EventArgs e)
+        private void btnSave_Click(object sender, EventArgs e)
         {
             AppConfigs.Current.Save();
+            this.ShowSuccessDialog("Lưu cấu hình cài đặt thành công");
         }
     }
 }
