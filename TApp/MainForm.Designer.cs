@@ -38,6 +38,7 @@
             headNav = new Sunny.UI.UINavBar();
             uiPanel1 = new Sunny.UI.UIPanel();
             uiImageButton1 = new Sunny.UI.UIImageButton();
+            WK1 = new System.ComponentModel.BackgroundWorker();
             uiTableLayoutPanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
             uiTableLayoutPanel3.SuspendLayout();
@@ -201,6 +202,11 @@
             uiImageButton1.TabStop = false;
             uiImageButton1.Text = null;
             // 
+            // WK1
+            // 
+            WK1.WorkerSupportsCancellation = true;
+            WK1.DoWork += WK1_DoWork;
+            // 
             // MainForm
             // 
             AllowShowTitle = false;
@@ -235,5 +241,6 @@
         private Sunny.UI.UIPanel uiPanel1;
         private Sunny.UI.UIImageButton uiImageButton1;
         private Sunny.UI.UINavMenu NavMenu;
+        private System.ComponentModel.BackgroundWorker WK1;
     }
 }

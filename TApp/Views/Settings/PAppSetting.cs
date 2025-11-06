@@ -1,7 +1,8 @@
-﻿using MASAN_SERIALIZATION.Diaglogs;
+﻿
 using Sunny.UI;
 using System.Reflection;
 using TApp.Configs;
+using TTManager.Diaglogs;
 
 namespace TApp.Views.Settings
 {

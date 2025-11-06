@@ -12,6 +12,7 @@ namespace TApp.Configs
     {
 
         public bool AppHideEnable { get; set; }
+        public bool AppTwoFA_Enabled { get; set; }
         public bool AppStartWithWindows { get; set; }
         public bool TCP_AutoStart { get; set; }
         public int TCP_Port { get; set; } 

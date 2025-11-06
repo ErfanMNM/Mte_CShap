@@ -46,36 +46,38 @@ namespace TApp.Helpers
         private static  Dictionary<string, string> LoadFromGoogleSheet(string spreadsheetId, string range)
         {
 
-            // Tạo credential từ file JSON và gán scope đọc Google Sheets
-            GoogleCredential credential = GoogleCredential.GetApplicationDefault();
-            credential = credential.CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
+                // Tạo credential từ file JSON và gán scope đọc Google Sheets
+                GoogleCredential credential = GoogleCredential.GetApplicationDefault();
+                credential = credential.CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
 
-            var service = new SheetsService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "PLCAddress"
-            });
-
-            var request = service.Spreadsheets.Values.Get(spreadsheetId, range);
-            var response = request.Execute();
-            var result = new Dictionary<string, string>();
-
-            if (response.Values != null && response.Values.Count > 0)
-            {
-                foreach (var row in response.Values.Skip(1)) // skip header
+                var service = new SheetsService(new BaseClientService.Initializer
                 {
-                    if (row.Count >= 3)
+                    HttpClientInitializer = credential,
+                    ApplicationName = "PLCAddress"
+                });
+
+                var request = service.Spreadsheets.Values.Get(spreadsheetId, range);
+                var response = request.Execute();
+                var result = new Dictionary<string, string>();
+
+                if (response.Values != null && response.Values.Count > 0)
+                {
+                    foreach (var row in response.Values.Skip(1)) // skip header
                     {
-                        string? name = row[0]?.ToString()?.Trim();
-                        string? dm = row[2]?.ToString()?.Trim();
-                        if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(dm))
+                        if (row.Count >= 3)
                         {
-                            result[name] = dm;
+                            string? name = row[0]?.ToString()?.Trim();
+                            string? dm = row[2]?.ToString()?.Trim();
+                            if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(dm))
+                            {
+                                result[name] = dm;
+                            }
                         }
                     }
                 }
-            }
-            return result;
+                return result;
+
+            
         }
 
         private static void ApplyData(Dictionary<string, string> data)

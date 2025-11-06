@@ -475,6 +475,7 @@
             // 
             // uiTableLayoutPanel11
             // 
+            uiTableLayoutPanel11.BackColor = Color.Azure;
             uiTableLayoutPanel11.ColumnCount = 2;
             uiTableLayoutPanel11.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32.69231F));
             uiTableLayoutPanel11.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 67.30769F));
@@ -613,6 +614,7 @@
             uiTextBox1.MinimumSize = new Size(1, 16);
             uiTextBox1.Name = "uiTextBox1";
             uiTextBox1.Padding = new Padding(5);
+            uiTextBox1.ReadOnly = true;
             uiTextBox1.ShowText = false;
             uiTextBox1.Size = new Size(241, 39);
             uiTextBox1.TabIndex = 3;
@@ -629,6 +631,7 @@
             uiTextBox2.MinimumSize = new Size(1, 16);
             uiTextBox2.Name = "uiTextBox2";
             uiTextBox2.Padding = new Padding(5);
+            uiTextBox2.ReadOnly = true;
             uiTextBox2.ShowText = false;
             uiTextBox2.Size = new Size(241, 39);
             uiTextBox2.TabIndex = 3;
@@ -645,6 +648,7 @@
             uiTextBox3.MinimumSize = new Size(1, 16);
             uiTextBox3.Name = "uiTextBox3";
             uiTextBox3.Padding = new Padding(5);
+            uiTextBox3.ReadOnly = true;
             uiTextBox3.ShowText = false;
             uiTextBox3.Size = new Size(241, 43);
             uiTextBox3.TabIndex = 3;

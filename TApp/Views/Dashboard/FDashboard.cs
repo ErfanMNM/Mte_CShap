@@ -44,9 +44,10 @@ namespace TApp.Views.Dashboard
         private void InitializeConfigs()
         {
             try
-                {
-                AppConfigs.Current.Load();
+            {
 
+
+                AppConfigs.Current.Load();
                 while (string.IsNullOrEmpty(AppConfigs.Current.Line_Name))
                 {
                     AppConfigs.Current.SetDefault();
