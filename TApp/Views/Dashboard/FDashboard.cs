@@ -253,9 +253,20 @@ namespace TApp.Views.Dashboard
             }
         }
 
+        private bool batchChangeMode = false;
         private void btnChangeBatch_Click(object sender, EventArgs e)
         {
-
+            batchChangeMode = !batchChangeMode;
+            if (batchChangeMode)
+            {
+                btnChangeBatch.FillColor = Color.OrangeRed;
+                btnChangeBatch.Text = "Hủy";
+            }
+            else
+            {
+                btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
+                btnChangeBatch.Text = "Đổi Batch";
+            }
         }
     }
 
