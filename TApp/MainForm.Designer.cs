@@ -39,6 +39,7 @@
             uiPanel1 = new Sunny.UI.UIPanel();
             uiImageButton1 = new Sunny.UI.UIImageButton();
             WK1 = new System.ComponentModel.BackgroundWorker();
+            opUser = new Sunny.UI.UISymbolLabel();
             uiTableLayoutPanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
             uiTableLayoutPanel3.SuspendLayout();
@@ -122,13 +123,15 @@
             uiTableLayoutPanel5.ColumnCount = 1;
             uiTableLayoutPanel5.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             uiTableLayoutPanel5.Controls.Add(NavMenu, 0, 0);
+            uiTableLayoutPanel5.Controls.Add(opUser, 0, 1);
             uiTableLayoutPanel5.Dock = DockStyle.Fill;
             uiTableLayoutPanel5.Location = new Point(0, 0);
             uiTableLayoutPanel5.Margin = new Padding(0);
             uiTableLayoutPanel5.Name = "uiTableLayoutPanel5";
-            uiTableLayoutPanel5.RowCount = 2;
+            uiTableLayoutPanel5.RowCount = 3;
             uiTableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             uiTableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
+            uiTableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Absolute, 41F));
             uiTableLayoutPanel5.Size = new Size(150, 723);
             uiTableLayoutPanel5.TabIndex = 3;
             uiTableLayoutPanel5.TagString = null;
@@ -148,7 +151,7 @@
             NavMenu.ShowLines = false;
             NavMenu.ShowPlusMinus = false;
             NavMenu.ShowRootLines = false;
-            NavMenu.Size = new Size(144, 677);
+            NavMenu.Size = new Size(144, 636);
             NavMenu.TabIndex = 2;
             NavMenu.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
@@ -207,6 +210,18 @@
             WK1.WorkerSupportsCancellation = true;
             WK1.DoWork += WK1_DoWork;
             // 
+            // opUser
+            // 
+            opUser.Dock = DockStyle.Fill;
+            opUser.Font = new Font("Microsoft Sans Serif", 12F);
+            opUser.Location = new Point(3, 645);
+            opUser.MinimumSize = new Size(1, 1);
+            opUser.Name = "opUser";
+            opUser.Size = new Size(144, 34);
+            opUser.Symbol = 62142;
+            opUser.TabIndex = 3;
+            opUser.Text = "Admin";
+            // 
             // MainForm
             // 
             AllowShowTitle = false;
@@ -242,5 +257,6 @@
         private Sunny.UI.UIImageButton uiImageButton1;
         private Sunny.UI.UINavMenu NavMenu;
         private System.ComponentModel.BackgroundWorker WK1;
+        private Sunny.UI.UISymbolLabel opUser;
     }
 }

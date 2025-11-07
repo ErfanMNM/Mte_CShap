@@ -35,7 +35,7 @@
             // 
             ucLogin1.data_file_path = "C:\\Users\\THUC\\AppData\\Local\\TanTien\\Users\\users.database";
             ucLogin1.IS2FAEnabled = true;
-            ucLogin1.Location = new Point(214, 168);
+            ucLogin1.Location = new Point(107, 159);
             ucLogin1.Name = "ucLogin1";
             ucLogin1.Size = new Size(623, 315);
             ucLogin1.TabIndex = 0;
@@ -43,17 +43,11 @@
             // 
             // Login
             // 
-            AllowShowTitle = false;
             AutoScaleMode = AutoScaleMode.None;
-            ClientSize = new Size(1024, 768);
+            ClientSize = new Size(892, 635);
             Controls.Add(ucLogin1);
             Name = "Login";
-            Padding = new Padding(0);
-            ShowIcon = false;
-            ShowTitle = false;
-            StartPosition = FormStartPosition.Manual;
             Text = "Đăng Nhập";
-            TopMost = true;
             ZoomScaleRect = new Rectangle(15, 15, 889, 507);
             ResumeLayout(false);
         }

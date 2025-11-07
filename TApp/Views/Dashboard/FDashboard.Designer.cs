@@ -88,7 +88,7 @@
             opCameraStatus = new Sunny.UI.UIPanel();
             opCameraLed = new Sunny.UI.UILedBulb();
             uiTableLayoutPanel12 = new Sunny.UI.UITableLayoutPanel();
-            uiSymbolButton1 = new Sunny.UI.UISymbolButton();
+            btnChangeBatch = new Sunny.UI.UISymbolButton();
             uiSymbolButton2 = new Sunny.UI.UISymbolButton();
             uiSymbolButton3 = new Sunny.UI.UISymbolButton();
             uiSymbolButton4 = new Sunny.UI.UISymbolButton();
@@ -1006,6 +1006,7 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(87, 3);
             opPLCLed.Name = "opPLCLed";
+            opPLCLed.On = false;
             opPLCLed.Size = new Size(27, 31);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";
@@ -1076,7 +1077,7 @@
             uiTableLayoutPanel12.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
             uiTableLayoutPanel12.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
             uiTableLayoutPanel12.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
-            uiTableLayoutPanel12.Controls.Add(uiSymbolButton1, 0, 0);
+            uiTableLayoutPanel12.Controls.Add(btnChangeBatch, 0, 0);
             uiTableLayoutPanel12.Controls.Add(uiSymbolButton2, 1, 0);
             uiTableLayoutPanel12.Controls.Add(uiSymbolButton3, 2, 0);
             uiTableLayoutPanel12.Controls.Add(uiSymbolButton4, 2, 1);
@@ -1093,18 +1094,19 @@
             uiTableLayoutPanel12.TabIndex = 5;
             uiTableLayoutPanel12.TagString = null;
             // 
-            // uiSymbolButton1
+            // btnChangeBatch
             // 
-            uiSymbolButton1.Dock = DockStyle.Fill;
-            uiSymbolButton1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolButton1.Location = new Point(2, 2);
-            uiSymbolButton1.Margin = new Padding(2);
-            uiSymbolButton1.MinimumSize = new Size(1, 1);
-            uiSymbolButton1.Name = "uiSymbolButton1";
-            uiSymbolButton1.Size = new Size(118, 53);
-            uiSymbolButton1.TabIndex = 0;
-            uiSymbolButton1.Text = "Đổi Batch";
-            uiSymbolButton1.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnChangeBatch.Dock = DockStyle.Fill;
+            btnChangeBatch.Font = new Font("Microsoft Sans Serif", 12F);
+            btnChangeBatch.Location = new Point(2, 2);
+            btnChangeBatch.Margin = new Padding(2);
+            btnChangeBatch.MinimumSize = new Size(1, 1);
+            btnChangeBatch.Name = "btnChangeBatch";
+            btnChangeBatch.Size = new Size(118, 53);
+            btnChangeBatch.TabIndex = 0;
+            btnChangeBatch.Text = "Đổi Batch";
+            btnChangeBatch.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnChangeBatch.Click += btnChangeBatch_Click;
             // 
             // uiSymbolButton2
             // 
@@ -1292,7 +1294,7 @@
         private Sunny.UI.UITextBox uiTextBox2;
         private Sunny.UI.UITextBox uiTextBox3;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel12;
-        private Sunny.UI.UISymbolButton uiSymbolButton1;
+        private Sunny.UI.UISymbolButton btnChangeBatch;
         private Sunny.UI.UISymbolButton uiSymbolButton2;
         private Sunny.UI.UISymbolButton uiSymbolButton3;
         private Sunny.UI.UISymbolButton uiSymbolButton4;

@@ -62,7 +62,7 @@ namespace TApp.Views.Dashboard
                 throw new InvalidOperationException($"Lỗi tải cấu hình: {ex.Message}");
             }
 
-            
+
         }
 
         private void InitializeCameras()
@@ -93,7 +93,7 @@ namespace TApp.Views.Dashboard
                 omronPLC_Hsl1.PLC_IP = AppConfigs.Current.PLC_IP;
                 omronPLC_Hsl1.PLC_PORT = AppConfigs.Current.PLC_Port;
 
-                if(AppConfigs.Current.PLC_Test_Mode)
+                if (AppConfigs.Current.PLC_Test_Mode)
                 {
                     omronPLC_Hsl1.PLC_IP = "127.0.0.1";
                     omronPLC_Hsl1.PLC_PORT = 9600;
@@ -103,7 +103,7 @@ namespace TApp.Views.Dashboard
                 omronPLC_Hsl1.PLC_Ready_DM = PLCAddressWithGoogleSheetHelper.Get("PLC_Ready_DM");
 
                 omronPLC_Hsl1.InitPLC();
-                
+
             }
             catch (Exception ex)
             {
@@ -125,16 +125,16 @@ namespace TApp.Views.Dashboard
             switch (state)
             {
                 case eDatalogicCameraState.Connected:
-                    if (Globals.CameraStatus != CameraStatus.Connected)
+                    if (FD_Globals.CameraStatus != CameraStatus.Connected)
                     {
-                        Globals.CameraStatus = CameraStatus.Connected;
+                        FD_Globals.CameraStatus = CameraStatus.Connected;
                     }
 
                     break;
                 case eDatalogicCameraState.Disconnected:
-                    if (Globals.CameraStatus != CameraStatus.Disconnected)
+                    if (FD_Globals.CameraStatus != CameraStatus.Disconnected)
                     {
-                        Globals.CameraStatus = CameraStatus.Disconnected;
+                        FD_Globals.CameraStatus = CameraStatus.Disconnected;
                     }
                     break;
                 case eDatalogicCameraState.Received:
@@ -149,9 +149,9 @@ namespace TApp.Views.Dashboard
                     }
                     break;
                 case eDatalogicCameraState.Reconnecting:
-                    if (Globals.CameraStatus != CameraStatus.Reconnecting)
+                    if (FD_Globals.CameraStatus != CameraStatus.Reconnecting)
                     {
-                        Globals.CameraStatus = CameraStatus.Reconnecting;
+                        FD_Globals.CameraStatus = CameraStatus.Reconnecting;
                     }
                     break;
             }
@@ -166,7 +166,7 @@ namespace TApp.Views.Dashboard
         private void Send_Result_Content(e_Production_Status status, string data)
         {
 
-            Globals.productionData.PLC_Counter.Increment(status);
+            FD_Globals.productionData.PLC_Counter.Increment(status);
 
             switch (status)
             {
@@ -233,7 +233,7 @@ namespace TApp.Views.Dashboard
             switch (_plcStatus)
             {
                 case PLCStatus.Connected:
-                    
+
                     opPLCStatus.Text = "Kết Nối";
                     opPLCStatus.RectColor = Color.FromArgb(0, 192, 0);
                     opPLCStatus.ForeColor = Color.FromArgb(0, 192, 0);
@@ -252,9 +252,14 @@ namespace TApp.Views.Dashboard
                     break;
             }
         }
+
+        private void btnChangeBatch_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 
-    public static class Globals
+    public static class FD_Globals
     {
         public static CameraStatus CameraStatus = CameraStatus.Disconnected;
         public static ProductionData productionData = new ProductionData();

@@ -43,7 +43,7 @@ namespace TTManager.Audit
 
         private void InitDatabase()
         {
-            var directory = Path.GetDirectoryName(_dbPath);
+            string ?directory = Path.GetDirectoryName(_dbPath);
             if (!Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);

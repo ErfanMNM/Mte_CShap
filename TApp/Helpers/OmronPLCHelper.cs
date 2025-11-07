@@ -46,11 +46,18 @@ namespace TApp.Helpers
         private static  Dictionary<string, string> LoadFromGoogleSheet(string spreadsheetId, string range)
         {
 
-                // Tạo credential từ file JSON và gán scope đọc Google Sheets
-                GoogleCredential credential = GoogleCredential.GetApplicationDefault();
-                credential = credential.CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
+            // Tạo credential từ file JSON và gán scope đọc Google Sheets
+            //GoogleCredential credential = GoogleCredential.GetApplicationDefault();
+            //credential = credential.CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
 
-                var service = new SheetsService(new BaseClientService.Initializer
+            GoogleCredential credential;
+            using (var stream = new FileStream(@"C:\Users\THUC\Downloads\a.json", FileMode.Open, FileAccess.Read))
+            {
+                credential = GoogleCredential.FromStream(stream)
+                                             .CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
+            }
+
+            var service = new SheetsService(new BaseClientService.Initializer
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "PLCAddress"

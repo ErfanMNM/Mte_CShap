@@ -26,6 +26,8 @@ namespace TApp
 
         public static e_App_State AppState = e_App_State.LOGIN;
 
+        public static bool ACTIVE_State = true;
+
         public MainForm()
         {
             InitializeComponent();
@@ -195,28 +197,14 @@ namespace TApp
         {
             while (!WK1.CancellationPending)
             {
-                
+                App_State_Process();
                 Thread.Sleep(100);
             }
         }
 
 
         #region Private Methods - State Processing
-        private void Login_Process()
-        {
-            switch (AppState)
-            {
-                case e_App_State.LOGIN:
-                    HandleLoginState();
-                    break;
-                case e_App_State.ACTIVE:
-                    HandleActiveState();
-                    break;
-                case e_App_State.DEACTIVE:
-                    HandleDeactiveState();
-                    break;
-            }
-        }
+
 
         private void HandleLoginState()
         {
@@ -226,7 +214,7 @@ namespace TApp
                 this.Invoke(new Action(() =>
                 {
                     NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
-                    NavMenu.CreateNode("DM", 2001);
+                    NavMenu.CreateNode("Login", 2001);
                     NavMenu.SelectPage(2001);
                     NavMenu.Enabled = false;
                     NavMenu.Visible = false;
@@ -236,7 +224,7 @@ namespace TApp
             if (GlobalVarialbles.CurrentUser.Username != string.Empty)
             {
                 UpdateUserDisplay();
-                   // AppState = ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
+                AppState = ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
             }
             else
             {
@@ -259,11 +247,11 @@ namespace TApp
 
             if (GlobalVarialbles.CurrentUser.Username == string.Empty)
             {
-                            AppState = e_App_State.LOGIN;
+              AppState = e_App_State.LOGIN;
             }
             else
             {
-               // AppState = ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
+               AppState = ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
             }
         }
 
@@ -291,33 +279,33 @@ namespace TApp
             }
             else
             {
-               // AppState = Globals.ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
+               AppState = ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
             }
         }
 
         private void UpdateUserDisplay()
         {
-            //this.InvokeIfRequired(() =>
-            //{
-            //    switch (Globals.CurrentUser.Role)
-            //    {
-            //        case "Admin":
-            //            opUser.Text = $"[ADMIN] {Globals.CurrentUser.Username}";
-            //            opUser.ForeColor = Color.Red;
-            //            break;
-            //        case "Operator":
-            //            opUser.Text = $"[OPERATOR] {Globals.CurrentUser.Username}";
-            //            opUser.ForeColor = Color.Yellow;
-            //            break;
-            //        case "Worker":
-            //            opUser.Text = $"[WORKER] {Globals.CurrentUser.Username}";
-            //            opUser.ForeColor = Color.Green;
-            //            break;
-            //        default:
-            //            opUser.Text = "Không xác định";
-            //            break;
-            //    }
-            //});
+            this.InvokeIfRequired(() =>
+            {
+                switch (GlobalVarialbles.CurrentUser.Role)
+                {
+                    case "Admin":
+                        opUser.Text = $"[ADMIN] {GlobalVarialbles.CurrentUser.Username}";
+                        opUser.ForeColor = Color.Red;
+                        break;
+                    case "Operator":
+                        opUser.Text = $"[OPERATOR] {GlobalVarialbles.CurrentUser.Username}";
+                        opUser.ForeColor = Color.Yellow;
+                        break;
+                    case "Worker":
+                        opUser.Text = $"[WORKER] {GlobalVarialbles.CurrentUser.Username}";
+                        opUser.ForeColor = Color.Green;
+                        break;
+                    default:
+                        opUser.Text = "Không xác định";
+                        break;
+                }
+            });
         }
 
         private void App_State_Process()
@@ -325,13 +313,13 @@ namespace TApp
             switch (AppState)
             {
                 case e_App_State.LOGIN:
-                    HandleLoginStatusDisplay();
+                    HandleLoginState();
                     break;
                 case e_App_State.ACTIVE:
-                    HandleActiveStatusDisplay();
+                    HandleActiveState();
                     break;
                 case e_App_State.DEACTIVE:
-                    //Show();
+                    HandleDeactiveState();
                     break;
             }
         }
@@ -340,6 +328,7 @@ namespace TApp
 
 
     public enum e_App_State
+    
         {
             LOGIN,
             ACTIVE,
@@ -353,5 +342,4 @@ namespace TApp
             ACTIVE,
             DEACTIVE
         }
-    }
 }
