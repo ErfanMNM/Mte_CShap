@@ -194,7 +194,6 @@ namespace TApp.Views.Dashboard
             return write.IsSuccess;
         }
 
-
         private void omronplC_Hsl1_PLCStatus_OnChange(object sender, PLCStatusEventArgs e)
         {
             switch (e.Status)
@@ -256,17 +255,26 @@ namespace TApp.Views.Dashboard
         private bool batchChangeMode = false;
         private void btnChangeBatch_Click(object sender, EventArgs e)
         {
-            batchChangeMode = !batchChangeMode;
-            if (batchChangeMode)
+            
+            if (!batchChangeMode)
             {
                 btnChangeBatch.FillColor = Color.OrangeRed;
-                btnChangeBatch.Text = "Hủy";
+                btnChangeBatch.Text = "Lưu";
+                ipBatchNo.Enabled = true;
+                ipBatchNo.FillColor = Color.Yellow;
+                erP_Google1.Load_Erp_to_Cbb_With_Line_Name(ipBatchNo);
             }
             else
             {
                 btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
-                btnChangeBatch.Text = "Đổi Batch";
+                btnChangeBatch.Text = "Đổi Lô";
+                ipBatchNo.Enabled = false;
+                ipBatchNo.FillColor = Color.White;
+                FD_Globals.productionData.BatchCode = ipBatchNo.Text.Trim();
+
             }
+
+            batchChangeMode = !batchChangeMode;
         }
     }
 

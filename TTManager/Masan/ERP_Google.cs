@@ -1,14 +1,17 @@
 ﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.Bigquery.v2.Data;
 using Google.Cloud.BigQuery.V2;
 using Sunny.UI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using ExcelDataReader; // Add this using directive at the top with other usings
 
 namespace TTManager.Masan
 {
@@ -126,6 +129,45 @@ namespace TTManager.Masan
                 throw new InvalidOperationException($"E123 Lỗi tải ERP vào cbb theo Line Name: {ex.Message}");
             }
 
+        }
+
+        private void LoadExcelToProductList(string filePath)
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
+            {
+                using (var reader = ExcelReaderFactory.CreateReader(stream))
+                {
+                    var conf = new ExcelDataSetConfiguration
+                    {
+                        ConfigureDataTable = _ => new ExcelDataTableConfiguration
+                        {
+                            UseHeaderRow = true
+                        }
+                    };
+
+                    var dataSet = reader.AsDataSet(conf);
+                    var dataTable = dataSet.Tables[0]; // lấy sheet đầu tiên
+
+                    foreach (DataRow row in dataTable.Rows)
+                    {
+                        string itemCode = row["Item code"]?.ToString().Trim();
+                        string barcode = row["Barcode nhãn"]?.ToString().Trim();
+
+                        if (!string.IsNullOrEmpty(itemCode))
+                        {
+                            productList.Add(new ProductInfo
+                            {
+                                ItemCode = itemCode,
+                                BarcodeNhan = barcode
+                            });
+                        }
+                    }
+                }
+            }
+
+            //MessageBox.Show("✅ Đã load xong dữ liệu từ Excel!");
         }
     }
 }

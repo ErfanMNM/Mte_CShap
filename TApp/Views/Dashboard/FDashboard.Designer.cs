@@ -51,16 +51,20 @@
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiTitlePanel4 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel11 = new Sunny.UI.UITableLayoutPanel();
-            uiPanel8 = new Sunny.UI.UIPanel();
+            uiTableLayoutPanel14 = new Sunny.UI.UITableLayoutPanel();
             ipBatchNo = new Sunny.UI.UIComboBox();
+            btnABatch = new Sunny.UI.UISymbolButton();
+            uiPanel8 = new Sunny.UI.UIPanel();
             uiPanel9 = new Sunny.UI.UIPanel();
-            ipBarcode = new Sunny.UI.UINumPadTextBox();
             uiPanel10 = new Sunny.UI.UIPanel();
             uiPanel11 = new Sunny.UI.UIPanel();
             uiPanel12 = new Sunny.UI.UIPanel();
             uiTextBox1 = new Sunny.UI.UITextBox();
             uiTextBox2 = new Sunny.UI.UITextBox();
             uiTextBox3 = new Sunny.UI.UITextBox();
+            uiTableLayoutPanel13 = new Sunny.UI.UITableLayoutPanel();
+            btnEditBarcode = new Sunny.UI.UISymbolButton();
+            ipBarcode = new Sunny.UI.UITextBox();
             uiTitlePanel1 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel4 = new Sunny.UI.UITableLayoutPanel();
             uiTitlePanel13 = new Sunny.UI.UITitlePanel();
@@ -97,6 +101,7 @@
             omronPLC_Hsl1 = new TTManager.PLCHelpers.OmronPLC_Hsl(components);
             WK_Camera = new System.ComponentModel.BackgroundWorker();
             WK_Render_HMI = new System.ComponentModel.BackgroundWorker();
+            erP_Google1 = new TTManager.Masan.ERP_Google(components);
             MainPanel.SuspendLayout();
             pnResult.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
@@ -113,6 +118,8 @@
             uiTableLayoutPanel1.SuspendLayout();
             uiTitlePanel4.SuspendLayout();
             uiTableLayoutPanel11.SuspendLayout();
+            uiTableLayoutPanel14.SuspendLayout();
+            uiTableLayoutPanel13.SuspendLayout();
             uiTitlePanel1.SuspendLayout();
             uiTableLayoutPanel4.SuspendLayout();
             uiTitlePanel13.SuspendLayout();
@@ -479,16 +486,16 @@
             uiTableLayoutPanel11.ColumnCount = 2;
             uiTableLayoutPanel11.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32.69231F));
             uiTableLayoutPanel11.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 67.30769F));
+            uiTableLayoutPanel11.Controls.Add(uiTableLayoutPanel14, 1, 0);
             uiTableLayoutPanel11.Controls.Add(uiPanel8, 0, 0);
-            uiTableLayoutPanel11.Controls.Add(ipBatchNo, 1, 0);
             uiTableLayoutPanel11.Controls.Add(uiPanel9, 0, 1);
-            uiTableLayoutPanel11.Controls.Add(ipBarcode, 1, 1);
             uiTableLayoutPanel11.Controls.Add(uiPanel10, 0, 2);
             uiTableLayoutPanel11.Controls.Add(uiPanel11, 0, 3);
             uiTableLayoutPanel11.Controls.Add(uiPanel12, 0, 4);
             uiTableLayoutPanel11.Controls.Add(uiTextBox1, 1, 2);
             uiTableLayoutPanel11.Controls.Add(uiTextBox2, 1, 3);
             uiTableLayoutPanel11.Controls.Add(uiTextBox3, 1, 4);
+            uiTableLayoutPanel11.Controls.Add(uiTableLayoutPanel13, 1, 1);
             uiTableLayoutPanel11.Dock = DockStyle.Fill;
             uiTableLayoutPanel11.Location = new Point(1, 35);
             uiTableLayoutPanel11.Margin = new Padding(2);
@@ -503,6 +510,58 @@
             uiTableLayoutPanel11.TabIndex = 0;
             uiTableLayoutPanel11.TagString = null;
             // 
+            // uiTableLayoutPanel14
+            // 
+            uiTableLayoutPanel14.ColumnCount = 2;
+            uiTableLayoutPanel14.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel14.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 47F));
+            uiTableLayoutPanel14.Controls.Add(ipBatchNo, 0, 0);
+            uiTableLayoutPanel14.Controls.Add(btnABatch, 1, 0);
+            uiTableLayoutPanel14.Dock = DockStyle.Fill;
+            uiTableLayoutPanel14.Location = new Point(120, 0);
+            uiTableLayoutPanel14.Margin = new Padding(1, 0, 0, 0);
+            uiTableLayoutPanel14.Name = "uiTableLayoutPanel14";
+            uiTableLayoutPanel14.RowCount = 1;
+            uiTableLayoutPanel14.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel14.Size = new Size(244, 43);
+            uiTableLayoutPanel14.TabIndex = 5;
+            uiTableLayoutPanel14.TagString = null;
+            // 
+            // ipBatchNo
+            // 
+            ipBatchNo.DataSource = null;
+            ipBatchNo.Dock = DockStyle.Fill;
+            ipBatchNo.DropDownStyle = Sunny.UI.UIDropDownStyle.DropDownList;
+            ipBatchNo.Enabled = false;
+            ipBatchNo.FillColor = Color.White;
+            ipBatchNo.Font = new Font("Microsoft Sans Serif", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            ipBatchNo.ItemHoverColor = Color.FromArgb(155, 200, 255);
+            ipBatchNo.ItemSelectForeColor = Color.FromArgb(235, 243, 255);
+            ipBatchNo.Location = new Point(2, 2);
+            ipBatchNo.Margin = new Padding(2);
+            ipBatchNo.MinimumSize = new Size(63, 0);
+            ipBatchNo.Name = "ipBatchNo";
+            ipBatchNo.Padding = new Padding(0, 0, 30, 2);
+            ipBatchNo.Size = new Size(193, 39);
+            ipBatchNo.SymbolSize = 24;
+            ipBatchNo.TabIndex = 3;
+            ipBatchNo.Text = "03OT00363-111125-TOL1-2";
+            ipBatchNo.TextAlignment = ContentAlignment.MiddleLeft;
+            ipBatchNo.Watermark = "";
+            // 
+            // btnABatch
+            // 
+            btnABatch.Dock = DockStyle.Fill;
+            btnABatch.FillColor = Color.FromArgb(0, 192, 0);
+            btnABatch.Font = new Font("Microsoft Sans Serif", 12F);
+            btnABatch.Location = new Point(199, 2);
+            btnABatch.Margin = new Padding(2);
+            btnABatch.MinimumSize = new Size(1, 1);
+            btnABatch.Name = "btnABatch";
+            btnABatch.Size = new Size(43, 39);
+            btnABatch.TabIndex = 1;
+            btnABatch.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            // 
             // uiPanel8
             // 
             uiPanel8.Dock = DockStyle.Fill;
@@ -516,26 +575,6 @@
             uiPanel8.Text = "BATCH NO";
             uiPanel8.TextAlignment = ContentAlignment.MiddleCenter;
             // 
-            // ipBatchNo
-            // 
-            ipBatchNo.DataSource = null;
-            ipBatchNo.Dock = DockStyle.Fill;
-            ipBatchNo.FillColor = Color.White;
-            ipBatchNo.Font = new Font("Microsoft Sans Serif", 12F);
-            ipBatchNo.ItemHoverColor = Color.FromArgb(155, 200, 255);
-            ipBatchNo.ItemSelectForeColor = Color.FromArgb(235, 243, 255);
-            ipBatchNo.Location = new Point(121, 2);
-            ipBatchNo.Margin = new Padding(2);
-            ipBatchNo.MinimumSize = new Size(63, 0);
-            ipBatchNo.Name = "ipBatchNo";
-            ipBatchNo.Padding = new Padding(0, 0, 30, 2);
-            ipBatchNo.Size = new Size(241, 39);
-            ipBatchNo.SymbolSize = 24;
-            ipBatchNo.TabIndex = 1;
-            ipBatchNo.Text = "03OT9999-010125-TOL4-1";
-            ipBatchNo.TextAlignment = ContentAlignment.MiddleLeft;
-            ipBatchNo.Watermark = "";
-            // 
             // uiPanel9
             // 
             uiPanel9.Dock = DockStyle.Fill;
@@ -548,23 +587,6 @@
             uiPanel9.TabIndex = 0;
             uiPanel9.Text = "BARCODE";
             uiPanel9.TextAlignment = ContentAlignment.MiddleCenter;
-            // 
-            // ipBarcode
-            // 
-            ipBarcode.Dock = DockStyle.Fill;
-            ipBarcode.FillColor = Color.White;
-            ipBarcode.Font = new Font("Microsoft Sans Serif", 12F);
-            ipBarcode.Location = new Point(121, 45);
-            ipBarcode.Margin = new Padding(2);
-            ipBarcode.MinimumSize = new Size(63, 0);
-            ipBarcode.Name = "ipBarcode";
-            ipBarcode.Padding = new Padding(0, 0, 30, 2);
-            ipBarcode.Size = new Size(241, 39);
-            ipBarcode.SymbolSize = 24;
-            ipBarcode.TabIndex = 2;
-            ipBarcode.Text = "893123123123";
-            ipBarcode.TextAlignment = ContentAlignment.MiddleLeft;
-            ipBarcode.Watermark = "";
             // 
             // uiPanel10
             // 
@@ -655,6 +677,54 @@
             uiTextBox3.Text = "WP05";
             uiTextBox3.TextAlignment = ContentAlignment.MiddleLeft;
             uiTextBox3.Watermark = "";
+            // 
+            // uiTableLayoutPanel13
+            // 
+            uiTableLayoutPanel13.ColumnCount = 2;
+            uiTableLayoutPanel13.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel13.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 47F));
+            uiTableLayoutPanel13.Controls.Add(btnEditBarcode, 1, 0);
+            uiTableLayoutPanel13.Controls.Add(ipBarcode, 0, 0);
+            uiTableLayoutPanel13.Dock = DockStyle.Fill;
+            uiTableLayoutPanel13.Location = new Point(120, 43);
+            uiTableLayoutPanel13.Margin = new Padding(1, 0, 0, 0);
+            uiTableLayoutPanel13.Name = "uiTableLayoutPanel13";
+            uiTableLayoutPanel13.RowCount = 1;
+            uiTableLayoutPanel13.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel13.Size = new Size(244, 43);
+            uiTableLayoutPanel13.TabIndex = 4;
+            uiTableLayoutPanel13.TagString = null;
+            // 
+            // btnEditBarcode
+            // 
+            btnEditBarcode.Dock = DockStyle.Fill;
+            btnEditBarcode.FillColor = Color.FromArgb(0, 192, 0);
+            btnEditBarcode.Font = new Font("Microsoft Sans Serif", 12F);
+            btnEditBarcode.Location = new Point(199, 2);
+            btnEditBarcode.Margin = new Padding(2);
+            btnEditBarcode.MinimumSize = new Size(1, 1);
+            btnEditBarcode.Name = "btnEditBarcode";
+            btnEditBarcode.Size = new Size(43, 39);
+            btnEditBarcode.TabIndex = 1;
+            btnEditBarcode.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            // 
+            // ipBarcode
+            // 
+            ipBarcode.Dock = DockStyle.Fill;
+            ipBarcode.DoubleValue = 123456789D;
+            ipBarcode.Font = new Font("Microsoft Sans Serif", 12F);
+            ipBarcode.IntValue = 123456789;
+            ipBarcode.Location = new Point(0, 0);
+            ipBarcode.Margin = new Padding(0);
+            ipBarcode.MinimumSize = new Size(1, 16);
+            ipBarcode.Name = "ipBarcode";
+            ipBarcode.Padding = new Padding(5);
+            ipBarcode.ShowText = false;
+            ipBarcode.Size = new Size(197, 43);
+            ipBarcode.TabIndex = 0;
+            ipBarcode.Text = "0123456789";
+            ipBarcode.TextAlignment = ContentAlignment.MiddleLeft;
+            ipBarcode.Watermark = "";
             // 
             // uiTitlePanel1
             // 
@@ -1006,7 +1076,6 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(87, 3);
             opPLCLed.Name = "opPLCLed";
-            opPLCLed.On = false;
             opPLCLed.Size = new Size(27, 31);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";
@@ -1097,6 +1166,7 @@
             // btnChangeBatch
             // 
             btnChangeBatch.Dock = DockStyle.Fill;
+            btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
             btnChangeBatch.Font = new Font("Microsoft Sans Serif", 12F);
             btnChangeBatch.Location = new Point(2, 2);
             btnChangeBatch.Margin = new Padding(2);
@@ -1104,7 +1174,7 @@
             btnChangeBatch.Name = "btnChangeBatch";
             btnChangeBatch.Size = new Size(118, 53);
             btnChangeBatch.TabIndex = 0;
-            btnChangeBatch.Text = "Đổi Batch";
+            btnChangeBatch.Text = "Đổi lô";
             btnChangeBatch.TipsFont = new Font("Microsoft Sans Serif", 9F);
             btnChangeBatch.Click += btnChangeBatch_Click;
             // 
@@ -1144,7 +1214,7 @@
             uiSymbolButton4.Name = "uiSymbolButton4";
             uiSymbolButton4.Size = new Size(118, 53);
             uiSymbolButton4.TabIndex = 0;
-            uiSymbolButton4.Text = "Kiểm tra lỗi";
+            uiSymbolButton4.Text = "Thả lại";
             uiSymbolButton4.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
             // uiSymbolButton5
@@ -1193,6 +1263,16 @@
             WK_Render_HMI.WorkerSupportsCancellation = true;
             WK_Render_HMI.DoWork += WK_Render_HMI_DoWork;
             // 
+            // erP_Google1
+            // 
+            erP_Google1.credentialPath = "D:/Masan/sales-268504-20a4b06ea0fb.json";
+            erP_Google1.DatasetID = "FactoryIntegration";
+            erP_Google1.LineName = "Line 3";
+            erP_Google1.ORG_CODE = "MIP";
+            erP_Google1.ProjectID = "sales-268504";
+            erP_Google1.SUB_INV = "W05";
+            erP_Google1.TableID = "BatchProduction";
+            // 
             // FDashboard
             // 
             AutoScaleMode = AutoScaleMode.None;
@@ -1217,6 +1297,8 @@
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTitlePanel4.ResumeLayout(false);
             uiTableLayoutPanel11.ResumeLayout(false);
+            uiTableLayoutPanel14.ResumeLayout(false);
+            uiTableLayoutPanel13.ResumeLayout(false);
             uiTitlePanel1.ResumeLayout(false);
             uiTableLayoutPanel4.ResumeLayout(false);
             uiTitlePanel13.ResumeLayout(false);
@@ -1281,9 +1363,7 @@
         private Sunny.UI.UITitlePanel uiTitlePanel4;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel11;
         private Sunny.UI.UIPanel uiPanel8;
-        private Sunny.UI.UIComboBox ipBatchNo;
         private Sunny.UI.UIPanel uiPanel9;
-        private Sunny.UI.UINumPadTextBox ipBarcode;
         private Sunny.UI.UIPanel uiPanel10;
         private Sunny.UI.UIPanel uiPanel11;
         private Sunny.UI.UIPanel uiPanel12;
@@ -1305,5 +1385,12 @@
         private TTManager.PLCHelpers.OmronPLC_Hsl omronPLC_Hsl1;
         private System.ComponentModel.BackgroundWorker WK_Camera;
         private System.ComponentModel.BackgroundWorker WK_Render_HMI;
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel13;
+        private Sunny.UI.UISymbolButton btnEditBarcode;
+        private Sunny.UI.UITextBox ipBarcode;
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel14;
+        private Sunny.UI.UIComboBox ipBatchNo;
+        private Sunny.UI.UISymbolButton btnABatch;
+        private TTManager.Masan.ERP_Google erP_Google1;
     }
 }
