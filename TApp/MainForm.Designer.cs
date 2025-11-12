@@ -35,11 +35,11 @@
             MainTab = new Sunny.UI.UITabControl();
             uiTableLayoutPanel5 = new Sunny.UI.UITableLayoutPanel();
             NavMenu = new Sunny.UI.UINavMenu();
+            opUser = new Sunny.UI.UISymbolLabel();
             headNav = new Sunny.UI.UINavBar();
             uiPanel1 = new Sunny.UI.UIPanel();
             uiImageButton1 = new Sunny.UI.UIImageButton();
             WK1 = new System.ComponentModel.BackgroundWorker();
-            opUser = new Sunny.UI.UISymbolLabel();
             uiTableLayoutPanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
             uiTableLayoutPanel3.SuspendLayout();
@@ -155,6 +155,18 @@
             NavMenu.TabIndex = 2;
             NavMenu.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
+            // opUser
+            // 
+            opUser.Dock = DockStyle.Fill;
+            opUser.Font = new Font("Microsoft Sans Serif", 12F);
+            opUser.Location = new Point(3, 645);
+            opUser.MinimumSize = new Size(1, 1);
+            opUser.Name = "opUser";
+            opUser.Size = new Size(144, 34);
+            opUser.Symbol = 62142;
+            opUser.TabIndex = 3;
+            opUser.Text = "Admin";
+            // 
             // headNav
             // 
             headNav.BackColor = Color.LightSteelBlue;
@@ -210,18 +222,6 @@
             WK1.WorkerSupportsCancellation = true;
             WK1.DoWork += WK1_DoWork;
             // 
-            // opUser
-            // 
-            opUser.Dock = DockStyle.Fill;
-            opUser.Font = new Font("Microsoft Sans Serif", 12F);
-            opUser.Location = new Point(3, 645);
-            opUser.MinimumSize = new Size(1, 1);
-            opUser.Name = "opUser";
-            opUser.Size = new Size(144, 34);
-            opUser.Symbol = 62142;
-            opUser.TabIndex = 3;
-            opUser.Text = "Admin";
-            // 
             // MainForm
             // 
             AllowShowTitle = false;
@@ -233,7 +233,6 @@
             Padding = new Padding(0);
             ShowTitle = false;
             Text = "TApp";
-            TopMost = true;
             WindowState = FormWindowState.Minimized;
             ZoomScaleRect = new Rectangle(15, 15, 852, 482);
             Resize += MainForm_Resize;

@@ -89,7 +89,7 @@
             // 
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(200, 60);
+            tabPage2.Size = new Size(868, 545);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Người dùng";
             tabPage2.UseVisualStyleBackColor = true;
@@ -140,6 +140,7 @@
             btnDefault.TabIndex = 1;
             btnDefault.Text = "Khôi phục";
             btnDefault.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnDefault.Click += btnDefault_Click;
             // 
             // PAppSetting
             // 

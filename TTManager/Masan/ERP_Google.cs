@@ -26,6 +26,7 @@ namespace TTManager.Masan
         public string ORG_CODE { get; set; } = "MASAN";
         public string LineName { get; set; } = "DL01";
 
+
         public ERP_Google()
         {
             InitializeComponent();
@@ -72,7 +73,7 @@ namespace TTManager.Masan
             return batchId.Split('-').Length - 1 >= 3;
         }
 
-        public void Load_Erp_to_Cbb_With_Line_Name(UIComboBox cbbBatchNO)
+        public bool Load_Erp_to_Cbb_With_Line_Name(UIComboBox cbbBatchNO)
         {
             try { 
                 GoogleCredential credential = GoogleCredential.FromFile(credentialPath);
@@ -121,7 +122,10 @@ namespace TTManager.Masan
                     if (cbbBatchNO.Items.Count < 1)
                     {
                         cbbBatchNO.Items.Add("Không Có ERP nào!");
+                        return false;
                     }
+
+                    return true;
 
             }
             catch (Exception ex)
@@ -131,9 +135,12 @@ namespace TTManager.Masan
 
         }
 
-        private void LoadExcelToProductList(string filePath)
+        public string LoadExcelToProductList(string BatchCode,string filePath)
         {
+            string batchCode = BatchCode.Split("-")[0].ToString();
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            string barcodeResult = "000";
 
             using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
             {
@@ -157,17 +164,29 @@ namespace TTManager.Masan
 
                         if (!string.IsNullOrEmpty(itemCode))
                         {
-                            productList.Add(new ProductInfo
+                            
+                            if (itemCode == batchCode)
                             {
-                                ItemCode = itemCode,
-                                BarcodeNhan = barcode
-                            });
+                                barcodeResult = barcode??"12345";
+                            }
+                            else
+                            {
+                                continue;
+                            }
+
                         }
                     }
-                }
-            }
 
-            //MessageBox.Show("✅ Đã load xong dữ liệu từ Excel!");
+                }
+
+                return barcodeResult;
+            }
         }
+    }
+
+    public class ProductInfoList
+    {
+        public string? ItemCode { get; set; }
+        public string? BarcodeNhan { get; set; }
     }
 }

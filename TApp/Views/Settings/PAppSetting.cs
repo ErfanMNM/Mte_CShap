@@ -294,7 +294,6 @@ namespace TApp.Views.Settings
         }
         #endregion
 
-
         #region Data Binding
         private void LoadCurrentConfig()
         {
@@ -432,10 +431,93 @@ namespace TApp.Views.Settings
         }
         #endregion
 
+        private object GetControlValue(Control control, Type targetType)
+        {
+            if (control is UISwitch uiSwitch && targetType == typeof(bool))
+            {
+                return uiSwitch.Active;
+            }
+            else if (control is UINumPadTextBox numPadTextBox && targetType == typeof(int))
+            {
+                if (int.TryParse(numPadTextBox.Text, out int result))
+                    return result;
+                return 0;
+            }
+            else if (control is UITextBox numTextBox && targetType == typeof(int) && numTextBox.Name.StartsWith("txt_") && !numTextBox.Name.Contains("password") && !numTextBox.Name.Contains("path") && !numTextBox.Name.Contains("host") && !numTextBox.Name.Contains("client") && !numTextBox.Name.Contains("CA") && !numTextBox.Name.Contains("COM"))
+            {
+                if (int.TryParse(numTextBox.Text, out int result))
+                    return result;
+                return 0;
+            }
+            else if (control is UITextBox textBox && targetType == typeof(string))
+            {
+                return textBox.Text;
+            }
+            else if (control is Panel panel && targetType == typeof(string))
+            {
+                // Handle path controls with browse button
+                var textBoxInPanel = panel.Controls.OfType<UITextBox>().FirstOrDefault();
+                return textBoxInPanel?.Text ?? string.Empty;
+            }
+
+            return null;
+        }
+
         private void btnSave_Click(object sender, EventArgs e)
         {
-            AppConfigs.Current.Save();
-            this.ShowSuccessDialog("Lưu cấu hình cài đặt thành công");
+            try
+            {
+                var config = AppConfigs.Current;
+
+                // Cập nhật config từ UI động
+                foreach (var kvp in _configControls)
+                {
+                    var propertyName = kvp.Key;
+                    var control = kvp.Value;
+                    var property = _configProperties[propertyName];
+
+                    try
+                    {
+                        var value = GetControlValue(control, property.PropertyType);
+                        if (value != null)
+                        {
+                            property.SetValue(config, value);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        this.ShowErrorTip($"Lỗi cập nhật {propertyName}: {ex.Message}");
+                        return;
+                    }
+                }
+
+                // Lưu config
+                config.Save();
+
+                this.ShowSuccessTip("Cài đặt đã được lưu thành công!");
+            }
+            catch (Exception ex)
+            {
+                this.ShowErrorTip($"Lỗi lưu cài đặt: {ex.Message}");
+            }
+        }
+
+        private void btnDefault_Click(object sender, EventArgs e)
+        {
+            var result = this.ShowAskDialog("Bạn có chắc muốn khôi phục cài đặt mặc định không?");
+            if (result)
+            {
+                try
+                {
+                    AppConfigs.Current.SetDefault();
+                    LoadCurrentConfig();
+                    this.ShowSuccessTip("Đã khôi phục cài đặt mặc định!");
+                }
+                catch (Exception ex)
+                {
+                    this.ShowErrorTip($"Lỗi khôi phục cài đặt: {ex.Message}");
+                }
+            }
         }
     }
 }

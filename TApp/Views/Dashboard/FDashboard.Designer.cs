@@ -101,7 +101,7 @@
             omronPLC_Hsl1 = new TTManager.PLCHelpers.OmronPLC_Hsl(components);
             WK_Camera = new System.ComponentModel.BackgroundWorker();
             WK_Render_HMI = new System.ComponentModel.BackgroundWorker();
-            erP_Google1 = new TTManager.Masan.ERP_Google(components);
+            erP_Google2 = new TTManager.Masan.ERP_Google(components);
             MainPanel.SuspendLayout();
             pnResult.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
@@ -548,6 +548,7 @@
             ipBatchNo.Text = "03OT00363-111125-TOL1-2";
             ipBatchNo.TextAlignment = ContentAlignment.MiddleLeft;
             ipBatchNo.Watermark = "";
+            ipBatchNo.SelectedIndexChanged += ipBatchNo_SelectedIndexChanged;
             // 
             // btnABatch
             // 
@@ -712,6 +713,7 @@
             // 
             ipBarcode.Dock = DockStyle.Fill;
             ipBarcode.DoubleValue = 123456789D;
+            ipBarcode.Enabled = false;
             ipBarcode.Font = new Font("Microsoft Sans Serif", 12F);
             ipBarcode.IntValue = 123456789;
             ipBarcode.Location = new Point(0, 0);
@@ -719,6 +721,7 @@
             ipBarcode.MinimumSize = new Size(1, 16);
             ipBarcode.Name = "ipBarcode";
             ipBarcode.Padding = new Padding(5);
+            ipBarcode.ReadOnly = true;
             ipBarcode.ShowText = false;
             ipBarcode.Size = new Size(197, 43);
             ipBarcode.TabIndex = 0;
@@ -1263,15 +1266,15 @@
             WK_Render_HMI.WorkerSupportsCancellation = true;
             WK_Render_HMI.DoWork += WK_Render_HMI_DoWork;
             // 
-            // erP_Google1
+            // erP_Google2
             // 
-            erP_Google1.credentialPath = "D:/Masan/sales-268504-20a4b06ea0fb.json";
-            erP_Google1.DatasetID = "FactoryIntegration";
-            erP_Google1.LineName = "Line 3";
-            erP_Google1.ORG_CODE = "MIP";
-            erP_Google1.ProjectID = "sales-268504";
-            erP_Google1.SUB_INV = "W05";
-            erP_Google1.TableID = "BatchProduction";
+            erP_Google2.credentialPath = "D:\\Masan\\sales-268504-20a4b06ea0fb.json";
+            erP_Google2.DatasetID = "FactoryIntegration";
+            erP_Google2.LineName = "Line 3";
+            erP_Google2.ORG_CODE = "MIP";
+            erP_Google2.ProjectID = "sales-268504";
+            erP_Google2.SUB_INV = "W05";
+            erP_Google2.TableID = "BatchProduction";
             // 
             // FDashboard
             // 
@@ -1391,6 +1394,6 @@
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel14;
         private Sunny.UI.UIComboBox ipBatchNo;
         private Sunny.UI.UISymbolButton btnABatch;
-        private TTManager.Masan.ERP_Google erP_Google1;
+        private TTManager.Masan.ERP_Google erP_Google2;
     }
 }

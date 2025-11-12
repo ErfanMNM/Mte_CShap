@@ -255,26 +255,72 @@ namespace TApp.Views.Dashboard
         private bool batchChangeMode = false;
         private void btnChangeBatch_Click(object sender, EventArgs e)
         {
+            try
+            {
+                if (!batchChangeMode)
+                {
+                    btnChangeBatch.Enabled = false;
+                    btnChangeBatch.Text = "Đang tải...";
+
+                    if (erP_Google2.Load_Erp_to_Cbb_With_Line_Name(ipBatchNo))
+                    {
+                        btnChangeBatch.FillColor = Color.OrangeRed;
+                        btnChangeBatch.Text = "Lưu";
+                        ipBatchNo.Enabled = true;
+                        ipBatchNo.FillColor = Color.Yellow;
+                    }
+                    else
+                    {
+                        this.ShowErrorDialog("Tải xuống ERP thất bại, HÃY CHỤP LẠI THÔNG BÁO NÀY. Vui lòng nhấn vào mục Kiểm tra-> chọn mục B09 -> Nhấn bắt đầu và đợi một lát. Nếu A01 báo thành công nhưng hiện trống, vui lòng kiểm tra Tên line, Tên nhà máy, Tên xưởng đã đúng chưa? Nếu đã đúng hãy liên hệ người quản lý ERP hoặc IT nhà máy");
+
+                        btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
+                        btnChangeBatch.Text = "Đổi Lô";
+                        return;
+                    }
+
+
+                }
+                else
+                {
+
+                    var result = this.ShowAskDialog("Bạn có chắc chắn thay đổi lô sản xuất?");
+                    if (result)
+                    {
+                        try
+                        {
+                            btnChangeBatch.Enabled = true;
+                            btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
+                            btnChangeBatch.Text = "Đổi Lô";
+                            ipBatchNo.Enabled = false;
+                            ipBatchNo.FillColor = Color.White;
+                            FD_Globals.productionData.BatchCode = ipBatchNo.Text.Trim();
+                            
+                            FD_Globals.productionData.Barcode = ipBarcode.Text.Trim().ToInt32();
+
+                            this.ShowSuccessTip("Đổi lô thành công!");
+                        }
+                        catch (Exception ex)
+                        {
+                            this.ShowErrorTip($"Lỗi đổi lô: {ex.Message}");
+                        }
+                    }
+
+                    
+
+                }
+                batchChangeMode = !batchChangeMode;
+            }
+            catch (Exception ex)
+            {
+                this.ShowErrorDialog($"Lỗi đổi lô, bạn có thể liên hệ NCC máy theo số 0876 00 01 00: {ex.Message}");
+            }
+
             
-            if (!batchChangeMode)
-            {
-                btnChangeBatch.FillColor = Color.OrangeRed;
-                btnChangeBatch.Text = "Lưu";
-                ipBatchNo.Enabled = true;
-                ipBatchNo.FillColor = Color.Yellow;
-                erP_Google1.Load_Erp_to_Cbb_With_Line_Name(ipBatchNo);
-            }
-            else
-            {
-                btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
-                btnChangeBatch.Text = "Đổi Lô";
-                ipBatchNo.Enabled = false;
-                ipBatchNo.FillColor = Color.White;
-                FD_Globals.productionData.BatchCode = ipBatchNo.Text.Trim();
+        }
 
-            }
-
-            batchChangeMode = !batchChangeMode;
+        private void ipBatchNo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ipBarcode.Text = erP_Google2.LoadExcelToProductList(ipBatchNo.SelectedItem.ToString(), AppConfigs.Current.production_list_path);
         }
     }
 

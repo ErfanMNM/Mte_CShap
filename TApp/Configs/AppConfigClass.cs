@@ -31,6 +31,9 @@ namespace TApp.Configs
 
         public bool PLC_Test_Mode { get; set; }
 
+        public string ? production_list_path { get; set; }
+        public string? credentialPLCAddressPath { get; set; }
+
         public override void SetDefault()
         {
             base.SetDefault();
@@ -45,8 +48,10 @@ namespace TApp.Configs
             PLC_Auto_Connect = false;
             Camera_01_IP = "127.0.0.1";
             Camera_01_Port = 50001;
-            Line_Name = "Line 04";
+            Line_Name = "Line 3";
             PLC_Test_Mode = true;
+            production_list_path = "D:/Masan/DBProductList.xlsx";
+            credentialPLCAddressPath = "D:/Masan/a.json";
         }
     }
 }
