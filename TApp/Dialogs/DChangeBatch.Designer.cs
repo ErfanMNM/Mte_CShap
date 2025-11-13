@@ -31,11 +31,13 @@
             uiTitlePanel1 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
-            uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
             uiComboDataGridView1 = new Sunny.UI.UIComboDataGridView();
+            uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
+            btnClose = new Sunny.UI.UISymbolButton();
             uiTitlePanel1.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
+            uiTableLayoutPanel3.SuspendLayout();
             SuspendLayout();
             // 
             // uiTitlePanel1
@@ -91,23 +93,6 @@
             uiTableLayoutPanel2.TabIndex = 0;
             uiTableLayoutPanel2.TagString = null;
             // 
-            // uiTableLayoutPanel3
-            // 
-            uiTableLayoutPanel3.ColumnCount = 4;
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 114F));
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 114F));
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 117F));
-            uiTableLayoutPanel3.Dock = DockStyle.Fill;
-            uiTableLayoutPanel3.Location = new Point(2, 211);
-            uiTableLayoutPanel3.Margin = new Padding(2);
-            uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
-            uiTableLayoutPanel3.RowCount = 1;
-            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel3.Size = new Size(623, 56);
-            uiTableLayoutPanel3.TabIndex = 1;
-            uiTableLayoutPanel3.TagString = null;
-            // 
             // uiComboDataGridView1
             // 
             uiComboDataGridView1.DropDownStyle = Sunny.UI.UIDropDownStyle.DropDownList;
@@ -118,12 +103,41 @@
             uiComboDataGridView1.MinimumSize = new Size(63, 0);
             uiComboDataGridView1.Name = "uiComboDataGridView1";
             uiComboDataGridView1.Padding = new Padding(0, 0, 30, 2);
-            uiComboDataGridView1.Size = new Size(384, 66);
+            uiComboDataGridView1.Size = new Size(619, 66);
             uiComboDataGridView1.SymbolSize = 24;
             uiComboDataGridView1.TabIndex = 0;
             uiComboDataGridView1.Text = "uiComboDataGridView1";
             uiComboDataGridView1.TextAlignment = ContentAlignment.MiddleLeft;
             uiComboDataGridView1.Watermark = "";
+            // 
+            // uiTableLayoutPanel3
+            // 
+            uiTableLayoutPanel3.ColumnCount = 4;
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 114F));
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 114F));
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 117F));
+            uiTableLayoutPanel3.Controls.Add(btnClose, 3, 0);
+            uiTableLayoutPanel3.Dock = DockStyle.Fill;
+            uiTableLayoutPanel3.Location = new Point(2, 211);
+            uiTableLayoutPanel3.Margin = new Padding(2);
+            uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
+            uiTableLayoutPanel3.RowCount = 1;
+            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel3.Size = new Size(623, 56);
+            uiTableLayoutPanel3.TabIndex = 1;
+            uiTableLayoutPanel3.TagString = null;
+            // 
+            // btnClose
+            // 
+            btnClose.Font = new Font("Microsoft Sans Serif", 12F);
+            btnClose.Location = new Point(509, 3);
+            btnClose.MinimumSize = new Size(1, 1);
+            btnClose.Name = "btnClose";
+            btnClose.Size = new Size(111, 50);
+            btnClose.TabIndex = 0;
+            btnClose.Text = "uiSymbolButton1";
+            btnClose.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
             // DChangeBatch
             // 
@@ -138,6 +152,7 @@
             uiTitlePanel1.ResumeLayout(false);
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTableLayoutPanel2.ResumeLayout(false);
+            uiTableLayoutPanel3.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -148,5 +163,6 @@
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel2;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel3;
         private Sunny.UI.UIComboDataGridView uiComboDataGridView1;
+        private Sunny.UI.UISymbolButton btnClose;
     }
 }

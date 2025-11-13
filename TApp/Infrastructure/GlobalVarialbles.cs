@@ -15,11 +15,10 @@ namespace TApp.Infrastructure
     public enum e_AppState
     {
         Initializing = 0,
-        Running = 1,
+        Ready = 1,
         Stopped = 2,
         Error = 3,
-        NeedLogin = 4,
-        NotLoggedIn = 5
+        Editing = 4
 
     }
 

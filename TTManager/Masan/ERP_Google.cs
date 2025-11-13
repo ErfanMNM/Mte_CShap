@@ -73,7 +73,7 @@ namespace TTManager.Masan
             return batchId.Split('-').Length - 1 >= 3;
         }
 
-        public bool Load_Erp_to_Cbb_With_Line_Name(UIComboBox cbbBatchNO)
+        public string Load_Erp_to_Cbb_With_Line_Name(UIComboBox cbbBatchNO)
         {
             try { 
                 GoogleCredential credential = GoogleCredential.FromFile(credentialPath);
@@ -122,14 +122,15 @@ namespace TTManager.Masan
                     if (cbbBatchNO.Items.Count < 1)
                     {
                         cbbBatchNO.Items.Add("Không Có ERP nào!");
-                        return false;
+                        return "OK";
                     }
 
-                    return true;
+                    return "OK";
 
             }
             catch (Exception ex)
             {
+                return ex.Message;
                 throw new InvalidOperationException($"E123 Lỗi tải ERP vào cbb theo Line Name: {ex.Message}");
             }
 

@@ -1,9 +1,12 @@
 ﻿using HslCommunication;
+using MTs.Auditrails;
 using MTs.Datalogic;
 using Sunny.UI;
+using System.ComponentModel;
 using TApp.Configs;
 using TApp.Helpers;
 using TApp.Infrastructure;
+using TApp.Utils;
 using static TTManager.PLCHelpers.OmronPLC_Hsl;
 
 namespace TApp.Views.Dashboard
@@ -14,6 +17,10 @@ namespace TApp.Views.Dashboard
 
         private PLCStatus _plcStatus = PLCStatus.Disconnect;
 
+        private LogHelper<e_LogType>? _pageLogger;
+
+
+
         public FDashboard()
         {
             InitializeComponent();
@@ -23,8 +30,10 @@ namespace TApp.Views.Dashboard
         {
             try
             {
+                InitializeLogger();
                 InitializeConfigs();
                 InitializeDevices();
+                InitalizeProductionInfomation();
             }
             catch (Exception ex)
             {
@@ -33,12 +42,62 @@ namespace TApp.Views.Dashboard
 
         }
 
+        private void InitializeLogger()
+        {
+            string logPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MTE", "Logs", "Pages", "PPOlog.ptl"
+            );
+            _pageLogger = new LogHelper<e_LogType>(logPath);
+        }
+
         private void InitializeDevices()
         {
 
             InitializeCameras();
             InitializePLC();
             RunBackgroundWorkers();
+        }
+
+        private void InitalizeProductionInfomation()
+        {
+            try
+            {
+                //string dbPath = Path.Combine(
+                //    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                //    "MTE",
+                //    "Production",
+                //    "batch_history.db"
+                //);]
+                string dbPath = "Database/Production/batch_history.db";
+
+                // đảm bảo DB + table tồn tại
+                BatchHistoryHelper.EnsureDatabase(dbPath);
+
+                //lấy thông tin lô cũ nếu có
+                BatchHistoryModel lastBatch = BatchHistoryHelper.GetLatest(dbPath);
+
+                if (lastBatch is not null)
+                {
+                    FD_Globals.productionData.BatchCode = lastBatch.BatchCode;
+                    FD_Globals.productionData.Barcode = lastBatch.Barcode;
+                    
+                    ipBatchNo.Text = lastBatch.BatchCode;
+                    ipBarcode.Text = lastBatch.Barcode;
+                }
+                else
+                {
+                    FD_Globals.productionData.BatchCode ="NNN";
+                    FD_Globals.productionData.Barcode ="000";
+                    ipBatchNo.Text = "NNN";
+                    ipBarcode.Text = "000";
+                }
+
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Lỗi lấy dữ liệu cũ: {ex.Message}");
+            }
         }
 
         private void InitializeConfigs()
@@ -56,6 +115,8 @@ namespace TApp.Views.Dashboard
                 }
 
                 PLCAddressWithGoogleSheetHelper.Init("1V2xjY6AA4URrtcwUorQE54Ud5KyI7Ev2hpDPMMcXVTI", "PLC " + AppConfigs.Current.Line_Name + "!A1:D100");
+
+                erP_Google2.credentialPath = AppConfigs.Current.credentialERPPath;
             }
             catch (Exception ex)
             {
@@ -223,7 +284,33 @@ namespace TApp.Views.Dashboard
             while (!WK_Render_HMI.CancellationPending)
             {
                 Render_PLC_Status();
+                Render_App_Status();
                 Thread.Sleep(500);
+            }
+        }
+
+        private void Render_App_Status()
+        {
+            switch (GlobalVarialbles.CurrentAppState)
+            {
+                case e_AppState.Initializing:
+                    break;
+                case e_AppState.Ready:
+                    break;
+                case e_AppState.Stopped:
+                    break;
+                case e_AppState.Error:
+                    break;
+                case e_AppState.Editing:
+
+                    this.InvokeIfRequired(() =>
+                    {
+                        opAppStatus.Text = "Cấu hình";
+                        opAppStatus.RectColor = Color.OrangeRed;
+                        opAppStatus.ForeColor = Color.OrangeRed;
+                        opAppStatusCode.Value = Convert.ToDouble(GlobalVarialbles.CurrentAppState);
+                    });
+                    break;
             }
         }
 
@@ -255,23 +342,28 @@ namespace TApp.Views.Dashboard
         private bool batchChangeMode = false;
         private void btnChangeBatch_Click(object sender, EventArgs e)
         {
+            _pageLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username,e_LogType.UserAction,"Người dùng nhấn đổi lô","","UA-F-01");
             try
             {
+                GlobalVarialbles.CurrentAppState = e_AppState.Editing;
                 if (!batchChangeMode)
                 {
                     btnChangeBatch.Enabled = false;
                     btnChangeBatch.Text = "Đang tải...";
-
-                    if (erP_Google2.Load_Erp_to_Cbb_With_Line_Name(ipBatchNo))
+                    string rs = erP_Google2.Load_Erp_to_Cbb_With_Line_Name(ipBatchNo);
+                    if (rs == "OK")
                     {
                         btnChangeBatch.FillColor = Color.OrangeRed;
                         btnChangeBatch.Text = "Lưu";
+                        btnChangeBatch.Enabled = true;
                         ipBatchNo.Enabled = true;
                         ipBatchNo.FillColor = Color.Yellow;
                     }
                     else
                     {
                         this.ShowErrorDialog("Tải xuống ERP thất bại, HÃY CHỤP LẠI THÔNG BÁO NÀY. Vui lòng nhấn vào mục Kiểm tra-> chọn mục B09 -> Nhấn bắt đầu và đợi một lát. Nếu A01 báo thành công nhưng hiện trống, vui lòng kiểm tra Tên line, Tên nhà máy, Tên xưởng đã đúng chưa? Nếu đã đúng hãy liên hệ người quản lý ERP hoặc IT nhà máy");
+
+                        _pageLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", "{'Thông tin lỗi':'"+rs+"'}", "ERP-F-01");
 
                         btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
                         btnChangeBatch.Text = "Đổi Lô";
@@ -294,14 +386,26 @@ namespace TApp.Views.Dashboard
                             ipBatchNo.Enabled = false;
                             ipBatchNo.FillColor = Color.White;
                             FD_Globals.productionData.BatchCode = ipBatchNo.Text.Trim();
-                            FD_Globals.productionData.Barcode = ipBarcode.Text.Trim().ToInt32();
+                            FD_Globals.productionData.Barcode = ipBarcode.Text;
                             //chương trình tạo dữ liệu lô mới
 
+                            string dbPath = "Database/Production/batch_history.db";
+                            BatchHistoryHelper.AddHistory(
+                                dbPath,
+                                FD_Globals.productionData.BatchCode,
+                                FD_Globals.productionData.Barcode.ToString(),
+                                GlobalVarialbles.CurrentUser.Username,
+                                DateTime.Now
+                            );
+
                             this.ShowSuccessTip("Đổi lô thành công!");
+
+                            _pageLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'Lô mới':'{FD_Globals.productionData.BatchCode}','Barcode mới':'{FD_Globals.productionData.Barcode}'}}", "UA-F-02");
                         }
                         catch (Exception ex)
                         {
                             this.ShowErrorTip($"Lỗi đổi lô: {ex.Message}");
+                            _pageLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERR-F-01");
                         }
                     }
 
@@ -309,10 +413,17 @@ namespace TApp.Views.Dashboard
 
                 }
                 batchChangeMode = !batchChangeMode;
+                GlobalVarialbles.CurrentAppState = e_AppState.Ready;
             }
             catch (Exception ex)
             {
+                btnChangeBatch.Enabled = true;
+                btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
+                btnChangeBatch.Text = "Đổi Lô";
+                _pageLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERP-F-02");
                 this.ShowErrorDialog($"Lỗi đổi lô, bạn có thể liên hệ NCC máy theo số 0876 00 01 00: {ex.Message}");
+
+                GlobalVarialbles.CurrentAppState = e_AppState.Ready;
             }
 
             
@@ -320,7 +431,11 @@ namespace TApp.Views.Dashboard
 
         private void ipBatchNo_SelectedIndexChanged(object sender, EventArgs e)
         {
-            ipBarcode.Text = erP_Google2.LoadExcelToProductList(ipBatchNo.SelectedItem.ToString(), AppConfigs.Current.production_list_path);
+            if(ipBatchNo.SelectedItem is not null)
+            {
+                ipBarcode.Text = erP_Google2.LoadExcelToProductList(ipBatchNo.SelectedItem.ToString(), AppConfigs.Current.production_list_path);
+            }
+                
         }
     }
 
@@ -328,5 +443,37 @@ namespace TApp.Views.Dashboard
     {
         public static CameraStatus CameraStatus = CameraStatus.Disconnected;
         public static ProductionData productionData = new ProductionData();
+    }
+
+    public enum e_LogType
+    {
+        [Description("Thông tin")]
+        Info = 0,
+
+        [Description("Cảnh báo")]
+        Warning = 1,
+
+        [Description("Lỗi")]
+        Error = 2,
+
+        [Description("Debug")]
+        Debug = 3,
+
+        [Description("Hệ thống")]
+        System = 4,
+
+        [Description("Người dùng")]
+        UserAction = 5,
+
+        [Description("Thiết bị")]
+        DeviceAction = 6,
+
+        [Description("Bảo trì")]
+        Maintenance = 7,
+
+        [Description("Thay đổi dữ liệu")]
+        DataChange = 8,
+
+        Critical = 9
     }
 }

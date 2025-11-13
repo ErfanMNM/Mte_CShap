@@ -33,6 +33,7 @@ namespace TApp.Configs
 
         public string ? production_list_path { get; set; }
         public string? credentialPLCAddressPath { get; set; }
+        public string? credentialERPPath { get; set; }
 
         public override void SetDefault()
         {
@@ -52,6 +53,7 @@ namespace TApp.Configs
             PLC_Test_Mode = true;
             production_list_path = "D:/Masan/DBProductList.xlsx";
             credentialPLCAddressPath = "D:/Masan/a.json";
+            credentialERPPath = "C:/Users/DANOMT/Downloads/Masan/sales-268504-20a4b06ea0fb.json";
         }
     }
 }

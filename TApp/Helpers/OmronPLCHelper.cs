@@ -51,7 +51,7 @@ namespace TApp.Helpers
             //credential = credential.CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
 
             GoogleCredential credential;
-            using (var stream = new FileStream(@"C:/Users/THUC/Downloads/a.json", FileMode.Open, FileAccess.Read))
+            using (var stream = new FileStream(@"C:\Users\DANOMT\Downloads\Masan\a.json", FileMode.Open, FileAccess.Read))
             {
                 credential = GoogleCredential.FromStream(stream).CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
             }

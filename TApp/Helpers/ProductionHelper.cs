@@ -10,6 +10,17 @@ namespace TApp.Helpers
     {
     }
 
+    public class BatchHistoryModel
+    {
+        public int ID { get; set; }
+        public string? BatchCode { get; set; }
+        public string? Barcode { get; set; }
+        public string? UserName { get; set; }
+        public string? ProductionDate { get; set; }
+        public string? TimeStamp { get; set; }
+    }
+
+
     public enum e_Production_Status
     {         
         Pass = 0,
@@ -26,7 +37,7 @@ namespace TApp.Helpers
         public string ? BatchCode;
         public e_Production_Status Status;
         public string? ProductionDate;
-        public int Barcode;
+        public string? Barcode;
 
         public Product_PLC_Counter PLC_Counter = new Product_PLC_Counter();
 
@@ -35,7 +46,7 @@ namespace TApp.Helpers
             BatchCode = string.Empty;
             Status = e_Production_Status.Error;
             ProductionDate = string.Empty;
-            Barcode = 0;
+            Barcode = "0";
         }
 
         public class Product_PLC_Counter
