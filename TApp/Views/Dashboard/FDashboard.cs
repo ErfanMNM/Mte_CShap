@@ -294,8 +294,8 @@ namespace TApp.Views.Dashboard
                             ipBatchNo.Enabled = false;
                             ipBatchNo.FillColor = Color.White;
                             FD_Globals.productionData.BatchCode = ipBatchNo.Text.Trim();
-                            
                             FD_Globals.productionData.Barcode = ipBarcode.Text.Trim().ToInt32();
+                            //chương trình tạo dữ liệu lô mới
 
                             this.ShowSuccessTip("Đổi lô thành công!");
                         }
