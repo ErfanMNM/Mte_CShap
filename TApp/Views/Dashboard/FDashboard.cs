@@ -16,11 +16,6 @@ namespace TApp.Views.Dashboard
         private DatalogicCamera? _datalogicCamera_C1;
 
         private PLCStatus _plcStatus = PLCStatus.Disconnect;
-
-        private LogHelper<e_LogType>? _pageLogger;
-
-
-
         public FDashboard()
         {
             InitializeComponent();
@@ -30,10 +25,10 @@ namespace TApp.Views.Dashboard
         {
             try
             {
-                InitializeLogger();
                 InitializeConfigs();
                 InitializeDevices();
                 InitalizeProductionInfomation();
+                InitalizeProductionDatabase();
             }
             catch (Exception ex)
             {
@@ -42,14 +37,7 @@ namespace TApp.Views.Dashboard
 
         }
 
-        private void InitializeLogger()
-        {
-            string logPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "MTE", "Logs", "Pages", "PPOlog.ptl"
-            );
-            _pageLogger = new LogHelper<e_LogType>(logPath);
-        }
+        
 
         private void InitializeDevices()
         {
@@ -57,6 +45,20 @@ namespace TApp.Views.Dashboard
             InitializeCameras();
             InitializePLC();
             RunBackgroundWorkers();
+        }
+
+        private void InitalizeProductionDatabase()
+        {
+            try
+            {
+                // cho batch mới
+                bool existedBefore = QRDatabaseHelper.CheckAndCreateDatabaseForBatch("");
+                // existedBefore = true -> bể đã có từ trước
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Lỗi khởi tạo database sản xuất: {ex.Message}");
+            }
         }
 
         private void InitalizeProductionInfomation()
@@ -274,23 +276,33 @@ namespace TApp.Views.Dashboard
             }
         }
 
-        private void WK_Camera_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        private void WK_Camera_DoWork(object sender, DoWorkEventArgs e)
         {
 
         }
 
-        private void WK_Render_HMI_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        private void WK_Render_HMI_DoWork(object sender, DoWorkEventArgs e)
         {
             while (!WK_Render_HMI.CancellationPending)
             {
                 Render_PLC_Status();
                 Render_App_Status();
+                Render_Camera_Status();
                 Thread.Sleep(500);
             }
         }
 
         private void Render_App_Status()
         {
+            if(FD_Globals.pLCStatus != PLCStatus.Connected || FD_Globals.CameraStatus != CameraStatus.Connected)
+            {
+                GlobalVarialbles.CurrentAppState = e_AppState.DeviceError;
+            }
+            else
+            {
+
+            }
+
             switch (GlobalVarialbles.CurrentAppState)
             {
                 case e_AppState.Initializing:
@@ -306,9 +318,18 @@ namespace TApp.Views.Dashboard
                     this.InvokeIfRequired(() =>
                     {
                         opAppStatus.Text = "Cấu hình";
-                        opAppStatus.RectColor = Color.OrangeRed;
-                        opAppStatus.ForeColor = Color.OrangeRed;
-                        opAppStatusCode.Value = Convert.ToDouble(GlobalVarialbles.CurrentAppState);
+                        opAppStatus.RectColor = Color.Blue;
+                        opAppStatus.ForeColor = Color.Blue;
+                        opAppStatusCode.Value = 4;
+                    });
+                    break;
+                case e_AppState.DeviceError:
+                    this.InvokeIfRequired(() =>
+                    {
+                        opAppStatus.Text = "Lỗi TB";
+                        opAppStatus.RectColor = Color.Red;
+                        opAppStatus.ForeColor = Color.Red;
+                        opAppStatusCode.Value = 5;
                     });
                     break;
             }
@@ -320,21 +341,95 @@ namespace TApp.Views.Dashboard
             {
                 case PLCStatus.Connected:
 
-                    opPLCStatus.Text = "Kết Nối";
-                    opPLCStatus.RectColor = Color.FromArgb(0, 192, 0);
-                    opPLCStatus.ForeColor = Color.FromArgb(0, 192, 0);
-
-                    opPLCLed.Blink = false;
-                    opPLCLed.Color = Color.FromArgb(192, 255, 192);
+                    if (FD_Globals.pLCStatus != PLCStatus.Connected)
+                    {
+                        this.InvokeIfRequired(() =>
+                        {
+                            FD_Globals.pLCStatus = PLCStatus.Connected;
+                            opPLCStatus.Text = "Kết Nối";
+                            opPLCStatus.RectColor = Color.FromArgb(0, 192, 0);
+                            opPLCStatus.ForeColor = Color.FromArgb(0, 192, 0);
+                            opPLCLed.Blink = false;
+                            opPLCLed.Color = Color.FromArgb(192, 255, 192);
+                        });
+                        
+                    }
                     break;
                 case PLCStatus.Disconnect:
 
-                    opPLCStatus.Text = "Lỗi K01";
-                    opPLCStatus.RectColor = Color.Red;
-                    opPLCStatus.ForeColor = Color.Red;
+                    if(FD_Globals.pLCStatus != PLCStatus.Disconnect)
+                    {
+                        this.InvokeIfRequired(() =>
+                        {
+                            FD_Globals.pLCStatus = PLCStatus.Disconnect;
+                            opPLCStatus.Text = "Lỗi K01";
+                            opPLCStatus.RectColor = Color.Red;
+                            opPLCStatus.ForeColor = Color.Red;
+                            opPLCLed.Blink = true;
+                            opPLCLed.Color = Color.Red;
+                        });
+                    }
+                    
+                    break;
+            }
+        }
 
-                    opPLCLed.Blink = true;
-                    opPLCLed.Color = Color.Red;
+        private void Render_Camera_Status()
+        {
+            switch (FD_Globals.CameraStatus)
+            {
+                case CameraStatus.Disconnected:
+                    if (opCameraStatus.Text != "Lỗi K02")
+                    {
+                        this.InvokeIfRequired(() =>
+                        {
+                            opCameraStatus.Text = "Lỗi K01";
+                            opCameraStatus.RectColor = Color.Red;
+                            opCameraStatus.ForeColor = Color.Red;
+                            opCameraLed.Blink = true;
+                            opCameraLed.Color = Color.Red;
+                        });
+                    }
+
+                    break;
+                case CameraStatus.Connected:
+                    if (opCameraStatus.Text != "Kết Nối")
+                    {
+                        this.InvokeIfRequired(() =>
+                        {
+                            opCameraStatus.Text = "Kết Nối";
+                            opCameraStatus.RectColor = Color.FromArgb(0, 192, 0);
+                            opCameraStatus.ForeColor = Color.FromArgb(0, 192, 0);
+                            opCameraLed.Blink = false;
+                            opCameraLed.Color = Color.FromArgb(192, 255, 192);
+                        });
+                    }
+                    break;
+                case CameraStatus.Error:
+                    if (opCameraStatus.Text != "Lỗi K02")
+                    {
+                        this.InvokeIfRequired(() =>
+                        {
+                            opCameraStatus.Text = "Lỗi K02";
+                            opCameraStatus.RectColor = Color.Red;
+                            opCameraStatus.ForeColor = Color.Red;
+                            opCameraLed.Blink = true;
+                            opCameraLed.Color = Color.Red;
+                        });
+                    }
+                    break;
+                case CameraStatus.Reconnecting:
+                    if (opCameraStatus.Text != "...")
+                    {
+                        this.InvokeIfRequired(() =>
+                        {
+                            opCameraStatus.Text = "...";
+                            opCameraStatus.RectColor = Color.Yellow;
+                            opCameraStatus.ForeColor = Color.Yellow;
+                            opCameraLed.Blink = true;
+                            opCameraLed.Color = Color.Yellow;
+                        });
+                    }
                     break;
             }
         }
@@ -342,7 +437,7 @@ namespace TApp.Views.Dashboard
         private bool batchChangeMode = false;
         private void btnChangeBatch_Click(object sender, EventArgs e)
         {
-            _pageLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username,e_LogType.UserAction,"Người dùng nhấn đổi lô","","UA-F-01");
+            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username,e_LogType.UserAction,"Người dùng nhấn đổi lô","","UA-F-01");
             try
             {
                 GlobalVarialbles.CurrentAppState = e_AppState.Editing;
@@ -363,7 +458,7 @@ namespace TApp.Views.Dashboard
                     {
                         this.ShowErrorDialog("Tải xuống ERP thất bại, HÃY CHỤP LẠI THÔNG BÁO NÀY. Vui lòng nhấn vào mục Kiểm tra-> chọn mục B09 -> Nhấn bắt đầu và đợi một lát. Nếu A01 báo thành công nhưng hiện trống, vui lòng kiểm tra Tên line, Tên nhà máy, Tên xưởng đã đúng chưa? Nếu đã đúng hãy liên hệ người quản lý ERP hoặc IT nhà máy");
 
-                        _pageLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", "{'Thông tin lỗi':'"+rs+"'}", "ERP-F-01");
+                        GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", "{'Thông tin lỗi':'"+rs+"'}", "ERP-F-01");
 
                         btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
                         btnChangeBatch.Text = "Đổi Lô";
@@ -400,12 +495,12 @@ namespace TApp.Views.Dashboard
 
                             this.ShowSuccessTip("Đổi lô thành công!");
 
-                            _pageLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'Lô mới':'{FD_Globals.productionData.BatchCode}','Barcode mới':'{FD_Globals.productionData.Barcode}'}}", "UA-F-02");
+                            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'Lô mới':'{FD_Globals.productionData.BatchCode}','Barcode mới':'{FD_Globals.productionData.Barcode}'}}", "UA-F-02");
                         }
                         catch (Exception ex)
                         {
                             this.ShowErrorTip($"Lỗi đổi lô: {ex.Message}");
-                            _pageLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERR-F-01");
+                            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERR-F-01");
                         }
                     }
 
@@ -420,7 +515,7 @@ namespace TApp.Views.Dashboard
                 btnChangeBatch.Enabled = true;
                 btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
                 btnChangeBatch.Text = "Đổi Lô";
-                _pageLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERP-F-02");
+                GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERP-F-02");
                 this.ShowErrorDialog($"Lỗi đổi lô, bạn có thể liên hệ NCC máy theo số 0876 00 01 00: {ex.Message}");
 
                 GlobalVarialbles.CurrentAppState = e_AppState.Ready;
@@ -443,6 +538,7 @@ namespace TApp.Views.Dashboard
     {
         public static CameraStatus CameraStatus = CameraStatus.Disconnected;
         public static ProductionData productionData = new ProductionData();
+        public static PLCStatus pLCStatus = PLCStatus.Disconnect;
     }
 
     public enum e_LogType
@@ -473,7 +569,7 @@ namespace TApp.Views.Dashboard
 
         [Description("Thay đổi dữ liệu")]
         DataChange = 8,
-
+        
         Critical = 9
     }
 }

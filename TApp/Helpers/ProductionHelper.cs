@@ -49,6 +49,76 @@ namespace TApp.Helpers
             Barcode = "0";
         }
 
+        public class Product_Camera_Counter
+        {
+            public int Total;
+            public int Pass;
+            public int Fail;
+            public int Duplicate;
+            public int ReadFail;
+            public int NotFound;
+            public int Timeout;
+            public int Error;
+
+            public Product_Camera_Counter()
+            {
+                Total = 0;
+                Pass = 0;
+                Fail = 0;
+                Duplicate = 0;
+                ReadFail = 0;
+                NotFound = 0;
+                Timeout = 0;
+                Error = 0;
+            }
+            public void Reset()
+            {
+                Total = 0;
+                Pass = 0;
+                Fail = 0;
+                Duplicate = 0;
+                ReadFail = 0;
+                NotFound = 0;
+                Timeout = 0;
+                Error = 0;
+            }
+            public void Increment(e_Production_Status status)
+            {
+                try
+                {
+                    Total++;
+                    switch (status)
+                    {
+                        case e_Production_Status.Pass:
+                            Pass++;
+                            break;
+                        case e_Production_Status.Fail:
+                            Fail++;
+                            break;
+                        case e_Production_Status.Duplicate:
+                            Duplicate++;
+                            break;
+                        case e_Production_Status.NotFound:
+                            NotFound++;
+                            break;
+                        case e_Production_Status.Error:
+                            Error++;
+                            break;
+                        case e_Production_Status.Timeout:
+                            Timeout++;
+                            break;
+                        case e_Production_Status.ReadFail:
+                            ReadFail++;
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"PH1911 lỗi tăng bộ đếm Camera: {ex.Message}");
+                }
+            }
+        }
+
         public class Product_PLC_Counter
         {
             public int Total;

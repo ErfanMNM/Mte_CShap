@@ -1,4 +1,5 @@
-﻿using Sunny.UI;
+﻿using MTs.Auditrails;
+using Sunny.UI;
 using System.Windows.Forms;
 using TApp.Configs;
 using TApp.Infrastructure;
@@ -28,46 +29,71 @@ namespace TApp
 
         public static bool ACTIVE_State = true;
 
+        
+
         public MainForm()
         {
             InitializeComponent();
-            UIStyles.CultureInfo = CultureInfos.en_US;
-            UIStyles.GlobalFont = true;
-            UIStyles.GlobalFontName = "Tahoma";
-            //UIStyles.InitColorful(Color.Green, Color.White);
+            try
+            {
+                InitializeLogger();
 
-            MainTabControl = MainTab;
-            NavMenu.TabControl = MainTab;
-            headNav.TabControl = MainTab;
+                //tạo log ghi nhận mở ứng dụng
+                GlobalVarialbles.Logger?.WriteLogAsync("System",e_LogType.System,"Mở ứng dụng");
 
-            NavMenu.Nodes.Clear();
+                UIStyles.CultureInfo = CultureInfos.en_US;
+                UIStyles.GlobalFont = true;
+                UIStyles.GlobalFontName = "Tahoma";
+                //UIStyles.InitColorful(Color.Green, Color.White);
 
-            NavMenu.CreateNode(AddPage(fDashboard, 1002));
-            NavMenu.CreateNode(AddPage(PAppSetting, 1001));
+                MainTabControl = MainTab;
+                NavMenu.TabControl = MainTab;
+                headNav.TabControl = MainTab;
 
-            NavMenu.CreateNode(AddPage(fLogin, 2001));
-            NavMenu.SelectPage(2001);
-            NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
+                NavMenu.Nodes.Clear();
 
-            NavMenu.Visible = false;
-            NavMenu.Enabled = false;
+                NavMenu.CreateNode(AddPage(fDashboard, 1002));
+                NavMenu.CreateNode(AddPage(PAppSetting, 1001));
 
-            AppRenderState = e_App_Render_State.LOGIN;
+                NavMenu.CreateNode(AddPage(fLogin, 2001));
+                NavMenu.SelectPage(2001);
+                NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
 
-            headNav.Nodes.Clear();
-            headNav.Nodes.Add("");
+                NavMenu.Visible = false;
+                NavMenu.Enabled = false;
 
-            headNav.SetNodeSymbol(headNav.Nodes[0], 559585);
-            var node = headNav.CreateChildNode(headNav.Nodes[0], "Tắt máy", 3001);
-            headNav.SetNodeSymbol(node, 61457);
+                AppRenderState = e_App_Render_State.LOGIN;
+
+                headNav.Nodes.Clear();
+                headNav.Nodes.Add("");
+
+                headNav.SetNodeSymbol(headNav.Nodes[0], 559585);
+                var node = headNav.CreateChildNode(headNav.Nodes[0], "Tắt máy", 3001);
+                headNav.SetNodeSymbol(node, 61457);
 
 
-            ToggleFullScreen();
-            HideToTray();
-            InitializeConfigs();
-            StartPage();
+                ToggleFullScreen();
+                HideToTray();
+                InitializeConfigs();
+                StartPage();
 
-            WK1.RunWorkerAsync();
+                WK1.RunWorkerAsync();
+            }
+            catch (Exception)
+            {
+                this.ShowErrorDialog("Lỗi chương trình");
+            }
+            
+            
+        }
+
+        private void InitializeLogger()
+        {
+            string logPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MTE", "Logs", "Pages", "PPOlog.ptl"
+            );
+            GlobalVarialbles.Logger = new LogHelper<e_LogType>(logPath);
         }
 
         public void StartPage()
@@ -204,8 +230,6 @@ namespace TApp
 
 
         #region Private Methods - State Processing
-
-
         private void HandleLoginState()
         {
             if (AppRenderState != e_App_Render_State.LOGIN)
