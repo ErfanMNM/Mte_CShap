@@ -29,8 +29,6 @@ namespace TApp
 
         public static bool ACTIVE_State = true;
 
-        
-
         public MainForm()
         {
             InitializeComponent();
