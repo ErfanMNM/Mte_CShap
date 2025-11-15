@@ -76,9 +76,6 @@
             opServerStatus = new Sunny.UI.UIPanel();
             opServerLed = new Sunny.UI.UILedBulb();
             uiTitlePanel11 = new Sunny.UI.UITitlePanel();
-            uiTableLayoutPanel8 = new Sunny.UI.UITableLayoutPanel();
-            opInternetStatus = new Sunny.UI.UIPanel();
-            opInternetSignal = new Sunny.UI.UISignal();
             uiTitlePanel10 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel7 = new Sunny.UI.UITableLayoutPanel();
             uiPanel4 = new Sunny.UI.UIPanel();
@@ -102,6 +99,7 @@
             WK_Camera = new System.ComponentModel.BackgroundWorker();
             WK_Render_HMI = new System.ComponentModel.BackgroundWorker();
             erP_Google2 = new TTManager.Masan.ERP_Google(components);
+            networkStrength1 = new TTManager.Internet.NetworkStrength();
             MainPanel.SuspendLayout();
             pnResult.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
@@ -127,7 +125,6 @@
             uiTitlePanel12.SuspendLayout();
             uiTableLayoutPanel9.SuspendLayout();
             uiTitlePanel11.SuspendLayout();
-            uiTableLayoutPanel8.SuspendLayout();
             uiTitlePanel10.SuspendLayout();
             uiTableLayoutPanel7.SuspendLayout();
             uiTitlePanel9.SuspendLayout();
@@ -898,7 +895,7 @@
             // 
             // uiTitlePanel11
             // 
-            uiTitlePanel11.Controls.Add(uiTableLayoutPanel8);
+            uiTitlePanel11.Controls.Add(networkStrength1);
             uiTitlePanel11.Dock = DockStyle.Fill;
             uiTitlePanel11.Font = new Font("Microsoft Sans Serif", 12F);
             uiTitlePanel11.Location = new Point(1, 69);
@@ -914,51 +911,6 @@
             uiTitlePanel11.TextAlignment = ContentAlignment.MiddleCenter;
             uiTitlePanel11.TitleColor = Color.Teal;
             uiTitlePanel11.TitleHeight = 30;
-            // 
-            // uiTableLayoutPanel8
-            // 
-            uiTableLayoutPanel8.ColumnCount = 2;
-            uiTableLayoutPanel8.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 71.962616F));
-            uiTableLayoutPanel8.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28.037384F));
-            uiTableLayoutPanel8.Controls.Add(opInternetStatus, 0, 0);
-            uiTableLayoutPanel8.Controls.Add(opInternetSignal, 1, 0);
-            uiTableLayoutPanel8.Dock = DockStyle.Fill;
-            uiTableLayoutPanel8.Location = new Point(1, 30);
-            uiTableLayoutPanel8.Margin = new Padding(0);
-            uiTableLayoutPanel8.Name = "uiTableLayoutPanel8";
-            uiTableLayoutPanel8.RowCount = 1;
-            uiTableLayoutPanel8.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel8.Size = new Size(117, 36);
-            uiTableLayoutPanel8.TabIndex = 0;
-            uiTableLayoutPanel8.TagString = null;
-            // 
-            // opInternetStatus
-            // 
-            opInternetStatus.Dock = DockStyle.Fill;
-            opInternetStatus.Font = new Font("Microsoft Sans Serif", 12F);
-            opInternetStatus.Location = new Point(2, 2);
-            opInternetStatus.Margin = new Padding(2);
-            opInternetStatus.MinimumSize = new Size(1, 1);
-            opInternetStatus.Name = "opInternetStatus";
-            opInternetStatus.RectColor = Color.FromArgb(255, 128, 0);
-            opInternetStatus.RectSize = 2;
-            opInternetStatus.Size = new Size(80, 32);
-            opInternetStatus.TabIndex = 0;
-            opInternetStatus.Text = "Yếu";
-            opInternetStatus.TextAlignment = ContentAlignment.MiddleCenter;
-            // 
-            // opInternetSignal
-            // 
-            opInternetSignal.Dock = DockStyle.Fill;
-            opInternetSignal.Font = new Font("Microsoft Sans Serif", 12F);
-            opInternetSignal.Level = 2;
-            opInternetSignal.Location = new Point(87, 3);
-            opInternetSignal.MinimumSize = new Size(1, 1);
-            opInternetSignal.Name = "opInternetSignal";
-            opInternetSignal.OffColor = Color.LightGray;
-            opInternetSignal.OnColor = Color.Green;
-            opInternetSignal.Size = new Size(27, 30);
-            opInternetSignal.TabIndex = 3;
             // 
             // uiTitlePanel10
             // 
@@ -1081,7 +1033,6 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(87, 3);
             opPLCLed.Name = "opPLCLed";
-            opPLCLed.On = false;
             opPLCLed.Size = new Size(27, 29);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";
@@ -1279,6 +1230,15 @@
             erP_Google2.SUB_INV = "W05";
             erP_Google2.TableID = "BatchProduction";
             // 
+            // networkStrength1
+            // 
+            networkStrength1.BackColor = Color.Transparent;
+            networkStrength1.Dock = DockStyle.Fill;
+            networkStrength1.Location = new Point(1, 30);
+            networkStrength1.Name = "networkStrength1";
+            networkStrength1.Size = new Size(117, 36);
+            networkStrength1.TabIndex = 0;
+            // 
             // FDashboard
             // 
             AutoScaleMode = AutoScaleMode.None;
@@ -1312,7 +1272,6 @@
             uiTitlePanel12.ResumeLayout(false);
             uiTableLayoutPanel9.ResumeLayout(false);
             uiTitlePanel11.ResumeLayout(false);
-            uiTableLayoutPanel8.ResumeLayout(false);
             uiTitlePanel10.ResumeLayout(false);
             uiTableLayoutPanel7.ResumeLayout(false);
             uiTitlePanel9.ResumeLayout(false);
@@ -1351,8 +1310,6 @@
         private Sunny.UI.UIPanel opServerStatus;
         private Sunny.UI.UILedBulb opServerLed;
         private Sunny.UI.UITitlePanel uiTitlePanel11;
-        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel8;
-        private Sunny.UI.UIPanel opInternetStatus;
         private Sunny.UI.UITitlePanel uiTitlePanel10;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel7;
         private Sunny.UI.UIPanel uiPanel4;
@@ -1365,7 +1322,6 @@
         private Sunny.UI.UIPanel opCameraStatus;
         private Sunny.UI.UILedBulb opCameraLed;
         private Sunny.UI.UIDigitalLabel opAppStatusCode;
-        private Sunny.UI.UISignal opInternetSignal;
         private Sunny.UI.UITitlePanel uiTitlePanel4;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel11;
         private Sunny.UI.UIPanel uiPanel8;
@@ -1398,5 +1354,6 @@
         private Sunny.UI.UIComboBox ipBatchNo;
         private Sunny.UI.UISymbolButton btnABatch;
         private TTManager.Masan.ERP_Google erP_Google2;
+        private TTManager.Internet.NetworkStrength networkStrength1;
     }
 }

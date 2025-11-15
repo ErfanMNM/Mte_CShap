@@ -23,28 +23,33 @@ namespace TApp.Views.Dashboard
 
         public void Start()
         {
-            try
-            {
+
                 InitializeConfigs();
                 InitializeDevices();
                 InitalizeProductionInfomation();
                 InitalizeProductionDatabase();
-            }
-            catch (Exception ex)
-            {
-                this.ShowErrorDialog($"Lỗi khởi tạo Dashboard: {ex.Message}");
-            }
-
+                InitializeDashboardUI();
         }
 
         
 
         private void InitializeDevices()
         {
-
             InitializeCameras();
             InitializePLC();
             RunBackgroundWorkers();
+        }
+
+        private void InitializeDashboardUI()
+        {
+            try
+            {
+                networkStrength1.StartMonitoring();
+            }
+            catch (Exception ex)
+            {
+                this.ShowErrorDialog($"Lỗi khởi tạo giao diện Dashboard: {ex.Message}");
+            }
         }
 
         private void InitalizeProductionDatabase()
@@ -57,7 +62,7 @@ namespace TApp.Views.Dashboard
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Lỗi khởi tạo database sản xuất: {ex.Message}");
+                this.ShowErrorDialog($"Lỗi khởi tạo database sản xuất: {ex.Message}");
             }
         }
 
@@ -98,7 +103,7 @@ namespace TApp.Views.Dashboard
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Lỗi lấy dữ liệu cũ: {ex.Message}");
+                this.ShowErrorDialog($"Lỗi lấy dữ liệu cũ: {ex.Message}");
             }
         }
 
@@ -122,7 +127,7 @@ namespace TApp.Views.Dashboard
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Lỗi tải cấu hình: {ex.Message}");
+                this.ShowErrorDialog($"Lỗi tải cấu hình: {ex.Message}");
             }
 
 
@@ -142,7 +147,7 @@ namespace TApp.Views.Dashboard
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Lỗi khởi tạo camera: {ex.Message}");
+                this.ShowErrorDialog($"Lỗi khởi tạo camera: {ex.Message}");
             }
 
         }
@@ -170,7 +175,7 @@ namespace TApp.Views.Dashboard
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Lỗi khởi tạo PLC: {ex.Message}");
+                this.ShowErrorDialog($"Lỗi khởi tạo PLC: {ex.Message}");
             }
 
         }
@@ -379,7 +384,7 @@ namespace TApp.Views.Dashboard
             switch (FD_Globals.CameraStatus)
             {
                 case CameraStatus.Disconnected:
-                    if (opCameraStatus.Text != "Lỗi K02")
+                    if (opCameraStatus.Text != "Lỗi K01")
                     {
                         this.InvokeIfRequired(() =>
                         {

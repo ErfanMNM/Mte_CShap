@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 18
-VisualStudioVersion = 18.0.11104.47
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TApp", "TApp\TApp.csproj", "{883500F5-78B7-40EC-8D83-47AAD3253A92}"
 EndProject
@@ -16,8 +16,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Printer", "PRINTERs\Printer\Printer.csproj", "{7FB303C0-873B-F2F8-A9F4-7844338A9C0E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Norwix", "PRINTERs\Unoplus\Norwix\Norwix.csproj", "{CDDEA29C-4759-0E49-79FE-CD65EBA2BDEA}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MTCS_Version_Controller", "MTCS_Version_Controller\MTCS_Version_Controller.csproj", "{DD52244A-3EC5-4594-97E1-54FF7DD743A2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoApp", "DemoApp\DemoApp.csproj", "{AE058D9F-8927-417B-B750-616CA201B5BE}"
 EndProject
@@ -77,14 +75,6 @@ Global
 		{CDDEA29C-4759-0E49-79FE-CD65EBA2BDEA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CDDEA29C-4759-0E49-79FE-CD65EBA2BDEA}.Release|x64.ActiveCfg = Release|x64
 		{CDDEA29C-4759-0E49-79FE-CD65EBA2BDEA}.Release|x64.Build.0 = Release|x64
-		{DD52244A-3EC5-4594-97E1-54FF7DD743A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DD52244A-3EC5-4594-97E1-54FF7DD743A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DD52244A-3EC5-4594-97E1-54FF7DD743A2}.Debug|x64.ActiveCfg = Debug|x64
-		{DD52244A-3EC5-4594-97E1-54FF7DD743A2}.Debug|x64.Build.0 = Debug|x64
-		{DD52244A-3EC5-4594-97E1-54FF7DD743A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DD52244A-3EC5-4594-97E1-54FF7DD743A2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DD52244A-3EC5-4594-97E1-54FF7DD743A2}.Release|x64.ActiveCfg = Release|x64
-		{DD52244A-3EC5-4594-97E1-54FF7DD743A2}.Release|x64.Build.0 = Release|x64
 		{AE058D9F-8927-417B-B750-616CA201B5BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AE058D9F-8927-417B-B750-616CA201B5BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AE058D9F-8927-417B-B750-616CA201B5BE}.Debug|x64.ActiveCfg = Debug|Any CPU
