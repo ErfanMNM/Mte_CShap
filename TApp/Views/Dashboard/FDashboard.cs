@@ -31,8 +31,6 @@ namespace TApp.Views.Dashboard
                 InitializeDashboardUI();
         }
 
-        
-
         private void InitializeDevices()
         {
             InitializeCameras();
@@ -214,6 +212,9 @@ namespace TApp.Views.Dashboard
                     else
                     {
                         // Xử lý khi worker đang bận
+                        //gửi fail về PLC
+                        Send_Result_To_PLC(e_PLC_Result.Fail);
+                        Send_Result_Content(e_Production_Status.Timeout, data);
                     }
                     break;
                 case eDatalogicCameraState.Reconnecting:
@@ -227,14 +228,14 @@ namespace TApp.Views.Dashboard
 
         private void Camera_ProcessData(string data)
         {
-            // Xử lý dữ liệu nhận được từ camera Datalogic
+            
 
         }
 
         private void Send_Result_Content(e_Production_Status status, string data)
         {
 
-            FD_Globals.productionData.PLC_Counter.Increment(status);
+            FD_Globals.productionData.productCameraCounter.Increment(status);
 
             switch (status)
             {
@@ -283,6 +284,8 @@ namespace TApp.Views.Dashboard
 
         private void WK_Camera_DoWork(object sender, DoWorkEventArgs e)
         {
+            string data = e.Argument as string ?? string.Empty;
+            Camera_ProcessData(data);
 
         }
 

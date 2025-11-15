@@ -41,6 +41,8 @@ namespace TApp.Helpers
 
         public Product_PLC_Counter PLC_Counter = new Product_PLC_Counter();
 
+        public Product_Camera_Counter productCameraCounter = new Product_Camera_Counter();
+
         public ProductionData()
         {
             BatchCode = string.Empty;
