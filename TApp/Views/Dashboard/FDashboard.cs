@@ -55,7 +55,11 @@ namespace TApp.Views.Dashboard
             try
             {
                 // cho batch mới
-                bool existedBefore = QRDatabaseHelper.CheckAndCreateDatabaseForBatch("");
+                var info = QRDatabaseHelper.InitDatabases();
+
+                // Sau đó load HashSet luôn nếu mày dùng
+                FD_Globals.ActiveSet = QRDatabaseHelper.LoadActiveToHashSet();
+
                 // existedBefore = true -> bể đã có từ trước
             }
             catch (Exception ex)
@@ -228,7 +232,51 @@ namespace TApp.Views.Dashboard
 
         private void Camera_ProcessData(string data)
         {
-            
+            //kiểm tra mã đã active chưa
+            if (FD_Globals.ActiveSet.Contains(data))
+            {
+                // Duplicate → xử lý theo flow Duplicate
+
+                Send_Result_Content(e_Production_Status.Duplicate, data);
+                //ghi trùng vào record
+                QRDatabaseHelper.AddOrActivateCode(
+                    qrContent: data,
+                    batchCode: FD_Globals.productionData.BatchCode,
+                    barcode: FD_Globals.productionData.Barcode,
+                    userName: GlobalVarialbles.CurrentUser.Username,
+                    productionDateTime: DateTime.Now,
+                    status: e_Production_Status.Duplicate.ToString()
+                );
+            }
+            else
+            {
+                //kiểm tra theo nguyên tắc khác (ví dụ check trong DB)
+
+                // Ghi vào DB record
+                QRDatabaseHelper.AddOrActivateCode(
+                    qrContent: data,
+                    
+                    batchCode: FD_Globals.productionData.BatchCode,
+                    barcode: FD_Globals.productionData.Barcode,
+                    userName: GlobalVarialbles.CurrentUser.Username,
+                    productionDateTime: DateTime.Now,
+                    status: e_Production_Status.Pass.ToString()
+                );
+
+                // Ghi vào DB active + unique
+                bool saved = QRDatabaseHelper.AddActiveCodeUnique(
+                    qrContent: data,
+                    batchCode: FD_Globals.productionData.BatchCode,
+                    barcode: FD_Globals.productionData.Barcode,
+                    userName: GlobalVarialbles.CurrentUser.Username,
+                    productionDateTime: DateTime.Now
+                );
+
+                if (saved)
+                {
+                    FD_Globals.ActiveSet.Add(data); // update RAM luôn
+                }
+            }
 
         }
 
@@ -547,7 +595,10 @@ namespace TApp.Views.Dashboard
         public static CameraStatus CameraStatus = CameraStatus.Disconnected;
         public static ProductionData productionData = new ProductionData();
         public static PLCStatus pLCStatus = PLCStatus.Disconnect;
+        public static HashSet<string> ActiveSet = new HashSet<string>();
     }
+
+
 
     public enum e_LogType
     {

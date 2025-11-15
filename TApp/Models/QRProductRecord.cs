@@ -20,6 +20,18 @@ namespace TApp.Models
         public string Reason { get; set; }   // lý do xóa / lỗi
     }
 
+    public class ActiveQRRecord
+    {
+        public int ID { get; set; }
+        public string QRContent { get; set; }
+        public string BatchCode { get; set; }
+        public string Barcode { get; set; }
+        public string UserName { get; set; }
+        public string TimeStampActive { get; set; }
+        public long TimeUnixActive { get; set; }
+        public string ProductionDatetime { get; set; }
+    }
+
     public class BatchProductionSummary
     {
         public string BatchCode { get; set; }

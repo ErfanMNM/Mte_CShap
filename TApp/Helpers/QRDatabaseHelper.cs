@@ -1,41 +1,63 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using TApp.Models;
 
 namespace TApp.Helpers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Data.SQLite;
-    using System.IO;
-
     public static class QRDatabaseHelper
     {
         public const string DefaultDbPath = @"C:\MASAN\QRDatabase.db";
 
+        // DB phụ: chỉ lưu mã active & unique để check trùng nhanh
+        public const string ActiveUniqueDbPath = @"C:\MASAN\ActiveUnique.db";
+
+        private const string CREATE_TABLE_SQL_UNIQUE = @"
+            CREATE TABLE IF NOT EXISTS ActiveUniqueQR (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                QRContent TEXT NOT NULL,
+                BatchCode TEXT NOT NULL,
+                Barcode TEXT NOT NULL,
+                UserName TEXT NOT NULL,
+                TimeStampActive TEXT NOT NULL,
+                TimeUnixActive INTEGER NOT NULL,
+                ProductionDatetime TEXT NOT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IDX_AU_QR_QRContent ON ActiveUniqueQR(QRContent);
+        ";
+
         // schema mới: Status TEXT, Reason TEXT
         private const string CREATE_TABLE_SQL = @"
-        CREATE TABLE IF NOT EXISTS QRProducts (
-            ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            QRContent TEXT NOT NULL,
-            BatchCode TEXT NOT NULL,
-            Barcode TEXT NOT NULL,
-            Status TEXT NOT NULL,
-            UserName TEXT NOT NULL,
-            TimeStampActive TEXT NOT NULL,
-            TimeUnixActive INTEGER NOT NULL,
-            ProductionDatetime TEXT NOT NULL,
-            Reason TEXT NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS IDX_QR_QRContent ON QRProducts(QRContent);
-        CREATE INDEX IF NOT EXISTS IDX_QR_BatchCode ON QRProducts(BatchCode);
+            CREATE TABLE IF NOT EXISTS QRProducts (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                QRContent TEXT NOT NULL,
+                BatchCode TEXT NOT NULL,
+                Barcode TEXT NOT NULL,
+                Status TEXT NOT NULL,
+                UserName TEXT NOT NULL,
+                TimeStampActive TEXT NOT NULL,
+                TimeUnixActive INTEGER NOT NULL,
+                ProductionDatetime TEXT NOT NULL,
+                Reason TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS IDX_QR_QRContent ON QRProducts(QRContent);
+            CREATE INDEX IF NOT EXISTS IDX_QR_BatchCode ON QRProducts(BatchCode);
+        ";
 
-        
-    ";
+        // ================== DB CHÍNH: QRProducts (record đầy đủ) ==================
+
+        public static (bool MainDbExisted, bool ActiveDbExisted) InitDatabases()
+        {
+            bool mainExisted = File.Exists(DefaultDbPath);
+            bool activeExisted = File.Exists(ActiveUniqueDbPath);
+
+            // Tạo nếu chưa có + đảm bảo schema
+            EnsureDatabase(DefaultDbPath);
+            EnsureActiveUniqueDatabase(ActiveUniqueDbPath);
+
+            return (mainExisted, activeExisted);
+        }
 
         public static void EnsureDatabase(string dbPath = DefaultDbPath)
         {
@@ -52,18 +74,8 @@ namespace TApp.Helpers
                 }
 
                 // Nếu DB cũ chưa có cột Reason/Status TEXT thì tốt nhất là backup & recreate.
-                // Ở đây tao không cố migrate tự động cho đỡ rối.
+                // Ở đây tao không migrate tự động.
             }
-        }
-
-        /// <summary>
-        /// Chỉ đảm bảo DB tồn tại, name hàm giữ lại cho mày dễ dùng.
-        /// </summary>
-        public static bool CheckAndCreateDatabaseForBatch(string batchCode, string dbPath = DefaultDbPath)
-        {
-            bool existed = File.Exists(dbPath);
-            EnsureDatabase(dbPath);
-            return existed;
         }
 
         /// <summary>
@@ -90,12 +102,14 @@ namespace TApp.Helpers
         /// Thêm hoặc Active code -> Status = Pass (mặc định là OK).
         /// </summary>
         public static void AddOrActivateCode(
-            string qrContent,
-            string batchCode,
-            string barcode,
-            string userName,
-            DateTime productionDateTime,
-            string dbPath = DefaultDbPath)
+    string qrContent,
+    string batchCode,
+    string barcode,
+    string userName,
+    DateTime productionDateTime,
+    string status,                     // 👈 thêm status vào đây
+    string reason = "",                // 👈 optional reason luôn
+    string dbPath = DefaultDbPath)
         {
             EnsureDatabase(dbPath);
 
@@ -116,26 +130,28 @@ namespace TApp.Helpers
                     if (exists > 0)
                     {
                         string updateSql = @"
-                        UPDATE QRProducts
-                        SET BatchCode = @BatchCode,
-                            Barcode = @Barcode,
-                            Status = 'Pass',
-                            UserName = @UserName,
-                            TimeStampActive = @TimeStampActive,
-                            TimeUnixActive = @TimeUnixActive,
-                            ProductionDatetime = @ProductionDatetime,
-                            Reason = ''
-                        WHERE QRContent = @QRContent;
-                    ";
+                    UPDATE QRProducts
+                    SET BatchCode = @BatchCode,
+                        Barcode = @Barcode,
+                        Status = @Status,
+                        UserName = @UserName,
+                        TimeStampActive = @TimeStampActive,
+                        TimeUnixActive = @TimeUnixActive,
+                        ProductionDatetime = @ProductionDatetime,
+                        Reason = @Reason
+                    WHERE QRContent = @QRContent;
+                ";
 
                         using (var cmd = new SQLiteCommand(updateSql, con))
                         {
                             cmd.Parameters.AddWithValue("@BatchCode", batchCode);
                             cmd.Parameters.AddWithValue("@Barcode", barcode);
+                            cmd.Parameters.AddWithValue("@Status", status);
                             cmd.Parameters.AddWithValue("@UserName", userName);
                             cmd.Parameters.AddWithValue("@TimeStampActive", timeStampNow);
                             cmd.Parameters.AddWithValue("@TimeUnixActive", unixNow);
                             cmd.Parameters.AddWithValue("@ProductionDatetime", prodTime);
+                            cmd.Parameters.AddWithValue("@Reason", reason ?? "");
                             cmd.Parameters.AddWithValue("@QRContent", qrContent);
                             cmd.ExecuteNonQuery();
                         }
@@ -143,29 +159,32 @@ namespace TApp.Helpers
                     else
                     {
                         string insertSql = @"
-                        INSERT INTO QRProducts
-                        (QRContent, BatchCode, Barcode, Status, UserName,
-                         TimeStampActive, TimeUnixActive, ProductionDatetime, Reason)
-                        VALUES
-                        (@QRContent, @BatchCode, @Barcode, 'Pass', @UserName,
-                         @TimeStampActive, @TimeUnixActive, @ProductionDatetime, '');
-                    ";
+                    INSERT INTO QRProducts
+                    (QRContent, BatchCode, Barcode, Status, UserName,
+                     TimeStampActive, TimeUnixActive, ProductionDatetime, Reason)
+                    VALUES
+                    (@QRContent, @BatchCode, @Barcode, @Status, @UserName,
+                     @TimeStampActive, @TimeUnixActive, @ProductionDatetime, @Reason);
+                ";
 
                         using (var cmd = new SQLiteCommand(insertSql, con))
                         {
                             cmd.Parameters.AddWithValue("@QRContent", qrContent);
                             cmd.Parameters.AddWithValue("@BatchCode", batchCode);
                             cmd.Parameters.AddWithValue("@Barcode", barcode);
+                            cmd.Parameters.AddWithValue("@Status", status);
                             cmd.Parameters.AddWithValue("@UserName", userName);
                             cmd.Parameters.AddWithValue("@TimeStampActive", timeStampNow);
                             cmd.Parameters.AddWithValue("@TimeUnixActive", unixNow);
                             cmd.Parameters.AddWithValue("@ProductionDatetime", prodTime);
+                            cmd.Parameters.AddWithValue("@Reason", reason ?? "");
                             cmd.ExecuteNonQuery();
                         }
                     }
                 }
             }
         }
+
 
         /// <summary>
         /// Update status bất kỳ + ghi Reason (ví dụ ReadFail, Duplicate, Error, Timeout, Deactive).
@@ -330,9 +349,6 @@ namespace TApp.Helpers
             }
         }
 
-        /// <summary>
-        /// Sản lượng theo Batch (mặc định chỉ tính Status = Pass).
-        /// </summary>
         public static List<BatchProductionSummary> GetProductionByBatch(
             string statusFilter = "Pass",
             string dbPath = DefaultDbPath)
@@ -377,12 +393,6 @@ namespace TApp.Helpers
             return list;
         }
 
-        /// <summary>
-        /// Sản lượng theo giờ của 1 ngày cụ thể.
-        /// day: yyyy-MM-dd (chỉ phần ngày), đếm theo ProductionDatetime.
-        /// Nếu batchCode != null -> filter theo batch.
-        /// Mặc định chỉ tính Status = Pass.
-        /// </summary>
         public static List<HourlyProduction> GetHourlyProduction(
             DateTime day,
             string batchCode = null,
@@ -440,10 +450,6 @@ namespace TApp.Helpers
             return list;
         }
 
-        /// <summary>
-        /// Sản lượng theo ngày (trong khoảng fromDate -> toDate, inclusive).
-        /// Mặc định chỉ tính Status = Pass.
-        /// </summary>
         public static List<DailyProduction> GetDailyProduction(
             DateTime fromDate,
             DateTime toDate,
@@ -504,6 +510,180 @@ namespace TApp.Helpers
 
             return list;
         }
-    }
 
+        // ================== DB PHỤ: ActiveUniqueQR (mã active & unique) ==================
+
+        public static void EnsureActiveUniqueDatabase(string dbPath = ActiveUniqueDbPath)
+        {
+            string folder = Path.GetDirectoryName(dbPath);
+            if (!Directory.Exists(folder))
+                Directory.CreateDirectory(folder);
+
+            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            {
+                con.Open();
+                using (var cmd = new SQLiteCommand(CREATE_TABLE_SQL_UNIQUE, con))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Thêm mã active vào DB phụ (unique theo QRContent).
+        /// Trả về true nếu insert thành công, false nếu đã tồn tại (bị IGNORE).
+        /// </summary>
+        public static bool AddActiveCodeUnique(
+            string qrContent,
+            string batchCode,
+            string barcode,
+            string userName,
+            DateTime productionDateTime,
+            string dbPath = ActiveUniqueDbPath)
+        {
+            EnsureActiveUniqueDatabase(dbPath);
+
+            long unixNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string timeStampNow = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            string prodTime = productionDateTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            {
+                con.Open();
+
+                string sql = @"
+                    INSERT OR IGNORE INTO ActiveUniqueQR
+                    (QRContent, BatchCode, Barcode, UserName,
+                     TimeStampActive, TimeUnixActive, ProductionDatetime)
+                    VALUES
+                    (@QRContent, @BatchCode, @Barcode, @UserName,
+                     @TimeStampActive, @TimeUnixActive, @ProductionDatetime);
+                ";
+
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@QRContent", qrContent);
+                    cmd.Parameters.AddWithValue("@BatchCode", batchCode);
+                    cmd.Parameters.AddWithValue("@Barcode", barcode);
+                    cmd.Parameters.AddWithValue("@UserName", userName);
+                    cmd.Parameters.AddWithValue("@TimeStampActive", timeStampNow);
+                    cmd.Parameters.AddWithValue("@TimeUnixActive", unixNow);
+                    cmd.Parameters.AddWithValue("@ProductionDatetime", prodTime);
+
+                    int rows = cmd.ExecuteNonQuery();
+                    return rows > 0; // true = mới thêm, false = đã có
+                }
+            }
+        }
+
+        /// <summary>
+        /// Xóa 1 mã ra khỏi DB active (nếu cần revoke).
+        /// </summary>
+        public static bool RemoveActiveCode(string qrContent, string dbPath = ActiveUniqueDbPath)
+        {
+            EnsureActiveUniqueDatabase(dbPath);
+
+            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            {
+                con.Open();
+
+                string sql = "DELETE FROM ActiveUniqueQR WHERE QRContent = @QRContent;";
+
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@QRContent", qrContent);
+                    int rows = cmd.ExecuteNonQuery();
+                    return rows > 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Kiểm tra mã đã tồn tại trong DB active chưa.
+        /// </summary>
+        public static bool ActiveCodeExists(string qrContent, string dbPath = ActiveUniqueDbPath)
+        {
+            EnsureActiveUniqueDatabase(dbPath);
+
+            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            {
+                con.Open();
+
+                string sql = "SELECT COUNT(*) FROM ActiveUniqueQR WHERE QRContent = @QRContent;";
+
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@QRContent", qrContent);
+                    int count = Convert.ToInt32(cmd.ExecuteScalar());
+                    return count > 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Load toàn bộ mã active vào HashSet để check trùng siêu nhanh.
+        /// </summary>
+        public static HashSet<string> LoadActiveToHashSet(string dbPath = ActiveUniqueDbPath)
+        {
+            EnsureActiveUniqueDatabase(dbPath);
+
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            {
+                con.Open();
+
+                string sql = "SELECT QRContent FROM ActiveUniqueQR;";
+
+                using (var cmd = new SQLiteCommand(sql, con))
+                using (var rd = cmd.ExecuteReader())
+                {
+                    while (rd.Read())
+                    {
+                        set.Add(rd.GetString(0));
+                    }
+                }
+            }
+
+            return set;
+        }
+
+        /// <summary>
+        /// Lấy tổng số mã active đang nằm trong DB phụ.
+        /// </summary>
+        public static int GetActiveCodeCount(string dbPath = ActiveUniqueDbPath)
+        {
+            EnsureActiveUniqueDatabase(dbPath);
+
+            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            {
+                con.Open();
+                string sql = "SELECT COUNT(*) FROM ActiveUniqueQR;";
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    return Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
+        }
+
+
+        public static int GetActiveCountByBatch(string batchCode, string dbPath = ActiveUniqueDbPath)
+        {
+            EnsureActiveUniqueDatabase(dbPath);
+
+            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            {
+                con.Open();
+
+                string sql = "SELECT COUNT(*) FROM ActiveUniqueQR WHERE BatchCode = @BatchCode;";
+
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@BatchCode", batchCode);
+                    return Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
+        }
+
+    }
 }
