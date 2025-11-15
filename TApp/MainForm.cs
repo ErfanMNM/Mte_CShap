@@ -44,7 +44,6 @@ namespace TApp
                 UIStyles.CultureInfo = CultureInfos.en_US;
                 UIStyles.GlobalFont = true;
                 UIStyles.GlobalFontName = "Tahoma";
-                //UIStyles.InitColorful(Color.Green, Color.White);
 
                 MainTabControl = MainTab;
                 NavMenu.TabControl = MainTab;
