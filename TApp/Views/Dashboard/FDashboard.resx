@@ -129,4 +129,10 @@
   <metadata name="erP_Google2.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>324, 10</value>
   </metadata>
+  <metadata name="WK_Dequeue.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>171, 48</value>
+  </metadata>
+  <metadata name="WK_Load_Counter.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>373, 48</value>
+  </metadata>
 </root>
