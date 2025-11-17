@@ -29,7 +29,8 @@ namespace TApp.Helpers
         Duplicate = 3,
         NotFound = 4,
         Timeout = 5,
-        ReadFail = 6
+        ReadFail = 6,
+        FormatError = 7
     }
 
     public class ProductionData
@@ -55,34 +56,35 @@ namespace TApp.Helpers
         {
             public int Total;
             public int Pass;
-            public int Fail;
+            public int Fail => Duplicate + ReadFail + NotFound + Timeout + Error + FormatError;
             public int Duplicate;
             public int ReadFail;
             public int NotFound;
             public int Timeout;
             public int Error;
+            public int FormatError;
 
             public Product_Camera_Counter()
             {
                 Total = 0;
                 Pass = 0;
-                Fail = 0;
                 Duplicate = 0;
                 ReadFail = 0;
                 NotFound = 0;
                 Timeout = 0;
                 Error = 0;
+                FormatError = 0;
             }
             public void Reset()
             {
                 Total = 0;
                 Pass = 0;
-                Fail = 0;
                 Duplicate = 0;
                 ReadFail = 0;
                 NotFound = 0;
                 Timeout = 0;
                 Error = 0;
+                FormatError = 0;
             }
             public void Increment(e_Production_Status status)
             {
@@ -93,9 +95,6 @@ namespace TApp.Helpers
                     {
                         case e_Production_Status.Pass:
                             Pass++;
-                            break;
-                        case e_Production_Status.Fail:
-                            Fail++;
                             break;
                         case e_Production_Status.Duplicate:
                             Duplicate++;
@@ -111,6 +110,9 @@ namespace TApp.Helpers
                             break;
                         case e_Production_Status.ReadFail:
                             ReadFail++;
+                            break;
+                        case e_Production_Status.FormatError:
+                            FormatError++;
                             break;
                     }
                 }
@@ -125,73 +127,30 @@ namespace TApp.Helpers
         {
             public int Total;
             public int Pass;
-            public int Fail;
-            public int Duplicate;
             public int ReadFail;
-            public int NotFound;
             public int Timeout;
-            public int Error;
+            public int Fail => ReadFail + Timeout;
+
 
             public Product_PLC_Counter()
             {
                 Total = 0;
                 Pass = 0;
-                Fail = 0;
-                Duplicate = 0;
                 ReadFail = 0;
-                NotFound = 0;
-                Timeout = 0;
-                Error = 0;
+
+
             }
 
             public void Reset()
             {
                 Total = 0;
                 Pass = 0;
-                Fail = 0;
-                Duplicate = 0;
                 ReadFail = 0;
-                NotFound = 0;
                 Timeout = 0;
-                Error = 0;
+
+
             }
 
-            public void Increment(e_Production_Status status)
-            {
-                try
-                {
-                    Total++;
-                    switch (status)
-                    {
-                        case e_Production_Status.Pass:
-                            Pass++;
-                            break;
-                        case e_Production_Status.Fail:
-                            Fail++;
-                            break;
-                        case e_Production_Status.Duplicate:
-                            Duplicate++;
-                            break;
-                        case e_Production_Status.NotFound:
-                            NotFound++;
-                            break;
-                        case e_Production_Status.Error:
-                            Error++;
-                            break;
-                        case e_Production_Status.Timeout:
-                            Timeout++;
-                            break;
-                        case e_Production_Status.ReadFail:
-                            ReadFail++;
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    throw new InvalidOperationException($"PH1911 lỗi tăng bộ đếm: {ex.Message}");
-                }
-                    
-            }
         }
 
     }
