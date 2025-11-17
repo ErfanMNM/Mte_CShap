@@ -59,7 +59,7 @@ namespace TTManager.Internet
                             break;
                         case 3:
                             opInternetStatus.Text = "Yếu";
-                            opInternetStatus.ForeColor = Color.Yellow;
+                            opInternetStatus.ForeColor = Color.Red;
                             opInternetStatus.RectColor = Color.Yellow;
 
                             break;
