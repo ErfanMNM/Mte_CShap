@@ -70,7 +70,6 @@
             uiTextBox2 = new Sunny.UI.UITextBox();
             uiTextBox3 = new Sunny.UI.UITextBox();
             uiTableLayoutPanel13 = new Sunny.UI.UITableLayoutPanel();
-            btnEditBarcode = new Sunny.UI.UISymbolButton();
             ipBarcode = new Sunny.UI.UITextBox();
             uiTitlePanel1 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel4 = new Sunny.UI.UITableLayoutPanel();
@@ -714,6 +713,7 @@
             btnABatch.Size = new Size(43, 32);
             btnABatch.TabIndex = 1;
             btnABatch.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnABatch.Click += btnABatch_Click;
             // 
             // uiPanel8
             // 
@@ -835,10 +835,8 @@
             // 
             // uiTableLayoutPanel13
             // 
-            uiTableLayoutPanel13.ColumnCount = 2;
+            uiTableLayoutPanel13.ColumnCount = 1;
             uiTableLayoutPanel13.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel13.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 47F));
-            uiTableLayoutPanel13.Controls.Add(btnEditBarcode, 1, 0);
             uiTableLayoutPanel13.Controls.Add(ipBarcode, 0, 0);
             uiTableLayoutPanel13.Dock = DockStyle.Fill;
             uiTableLayoutPanel13.Location = new Point(120, 36);
@@ -849,19 +847,6 @@
             uiTableLayoutPanel13.Size = new Size(245, 36);
             uiTableLayoutPanel13.TabIndex = 4;
             uiTableLayoutPanel13.TagString = null;
-            // 
-            // btnEditBarcode
-            // 
-            btnEditBarcode.Dock = DockStyle.Fill;
-            btnEditBarcode.FillColor = Color.FromArgb(0, 192, 0);
-            btnEditBarcode.Font = new Font("Microsoft Sans Serif", 12F);
-            btnEditBarcode.Location = new Point(200, 2);
-            btnEditBarcode.Margin = new Padding(2);
-            btnEditBarcode.MinimumSize = new Size(1, 1);
-            btnEditBarcode.Name = "btnEditBarcode";
-            btnEditBarcode.Size = new Size(43, 32);
-            btnEditBarcode.TabIndex = 1;
-            btnEditBarcode.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
             // ipBarcode
             // 
@@ -877,7 +862,7 @@
             ipBarcode.Padding = new Padding(5);
             ipBarcode.ReadOnly = true;
             ipBarcode.ShowText = false;
-            ipBarcode.Size = new Size(198, 36);
+            ipBarcode.Size = new Size(245, 36);
             ipBarcode.TabIndex = 0;
             ipBarcode.Text = "0123456789";
             ipBarcode.TextAlignment = ContentAlignment.MiddleLeft;
@@ -1197,6 +1182,7 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(87, 3);
             opPLCLed.Name = "opPLCLed";
+            opPLCLed.On = false;
             opPLCLed.Size = new Size(27, 30);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";
@@ -1531,7 +1517,6 @@
         private System.ComponentModel.BackgroundWorker WK_Camera;
         private System.ComponentModel.BackgroundWorker WK_Render_HMI;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel13;
-        private Sunny.UI.UISymbolButton btnEditBarcode;
         private Sunny.UI.UITextBox ipBarcode;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel14;
         private Sunny.UI.UIComboBox ipBatchNo;

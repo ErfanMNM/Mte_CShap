@@ -1,4 +1,5 @@
-﻿using Google.Apis.Auth.OAuth2;
+﻿using ExcelDataReader; // Add this using directive at the top with other usings
+using Google.Apis.Auth.OAuth2;
 using Google.Apis.Bigquery.v2.Data;
 using Google.Cloud.BigQuery.V2;
 using Sunny.UI;
@@ -11,7 +12,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using ExcelDataReader; // Add this using directive at the top with other usings
 
 namespace TTManager.Masan
 {
@@ -134,6 +134,39 @@ namespace TTManager.Masan
                 throw new InvalidOperationException($"E123 Lỗi tải ERP vào cbb theo Line Name: {ex.Message}");
             }
 
+        }
+
+        public Dictionary<string,string> LoadExcelToProductListD (string filePath)
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            Dictionary <string, string> rs = new Dictionary<string, string>();
+            using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
+            {
+                using (var reader = ExcelReaderFactory.CreateReader(stream))
+                {
+                    var conf = new ExcelDataSetConfiguration
+                    {
+                        ConfigureDataTable = _ => new ExcelDataTableConfiguration
+                        {
+                            UseHeaderRow = true
+                        }
+                    };
+
+                    var dataSet = reader.AsDataSet(conf);
+                    var dataTable = dataSet.Tables[0]; // lấy sheet đầu tiên
+
+                    foreach (DataRow row in dataTable.Rows)
+                    {
+                        string itemCode = row["Item code"]?.ToString().Trim();
+                        string barcode = row["Barcode nhãn"]?.ToString().Trim();
+
+                        rs[itemCode] = barcode;
+                    }
+
+                }
+
+                return rs;
+            }
         }
 
         public string LoadExcelToProductList(string BatchCode,string filePath)

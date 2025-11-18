@@ -122,14 +122,33 @@ namespace TTManager.Auth
 
             return user;
         }
+
+        //kiểm tra xem 2FA có đúng không theo username
+        
     }
     public class UserHelper
     {
+        public static bool Validate2FA(string username, string code, string data_file_path)
+        {
+            UserData user = UserData.GetUserByUsername(username, data_file_path);
+            if (user == null || string.IsNullOrEmpty(user.Key2FA))
+            {
+                return false; // Người dùng không tồn tại hoặc không có khóa 2FA
+            }
+            // Kiểm tra mã 2FA
+            return TwoFAHelper.VerifyOTP(user.Key2FA, code);
+        }
+
+        public static bool IsAdmin(string username, string data_file_path)
+        {
+            UserData user = UserData.GetUserByUsername(username, data_file_path);
+            return user != null && user.Role == "Admin";
+        }
         public static bool ValidateCredentials(string username, string password, string data_file_path)
         {
             // File SQLite đặt cạnh file exe
             string dbFile = data_file_path;
-            if (!System.IO.File.Exists(dbFile))
+            if (!File.Exists(dbFile))
             {
                 //trả về sự kiện
                 return false;
@@ -237,5 +256,7 @@ namespace TTManager.Auth
                 }
             }
         }
+
+        
     }
 }

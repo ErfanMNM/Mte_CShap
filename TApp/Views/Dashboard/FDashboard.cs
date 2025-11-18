@@ -4,6 +4,7 @@ using MTs.Datalogic;
 using Sunny.UI;
 using System.ComponentModel;
 using TApp.Configs;
+using TApp.Dialogs;
 using TApp.Helpers;
 using TApp.Infrastructure;
 using TApp.Models;
@@ -31,7 +32,7 @@ namespace TApp.Views.Dashboard
             InitalizeProductionInfomation();
             InitalizeProductionDatabase();
             InitializeDashboardUI();
-            
+
             InitializeBackgroundWK();
         }
 
@@ -611,91 +612,69 @@ namespace TApp.Views.Dashboard
         private bool batchChangeMode = false;
         private void btnChangeBatch_Click(object sender, EventArgs e)
         {
-            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng nhấn đổi lô", "", "UA-F-01");
-            try
+            //ghi log người dùng nhấn đổi lô
+            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Nhấn đổi lô sản xuất", "{'BatchCode':'" + ipBatchNo.Text.Trim() + "','Barcode':'" + ipBarcode.Text.Trim() + "'}", "UA-F-03");
+            using (var dialog = new DChangeBatch())
             {
-                if (!batchChangeMode)
+                btnChangeBatch.Enabled = false;
+                btnChangeBatch.Text = "Đang tải...";
+                dialog.BatchCode = ipBatchNo.Text.Trim();
+                dialog.Barcode = ipBarcode.Text.Trim();
+                dialog.CurrentUser = GlobalVarialbles.CurrentUser;
+                dialog.bt = erP_Google2.LoadExcelToProductListD(AppConfigs.Current.production_list_path);
+
+                string loaderp = erP_Google2.Load_Erp_to_Cbb_With_Line_Name(dialog.ipBatch);
+                if (loaderp == "OK")
                 {
-                    btnChangeBatch.Enabled = false;
-                    btnChangeBatch.Text = "Đang tải...";
-                    string rs = erP_Google2.Load_Erp_to_Cbb_With_Line_Name(ipBatchNo);
-                    if (rs == "OK")
+                    btnChangeBatch.Enabled = true;
+                    btnChangeBatch.Text = "Đổi lô";
+
+                    if (dialog.ShowDialog() == DialogResult.OK)
                     {
-                        btnChangeBatch.FillColor = Color.OrangeRed;
-                        btnChangeBatch.Text = "Lưu";
-                        btnChangeBatch.Enabled = true;
-                        ipBatchNo.Enabled = true;
-                        ipBatchNo.FillColor = Color.Yellow;
+                        ipBarcode.Text = dialog.Barcode;
+
+                        ipBatchNo.Text = dialog.BatchCode;
+
+                        FD_Globals.productionData.BatchCode = dialog.BatchCode;
+                        FD_Globals.productionData.Barcode = dialog.Barcode;
+
+
+                        string dbPath = "Database/Production/batch_history.db";
+                        BatchHistoryHelper.AddHistory(
+                            dbPath,
+                            FD_Globals.productionData.BatchCode,
+                            FD_Globals.productionData.Barcode.ToString(),
+                            GlobalVarialbles.CurrentUser.Username,
+                            DateTime.Now
+                        );
+
+                        this.ShowSuccessTip("Đổi lô thành công!");
+                        GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô sản xuất", "{'BatchCode':'" + dialog.BatchCode + "','Barcode':'" + dialog.Barcode + "'}", "UA-F-03");
                     }
                     else
                     {
-                        this.ShowErrorDialog("Tải xuống ERP thất bại, HÃY CHỤP LẠI THÔNG BÁO NÀY. Vui lòng nhấn vào mục Kiểm tra-> chọn mục B09 -> Nhấn bắt đầu và đợi một lát. Nếu A01 báo thành công nhưng hiện trống, vui lòng kiểm tra Tên line, Tên nhà máy, Tên xưởng đã đúng chưa? Nếu đã đúng hãy liên hệ người quản lý ERP hoặc IT nhà máy");
-
-                        GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", "{'Thông tin lỗi':'" + rs + "'}", "ERP-F-01");
-
-                        btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
-                        btnChangeBatch.Text = "Đổi Lô";
-                        return;
+                        //ghi log người dùng hủy đổi lô
+                        GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Hủy đổi lô sản xuất", "{'BatchCode':'" + dialog.BatchCode + "','Barcode':'" + dialog.Barcode + "'}", "UA-F-03");
                     }
+
 
 
                 }
                 else
                 {
 
-                    var result = this.ShowAskDialog("Bạn có chắc chắn thay đổi lô sản xuất?");
-                    if (result)
-                    {
-                        try
-                        {
-                            btnChangeBatch.Enabled = true;
-                            btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
-                            btnChangeBatch.Text = "Đổi Lô";
-                            ipBatchNo.Enabled = false;
-                            ipBatchNo.FillColor = Color.White;
-                            FD_Globals.productionData.BatchCode = ipBatchNo.Text.Trim();
-                            FD_Globals.productionData.Barcode = ipBarcode.Text;
-                            //chương trình tạo dữ liệu lô mới
-
-                            string dbPath = "Database/Production/batch_history.db";
-                            BatchHistoryHelper.AddHistory(
-                                dbPath,
-                                FD_Globals.productionData.BatchCode,
-                                FD_Globals.productionData.Barcode.ToString(),
-                                GlobalVarialbles.CurrentUser.Username,
-                                DateTime.Now
-                            );
-
-                            this.ShowSuccessTip("Đổi lô thành công!");
-
-                            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'Lô mới':'{FD_Globals.productionData.BatchCode}','Barcode mới':'{FD_Globals.productionData.Barcode}'}}", "UA-F-02");
-                        }
-                        catch (Exception ex)
-                        {
-                            this.ShowErrorTip($"Lỗi đổi lô: {ex.Message}");
-                            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERR-F-01");
-                        }
-                    }
-
-
-
+                    btnChangeBatch.Enabled = true;
+                    btnChangeBatch.Text = "Đổi lô";
+                    this.ShowErrorDialog("Tải xuống ERP thất bại, HÃY CHỤP LẠI THÔNG BÁO NÀY. Vui lòng nhấn vào mục Kiểm tra-> chọn mục B09 -> Nhấn bắt đầu và đợi một lát. Nếu A01 báo thành công nhưng hiện trống, vui lòng kiểm tra Tên line, Tên nhà máy, Tên xưởng đã đúng chưa? Nếu đã đúng hãy liên hệ người quản lý ERP hoặc IT nhà máy");
+                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", "{'Thông tin lỗi':'" + loaderp + "'}", "ERP-F-01");
+                    return;
                 }
-                batchChangeMode = !batchChangeMode;
-                GlobalVarialbles.CurrentAppState = e_AppState.Ready;
-            }
-            catch (Exception ex)
-            {
-                btnChangeBatch.Enabled = true;
-                btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
-                btnChangeBatch.Text = "Đổi Lô";
-                GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERP-F-02");
-                this.ShowErrorDialog($"Lỗi đổi lô, bạn có thể liên hệ NCC máy theo số 0876 00 01 00: {ex.Message}");
 
-                GlobalVarialbles.CurrentAppState = e_AppState.Ready;
-            }
 
+            }
 
         }
+        
 
         private void ipBatchNo_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -761,7 +740,7 @@ namespace TApp.Views.Dashboard
                         opAlarm.RectColor = Color.FromArgb(80, 160, 255);
                         opAlarm.FillColor = Color.FromArgb(243, 249, 255);
                     }
-                    
+
                     Thread.Sleep(100);
                 }
                 catch (Exception ex)
@@ -800,7 +779,7 @@ namespace TApp.Views.Dashboard
                 FD_Globals.ProductionPerHour = hourlyPassProduction.Where(p => p.Hour == DateTime.Now.Hour).Select(p => p.Count).FirstOrDefault();
 
 
-                
+
 
                 Thread.Sleep(1000); // Cập nhật lại sau mỗi 60 giây
             }
@@ -809,6 +788,92 @@ namespace TApp.Views.Dashboard
         private void opFail_DoubleClick(object sender, EventArgs e)
         {
             this.ShowInfoDialog($"Số quá thời gian:{FD_Globals.productionData.PLC_Counter.Timeout.ToString()}");
+        }
+
+        private void btnABatch_Click(object sender, EventArgs e)
+        {
+            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng nhấn đổi lô", "", "UA-F-01");
+            try
+            {
+                if (!batchChangeMode)
+                {
+                    btnABatch.Enabled = false;
+                    //btnChangeBatch.Text = "Đang tải...";
+                    string rs = erP_Google2.Load_Erp_to_Cbb_With_Line_Name(ipBatchNo);
+                    if (rs == "OK")
+                    {
+                        btnABatch.FillColor = Color.OrangeRed;
+                        //btnChangeBatch.Text = "Lưu";
+                        btnABatch.Enabled = true;
+                        ipBatchNo.Enabled = true;
+                        ipBatchNo.FillColor = Color.Yellow;
+                    }
+                    else
+                    {
+                        this.ShowErrorDialog("Tải xuống ERP thất bại, HÃY CHỤP LẠI THÔNG BÁO NÀY. Vui lòng nhấn vào mục Kiểm tra-> chọn mục B09 -> Nhấn bắt đầu và đợi một lát. Nếu A01 báo thành công nhưng hiện trống, vui lòng kiểm tra Tên line, Tên nhà máy, Tên xưởng đã đúng chưa? Nếu đã đúng hãy liên hệ người quản lý ERP hoặc IT nhà máy");
+
+                        GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", "{'Thông tin lỗi':'" + rs + "'}", "ERP-F-01");
+
+                        btnABatch.FillColor = Color.FromArgb(0, 192, 0);
+                        //btnChangeBatch.Text = "Đổi Lô";
+                        return;
+                    }
+
+
+                }
+                else
+                {
+
+                    var result = this.ShowAskDialog("Bạn có chắc chắn thay đổi lô sản xuất?");
+                    if (result)
+                    {
+                        try
+                        {
+                            btnABatch.Enabled = true;
+                            btnABatch.FillColor = Color.FromArgb(0, 192, 0);
+                            //btnChangeBatch.Text = "Đổi Lô";
+                            ipBatchNo.Enabled = false;
+                            ipBatchNo.FillColor = Color.White;
+                            FD_Globals.productionData.BatchCode = ipBatchNo.Text.Trim();
+                            FD_Globals.productionData.Barcode = ipBarcode.Text;
+                            //chương trình tạo dữ liệu lô mới
+
+                            string dbPath = "Database/Production/batch_history.db";
+                            BatchHistoryHelper.AddHistory(
+                                dbPath,
+                                FD_Globals.productionData.BatchCode,
+                                FD_Globals.productionData.Barcode.ToString(),
+                                GlobalVarialbles.CurrentUser.Username,
+                                DateTime.Now
+                            );
+
+                            this.ShowSuccessTip("Đổi lô thành công!");
+
+                            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'Lô mới':'{FD_Globals.productionData.BatchCode}','Barcode mới':'{FD_Globals.productionData.Barcode}'}}", "UA-F-02");
+                        }
+                        catch (Exception ex)
+                        {
+                            this.ShowErrorTip($"Lỗi đổi lô: {ex.Message}");
+                            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERR-F-01");
+                        }
+                    }
+
+
+
+                }
+                batchChangeMode = !batchChangeMode;
+                //GlobalVarialbles.CurrentAppState = e_AppState.Ready;
+            }
+            catch (Exception ex)
+            {
+                btnChangeBatch.Enabled = true;
+                btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
+                btnChangeBatch.Text = "Đổi Lô";
+                GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERP-F-02");
+                this.ShowErrorDialog($"Lỗi đổi lô, bạn có thể liên hệ NCC máy theo số 0876 00 01 00: {ex.Message}");
+
+                GlobalVarialbles.CurrentAppState = e_AppState.Ready;
+            }
         }
     }
 
