@@ -50,7 +50,7 @@
             uiSymbolLabel5 = new Sunny.UI.UISymbolLabel();
             ip2FACode = new Sunny.UI.UINumPadTextBox();
             erP_Google1 = new TTManager.Masan.ERP_Google(components);
-            uiTextBox2 = new Sunny.UI.UITextBox();
+            ipUser = new Sunny.UI.UITextBox();
             uiTitlePanel1.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
@@ -327,7 +327,7 @@
             uiTableLayoutPanel7.Controls.Add(uiSymbolLabel4, 0, 0);
             uiTableLayoutPanel7.Controls.Add(uiSymbolLabel5, 2, 0);
             uiTableLayoutPanel7.Controls.Add(ip2FACode, 3, 0);
-            uiTableLayoutPanel7.Controls.Add(uiTextBox2, 1, 0);
+            uiTableLayoutPanel7.Controls.Add(ipUser, 1, 0);
             uiTableLayoutPanel7.Dock = DockStyle.Fill;
             uiTableLayoutPanel7.Location = new Point(0, 36);
             uiTableLayoutPanel7.Margin = new Padding(0, 2, 0, 2);
@@ -386,21 +386,19 @@
             erP_Google1.SUB_INV = "110-101-1001";
             erP_Google1.TableID = "BatchProduction";
             // 
-            // uiTextBox2
+            // ipUser
             // 
-            uiTextBox2.Dock = DockStyle.Fill;
-            uiTextBox2.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTextBox2.Location = new Point(102, 5);
-            uiTextBox2.Margin = new Padding(4, 5, 4, 5);
-            uiTextBox2.MinimumSize = new Size(1, 16);
-            uiTextBox2.Name = "uiTextBox2";
-            uiTextBox2.Padding = new Padding(5);
-            uiTextBox2.ShowText = false;
-            uiTextBox2.Size = new Size(169, 35);
-            uiTextBox2.TabIndex = 5;
-            uiTextBox2.Text = "uiTextBox2";
-            uiTextBox2.TextAlignment = ContentAlignment.MiddleLeft;
-            uiTextBox2.Watermark = "";
+            ipUser.Dock = DockStyle.Fill;
+            ipUser.Font = new Font("Microsoft Sans Serif", 12F);
+            ipUser.Location = new Point(100, 2);
+            ipUser.Margin = new Padding(2);
+            ipUser.MinimumSize = new Size(1, 16);
+            ipUser.Name = "ipUser";
+            ipUser.ShowText = false;
+            ipUser.Size = new Size(173, 41);
+            ipUser.TabIndex = 5;
+            ipUser.TextAlignment = ContentAlignment.MiddleLeft;
+            ipUser.Watermark = "";
             // 
             // DChangeBatch
             // 
@@ -448,6 +446,6 @@
         private Sunny.UI.UISymbolLabel uiSymbolLabel5;
         private Sunny.UI.UINumPadTextBox ip2FACode;
         private TTManager.Masan.ERP_Google erP_Google1;
-        private Sunny.UI.UITextBox uiTextBox2;
+        private Sunny.UI.UITextBox ipUser;
     }
 }

@@ -28,15 +28,20 @@
         /// </summary>
         private void InitializeComponent()
         {
+            TTManager.Auth.UserData userData1 = new TTManager.Auth.UserData();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiTabControl1 = new Sunny.UI.UITabControl();
             tabPage1 = new TabPage();
             tabPage2 = new TabPage();
+            uiListBox1 = new Sunny.UI.UIListBox();
+            uc_UserSetting1 = new TTManager.Auth.uc_UserSetting();
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
             btnSave = new Sunny.UI.UISymbolButton();
             btnDefault = new Sunny.UI.UISymbolButton();
+            uc_UserManager1 = new TTManager.Auth.uc_UserManager();
             uiTableLayoutPanel1.SuspendLayout();
             uiTabControl1.SuspendLayout();
+            tabPage2.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
             SuspendLayout();
             // 
@@ -87,12 +92,51 @@
             // 
             // tabPage2
             // 
+            tabPage2.Controls.Add(uc_UserManager1);
+            tabPage2.Controls.Add(uiListBox1);
+            tabPage2.Controls.Add(uc_UserSetting1);
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
             tabPage2.Size = new Size(868, 545);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Người dùng";
             tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // uiListBox1
+            // 
+            uiListBox1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiListBox1.HoverColor = Color.FromArgb(155, 200, 255);
+            uiListBox1.ItemSelectForeColor = Color.White;
+            uiListBox1.Location = new Point(4, 369);
+            uiListBox1.Margin = new Padding(4, 5, 4, 5);
+            uiListBox1.MinimumSize = new Size(1, 1);
+            uiListBox1.Name = "uiListBox1";
+            uiListBox1.Padding = new Padding(2);
+            uiListBox1.ShowText = false;
+            uiListBox1.Size = new Size(860, 171);
+            uiListBox1.TabIndex = 1;
+            uiListBox1.Text = "uiListBox1";
+            // 
+            // uc_UserSetting1
+            // 
+            uc_UserSetting1.CurrentUserName = null;
+            uc_UserSetting1.Font = new Font("Microsoft Sans Serif", 12F);
+            uc_UserSetting1.IS2FAEnabled = false;
+            uc_UserSetting1.Location = new Point(3, 3);
+            uc_UserSetting1.MinimumSize = new Size(1, 1);
+            uc_UserSetting1.Name = "uc_UserSetting1";
+            uc_UserSetting1.Size = new Size(415, 366);
+            uc_UserSetting1.TabIndex = 0;
+            uc_UserSetting1.Text = "uc_UserSetting1";
+            uc_UserSetting1.TextAlignment = ContentAlignment.MiddleCenter;
+            uc_UserSetting1.TwoFARequired = false;
+            userData1.Key2FA = null;
+            userData1.Password = null;
+            userData1.Role = null;
+            userData1.Salt = null;
+            userData1.Username = "";
+            uc_UserSetting1.userData = userData1;
+            uc_UserSetting1.OnUserAction += uc_UserSetting1_OnUserAction;
             // 
             // uiTableLayoutPanel2
             // 
@@ -142,6 +186,19 @@
             btnDefault.TipsFont = new Font("Microsoft Sans Serif", 9F);
             btnDefault.Click += btnDefault_Click;
             // 
+            // uc_UserManager1
+            // 
+            uc_UserManager1.CurrentUserName = "";
+            uc_UserManager1.Font = new Font("Microsoft Sans Serif", 12F);
+            uc_UserManager1.IS2FAEnabled = false;
+            uc_UserManager1.Location = new Point(424, 3);
+            uc_UserManager1.MinimumSize = new Size(1, 1);
+            uc_UserManager1.Name = "uc_UserManager1";
+            uc_UserManager1.Size = new Size(440, 366);
+            uc_UserManager1.TabIndex = 2;
+            uc_UserManager1.Text = "uc_UserManager1";
+            uc_UserManager1.TextAlignment = ContentAlignment.MiddleCenter;
+            // 
             // PAppSetting
             // 
             AllowShowTitle = true;
@@ -155,8 +212,10 @@
             Symbol = 559576;
             Text = "Cài Đặt";
             TitleFillColor = Color.FromArgb(0, 192, 192);
+            Initialize += PAppSetting_Initialize;
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTabControl1.ResumeLayout(false);
+            tabPage2.ResumeLayout(false);
             uiTableLayoutPanel2.ResumeLayout(false);
             ResumeLayout(false);
         }
@@ -170,5 +229,8 @@
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel2;
         private Sunny.UI.UISymbolButton btnSave;
         private Sunny.UI.UISymbolButton btnDefault;
+        private TTManager.Auth.uc_UserSetting uc_UserSetting1;
+        private Sunny.UI.UIListBox uiListBox1;
+        private TTManager.Auth.uc_UserManager uc_UserManager1;
     }
 }

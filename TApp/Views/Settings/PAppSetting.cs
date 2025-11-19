@@ -2,6 +2,9 @@
 using Sunny.UI;
 using System.Reflection;
 using TApp.Configs;
+using TApp.Infrastructure;
+using TApp.Views.Dashboard;
+using TTManager.Auth;
 using TTManager.Diaglogs;
 
 namespace TApp.Views.Settings
@@ -518,6 +521,36 @@ namespace TApp.Views.Settings
                     this.ShowErrorTip($"Lỗi khôi phục cài đặt: {ex.Message}");
                 }
             }
+        }
+
+        private void uc_UserSetting1_OnUserAction(object sender, TTManager.Auth.LoginActionEventArgs e)
+        {
+            uiListBox1.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {e.Message}");
+        }
+
+        private void PAppSetting_Initialize(object sender, EventArgs e)
+        {
+            this.uiListBox1.Items.Clear();
+            uc_UserSetting1.CurrentUserName = GlobalVarialbles.CurrentUser.Username; // Thiết lập tên người dùng hiện tại
+            uc_UserSetting1.INIT(); // Khởi tạo thông tin người dùng
+            
+
+            if(GlobalVarialbles.CurrentUser.Role != "Admin")
+            {
+                btnDefault.Enabled = false;
+                btnSave.Enabled = false;
+
+                uc_UserManager1.Enabled = false;
+            }
+            else {
+                btnDefault.Enabled = true;
+                btnSave.Enabled = true;
+                uc_UserManager1.Enabled = true;
+            }
+
+            uc_UserManager1.CurrentUserName = GlobalVarialbles.CurrentUser.Username; // Thiết lập tên người dùng hiện tại
+            uc_UserManager1.INIT(); // Khởi tạo thông tin người dùng
+
         }
     }
 }

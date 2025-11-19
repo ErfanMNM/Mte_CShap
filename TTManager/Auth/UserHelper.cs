@@ -25,9 +25,7 @@ namespace TTManager.Auth
     public enum e_User_Role
     {
         Admin,
-        Operator,
-        Ghost,
-        Worker
+        Operator
     }
 
     public class LoginActionEventArgs : EventArgs
