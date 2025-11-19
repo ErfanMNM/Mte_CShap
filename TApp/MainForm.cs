@@ -5,7 +5,6 @@ using TApp.Configs;
 using TApp.Infrastructure;
 using TApp.Utils;
 using TApp.Views.Auth;
-using TApp.Views.Communications;
 using TApp.Views.Dashboard;
 using TApp.Views.Settings;
 using TTManager.Auth;

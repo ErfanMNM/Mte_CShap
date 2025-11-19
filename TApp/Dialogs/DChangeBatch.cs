@@ -112,6 +112,7 @@ namespace TApp.Dialogs
                 ipBatch.Enabled = true;
                 ipBatch.DropDownStyle = UIDropDownStyle.DropDown;
                 ipBatch.FillColor = Color.Yellow;
+
             }
             else
             {
