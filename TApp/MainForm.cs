@@ -49,8 +49,8 @@ namespace TApp
 
                 NavMenu.Nodes.Clear();
 
-                NavMenu.CreateNode(AddPage(fDashboard, 1002));
-                NavMenu.CreateNode(AddPage(PAppSetting, 1001));
+                NavMenu.CreateNode(AddPage(fDashboard, 1001));
+                NavMenu.CreateNode(AddPage(PAppSetting, 1002));
 
                 NavMenu.CreateNode(AddPage(fLogin, 2001));
                 NavMenu.SelectPage(2001);
@@ -65,7 +65,11 @@ namespace TApp
                 headNav.Nodes.Add("");
 
                 headNav.SetNodeSymbol(headNav.Nodes[0], 559585);
+
                 var node = headNav.CreateChildNode(headNav.Nodes[0], "Tắt máy", 3001);
+                headNav.SetNodeSymbol(node, 61457);
+
+                var node1 = headNav.CreateChildNode(headNav.Nodes[0], "Đăng xuất", 3002);
                 headNav.SetNodeSymbol(node, 61457);
 
 
@@ -88,7 +92,7 @@ namespace TApp
         {
             string logPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "MTE", "Logs", "Pages", "PPOlog.ptl"
+                "MTE", "Logs", "ALL", "Main.ptl"
             );
             GlobalVarialbles.Logger = new LogHelper<e_LogType>(logPath);
         }
@@ -103,8 +107,6 @@ namespace TApp
 
         private void btnClose_Click(object sender, EventArgs e)
         {
-
-            //WindowState = FormWindowState.Minimized;
             CloseApplication();
         }
 
@@ -211,6 +213,10 @@ namespace TApp
                 case 3001:
                     CloseApplication();
                     break;
+                case 3002:
+                    GlobalVarialbles.CurrentUser.Username = "";
+                    AppState = e_App_State.LOGIN;
+                    break;
                 default:
                     break;
             }
@@ -234,15 +240,21 @@ namespace TApp
                 AppRenderState = e_App_Render_State.LOGIN;
                 this.Invoke(new Action(() =>
                 {
-                    NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
-                    NavMenu.CreateNode("Login", 2001);
+                    NavMenu.CreateNode("DM", 2001);
+                    NavMenu.SelectedNode = NavMenu.Nodes[2];
                     NavMenu.SelectPage(2001);
+                    NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
+                    //
+                    //NavMenu.SelectPage(2001);
+
                     NavMenu.Enabled = false;
                     NavMenu.Visible = false;
+                    NavMenu.Size = new Size(0, 636);
+
                 }));
             }
 
-            if (GlobalVarialbles.CurrentUser.Username != string.Empty)
+            if (GlobalVarialbles.CurrentUser.Username != "")
             {
                 UpdateUserDisplay();
                 AppState = ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
@@ -260,13 +272,14 @@ namespace TApp
                 AppRenderState = e_App_Render_State.ACTIVE;
                 this.Invoke(new Action(() =>
                 {
-                    NavMenu.SelectPage(1002);
+                    NavMenu.SelectPage(1001);
                     NavMenu.Enabled = true;
                     NavMenu.Visible = true;
+                    NavMenu.Size = new Size(144, 636);
                 }));
             }
 
-            if (GlobalVarialbles.CurrentUser.Username == string.Empty)
+            if (GlobalVarialbles.CurrentUser.Username == "")
             {
               AppState = e_App_State.LOGIN;
             }
@@ -311,15 +324,11 @@ namespace TApp
                 switch (GlobalVarialbles.CurrentUser.Role)
                 {
                     case "Admin":
-                        opUser.Text = $"[ADMIN] {GlobalVarialbles.CurrentUser.Username}";
+                        opUser.Text = $"[Quản Lý] {GlobalVarialbles.CurrentUser.Username}";
                         opUser.ForeColor = Color.Red;
                         break;
                     case "Operator":
-                        opUser.Text = $"[OPERATOR] {GlobalVarialbles.CurrentUser.Username}";
-                        opUser.ForeColor = Color.Yellow;
-                        break;
-                    case "Worker":
-                        opUser.Text = $"[WORKER] {GlobalVarialbles.CurrentUser.Username}";
+                        opUser.Text = $"[Vận Hành] {GlobalVarialbles.CurrentUser.Username}";
                         opUser.ForeColor = Color.Green;
                         break;
                     default:

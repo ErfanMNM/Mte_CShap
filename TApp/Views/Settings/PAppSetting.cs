@@ -1,4 +1,5 @@
 ﻿
+using MTs.Auditrails;
 using Sunny.UI;
 using System.Reflection;
 using TApp.Configs;
@@ -15,6 +16,9 @@ namespace TApp.Views.Settings
     /// </summary>
     public partial class PAppSetting : UIPage
     {
+
+        LogHelper<e_LogType> PSLogger { get; set; }
+
         #region Fields
         private Dictionary<string, Control> _configControls = new Dictionary<string, Control>();
         private Dictionary<string, PropertyInfo> _configProperties = new Dictionary<string, PropertyInfo>();
@@ -32,6 +36,11 @@ namespace TApp.Views.Settings
         /// </summary>
         public void START()
         {
+            string logPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "MTE", "Logs", "Pages", "PSlog.ptl"
+    );
+            PSLogger = new LogHelper<e_LogType>(logPath); 
             GenerateConfigControls();
             LoadCurrentConfig();
         }
@@ -533,16 +542,17 @@ namespace TApp.Views.Settings
             this.uiListBox1.Items.Clear();
             uc_UserSetting1.CurrentUserName = GlobalVarialbles.CurrentUser.Username; // Thiết lập tên người dùng hiện tại
             uc_UserSetting1.INIT(); // Khởi tạo thông tin người dùng
-            
 
-            if(GlobalVarialbles.CurrentUser.Role != "Admin")
+
+            if (GlobalVarialbles.CurrentUser.Role != "Admin")
             {
                 btnDefault.Enabled = false;
                 btnSave.Enabled = false;
 
                 uc_UserManager1.Enabled = false;
             }
-            else {
+            else
+            {
                 btnDefault.Enabled = true;
                 btnSave.Enabled = true;
                 uc_UserManager1.Enabled = true;
@@ -551,6 +561,12 @@ namespace TApp.Views.Settings
             uc_UserManager1.CurrentUserName = GlobalVarialbles.CurrentUser.Username; // Thiết lập tên người dùng hiện tại
             uc_UserManager1.INIT(); // Khởi tạo thông tin người dùng
 
+        }
+
+        private void uc_UserManager1_OnAction(object sender, LoginActionEventArgs e)
+        {
+            PSLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Sự kiện : " + e.Message,"","UM01");
+            uiListBox1.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {e.Message}");
         }
     }
 }

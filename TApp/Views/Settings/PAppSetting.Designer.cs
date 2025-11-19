@@ -33,12 +33,12 @@
             uiTabControl1 = new Sunny.UI.UITabControl();
             tabPage1 = new TabPage();
             tabPage2 = new TabPage();
+            uc_UserManager1 = new TTManager.Auth.uc_UserManager();
             uiListBox1 = new Sunny.UI.UIListBox();
             uc_UserSetting1 = new TTManager.Auth.uc_UserSetting();
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
             btnSave = new Sunny.UI.UISymbolButton();
             btnDefault = new Sunny.UI.UISymbolButton();
-            uc_UserManager1 = new TTManager.Auth.uc_UserManager();
             uiTableLayoutPanel1.SuspendLayout();
             uiTabControl1.SuspendLayout();
             tabPage2.SuspendLayout();
@@ -101,6 +101,20 @@
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Người dùng";
             tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // uc_UserManager1
+            // 
+            uc_UserManager1.CurrentUserName = "";
+            uc_UserManager1.Font = new Font("Microsoft Sans Serif", 12F);
+            uc_UserManager1.IS2FAEnabled = false;
+            uc_UserManager1.Location = new Point(424, 3);
+            uc_UserManager1.MinimumSize = new Size(1, 1);
+            uc_UserManager1.Name = "uc_UserManager1";
+            uc_UserManager1.Size = new Size(440, 366);
+            uc_UserManager1.TabIndex = 2;
+            uc_UserManager1.Text = "uc_UserManager1";
+            uc_UserManager1.TextAlignment = ContentAlignment.MiddleCenter;
+            uc_UserManager1.OnAction += uc_UserManager1_OnAction;
             // 
             // uiListBox1
             // 
@@ -185,19 +199,6 @@
             btnDefault.Text = "Khôi phục";
             btnDefault.TipsFont = new Font("Microsoft Sans Serif", 9F);
             btnDefault.Click += btnDefault_Click;
-            // 
-            // uc_UserManager1
-            // 
-            uc_UserManager1.CurrentUserName = "";
-            uc_UserManager1.Font = new Font("Microsoft Sans Serif", 12F);
-            uc_UserManager1.IS2FAEnabled = false;
-            uc_UserManager1.Location = new Point(424, 3);
-            uc_UserManager1.MinimumSize = new Size(1, 1);
-            uc_UserManager1.Name = "uc_UserManager1";
-            uc_UserManager1.Size = new Size(440, 366);
-            uc_UserManager1.TabIndex = 2;
-            uc_UserManager1.Text = "uc_UserManager1";
-            uc_UserManager1.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // PAppSetting
             // 

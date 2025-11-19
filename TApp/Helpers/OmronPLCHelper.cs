@@ -15,6 +15,7 @@ namespace TApp.Helpers
     public static class PLCAddressWithGoogleSheetHelper
     {
         private static readonly string LocalCachePath = "plc_addresses.json";
+        public static string FilePath { get; set; } = @"C:\Users\THUC\Downloads\a.json";
         private static readonly Dictionary<string, string> _addressMap = new Dictionary<string, string>();
 
         public static IReadOnlyDictionary<string, string> AddressMap => _addressMap;
@@ -51,7 +52,7 @@ namespace TApp.Helpers
             //credential = credential.CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
 
             GoogleCredential credential;
-            using (var stream = new FileStream(@"C:\Users\THUC\Downloads\a.json", FileMode.Open, FileAccess.Read))
+            using (var stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
             {
                 credential = GoogleCredential.FromStream(stream).CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
             }

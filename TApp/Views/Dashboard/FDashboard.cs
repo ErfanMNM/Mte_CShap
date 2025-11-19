@@ -1,5 +1,4 @@
 ﻿using HslCommunication;
-using MTs.Auditrails;
 using MTs.Datalogic;
 using Sunny.UI;
 using System.ComponentModel;
@@ -9,7 +8,6 @@ using TApp.Helpers;
 using TApp.Infrastructure;
 using TApp.Models;
 using TApp.Utils;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using static TTManager.PLCHelpers.OmronPLC_Hsl;
 
 namespace TApp.Views.Dashboard
@@ -150,6 +148,8 @@ namespace TApp.Views.Dashboard
                     //chờ đến khi có line name
                     Thread.Sleep(100);
                 }
+
+                PLCAddressWithGoogleSheetHelper.FilePath = AppConfigs.Current.credentialPLCAddressPath;
 
                 PLCAddressWithGoogleSheetHelper.Init("1V2xjY6AA4URrtcwUorQE54Ud5KyI7Ev2hpDPMMcXVTI", "PLC " + AppConfigs.Current.Line_Name + "!A1:D100");
 
@@ -547,8 +547,8 @@ namespace TApp.Views.Dashboard
                         this.InvokeIfRequired(() =>
                         {
                             opCameraStatus.Text = "...";
-                            opCameraStatus.RectColor = Color.Yellow;
-                            opCameraStatus.ForeColor = Color.Yellow;
+                            opCameraStatus.RectColor = Color.Red;
+                            opCameraStatus.ForeColor = Color.OrangeRed;
                             opCameraLed.Blink = true;
                             opCameraLed.Color = Color.Yellow;
                         });

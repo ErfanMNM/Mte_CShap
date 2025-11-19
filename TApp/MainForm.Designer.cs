@@ -34,9 +34,11 @@
             uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
             MainTab = new Sunny.UI.UITabControl();
             uiTableLayoutPanel5 = new Sunny.UI.UITableLayoutPanel();
+            uiPanel3 = new Sunny.UI.UIPanel();
             NavMenu = new Sunny.UI.UINavMenu();
             opUser = new Sunny.UI.UISymbolLabel();
             headNav = new Sunny.UI.UINavBar();
+            uiPanel2 = new Sunny.UI.UIPanel();
             uiPanel1 = new Sunny.UI.UIPanel();
             uiImageButton1 = new Sunny.UI.UIImageButton();
             WK1 = new System.ComponentModel.BackgroundWorker();
@@ -122,6 +124,7 @@
             // 
             uiTableLayoutPanel5.ColumnCount = 1;
             uiTableLayoutPanel5.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel5.Controls.Add(uiPanel3, 0, 2);
             uiTableLayoutPanel5.Controls.Add(NavMenu, 0, 0);
             uiTableLayoutPanel5.Controls.Add(opUser, 0, 1);
             uiTableLayoutPanel5.Dock = DockStyle.Fill;
@@ -135,6 +138,21 @@
             uiTableLayoutPanel5.Size = new Size(150, 723);
             uiTableLayoutPanel5.TabIndex = 3;
             uiTableLayoutPanel5.TagString = null;
+            // 
+            // uiPanel3
+            // 
+            uiPanel3.FillColor = Color.Gainsboro;
+            uiPanel3.Font = new Font("Tahoma", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            uiPanel3.ForeColor = Color.MediumBlue;
+            uiPanel3.Location = new Point(4, 687);
+            uiPanel3.Margin = new Padding(4, 5, 4, 5);
+            uiPanel3.MinimumSize = new Size(1, 1);
+            uiPanel3.Name = "uiPanel3";
+            uiPanel3.RectColor = Color.Blue;
+            uiPanel3.Size = new Size(142, 31);
+            uiPanel3.TabIndex = 4;
+            uiPanel3.Text = "MASAN";
+            uiPanel3.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // NavMenu
             // 
@@ -170,6 +188,7 @@
             // headNav
             // 
             headNav.BackColor = Color.LightSteelBlue;
+            headNav.Controls.Add(uiPanel2);
             headNav.Controls.Add(uiPanel1);
             headNav.Controls.Add(uiImageButton1);
             headNav.Dock = DockStyle.Top;
@@ -191,17 +210,32 @@
             headNav.TabIndex = 3;
             headNav.MenuItemClick += headNav_MenuItemClick;
             // 
+            // uiPanel2
+            // 
+            uiPanel2.FillColor = Color.Transparent;
+            uiPanel2.Font = new Font("Tahoma", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            uiPanel2.ForeColor = Color.MediumBlue;
+            uiPanel2.Location = new Point(247, 0);
+            uiPanel2.Margin = new Padding(4, 5, 4, 5);
+            uiPanel2.MinimumSize = new Size(1, 1);
+            uiPanel2.Name = "uiPanel2";
+            uiPanel2.RectColor = Color.Transparent;
+            uiPanel2.Size = new Size(623, 45);
+            uiPanel2.TabIndex = 2;
+            uiPanel2.Text = "PHẦN MỀM KÍCH HOẠT MÃ QR";
+            uiPanel2.TextAlignment = ContentAlignment.MiddleCenter;
+            // 
             // uiPanel1
             // 
             uiPanel1.FillColor = Color.Transparent;
             uiPanel1.Font = new Font("Tahoma", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
             uiPanel1.ForeColor = Color.MediumBlue;
-            uiPanel1.Location = new Point(48, 0);
+            uiPanel1.Location = new Point(58, 0);
             uiPanel1.Margin = new Padding(4, 5, 4, 5);
             uiPanel1.MinimumSize = new Size(1, 1);
             uiPanel1.Name = "uiPanel1";
             uiPanel1.RectColor = Color.Transparent;
-            uiPanel1.Size = new Size(152, 45);
+            uiPanel1.Size = new Size(181, 45);
             uiPanel1.TabIndex = 1;
             uiPanel1.Text = "Tân Tiến Hightech";
             uiPanel1.TextAlignment = ContentAlignment.MiddleCenter;
@@ -212,7 +246,7 @@
             uiImageButton1.Image = (Image)resources.GetObject("uiImageButton1.Image");
             uiImageButton1.Location = new Point(-1, 0);
             uiImageButton1.Name = "uiImageButton1";
-            uiImageButton1.Size = new Size(46, 45);
+            uiImageButton1.Size = new Size(52, 45);
             uiImageButton1.TabIndex = 0;
             uiImageButton1.TabStop = false;
             uiImageButton1.Text = null;
@@ -257,5 +291,7 @@
         private Sunny.UI.UINavMenu NavMenu;
         private System.ComponentModel.BackgroundWorker WK1;
         private Sunny.UI.UISymbolLabel opUser;
+        private Sunny.UI.UIPanel uiPanel3;
+        private Sunny.UI.UIPanel uiPanel2;
     }
 }

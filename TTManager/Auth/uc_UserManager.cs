@@ -114,10 +114,68 @@ namespace TTManager.Auth
                         }
                     }
                 }
-                else if (colName == "btnShowUser")
+                else if (colName == "btnShow2FA")
                 {
+                    if (ipPassword.Text.Trim() == string.Empty)
+                    {
+                        OnAction?.Invoke(this, new LoginActionEventArgs { Status = false, Message = "Vui lòng nhập mật khẩu để xem mã của người dùng khác" });
+                        return;
+                    }
 
+                    if (IS2FAEnabled)
+                    {
+                        if (ipTwoFA.Text.Trim() == string.Empty)
+                        {
+                            OnAction?.Invoke(this, new LoginActionEventArgs { Status = false, Message = "Vui lòng nhập mã 2FA để xem mã của người dùng khác" });
+                            return;
+                        }
+                        if (!UserHelper.Validate2FA(CurrentUserName, ipTwoFA.Text.Trim(), data_file_path))
+                        {
+                            OnAction?.Invoke(this, new LoginActionEventArgs { Status = false, Message = "Mã 2FA không đúng!" });
+                            return;
+                        }
+                    }
+
+                    if (!UserHelper.ValidateCredentials(CurrentUserName, ipPassword.Text.Trim(), data_file_path))
+                    {
+                        //ghi log thất bại
+                        OnAction?.Invoke(this, new LoginActionEventArgs { Status = false, Message = "Sai mật khẩu!" });
+                        return;
+                    }
+
+
+                    UserData userData = UserData.GetUserByUsername(row.Cells["Username"].Value?.ToString(), data_file_path);
+
+                    if (userData == null || string.IsNullOrWhiteSpace(userData.Username))
+                    {
+                        OnAction?.Invoke(this, new LoginActionEventArgs
+                        {
+                            Status = false,
+                            Message = "Không tìm thấy thông tin người dùng để tạo mã QR."
+                        });
+                        return;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(userData.Key2FA))
+                    {
+                        OnAction?.Invoke(this, new LoginActionEventArgs
+                        {
+                            Status = false,
+                            Message = "Chưa có khóa 2FA cho tài khoản này."
+                        });
+                        return;
+                    }
+
+                    string issuer = "MSI-CZ :" + userData.Username;
+                    string otpauth = TwoFAHelper.GenerateQrCodeUri(userData.Key2FA, userData.Username, issuer);
+
+                    using (var dlg = new QrCodeDialog(otpauth, $"QR 2FA cho {userData.Username}"))
+                    {
+                        dlg.ShowDialog(FindForm());
+                    }
                 }
+
+                
             }
         }
 
