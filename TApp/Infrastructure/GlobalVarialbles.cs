@@ -1,11 +1,41 @@
 ﻿using MTs.Auditrails;
-using TApp.Helpers;
-using TApp.Views.Dashboard;
+using System.ComponentModel;
 using TTManager.Auth;
+
 
 namespace TApp.Infrastructure
 {
+    public enum e_LogType
+    {
+        [Description("Thông tin")]
+        Info = 0,
 
+        [Description("Cảnh báo")]
+        Warning = 1,
+
+        [Description("Lỗi")]
+        Error = 2,
+
+        [Description("Debug")]
+        Debug = 3,
+
+        [Description("Hệ thống")]
+        System = 4,
+
+        [Description("Người dùng")]
+        UserAction = 5,
+
+        [Description("Thiết bị")]
+        DeviceAction = 6,
+
+        [Description("Bảo trì")]
+        Maintenance = 7,
+
+        [Description("Thay đổi dữ liệu")]
+        DataChange = 8,
+
+        Critical = 9
+    }
     public enum CameraStatus
     {
         Disconnected = 0,

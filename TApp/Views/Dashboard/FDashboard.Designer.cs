@@ -97,11 +97,11 @@
             opCameraLed = new Sunny.UI.UILedBulb();
             uiTableLayoutPanel12 = new Sunny.UI.UITableLayoutPanel();
             btnChangeBatch = new Sunny.UI.UISymbolButton();
-            uiSymbolButton2 = new Sunny.UI.UISymbolButton();
+            btnScan = new Sunny.UI.UISymbolButton();
             uiSymbolButton3 = new Sunny.UI.UISymbolButton();
             uiSymbolButton4 = new Sunny.UI.UISymbolButton();
-            uiSymbolButton5 = new Sunny.UI.UISymbolButton();
-            uiSymbolButton6 = new Sunny.UI.UISymbolButton();
+            btnClearPLC = new Sunny.UI.UISymbolButton();
+            btnResetCounterPLC = new Sunny.UI.UISymbolButton();
             opAlarm = new Sunny.UI.UIPanel();
             omronPLC_Hsl1 = new TTManager.PLCHelpers.OmronPLC_Hsl(components);
             WK_Camera = new System.ComponentModel.BackgroundWorker();
@@ -547,6 +547,7 @@
             opNoteCameraView.TabIndex = 0;
             opNoteCameraView.TabUnSelectedForeColor = Color.FromArgb(240, 240, 240);
             opNoteCameraView.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            opNoteCameraView.SelectedIndexChanged += opNoteCameraView_SelectedIndexChanged;
             // 
             // tabPage1
             // 
@@ -579,7 +580,7 @@
             tabPage2.Controls.Add(opCameraView);
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(200, 60);
+            tabPage2.Size = new Size(491, 410);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Xem ảnh";
             tabPage2.UseVisualStyleBackColor = true;
@@ -592,7 +593,7 @@
             opCameraView.Dock = DockStyle.Fill;
             opCameraView.Location = new Point(0, 0);
             opCameraView.Name = "opCameraView";
-            opCameraView.Size = new Size(200, 60);
+            opCameraView.Size = new Size(491, 410);
             opCameraView.TabIndex = 0;
             opCameraView.ZoomFactor = 1D;
             // 
@@ -711,6 +712,7 @@
             btnABatch.MinimumSize = new Size(1, 1);
             btnABatch.Name = "btnABatch";
             btnABatch.Size = new Size(43, 32);
+            btnABatch.Symbol = 563629;
             btnABatch.TabIndex = 1;
             btnABatch.TipsFont = new Font("Microsoft Sans Serif", 9F);
             btnABatch.Click += btnABatch_Click;
@@ -1254,11 +1256,11 @@
             uiTableLayoutPanel12.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
             uiTableLayoutPanel12.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
             uiTableLayoutPanel12.Controls.Add(btnChangeBatch, 0, 0);
-            uiTableLayoutPanel12.Controls.Add(uiSymbolButton2, 1, 0);
+            uiTableLayoutPanel12.Controls.Add(btnScan, 1, 0);
             uiTableLayoutPanel12.Controls.Add(uiSymbolButton3, 2, 0);
             uiTableLayoutPanel12.Controls.Add(uiSymbolButton4, 2, 1);
-            uiTableLayoutPanel12.Controls.Add(uiSymbolButton5, 1, 1);
-            uiTableLayoutPanel12.Controls.Add(uiSymbolButton6, 0, 1);
+            uiTableLayoutPanel12.Controls.Add(btnClearPLC, 1, 1);
+            uiTableLayoutPanel12.Controls.Add(btnResetCounterPLC, 0, 1);
             uiTableLayoutPanel12.Dock = DockStyle.Fill;
             uiTableLayoutPanel12.Location = new Point(2, 400);
             uiTableLayoutPanel12.Margin = new Padding(2);
@@ -1273,40 +1275,45 @@
             // btnChangeBatch
             // 
             btnChangeBatch.Dock = DockStyle.Fill;
-            btnChangeBatch.FillColor = Color.FromArgb(0, 192, 0);
+            btnChangeBatch.FillColor = Color.Teal;
             btnChangeBatch.Font = new Font("Microsoft Sans Serif", 12F);
             btnChangeBatch.Location = new Point(2, 2);
             btnChangeBatch.Margin = new Padding(2);
             btnChangeBatch.MinimumSize = new Size(1, 1);
             btnChangeBatch.Name = "btnChangeBatch";
             btnChangeBatch.Size = new Size(118, 37);
+            btnChangeBatch.Symbol = 559202;
             btnChangeBatch.TabIndex = 0;
             btnChangeBatch.Text = "Đổi lô";
             btnChangeBatch.TipsFont = new Font("Microsoft Sans Serif", 9F);
             btnChangeBatch.Click += btnChangeBatch_Click;
             // 
-            // uiSymbolButton2
+            // btnScan
             // 
-            uiSymbolButton2.Dock = DockStyle.Fill;
-            uiSymbolButton2.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolButton2.Location = new Point(124, 2);
-            uiSymbolButton2.Margin = new Padding(2);
-            uiSymbolButton2.MinimumSize = new Size(1, 1);
-            uiSymbolButton2.Name = "uiSymbolButton2";
-            uiSymbolButton2.Size = new Size(118, 37);
-            uiSymbolButton2.TabIndex = 0;
-            uiSymbolButton2.Text = "Quét mã";
-            uiSymbolButton2.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnScan.Dock = DockStyle.Fill;
+            btnScan.Font = new Font("Microsoft Sans Serif", 12F);
+            btnScan.Location = new Point(124, 2);
+            btnScan.Margin = new Padding(2);
+            btnScan.MinimumSize = new Size(1, 1);
+            btnScan.Name = "btnScan";
+            btnScan.Size = new Size(118, 37);
+            btnScan.Symbol = 563580;
+            btnScan.TabIndex = 0;
+            btnScan.Text = "Quét mã";
+            btnScan.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnScan.Click += btnScan_Click;
             // 
             // uiSymbolButton3
             // 
             uiSymbolButton3.Dock = DockStyle.Fill;
+            uiSymbolButton3.FillColor = Color.Green;
             uiSymbolButton3.Font = new Font("Microsoft Sans Serif", 12F);
             uiSymbolButton3.Location = new Point(246, 2);
             uiSymbolButton3.Margin = new Padding(2);
             uiSymbolButton3.MinimumSize = new Size(1, 1);
             uiSymbolButton3.Name = "uiSymbolButton3";
             uiSymbolButton3.Size = new Size(119, 37);
+            uiSymbolButton3.Symbol = 557670;
             uiSymbolButton3.TabIndex = 0;
             uiSymbolButton3.Text = "Thêm mã";
             uiSymbolButton3.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -1314,41 +1321,49 @@
             // uiSymbolButton4
             // 
             uiSymbolButton4.Dock = DockStyle.Fill;
+            uiSymbolButton4.FillColor = Color.FromArgb(255, 128, 255);
             uiSymbolButton4.Font = new Font("Microsoft Sans Serif", 12F);
             uiSymbolButton4.Location = new Point(246, 43);
             uiSymbolButton4.Margin = new Padding(2);
             uiSymbolButton4.MinimumSize = new Size(1, 1);
             uiSymbolButton4.Name = "uiSymbolButton4";
             uiSymbolButton4.Size = new Size(119, 37);
+            uiSymbolButton4.Symbol = 361540;
             uiSymbolButton4.TabIndex = 0;
             uiSymbolButton4.Text = "Thả lại";
             uiSymbolButton4.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
-            // uiSymbolButton5
+            // btnClearPLC
             // 
-            uiSymbolButton5.Dock = DockStyle.Fill;
-            uiSymbolButton5.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolButton5.Location = new Point(124, 43);
-            uiSymbolButton5.Margin = new Padding(2);
-            uiSymbolButton5.MinimumSize = new Size(1, 1);
-            uiSymbolButton5.Name = "uiSymbolButton5";
-            uiSymbolButton5.Size = new Size(118, 37);
-            uiSymbolButton5.TabIndex = 0;
-            uiSymbolButton5.Text = "Xóa lỗi";
-            uiSymbolButton5.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnClearPLC.Dock = DockStyle.Fill;
+            btnClearPLC.FillColor = Color.FromArgb(192, 192, 0);
+            btnClearPLC.Font = new Font("Microsoft Sans Serif", 12F);
+            btnClearPLC.Location = new Point(124, 43);
+            btnClearPLC.Margin = new Padding(2);
+            btnClearPLC.MinimumSize = new Size(1, 1);
+            btnClearPLC.Name = "btnClearPLC";
+            btnClearPLC.Size = new Size(118, 37);
+            btnClearPLC.Symbol = 561647;
+            btnClearPLC.TabIndex = 0;
+            btnClearPLC.Text = "Xóa lỗi";
+            btnClearPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnClearPLC.Click += btnClearPLC_Click;
             // 
-            // uiSymbolButton6
+            // btnResetCounterPLC
             // 
-            uiSymbolButton6.Dock = DockStyle.Fill;
-            uiSymbolButton6.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolButton6.Location = new Point(2, 43);
-            uiSymbolButton6.Margin = new Padding(2);
-            uiSymbolButton6.MinimumSize = new Size(1, 1);
-            uiSymbolButton6.Name = "uiSymbolButton6";
-            uiSymbolButton6.Size = new Size(118, 37);
-            uiSymbolButton6.TabIndex = 0;
-            uiSymbolButton6.Text = "Xóa bộ đếm";
-            uiSymbolButton6.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnResetCounterPLC.Dock = DockStyle.Fill;
+            btnResetCounterPLC.FillColor = Color.FromArgb(255, 128, 0);
+            btnResetCounterPLC.Font = new Font("Microsoft Sans Serif", 12F);
+            btnResetCounterPLC.Location = new Point(2, 43);
+            btnResetCounterPLC.Margin = new Padding(2);
+            btnResetCounterPLC.MinimumSize = new Size(1, 1);
+            btnResetCounterPLC.Name = "btnResetCounterPLC";
+            btnResetCounterPLC.Size = new Size(118, 37);
+            btnResetCounterPLC.Symbol = 62067;
+            btnResetCounterPLC.TabIndex = 0;
+            btnResetCounterPLC.Text = "Xóa đếm";
+            btnResetCounterPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnResetCounterPLC.Click += btnResetCounterPLC_Click;
             // 
             // opAlarm
             // 
@@ -1372,7 +1387,7 @@
             omronPLC_Hsl1.PLC_STATUS = TTManager.PLCHelpers.OmronPLC_Hsl.PLCStatus.Disconnect;
             omronPLC_Hsl1.Ready = 0;
             omronPLC_Hsl1.Time_Update = 300;
-            omronPLC_Hsl1.PLCStatus_OnChange += omronplC_Hsl1_PLCStatus_OnChange;
+            omronPLC_Hsl1.PLCStatus_OnChange += omronPLC_Hsl1_PLCStatus_OnChange;
             // 
             // WK_Camera
             // 
@@ -1506,11 +1521,11 @@
         private Sunny.UI.UITextBox uiTextBox3;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel12;
         private Sunny.UI.UISymbolButton btnChangeBatch;
-        private Sunny.UI.UISymbolButton uiSymbolButton2;
+        private Sunny.UI.UISymbolButton btnScan;
         private Sunny.UI.UISymbolButton uiSymbolButton3;
         private Sunny.UI.UISymbolButton uiSymbolButton4;
-        private Sunny.UI.UISymbolButton uiSymbolButton5;
-        private Sunny.UI.UISymbolButton uiSymbolButton6;
+        private Sunny.UI.UISymbolButton btnClearPLC;
+        private Sunny.UI.UISymbolButton btnResetCounterPLC;
         private Microsoft.Web.WebView2.WinForms.WebView2 opCameraView;
         private Sunny.UI.UIListBox opView;
         private TTManager.PLCHelpers.OmronPLC_Hsl omronPLC_Hsl1;

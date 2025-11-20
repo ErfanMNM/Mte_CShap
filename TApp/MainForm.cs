@@ -8,6 +8,7 @@ using TApp.Views.Auth;
 using TApp.Views.Dashboard;
 using TApp.Views.Settings;
 using TTManager.Auth;
+using static TApp.Views.Dashboard.FDashboard;
 
 namespace TApp
 {
@@ -36,7 +37,7 @@ namespace TApp
                 InitializeLogger();
 
                 //tạo log ghi nhận mở ứng dụng
-                GlobalVarialbles.Logger?.WriteLogAsync("System",e_LogType.System,"Mở ứng dụng");
+                GlobalVarialbles.Logger?.WriteLogAsync("System", e_LogType.System, "Mở ứng dụng");
 
                 UIStyles.CultureInfo = CultureInfos.en_US;
                 UIStyles.GlobalFont = true;
@@ -78,13 +79,14 @@ namespace TApp
                 StartPage();
 
                 WK1.RunWorkerAsync();
+                clock.RunWorkerAsync();
             }
             catch (Exception)
             {
                 this.ShowErrorDialog("Lỗi chương trình");
             }
-            
-            
+
+
         }
 
         private void InitializeLogger()
@@ -280,11 +282,11 @@ namespace TApp
 
             if (GlobalVarialbles.CurrentUser.Username == "")
             {
-              AppState = e_App_State.LOGIN;
+                AppState = e_App_State.LOGIN;
             }
             else
             {
-               AppState = ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
+                AppState = ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
             }
         }
 
@@ -312,7 +314,7 @@ namespace TApp
             }
             else
             {
-               AppState = ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
+                AppState = ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
             }
         }
 
@@ -353,6 +355,18 @@ namespace TApp
             }
         }
         #endregion
+
+        private void clock_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        {
+            while (!clock.CancellationPending)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    opAppClock.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK");
+                }));
+                Thread.Sleep(100);
+            }
+        }
     }
 
 

@@ -7,6 +7,7 @@ using TApp.Infrastructure;
 using TApp.Views.Dashboard;
 using TTManager.Auth;
 using TTManager.Diaglogs;
+using static TApp.Views.Dashboard.FDashboard;
 
 namespace TApp.Views.Settings
 {

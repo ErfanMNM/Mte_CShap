@@ -10,15 +10,7 @@ namespace TApp.Helpers
     {
     }
 
-    public class BatchHistoryModel
-    {
-        public int ID { get; set; }
-        public string? BatchCode { get; set; }
-        public string? Barcode { get; set; }
-        public string? UserName { get; set; }
-        public string? ProductionDate { get; set; }
-        public string? TimeStamp { get; set; }
-    }
+
 
 
     public enum e_Production_Status
