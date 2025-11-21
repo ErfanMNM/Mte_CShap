@@ -360,7 +360,7 @@ namespace TApp
         {
             while (!clock.CancellationPending)
             {
-                this.Invoke(new Action(() =>
+                this.InvokeIfRequired(new Action(() =>
                 {
                     opAppClock.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK");
                 }));

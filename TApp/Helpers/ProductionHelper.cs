@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,10 +9,17 @@ namespace TApp.Helpers
 {
     public class ProductionHelper
     {
+
+        public class ProductionHelper_Result
+        {
+            public bool IsSuccess { get; set; }
+            public DataTable data { get; set; }
+            public string message { get; set; }
+        }
+
+
+
     }
-
-
-
 
     public enum e_Production_Status
     {         
@@ -144,6 +152,8 @@ namespace TApp.Helpers
             }
 
         }
+
+
 
     }
 

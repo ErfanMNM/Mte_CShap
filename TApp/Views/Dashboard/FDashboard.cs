@@ -9,6 +9,7 @@ using TApp.Infrastructure;
 using TApp.Models;
 using TApp.Utils;
 using static TTManager.PLCHelpers.OmronPLC_Hsl;
+using static TApp.MainForm;
 
 namespace TApp.Views.Dashboard
 {
@@ -476,24 +477,7 @@ namespace TApp.Views.Dashboard
 
         private void btnScan_Click(object sender, EventArgs e)
         {
-            //using (var dialog = new DManualScan())
-            //{
-            //    if (dialog.ShowDialog() == DialogResult.OK)
-            //    {
-            //        string code = dialog.ScannedCode;
-            //        if (!string.IsNullOrEmpty(code))
-            //        {
-            //            if (!WK_Camera.IsBusy)
-            //            {
-            //                WK_Camera.RunWorkerAsync(code);
-            //            }
-            //            else
-            //            {
-            //                this.ShowWarningTip("Bộ xử lý đang bận, vui lòng thử lại sau giây lát.");
-            //            }
-            //        }
-            //    }
-            //}
+            
         }
 
         private void btnClearPLC_Click(object sender, EventArgs e) { /* Do nothing */ }
