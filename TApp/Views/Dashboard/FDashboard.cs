@@ -425,6 +425,8 @@ namespace TApp.Views.Dashboard
 
         private void btnResetCounterPLC_Click(object sender, EventArgs e)
         {
+            //ghi log 
+
             Task.Run(() =>
             {
                 this.InvokeIfRequired(() =>
@@ -433,13 +435,19 @@ namespace TApp.Views.Dashboard
                     btnResetCounterPLC.Text = "Đang gửi...";
                 });
 
+                string total = FD_Globals.productionData.PLC_Counter.Total.ToString();
+                string pass = FD_Globals.productionData.PLC_Counter.Pass.ToString();
+                string fail = FD_Globals.productionData.PLC_Counter.Fail.ToString();
+                string timeout = FD_Globals.productionData.PLC_Counter.Timeout.ToString();
                 OperateResult rs = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Reset_Counter_DM"), (short)1);
                 if (rs.IsSuccess)
                 {
+                    GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng xóa só đếm",$"Xóa thành công :{total},{pass},{fail},{timeout}", "FD-UA-1");
                     this.ShowSuccessTip("Gửi lệnh reset counter PLC thành công!");
                 }
                 else
                 {
+                    GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng xóa số đếm", $"Xóa Thất Bại Phía PLC", "FD-UA-1");
                     this.ShowErrorDialog("Gửi lệnh reset counter PLC thất bại!");
                 }
 

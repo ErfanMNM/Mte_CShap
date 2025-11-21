@@ -166,6 +166,8 @@ namespace TApp.Views.Settings
                 return "📦 Cấu hình PLC";
             if (propertyName.Contains("TCP"))
                 return "🔧 Cấu hình truyền thông";
+            if (propertyName.Contains("AWS"))
+                return "☁️ Cấu hình AWS";
             return "⚙️ Cài đặt chung";
         }
 
@@ -179,6 +181,7 @@ namespace TApp.Views.Settings
                 { "TCP_Port", "Cổng TCP" },
                 { "PLC_IP", "Địa chỉ IP PLC" },
                 { "Description", "Description" },
+                { "AWS_Credential_Path", "Đường dẫn AWS Credential" }
 
             };
 

@@ -13,6 +13,8 @@ namespace TApp.Configs
 
         public bool AppHideEnable { get; set; }
         public bool AppTwoFA_Enabled { get; set; }
+
+        public string AWS_Credential_Path { get; set; }
         public string ? PLC_IP { get; set; }
         public int PLC_Port { get; set; }
 
@@ -45,6 +47,7 @@ namespace TApp.Configs
             production_list_path = "D:/Masan/DBProductList.xlsx";
             credentialPLCAddressPath = "D:/Masan/a.json";
             credentialERPPath = "C:/Users/DANOMT/Downloads/Masan/sales-268504-20a4b06ea0fb.json";
+            AWS_Credential_Path = "D:/Masan/aws_credentials.json";
         }
     }
 }

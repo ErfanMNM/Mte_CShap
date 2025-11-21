@@ -10,6 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Views\Communications\**" />
+    <EmbeddedResource Remove="Views\Communications\**" />
+    <None Remove="Views\Communications\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Google.Apis" Version="1.72.0" />
     <PackageReference Include="Google.Apis.Auth" Version="1.72.0" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.70.0.3819" />
@@ -45,7 +51,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Views\Communications\" />
+    <Folder Include="Views\Extention\" />
   </ItemGroup>
 
 </Project>
