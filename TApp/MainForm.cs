@@ -6,6 +6,7 @@ using TApp.Infrastructure;
 using TApp.Utils;
 using TApp.Views.Auth;
 using TApp.Views.Dashboard;
+using TApp.Views.Extention;
 using TApp.Views.Settings;
 using TTManager.Auth;
 using static TApp.Views.Dashboard.FDashboard;
@@ -20,6 +21,8 @@ namespace TApp
         private PAppSetting PAppSetting = new PAppSetting();
 
         private FDashboard fDashboard = new FDashboard();
+
+        private FScan fScan = new FScan();
 
         private Login fLogin = new Login();
 
@@ -104,6 +107,14 @@ namespace TApp
             PAppSetting.START();
             fDashboard.Start();
             fLogin.INIT();
+
+            fDashboard.ChangePage += FDashboard_ChangePage; 
+            ;
+        }
+
+        private void FDashboard_ChangePage(int pageIndex)
+        {
+            NavMenu.SelectPage(pageIndex);
         }
 
         private void btnClose_Click(object sender, EventArgs e)
@@ -367,7 +378,17 @@ namespace TApp
                 Thread.Sleep(100);
             }
         }
+
+
+        public void SelectPage(int pageIndex)
+        {
+            this.InvokeIfRequired(() =>
+            {
+                NavMenu.SelectPage(pageIndex);
+            });
+        }
     }
+
 
 
     public enum e_App_State

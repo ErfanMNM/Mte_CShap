@@ -27,6 +27,8 @@ namespace TApp.Configs
 
         public bool PLC_Test_Mode { get; set; }
 
+        public string ? Handheld_COM_Port { get; set; }
+
         public string ? production_list_path { get; set; }
         public string? credentialPLCAddressPath { get; set; }
         public string? credentialERPPath { get; set; }
@@ -38,6 +40,8 @@ namespace TApp.Configs
 
             PLC_IP = "192.168.250.1";
             PLC_Port = 9600;
+
+            Handheld_COM_Port = "COM3";
 
             PLC_Time_Refresh = 1000;
             Camera_01_IP = "127.0.0.1";

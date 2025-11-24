@@ -43,12 +43,13 @@
             uiTitlePanel2 = new Sunny.UI.UITitlePanel();
             opInfoTable = new Sunny.UI.UIDataGridView();
             uiTableLayoutPanel4 = new Sunny.UI.UITableLayoutPanel();
+            opTypePanel = new Sunny.UI.UITitlePanel();
+            opType = new Sunny.UI.UILabel();
             opStatus = new Sunny.UI.UISymbolLabel();
             opTimePanel = new Sunny.UI.UITitlePanel();
-            opTypePanel = new Sunny.UI.UITitlePanel();
-            uiLabel1 = new Sunny.UI.UILabel();
-            opType = new Sunny.UI.UILabel();
             opTime = new Sunny.UI.UILabel();
+            uiLabel1 = new Sunny.UI.UILabel();
+            WK_Find = new System.ComponentModel.BackgroundWorker();
             uiTableLayoutPanel1.SuspendLayout();
             uiTitlePanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
@@ -56,8 +57,8 @@
             uiTitlePanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)opInfoTable).BeginInit();
             uiTableLayoutPanel4.SuspendLayout();
-            opTimePanel.SuspendLayout();
             opTypePanel.SuspendLayout();
+            opTimePanel.SuspendLayout();
             SuspendLayout();
             // 
             // uiTableLayoutPanel1
@@ -155,8 +156,8 @@
             uiTableLayoutPanel3.RowCount = 4;
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 73F));
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 139F));
-            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 52F));
+            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 148F));
+            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 43F));
             uiTableLayoutPanel3.Size = new Size(870, 531);
             uiTableLayoutPanel3.TabIndex = 1;
             uiTableLayoutPanel3.TagString = null;
@@ -173,7 +174,7 @@
             opConsole.Name = "opConsole";
             opConsole.Padding = new Padding(2);
             opConsole.ShowText = false;
-            opConsole.Size = new Size(866, 135);
+            opConsole.Size = new Size(866, 144);
             opConsole.TabIndex = 1;
             opConsole.Text = "uiListBox1";
             // 
@@ -259,21 +260,51 @@
             uiTableLayoutPanel4.TabIndex = 4;
             uiTableLayoutPanel4.TagString = null;
             // 
+            // opTypePanel
+            // 
+            opTypePanel.Controls.Add(opType);
+            opTypePanel.Dock = DockStyle.Fill;
+            opTypePanel.Font = new Font("Microsoft Sans Serif", 12F);
+            opTypePanel.Location = new Point(714, 2);
+            opTypePanel.Margin = new Padding(2);
+            opTypePanel.MinimumSize = new Size(1, 1);
+            opTypePanel.Name = "opTypePanel";
+            opTypePanel.Padding = new Padding(1, 25, 1, 1);
+            opTypePanel.ShowText = false;
+            opTypePanel.Size = new Size(150, 65);
+            opTypePanel.TabIndex = 5;
+            opTypePanel.Text = "Loại kích hoạt";
+            opTypePanel.TextAlignment = ContentAlignment.MiddleCenter;
+            opTypePanel.TitleColor = Color.Green;
+            opTypePanel.TitleHeight = 25;
+            // 
+            // opType
+            // 
+            opType.Dock = DockStyle.Fill;
+            opType.Font = new Font("Microsoft Sans Serif", 12F);
+            opType.ForeColor = Color.FromArgb(48, 48, 48);
+            opType.Location = new Point(1, 25);
+            opType.Name = "opType";
+            opType.Size = new Size(148, 39);
+            opType.TabIndex = 0;
+            opType.Text = "Tự Động";
+            opType.TextAlign = ContentAlignment.MiddleCenter;
+            // 
             // opStatus
             // 
-            opStatus.BackColor = Color.FromArgb(192, 255, 192);
+            opStatus.BackColor = Color.Gainsboro;
             opStatus.Dock = DockStyle.Fill;
             opStatus.Font = new Font("Microsoft Sans Serif", 20.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            opStatus.ForeColor = Color.Green;
+            opStatus.ForeColor = Color.Black;
             opStatus.Location = new Point(3, 3);
             opStatus.MinimumSize = new Size(1, 1);
             opStatus.Name = "opStatus";
             opStatus.Size = new Size(441, 63);
-            opStatus.Symbol = 261528;
-            opStatus.SymbolColor = Color.Green;
+            opStatus.Symbol = 61761;
+            opStatus.SymbolColor = Color.Black;
             opStatus.SymbolSize = 50;
             opStatus.TabIndex = 3;
-            opStatus.Text = "MÃ ĐÃ KÍCH HOẠT";
+            opStatus.Text = "ĐANG TÌM KIẾM ...";
             // 
             // opTimePanel
             // 
@@ -294,46 +325,6 @@
             opTimePanel.TitleColor = Color.Green;
             opTimePanel.TitleHeight = 25;
             // 
-            // opTypePanel
-            // 
-            opTypePanel.Controls.Add(opType);
-            opTypePanel.Dock = DockStyle.Fill;
-            opTypePanel.Font = new Font("Microsoft Sans Serif", 12F);
-            opTypePanel.Location = new Point(714, 2);
-            opTypePanel.Margin = new Padding(2);
-            opTypePanel.MinimumSize = new Size(1, 1);
-            opTypePanel.Name = "opTypePanel";
-            opTypePanel.Padding = new Padding(1, 25, 1, 1);
-            opTypePanel.ShowText = false;
-            opTypePanel.Size = new Size(150, 65);
-            opTypePanel.TabIndex = 5;
-            opTypePanel.Text = "Loại kích hoạt";
-            opTypePanel.TextAlignment = ContentAlignment.MiddleCenter;
-            opTypePanel.TitleColor = Color.Green;
-            opTypePanel.TitleHeight = 25;
-            // 
-            // uiLabel1
-            // 
-            uiLabel1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiLabel1.ForeColor = Color.FromArgb(48, 48, 48);
-            uiLabel1.Location = new Point(58, 43);
-            uiLabel1.Name = "uiLabel1";
-            uiLabel1.Size = new Size(8, 8);
-            uiLabel1.TabIndex = 0;
-            uiLabel1.Text = "uiLabel1";
-            // 
-            // opType
-            // 
-            opType.Dock = DockStyle.Fill;
-            opType.Font = new Font("Microsoft Sans Serif", 12F);
-            opType.ForeColor = Color.FromArgb(48, 48, 48);
-            opType.Location = new Point(1, 25);
-            opType.Name = "opType";
-            opType.Size = new Size(148, 39);
-            opType.TabIndex = 0;
-            opType.Text = "Tự Động";
-            opType.TextAlign = ContentAlignment.MiddleCenter;
-            // 
             // opTime
             // 
             opTime.Dock = DockStyle.Fill;
@@ -345,6 +336,21 @@
             opTime.TabIndex = 0;
             opTime.Text = "2025-11-24 00:01:02.123+0700";
             opTime.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // uiLabel1
+            // 
+            uiLabel1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiLabel1.ForeColor = Color.FromArgb(48, 48, 48);
+            uiLabel1.Location = new Point(58, 43);
+            uiLabel1.Name = "uiLabel1";
+            uiLabel1.Size = new Size(8, 8);
+            uiLabel1.TabIndex = 0;
+            uiLabel1.Text = "uiLabel1";
+            // 
+            // WK_Find
+            // 
+            WK_Find.WorkerReportsProgress = true;
+            WK_Find.DoWork += WK_Find_DoWork;
             // 
             // FScan
             // 
@@ -360,8 +366,8 @@
             uiTitlePanel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)opInfoTable).EndInit();
             uiTableLayoutPanel4.ResumeLayout(false);
-            opTimePanel.ResumeLayout(false);
             opTypePanel.ResumeLayout(false);
+            opTimePanel.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -383,5 +389,6 @@
         private Sunny.UI.UITitlePanel opTimePanel;
         private Sunny.UI.UILabel opTime;
         private Sunny.UI.UILabel uiLabel1;
+        private System.ComponentModel.BackgroundWorker WK_Find;
     }
 }

@@ -9,14 +9,13 @@ using TApp.Infrastructure;
 using TApp.Models;
 using TApp.Utils;
 using static TTManager.PLCHelpers.OmronPLC_Hsl;
-using static TApp.MainForm;
 
 namespace TApp.Views.Dashboard
 {
     public partial class FDashboard : UIPage
     {
         #region Fields
-
+        public event Action<int> ChangePage;
         private DatalogicCamera? _datalogicCamera_C1;
         private PLCStatus _plcStatus = PLCStatus.Disconnect;
         private bool _batchChangeMode = false;
@@ -477,10 +476,41 @@ namespace TApp.Views.Dashboard
 
         private void btnScan_Click(object sender, EventArgs e)
         {
-            
+            ChangePage?.Invoke(1003);
         }
 
-        private void btnClearPLC_Click(object sender, EventArgs e) { /* Do nothing */ }
+        private void btnClearPLC_Click(object sender, EventArgs e)
+        {
+            Task.Run(() =>
+            {
+                this.InvokeIfRequired(() =>
+                {
+                    btnClearPLC.Enabled = false;
+                    btnClearPLC.Text = "Đang gửi...";
+                });
+
+                OperateResult rs = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Clear_DM"), (short)1);
+
+                if (rs.IsSuccess)
+                {
+                    GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng xóa dữ liệu PLC", $"Xóa thành công", "FD-UA-2");
+                    this.ShowSuccessTip("Gửi lệnh xóa dữ liệu PLC thành công!");
+                }
+                else
+                {
+                    GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng xóa dữ liệu PLC", $"Xóa Thất Bại Phía PLC", "FD-UA-2");
+                    this.ShowErrorDialog("Gửi lệnh xóa dữ liệu PLC thất bại!");
+                }
+
+                Thread.Sleep(1000);
+                this.InvokeIfRequired(() =>
+                {
+                    btnClearPLC.Enabled = true;
+                    btnClearPLC.Text = "Xóa lỗi";
+                });
+
+            });
+        }
 
         private void opNoteCameraView_SelectedIndexChanged(object sender, EventArgs e) { /* Do nothing */ }
 
