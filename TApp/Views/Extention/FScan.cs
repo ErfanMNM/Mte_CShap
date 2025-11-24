@@ -67,7 +67,24 @@ namespace TApp.Views.Extention
 
         private void btnFind_Click(object sender, EventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(ipQRContent.Text))
+            {
+                opStatus.Text = "Vui lòng nhập mã QR!";
+                opStatus.BackColor = Color.Orange;
+                opStatus.Symbol = 61527;
+                opStatus.SymbolColor = Color.White;
+                opStatus.ForeColor = Color.White;
+                return;
+            }
 
+            // Kiểm tra nếu WK_Find đang chạy
+            if (WK_Find.IsBusy)
+            {
+                opStatus.Text = "Đang xử lý...";
+                return;
+            }
+
+            WK_Find.RunWorkerAsync(ipQRContent.Text.Trim());
         }
 
 
@@ -80,75 +97,34 @@ namespace TApp.Views.Extention
                 opStatus.Symbol = 61761;
                 opStatus.SymbolColor = Color.Black;
                 opStatus.ForeColor = Color.Black;
+
+                // Clear grid
+                opInfoTable.DataSource = null;
+                opTime.Text = "";
             });
+
             string? qrCode = e.Argument as string;
 
-            if (qrCode == null) 
-                {
-                    //chửi
-                    this.InvokeIfRequired(() =>
-                    {
-                        opStatus.Text = "Mã QR không hợp lệ!";
-                        opStatus.BackColor = Color.Red;
-                        opStatus.Symbol = 61453;
-                        opStatus.SymbolColor = Color.White;
-                        opStatus.ForeColor = Color.White;
-                    });
-
-                    return;
-                }
-
-            TResult result = QRDatabaseHelper.GetActiveByQRContent(qrCode);
-
-            TResult result1 = QRDatabaseHelper.GetByQRContent(qrCode);
-
-            if (result1.issuccess)
+            if (qrCode == null)
             {
-                if (result.count < 1)
+                //chửi
+                this.InvokeIfRequired(() =>
                 {
-                    //không tìm thấy
-                    this.InvokeIfRequired(() =>
-                    {
-                        opStatus.Text = "Không tìm thấy mã QR!";
-                        opStatus.BackColor = Color.Red;
-                        opStatus.Symbol = 61453;
-                        opStatus.SymbolColor = Color.White;
-                        opStatus.ForeColor = Color.White;
-                    });
-                }
-                else
-                {
-                    if (result.issuccess)
-                    {
-                        if (result.count > 0)
-                        {
-                                //đã kích hoạt
-                                this.InvokeIfRequired(() =>
-                                {
-                                    opStatus.Text = "Mã đã kích hoạt";
-                                    opStatus.BackColor = Color.LimeGreen;
-                                    opStatus.Symbol = 61527;
-                                    opStatus.SymbolColor = Color.White;
-                                    opStatus.ForeColor = Color.White;
-                                });
-                        }
-                        else
-                        {
-                            //đã hủy
-                            this.InvokeIfRequired(() =>
-                            {
-                                opStatus.Text = "Mã chưa kích hoạt";
-                                opStatus.BackColor = Color.Orange;
-                                opStatus.Symbol = 61527;
-                                opStatus.SymbolColor = Color.White;
-                                opStatus.ForeColor = Color.White;
-                            });
-                        }
-                    }
+                    opStatus.Text = "Mã QR không hợp lệ!";
+                    opStatus.BackColor = Color.Red;
+                    opStatus.Symbol = 61453;
+                    opStatus.SymbolColor = Color.White;
+                    opStatus.ForeColor = Color.White;
+                });
 
-                }
+                return;
             }
-            else
+
+            // Lấy dữ liệu từ cả hai database
+            TResult resultActive = QRDatabaseHelper.GetActiveByQRContent(qrCode);
+            TResult resultAll = QRDatabaseHelper.GetByQRContent(qrCode);
+
+            if (!resultAll.issuccess)
             {
                 //lỗi truy xuất database
                 this.InvokeIfRequired(() =>
@@ -159,6 +135,86 @@ namespace TApp.Views.Extention
                     opStatus.SymbolColor = Color.White;
                     opStatus.ForeColor = Color.White;
                 });
+                return;
+            }
+
+            if (resultAll.count < 1)
+            {
+                //không tìm thấy
+                this.InvokeIfRequired(() =>
+                {
+                    opStatus.Text = "Không tìm thấy mã QR!";
+                    opStatus.BackColor = Color.Red;
+                    opStatus.Symbol = 61453;
+                    opStatus.SymbolColor = Color.White;
+                    opStatus.ForeColor = Color.White;
+                });
+                return;
+            }
+
+            // Hiển thị dữ liệu lên grid
+            this.InvokeIfRequired(() =>
+            {
+                opInfoTable.DataSource = resultAll.data;
+
+                // Tự động resize columns
+                foreach (DataGridViewColumn column in opInfoTable.Columns)
+                {
+                    column.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                }
+            });
+
+            // Kiểm tra mã có active không
+            if (resultActive.issuccess && resultActive.count > 0)
+            {
+                //đã kích hoạt
+                this.InvokeIfRequired(() =>
+                {
+                    opStatus.Text = "Mã đã kích hoạt";
+                    opStatus.BackColor = Color.LimeGreen;
+                    opStatus.Symbol = 61527;
+                    opStatus.SymbolColor = Color.White;
+                    opStatus.ForeColor = Color.White;
+
+                    // Hiển thị thông tin thời gian từ active database
+                    if (resultActive.data.Rows.Count > 0)
+                    {
+                        var row = resultActive.data.Rows[0];
+                        opTime.Text = row["TimeStampActive"].ToString();
+                    }
+                });
+            }
+            else
+            {
+                // Kiểm tra status trong database chính
+                if (resultAll.data.Rows.Count > 0)
+                {
+                    var firstRow = resultAll.data.Rows[0];
+                    string status = firstRow["Status"].ToString();
+
+                    this.InvokeIfRequired(() =>
+                    {
+                        if (status.Equals("Pass", StringComparison.OrdinalIgnoreCase))
+                        {
+                            opStatus.Text = "Mã chưa kích hoạt (Pass)";
+                            opStatus.BackColor = Color.Orange;
+                            opStatus.Symbol = 61527;
+                            opStatus.SymbolColor = Color.White;
+                            opStatus.ForeColor = Color.White;
+                        }
+                        else
+                        {
+                            opStatus.Text = $"Mã có status: {status}";
+                            opStatus.BackColor = Color.DarkOrange;
+                            opStatus.Symbol = 61527;
+                            opStatus.SymbolColor = Color.White;
+                            opStatus.ForeColor = Color.White;
+                        }
+
+                        // Hiển thị thông tin thời gian
+                        opTime.Text = firstRow["TimeStampActive"].ToString();
+                    });
+                }
             }
         }
     }

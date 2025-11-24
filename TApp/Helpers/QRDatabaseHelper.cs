@@ -204,13 +204,13 @@ namespace TApp.Helpers
                 SELECT ID, QRContent, BatchCode, Barcode, Status, UserName,
                        TimeStampActive, TimeUnixActive, ProductionDatetime, Reason
                 FROM QRProducts
-                WHERE QRContent LIKE '%@QRContent%'
+                WHERE QRContent LIKE @QRContent
                 LIMIT 5;
             ";
 
                 using (var cmd = new SQLiteCommand(sql, con))
                 {
-                    cmd.Parameters.AddWithValue("@QRContent", qrContent);
+                    cmd.Parameters.AddWithValue("@QRContent", $"%{qrContent}%");
 
                     var adapter = new SQLiteDataAdapter(cmd);
                     var table = new DataTable();
@@ -671,23 +671,23 @@ namespace TApp.Helpers
 
         public static TResult GetActiveByQRContent(string qrContent, string dbPath = ActiveUniqueDbPath)
         {
-            EnsureDatabase(dbPath);
+            EnsureActiveUniqueDatabase(dbPath);
 
             using (var con = new SQLiteConnection($"Data Source={dbPath}"))
             {
                 con.Open();
 
                 string sql = @"
-                SELECT ID, QRContent, BatchCode, Barcode, Status, UserName,
-                       TimeStampActive, TimeUnixActive, ProductionDatetime, Reason
-                FROM QRProducts
-                WHERE QRContent LIKE '%@QRContent%'
+                SELECT ID, QRContent, Status, BatchCode, Barcode, UserName,
+                       TimeStampActive, TimeUnixActive, ProductionDatetime
+                FROM ActiveUniqueQR
+                WHERE QRContent LIKE @QRContent
                 LIMIT 1;
             ";
 
                 using (var cmd = new SQLiteCommand(sql, con))
                 {
-                    cmd.Parameters.AddWithValue("@QRContent", qrContent);
+                    cmd.Parameters.AddWithValue("@QRContent", $"%{qrContent}%");
 
                     var adapter = new SQLiteDataAdapter(cmd);
                     var table = new DataTable();
@@ -696,6 +696,41 @@ namespace TApp.Helpers
                     return (table.Rows.Count > 0)
                         ? new TResult(true, "Lấy thông tin mã thành công.", table.Rows.Count, table)
                         : new TResult(false, "Không tìm thấy");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Lấy tất cả các mã active từ ActiveUnique database.
+        /// </summary>
+        public static TResult GetAllActiveCodes(int limit = 100, int offset = 0, string dbPath = ActiveUniqueDbPath)
+        {
+            EnsureActiveUniqueDatabase(dbPath);
+
+            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            {
+                con.Open();
+
+                string sql = @"
+                SELECT ID, QRContent, Status, BatchCode, Barcode, UserName,
+                       TimeStampActive, TimeUnixActive, ProductionDatetime
+                FROM ActiveUniqueQR
+                ORDER BY TimeUnixActive DESC
+                LIMIT @Limit OFFSET @Offset;
+            ";
+
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@Limit", limit);
+                    cmd.Parameters.AddWithValue("@Offset", offset);
+
+                    var adapter = new SQLiteDataAdapter(cmd);
+                    var table = new DataTable();
+                    adapter.Fill(table);
+
+                    return (table.Rows.Count > 0)
+                        ? new TResult(true, "Lấy danh sách mã active thành công.", table.Rows.Count, table)
+                        : new TResult(false, "Không có mã active nào.");
                 }
             }
         }

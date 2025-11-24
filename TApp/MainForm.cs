@@ -54,6 +54,7 @@ namespace TApp
 
                 NavMenu.CreateNode(AddPage(fDashboard, 1001));
                 NavMenu.CreateNode(AddPage(PAppSetting, 1002));
+                NavMenu.CreateNode(AddPage(fScan, 1003));
 
                 NavMenu.CreateNode(AddPage(fLogin, 2001));
                 NavMenu.SelectPage(2001);
@@ -107,8 +108,9 @@ namespace TApp
             PAppSetting.START();
             fDashboard.Start();
             fLogin.INIT();
+            fScan.InitializeScanner();
 
-            fDashboard.ChangePage += FDashboard_ChangePage; 
+            fDashboard.ChangePage += FDashboard_ChangePage;
             ;
         }
 
