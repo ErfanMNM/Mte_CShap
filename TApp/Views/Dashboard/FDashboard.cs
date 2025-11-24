@@ -1,6 +1,7 @@
 ﻿using HslCommunication;
 using MTs.Datalogic;
 using Sunny.UI;
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using TApp.Configs;
 using TApp.Dialogs;
@@ -309,8 +310,22 @@ namespace TApp.Views.Dashboard
                         Render_Production_Result(record);
                     }
 
-                    UpdateAlarmDisplay();
-                    Thread.Sleep(100);
+                    if (AppConfigs.Current.Data_Mode == "normal")
+                    {
+                        if (FD_Globals.QueueOtherRecord.TryDequeue(out QRProductRecord otherRecord))
+                        {
+                            QRDatabaseHelper.AddActiveCodeUnique(
+                                qrContent: otherRecord.QRContent,
+                                batchCode: otherRecord.BatchCode,
+                                barcode: otherRecord.Barcode,
+                                userName: otherRecord.UserName,
+                                TimeStampActive: otherRecord.TimeStampActive,
+                                TimeUnixActive: otherRecord.TimeUnixActive
+                            );
+                        }
+                    }
+                        UpdateAlarmDisplay();
+                    Thread.Sleep(50);
                 }
                 catch (Exception ex)
                 {
@@ -536,27 +551,54 @@ namespace TApp.Views.Dashboard
                     return;
                 }
 
-                // Ghi vào DB active + unique
-                bool saved = QRDatabaseHelper.AddActiveCodeUnique(
-                    qrContent: data,
-                    batchCode: FD_Globals.productionData.BatchCode,
-                    barcode: FD_Globals.productionData.Barcode,
-                    userName: GlobalVarialbles.CurrentUser.Username,
-                    TimeStampActive: DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"),
-                    TimeUnixActive: DateTimeOffset.Now.ToUnixTimeMilliseconds()
-                );
-
-                if (saved)
+                //nếu datamode là normal thì lưu vào queue để ghi db
+                if(AppConfigs.Current.Data_Mode == "normal")
                 {
                     FD_Globals.ActiveSet.Add(data); // Update RAM
                     Send_Result_To_PLC(e_PLC_Result.Pass);
                     Send_Result_Content(e_Production_Status.Pass, data); // Thành công
+
+                    FD_Globals.QueueOtherRecord.Enqueue(new QRProductRecord
+                    {
+                        QRContent = data,
+                        Status = e_Production_Status.Pass,
+                        BatchCode = FD_Globals.productionData.BatchCode,
+                        Barcode = FD_Globals.productionData.Barcode,
+                        UserName = GlobalVarialbles.CurrentUser.Username,
+                        TimeStampActive = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"),
+                        TimeUnixActive = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
+                        ProductionDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ssK"),
+                        Reason = string.Empty
+                    });
+
                 }
                 else
                 {
-                    Send_Result_To_PLC(e_PLC_Result.Fail);
-                    Send_Result_Content(e_Production_Status.Error, data); // Lỗi lưu dữ liệu
+                    // Ghi vào DB active + unique
+                    bool saved = QRDatabaseHelper.AddActiveCodeUnique(
+                        qrContent: data,
+                        batchCode: FD_Globals.productionData.BatchCode,
+                        barcode: FD_Globals.productionData.Barcode,
+                        userName: GlobalVarialbles.CurrentUser.Username,
+                        TimeStampActive: DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"),
+                        TimeUnixActive: DateTimeOffset.Now.ToUnixTimeMilliseconds()
+                    );
+
+                    if (saved)
+                    {
+                        FD_Globals.ActiveSet.Add(data); // Update RAM
+                        Send_Result_To_PLC(e_PLC_Result.Pass);
+                        Send_Result_Content(e_Production_Status.Pass, data); // Thành công
+                    }
+                    else
+                    {
+                        Send_Result_To_PLC(e_PLC_Result.Fail);
+                        Send_Result_Content(e_Production_Status.Error, data); // Lỗi lưu dữ liệu
+                    }
                 }
+                
+
+                
             }
         }
 
@@ -845,7 +887,9 @@ namespace TApp.Views.Dashboard
             public static int AlarmCount { get; set; } = 0;
             public static PLCStatus pLCStatus { get; set; } = PLCStatus.Disconnect;
             public static HashSet<string> ActiveSet { get; set; } = new HashSet<string>();
-            public static System.Collections.Concurrent.ConcurrentQueue<QRProductRecord> QueueRecord { get; set; } = new System.Collections.Concurrent.ConcurrentQueue<QRProductRecord>();
+            public static ConcurrentQueue<QRProductRecord> QueueRecord { get; set; } = new ConcurrentQueue<QRProductRecord>();
+
+            public static ConcurrentQueue<QRProductRecord> QueueOtherRecord { get; set; } = new ConcurrentQueue<QRProductRecord>();
             public static int LineSpeed { get; set; }
             public static int ProductionPerHour { get; set; } = 0;
         }

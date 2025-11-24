@@ -5,6 +5,12 @@ namespace TApp.Configs
 
     //đường dẫn đến file cấu hình trong Appdata\TApp
 
+    public enum DataMode
+    {
+        Normal,
+        Test,
+        Hard
+    }
 
 
     [ConfigFile("Configs\\App.ini")]
@@ -13,6 +19,8 @@ namespace TApp.Configs
 
         public bool AppHideEnable { get; set; }
         public bool AppTwoFA_Enabled { get; set; }
+
+        public string Data_Mode { get; set; }
 
         public string AWS_Credential_Path { get; set; }
         public string ? PLC_IP { get; set; }
@@ -52,6 +60,7 @@ namespace TApp.Configs
             credentialPLCAddressPath = "D:/Masan/a.json";
             credentialERPPath = "C:/Users/DANOMT/Downloads/Masan/sales-268504-20a4b06ea0fb.json";
             AWS_Credential_Path = "D:/Masan/aws_credentials.json";
+            Data_Mode = "normal";
         }
     }
 }
