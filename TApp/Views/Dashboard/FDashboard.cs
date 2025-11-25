@@ -312,7 +312,7 @@ namespace TApp.Views.Dashboard
 
                     if (AppConfigs.Current.Data_Mode == "normal")
                     {
-                        if (FD_Globals.QueueOtherRecord.TryDequeue(out QRProductRecord otherRecord))
+                        if (FD_Globals.QueueActive.TryDequeue(out QRProductRecord otherRecord))
                         {
                             QRDatabaseHelper.AddActiveCodeUnique(
                                 qrContent: otherRecord.QRContent,
@@ -558,7 +558,7 @@ namespace TApp.Views.Dashboard
                     Send_Result_To_PLC(e_PLC_Result.Pass);
                     Send_Result_Content(e_Production_Status.Pass, data); // Thành công
 
-                    FD_Globals.QueueOtherRecord.Enqueue(new QRProductRecord
+                    FD_Globals.QueueActive.Enqueue(new QRProductRecord
                     {
                         QRContent = data,
                         Status = e_Production_Status.Pass,
@@ -889,7 +889,7 @@ namespace TApp.Views.Dashboard
             public static HashSet<string> ActiveSet { get; set; } = new HashSet<string>();
             public static ConcurrentQueue<QRProductRecord> QueueRecord { get; set; } = new ConcurrentQueue<QRProductRecord>();
 
-            public static ConcurrentQueue<QRProductRecord> QueueOtherRecord { get; set; } = new ConcurrentQueue<QRProductRecord>();
+            public static ConcurrentQueue<QRProductRecord> QueueActive { get; set; } = new ConcurrentQueue<QRProductRecord>();
             public static int LineSpeed { get; set; }
             public static int ProductionPerHour { get; set; } = 0;
         }
