@@ -26,6 +26,18 @@ namespace TApp.Views.Extention
             InitializeQueueMonitor();
         }
 
+        private void FAddCode_Initialize(object sender, EventArgs e)
+        {
+            // Ghi log mở trang thêm mã
+            GlobalVarialbles.Logger?.WriteLogAsync(
+                GlobalVarialbles.CurrentUser.Username,
+                e_LogType.UserAction,
+                "Mở trang thêm mã thủ công",
+                "",
+                "UA-FADDCODE-01"
+            );
+        }
+
         private void InitializeQueueMonitor()
         {
             // Timer để cập nhật số lượng queue mỗi 500ms

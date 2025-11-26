@@ -184,10 +184,26 @@ namespace TApp.Views.Dashboard
                 _datalogicCamera_C1 = new DatalogicCamera(AppConfigs.Current.Camera_01_IP, AppConfigs.Current.Camera_01_Port);
                 _datalogicCamera_C1.ClientCallback += DatalogicCameraC1_ClientCallback;
                 _datalogicCamera_C1.Connect();
+
+                // Ghi log khởi tạo camera
+                GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.CurrentUser.Username,
+                    e_LogType.Info,
+                    "Khởi tạo camera thành công",
+                    $"{{'IP':'{AppConfigs.Current.Camera_01_IP}','Port':'{AppConfigs.Current.Camera_01_Port}'}}",
+                    "INFO-FDASH-01"
+                );
             }
             catch (Exception ex)
             {
                 this.ShowErrorDialog($"Lỗi khởi tạo camera: {ex.Message}");
+                GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.CurrentUser.Username,
+                    e_LogType.Error,
+                    "Lỗi khởi tạo camera",
+                    ex.Message,
+                    "ERR-FDASH-01"
+                );
             }
         }
 
@@ -229,6 +245,13 @@ namespace TApp.Views.Dashboard
                     if (FD_Globals.CameraStatus != CameraStatus.Connected)
                     {
                         FD_Globals.CameraStatus = CameraStatus.Connected;
+                        GlobalVarialbles.Logger?.WriteLogAsync(
+                            GlobalVarialbles.CurrentUser.Username,
+                            e_LogType.Info,
+                            "Camera kết nối thành công",
+                            "",
+                            "INFO-FDASH-02"
+                        );
                     }
                     break;
 
@@ -236,6 +259,13 @@ namespace TApp.Views.Dashboard
                     if (FD_Globals.CameraStatus != CameraStatus.Disconnected)
                     {
                         FD_Globals.CameraStatus = CameraStatus.Disconnected;
+                        GlobalVarialbles.Logger?.WriteLogAsync(
+                            GlobalVarialbles.CurrentUser.Username,
+                            e_LogType.Error,
+                            "Camera mất kết nối",
+                            "",
+                            "ERR-FDASH-02"
+                        );
                     }
                     break;
 
@@ -256,6 +286,13 @@ namespace TApp.Views.Dashboard
                     if (FD_Globals.CameraStatus != CameraStatus.Reconnecting)
                     {
                         FD_Globals.CameraStatus = CameraStatus.Reconnecting;
+                        GlobalVarialbles.Logger?.WriteLogAsync(
+                            GlobalVarialbles.CurrentUser.Username,
+                            e_LogType.Warning,
+                            "Camera đang kết nối lại",
+                            "",
+                            "WARN-FDASH-01"
+                        );
                     }
                     break;
             }
@@ -266,6 +303,28 @@ namespace TApp.Views.Dashboard
             if (_plcStatus != e.Status)
             {
                 _plcStatus = e.Status;
+
+                // Ghi log thay đổi trạng thái PLC
+                if (e.Status == PLCStatus.Connected)
+                {
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.Info,
+                        "PLC kết nối thành công",
+                        "",
+                        "INFO-FDASH-03"
+                    );
+                }
+                else if (e.Status == PLCStatus.Disconnect)
+                {
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.Error,
+                        "PLC mất kết nối",
+                        "",
+                        "ERR-FDASH-03"
+                    );
+                }
             }
         }
 

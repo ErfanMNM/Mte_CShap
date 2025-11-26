@@ -2,6 +2,7 @@
 using Sunny.UI;
 using TApp.Configs;
 using TApp.Helpers;
+using TApp.Infrastructure;
 using TApp.Utils;
 using TTManager.Diaglogs;
 
@@ -16,6 +17,18 @@ namespace TApp.Views.Extention
         public FScan()
         {
             InitializeComponent();
+        }
+
+        private void FScan_Initialize(object sender, EventArgs e)
+        {
+            // Ghi log mở trang quét mã
+            GlobalVarialbles.Logger?.WriteLogAsync(
+                GlobalVarialbles.CurrentUser.Username,
+                e_LogType.UserAction,
+                "Mở trang quét tra cứu mã",
+                "",
+                "UA-FSCAN-01"
+            );
         }
 
         public void InitializeScanner()
@@ -165,6 +178,15 @@ namespace TApp.Views.Extention
                 {
                     column.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                 }
+
+                // Ghi log tìm kiếm thành công
+                GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.CurrentUser.Username,
+                    e_LogType.UserAction,
+                    "Tìm kiếm mã thành công",
+                    $"{{'QRContent':'{qrCode.Substring(0, Math.Min(30, qrCode.Length))}...','ResultCount':'{resultAll.count}'}}",
+                    "UA-FSCAN-02"
+                );
             });
 
             // Kiểm tra mã có active không

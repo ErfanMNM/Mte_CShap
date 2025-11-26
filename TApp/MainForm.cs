@@ -30,6 +30,8 @@ namespace TApp
 
         private PLCSetting PLCSetting = new PLCSetting();
 
+        private FActivityLogs fActivityLogs = new FActivityLogs();
+
         public static e_App_Render_State AppRenderState = e_App_Render_State.LOGIN;
 
         public static e_App_State AppState = e_App_State.LOGIN;
@@ -61,6 +63,7 @@ namespace TApp
                 NavMenu.CreateNode(AddPage(fScan, 1003));
                 NavMenu.CreateNode(AddPage(fAddCode, 1004));
                 NavMenu.CreateNode(AddPage(PLCSetting, 1005));
+                NavMenu.CreateNode(AddPage(fActivityLogs, 1006));
 
                 NavMenu.CreateNode(AddPage(fLogin, 2001));
                 NavMenu.SelectPage(2001);

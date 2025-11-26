@@ -503,6 +503,13 @@ namespace TApp.Views.Settings
                     catch (Exception ex)
                     {
                         this.ShowErrorTip($"Lỗi cập nhật {propertyName}: {ex.Message}");
+                        PSLogger?.WriteLogAsync(
+                            GlobalVarialbles.CurrentUser.Username,
+                            e_LogType.Error,
+                            "Lỗi cập nhật cài đặt",
+                            $"{{'Property':'{propertyName}','Error':'{ex.Message}'}}",
+                            "ERR-APPSETTING-01"
+                        );
                         return;
                     }
                 }
@@ -510,11 +517,27 @@ namespace TApp.Views.Settings
                 // Lưu config
                 config.Save();
 
+                // Ghi log lưu cài đặt thành công
+                PSLogger?.WriteLogAsync(
+                    GlobalVarialbles.CurrentUser.Username,
+                    e_LogType.UserAction,
+                    "Lưu cài đặt ứng dụng thành công",
+                    "",
+                    "UA-APPSETTING-02"
+                );
+
                 this.ShowSuccessTip("Cài đặt đã được lưu thành công!");
             }
             catch (Exception ex)
             {
                 this.ShowErrorTip($"Lỗi lưu cài đặt: {ex.Message}");
+                PSLogger?.WriteLogAsync(
+                    GlobalVarialbles.CurrentUser.Username,
+                    e_LogType.Error,
+                    "Lỗi lưu cài đặt ứng dụng",
+                    ex.Message,
+                    "ERR-APPSETTING-02"
+                );
             }
         }
 
@@ -527,12 +550,40 @@ namespace TApp.Views.Settings
                 {
                     AppConfigs.Current.SetDefault();
                     LoadCurrentConfig();
+
+                    // Ghi log khôi phục mặc định
+                    PSLogger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.UserAction,
+                        "Khôi phục cài đặt mặc định",
+                        "",
+                        "UA-APPSETTING-03"
+                    );
+
                     this.ShowSuccessTip("Đã khôi phục cài đặt mặc định!");
                 }
                 catch (Exception ex)
                 {
                     this.ShowErrorTip($"Lỗi khôi phục cài đặt: {ex.Message}");
+                    PSLogger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.Error,
+                        "Lỗi khôi phục cài đặt mặc định",
+                        ex.Message,
+                        "ERR-APPSETTING-03"
+                    );
                 }
+            }
+            else
+            {
+                // Ghi log người dùng hủy khôi phục
+                PSLogger?.WriteLogAsync(
+                    GlobalVarialbles.CurrentUser.Username,
+                    e_LogType.UserAction,
+                    "Hủy khôi phục cài đặt mặc định",
+                    "",
+                    "UA-APPSETTING-04"
+                );
             }
         }
 
@@ -543,6 +594,15 @@ namespace TApp.Views.Settings
 
         private void PAppSetting_Initialize(object sender, EventArgs e)
         {
+            // Ghi log mở trang cài đặt
+            PSLogger?.WriteLogAsync(
+                GlobalVarialbles.CurrentUser.Username,
+                e_LogType.UserAction,
+                "Mở trang cài đặt ứng dụng",
+                "",
+                "UA-APPSETTING-01"
+            );
+
             this.uiListBox1.Items.Clear();
             uc_UserSetting1.CurrentUserName = GlobalVarialbles.CurrentUser.Username; // Thiết lập tên người dùng hiện tại
             uc_UserSetting1.INIT(); // Khởi tạo thông tin người dùng
