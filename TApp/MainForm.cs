@@ -26,6 +26,10 @@ namespace TApp
 
         private Login fLogin = new Login();
 
+        private FAddCode fAddCode = new FAddCode();
+
+        private PLCSetting PLCSetting = new PLCSetting();
+
         public static e_App_Render_State AppRenderState = e_App_Render_State.LOGIN;
 
         public static e_App_State AppState = e_App_State.LOGIN;
@@ -55,6 +59,8 @@ namespace TApp
                 NavMenu.CreateNode(AddPage(fDashboard, 1001));
                 NavMenu.CreateNode(AddPage(PAppSetting, 1002));
                 NavMenu.CreateNode(AddPage(fScan, 1003));
+                NavMenu.CreateNode(AddPage(fAddCode, 1004));
+                NavMenu.CreateNode(AddPage(PLCSetting, 1005));
 
                 NavMenu.CreateNode(AddPage(fLogin, 2001));
                 NavMenu.SelectPage(2001);
@@ -70,11 +76,11 @@ namespace TApp
 
                 headNav.SetNodeSymbol(headNav.Nodes[0], 559585);
 
-                var node = headNav.CreateChildNode(headNav.Nodes[0], "Tắt máy", 3001);
+                var node = headNav.CreateChildNode(headNav.Nodes[0], "TẮT MÁY", 3001);
                 headNav.SetNodeSymbol(node, 61457);
 
                 var node1 = headNav.CreateChildNode(headNav.Nodes[0], "Đăng xuất", 3002);
-                headNav.SetNodeSymbol(node, 61457);
+                headNav.SetNodeSymbol(node1, 559834);
 
 
                 ToggleFullScreen();
@@ -109,6 +115,7 @@ namespace TApp
             fDashboard.Start();
             fLogin.INIT();
             fScan.InitializeScanner();
+            PLCSetting.INIT();
 
             fDashboard.ChangePage += FDashboard_ChangePage;
             ;
@@ -388,6 +395,15 @@ namespace TApp
             {
                 NavMenu.SelectPage(pageIndex);
             });
+        }
+
+        private void btnHome_Click(object sender, EventArgs e)
+        {
+            if (AppRenderState == e_App_Render_State.ACTIVE)
+            {
+                NavMenu.SelectPage(1001);
+            }
+                
         }
     }
 

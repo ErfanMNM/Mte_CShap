@@ -8,7 +8,8 @@ using TApp.Models;
 using TApp.Utils;
 using TApp.Views.Dashboard;
 using TTManager.Diaglogs;
-using Timer = System.Threading.Timer;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using Timer = System.Windows.Forms.Timer;
 
 namespace TApp.Views.Extention
 {
@@ -38,12 +39,12 @@ namespace TApp.Views.Extention
         {
             UpdateQueueDisplay();
         }
-
-        private void UpdateQueueDisplay()
+                                       
+        private void UpdateQueueDisplay()           
         {
             this.InvokeIfRequired(() =>
             {
-                opQueueCount.Text = FDashboard.FD_Globals.QueueActive.Count.ToString();
+                opQueueCount.Text = FD_Globals.QueueActive.Count.ToString();
 
                 // Cập nhật danh sách pending records
                 if (_pendingRecords.Count > 0)
@@ -136,7 +137,7 @@ namespace TApp.Views.Extention
             }
 
             // Kiểm tra mã đã tồn tại trong ActiveSet chưa
-            if (FDashboard.FD_Globals.ActiveSet.Contains(qrCode))
+            if (FD_Globals.ActiveSet.Contains(qrCode))
             {
                 this.InvokeIfRequired(() =>
                 {
@@ -147,8 +148,8 @@ namespace TApp.Views.Extention
             }
 
             // Lấy thông tin batch hiện tại
-            string currentBatch = FDashboard.FD_Globals.productionData.BatchCode;
-            string currentBarcode = FDashboard.FD_Globals.productionData.Barcode;
+            string currentBatch = FD_Globals.productionData.BatchCode;
+            string currentBarcode = FD_Globals.productionData.Barcode;
 
             // Kiểm tra batch có hợp lệ không
             if (string.IsNullOrWhiteSpace(currentBatch) || currentBatch == "NNN")
@@ -161,6 +162,36 @@ namespace TApp.Views.Extention
                 return;
             }
 
+            if (qrCode.Length < 16)
+            {
+                if (qrCode.Contains(FD_Globals.productionData.Barcode))
+                {
+                    //quét nhầm cái barcode
+                    this.InvokeIfRequired(() =>
+                    {
+                        UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
+                        AddConsoleLog($"[LỖI] Có thể bạn đã quét nhầm mã vạch, vui lòng che lại rồi quét", Color.Red);
+                    });
+                    return;
+                }
+
+                this.InvokeIfRequired(() =>
+                {
+                    UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
+                    AddConsoleLog($"[LỖI] Vui lòng quét mã đúng định dạng", Color.Red);
+                });
+                return;
+            }
+
+            if(!qrCode.Contains(FD_Globals.productionData.Barcode))
+            {
+                //sai barcode
+                this.InvokeIfRequired(() =>
+                {
+                    UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
+                    AddConsoleLog($"[LỖI] Mã không chứa mã vạch sản phẩm hiện tại", Color.Red);
+                });
+            }
             try
             {
                 // Tạo record mới
@@ -170,7 +201,7 @@ namespace TApp.Views.Extention
                     Status = e_Production_Status.Pass,
                     BatchCode = currentBatch,
                     Barcode = currentBarcode,
-                    UserName = GlobalVarialbles.CurrentUser.Username,
+                    UserName = GlobalVarialbles.CurrentUser.Username + "Quét tay",
                     TimeStampActive = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"),
                     TimeUnixActive = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
                     ProductionDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ssK"),
@@ -178,10 +209,13 @@ namespace TApp.Views.Extention
                 };
 
                 // Thêm vào QueueActive để xử lý trong luồng riêng
-                FDashboard.FD_Globals.QueueActive.Enqueue(record);
+                FD_Globals.QueueActive.Enqueue(record);
+
+                //thêm vào record vào database trong luồng xử lý chính
+                FD_Globals.QueueRecord.Enqueue(record);
 
                 // Thêm vào ActiveSet để tránh trùng lặp
-                FDashboard.FD_Globals.ActiveSet.Add(qrCode);
+                FD_Globals.ActiveSet.Add(qrCode);
 
                 // Thêm vào danh sách pending để hiển thị
                 this.InvokeIfRequired(() =>
@@ -252,22 +286,5 @@ namespace TApp.Views.Extention
             });
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (components != null)
-                {
-                    components.Dispose();
-                }
-
-                if (_queueMonitor != null)
-                {
-                    _queueMonitor.Stop();
-                    _queueMonitor.Dispose();
-                }
-            }
-            base.Dispose(disposing);
-        }
     }
 }

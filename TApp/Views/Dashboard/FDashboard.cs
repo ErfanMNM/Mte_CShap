@@ -295,36 +295,47 @@ namespace TApp.Views.Dashboard
             {
                 try
                 {
-                    if (FD_Globals.QueueRecord.TryDequeue(out QRProductRecord record))
+                    if (FD_Globals.QueueRecord.Count > 0)
                     {
-                        QRDatabaseHelper.AddOrActivateCode(
-                            qrContent: record.QRContent,
-                            batchCode: record.BatchCode,
-                            userName: record.UserName,
-                            barcode: record.Barcode,
-                            TimeStampActive: record.TimeStampActive,
-                            TimeUnixActive: record.TimeUnixActive,
-                            productionDateTime: record.TimeStampActive,
-                            status: record.Status
-                        );
-                        Render_Production_Result(record);
+                        if (FD_Globals.QueueRecord.TryDequeue(out QRProductRecord record))
+                        {
+                            QRDatabaseHelper.AddOrActivateCode(
+                                qrContent: record.QRContent,
+                                batchCode: record.BatchCode,
+                                userName: record.UserName,
+                                barcode: record.Barcode,
+                                TimeStampActive: record.TimeStampActive,
+                                TimeUnixActive: record.TimeUnixActive,
+                                productionDateTime: record.TimeStampActive,
+                                status: record.Status
+                            );
+                            Render_Production_Result(record);
+
+                        }
                     }
+
 
                     if (AppConfigs.Current.Data_Mode == "normal")
                     {
-                        if (FD_Globals.QueueActive.TryDequeue(out QRProductRecord otherRecord))
+
+                        if (FD_Globals.QueueActive.Count > 0)
                         {
-                            QRDatabaseHelper.AddActiveCodeUnique(
-                                qrContent: otherRecord.QRContent,
-                                batchCode: otherRecord.BatchCode,
-                                barcode: otherRecord.Barcode,
-                                userName: otherRecord.UserName,
-                                TimeStampActive: otherRecord.TimeStampActive,
-                                TimeUnixActive: otherRecord.TimeUnixActive
-                            );
+                            if (FD_Globals.QueueActive.TryDequeue(out QRProductRecord otherRecord))
+                            {
+                                QRDatabaseHelper.AddActiveCodeUnique(
+                                    qrContent: otherRecord.QRContent,
+                                    batchCode: otherRecord.BatchCode,
+                                    barcode: otherRecord.Barcode,
+                                    userName: otherRecord.UserName,
+                                    TimeStampActive: otherRecord.TimeStampActive,
+                                    TimeUnixActive: otherRecord.TimeUnixActive
+                                );
+                            }
                         }
+
+
                     }
-                        UpdateAlarmDisplay();
+                    UpdateAlarmDisplay();
                     Thread.Sleep(50);
                 }
                 catch (Exception ex)
@@ -457,7 +468,7 @@ namespace TApp.Views.Dashboard
                 OperateResult rs = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Reset_Counter_DM"), (short)1);
                 if (rs.IsSuccess)
                 {
-                    GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng xóa só đếm",$"Xóa thành công :{total},{pass},{fail},{timeout}", "FD-UA-1");
+                    GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng xóa só đếm", $"Xóa thành công :{total},{pass},{fail},{timeout}", "FD-UA-1");
                     this.ShowSuccessTip("Gửi lệnh reset counter PLC thành công!");
                 }
                 else
@@ -552,7 +563,7 @@ namespace TApp.Views.Dashboard
                 }
 
                 //nếu datamode là normal thì lưu vào queue để ghi db
-                if(AppConfigs.Current.Data_Mode == "normal")
+                if (AppConfigs.Current.Data_Mode == "normal")
                 {
                     FD_Globals.ActiveSet.Add(data); // Update RAM
                     Send_Result_To_PLC(e_PLC_Result.Pass);
@@ -596,15 +607,18 @@ namespace TApp.Views.Dashboard
                         Send_Result_Content(e_Production_Status.Error, data); // Lỗi lưu dữ liệu
                     }
                 }
-                
 
-                
+
+
             }
         }
 
-        private bool IsValidQRContent(string data)
+        public bool IsValidQRContent(string data)
         {
-            // Mã chứa barcode của sản phẩm
+            // Mã chứa barcode của sản phẩm và lớn hơn 15 ký tự
+
+            if (data.Length < 16)
+                return false;
             return data.Contains(FD_Globals.productionData.Barcode);
         }
 
@@ -625,7 +639,7 @@ namespace TApp.Views.Dashboard
                 Reason = string.Empty
             });
         }
-        
+
         private void HandleEnterBatchChangeMode()
         {
             btnABatch.Enabled = false;
@@ -781,7 +795,7 @@ namespace TApp.Views.Dashboard
                     break;
             }
         }
-        
+
         private void SetDeviceStatus(UIPanel label, UILedBulb led, string text, Color color, bool blink, Color? ledColor = null)
         {
             if (label.Text != text)
@@ -796,7 +810,7 @@ namespace TApp.Views.Dashboard
                 });
             }
         }
-        
+
         private void Render_Production_Result(QRProductRecord qRProductRecord)
         {
             this.InvokeIfRequired(() =>
@@ -865,7 +879,7 @@ namespace TApp.Views.Dashboard
                 SetAlarm("-", Color.FromArgb(243, 249, 255), Color.FromArgb(80, 160, 255));
             }
         }
-        
+
         private void SetAlarm(string text, Color fillColor, Color rectColor)
         {
             this.InvokeIfRequired(() =>
@@ -878,23 +892,36 @@ namespace TApp.Views.Dashboard
 
         #endregion
 
-        #region Nested Types
 
-        public static class FD_Globals
+        private void uiSymbolButton3_Click(object sender, EventArgs e)
         {
-            public static CameraStatus CameraStatus { get; set; } = CameraStatus.Disconnected;
-            public static ProductionData productionData { get; set; } = new ProductionData();
-            public static int AlarmCount { get; set; } = 0;
-            public static PLCStatus pLCStatus { get; set; } = PLCStatus.Disconnect;
-            public static HashSet<string> ActiveSet { get; set; } = new HashSet<string>();
-            public static ConcurrentQueue<QRProductRecord> QueueRecord { get; set; } = new ConcurrentQueue<QRProductRecord>();
-
-            public static ConcurrentQueue<QRProductRecord> QueueActive { get; set; } = new ConcurrentQueue<QRProductRecord>();
-            public static int LineSpeed { get; set; }
-            public static int ProductionPerHour { get; set; } = 0;
+            //trả sự kiện đổi page về dashboard
+            ChangePage?.Invoke(1004);
         }
 
-        #endregion
+        private void btnPLCSetting_Click(object sender, EventArgs e)
+        {
+            ChangePage?.Invoke(1005);
+        }
     }
+
+    #region Nested Types
+
+    public static class FD_Globals
+    {
+        public static CameraStatus CameraStatus { get; set; } = CameraStatus.Disconnected;
+        public static ProductionData productionData { get; set; } = new ProductionData();
+        public static int AlarmCount { get; set; } = 0;
+        public static PLCStatus pLCStatus { get; set; } = PLCStatus.Disconnect;
+        public static HashSet<string> ActiveSet { get; set; } = new HashSet<string>();
+        public static ConcurrentQueue<QRProductRecord> QueueRecord { get; set; } = new ConcurrentQueue<QRProductRecord>();
+
+        public static ConcurrentQueue<QRProductRecord> QueueActive { get; set; } = new ConcurrentQueue<QRProductRecord>();
+        public static int LineSpeed { get; set; }
+        public static int ProductionPerHour { get; set; } = 0;
+    }
+
+    #endregion
+
 }
 

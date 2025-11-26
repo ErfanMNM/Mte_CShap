@@ -196,11 +196,13 @@ namespace TApp.Helpers
         {
             EnsureDatabase(dbPath);
 
-            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            try
             {
-                con.Open();
+                using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+                {
+                    con.Open();
 
-                string sql = @"
+                    string sql = @"
                 SELECT ID, QRContent, BatchCode, Barcode, Status, UserName,
                        TimeStampActive, TimeUnixActive, ProductionDatetime, Reason
                 FROM QRProducts
@@ -208,19 +210,25 @@ namespace TApp.Helpers
                 LIMIT 5;
             ";
 
-                using (var cmd = new SQLiteCommand(sql, con))
-                {
-                    cmd.Parameters.AddWithValue("@QRContent", $"%{qrContent}%");
+                    using (var cmd = new SQLiteCommand(sql, con))
+                    {
+                        cmd.Parameters.AddWithValue("@QRContent", $"%{qrContent}%");
 
-                    var adapter = new SQLiteDataAdapter(cmd);
-                    var table = new DataTable();
-                    adapter.Fill(table);
+                        var adapter = new SQLiteDataAdapter(cmd);
+                        var table = new DataTable();
+                        adapter.Fill(table);
 
-                    return (table.Rows.Count > 0)
-                        ? new TResult(true, "Lấy thông tin mã thành công.", table.Rows.Count, table)
-                        : new TResult(false, "Không tìm thấy");
+                        return (table.Rows.Count > 0)
+                            ? new TResult(true, "Lấy thông tin mã thành công.", table.Rows.Count, table)
+                            : new TResult(true, "Không tìm thấy");
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                return new TResult(false, $"Lỗi khi truy vấn database: {ex.Message}");
+            }
+                
         }
 
         public static Dictionary<string, QRProductRecord> LoadToDictionary(
@@ -678,8 +686,7 @@ namespace TApp.Helpers
                 con.Open();
 
                 string sql = @"
-                SELECT ID, QRContent, Status, BatchCode, Barcode, UserName,
-                       TimeStampActive, TimeUnixActive, ProductionDatetime
+                SELECT *
                 FROM ActiveUniqueQR
                 WHERE QRContent LIKE @QRContent
                 LIMIT 1;

@@ -99,7 +99,7 @@
             btnChangeBatch = new Sunny.UI.UISymbolButton();
             btnScan = new Sunny.UI.UISymbolButton();
             uiSymbolButton3 = new Sunny.UI.UISymbolButton();
-            uiSymbolButton4 = new Sunny.UI.UISymbolButton();
+            btnPLCSetting = new Sunny.UI.UISymbolButton();
             btnClearPLC = new Sunny.UI.UISymbolButton();
             btnResetCounterPLC = new Sunny.UI.UISymbolButton();
             opAlarm = new Sunny.UI.UIPanel();
@@ -1258,7 +1258,7 @@
             uiTableLayoutPanel12.Controls.Add(btnChangeBatch, 0, 0);
             uiTableLayoutPanel12.Controls.Add(btnScan, 1, 0);
             uiTableLayoutPanel12.Controls.Add(uiSymbolButton3, 2, 0);
-            uiTableLayoutPanel12.Controls.Add(uiSymbolButton4, 2, 1);
+            uiTableLayoutPanel12.Controls.Add(btnPLCSetting, 2, 1);
             uiTableLayoutPanel12.Controls.Add(btnClearPLC, 1, 1);
             uiTableLayoutPanel12.Controls.Add(btnResetCounterPLC, 0, 1);
             uiTableLayoutPanel12.Dock = DockStyle.Fill;
@@ -1317,21 +1317,23 @@
             uiSymbolButton3.TabIndex = 0;
             uiSymbolButton3.Text = "Thêm mã";
             uiSymbolButton3.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            uiSymbolButton3.Click += uiSymbolButton3_Click;
             // 
-            // uiSymbolButton4
+            // btnPLCSetting
             // 
-            uiSymbolButton4.Dock = DockStyle.Fill;
-            uiSymbolButton4.FillColor = Color.FromArgb(255, 128, 255);
-            uiSymbolButton4.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolButton4.Location = new Point(246, 43);
-            uiSymbolButton4.Margin = new Padding(2);
-            uiSymbolButton4.MinimumSize = new Size(1, 1);
-            uiSymbolButton4.Name = "uiSymbolButton4";
-            uiSymbolButton4.Size = new Size(119, 37);
-            uiSymbolButton4.Symbol = 361540;
-            uiSymbolButton4.TabIndex = 0;
-            uiSymbolButton4.Text = "Thả lại";
-            uiSymbolButton4.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnPLCSetting.Dock = DockStyle.Fill;
+            btnPLCSetting.FillColor = Color.FromArgb(255, 128, 255);
+            btnPLCSetting.Font = new Font("Microsoft Sans Serif", 12F);
+            btnPLCSetting.Location = new Point(246, 43);
+            btnPLCSetting.Margin = new Padding(2);
+            btnPLCSetting.MinimumSize = new Size(1, 1);
+            btnPLCSetting.Name = "btnPLCSetting";
+            btnPLCSetting.Size = new Size(119, 37);
+            btnPLCSetting.Symbol = 61573;
+            btnPLCSetting.TabIndex = 0;
+            btnPLCSetting.Text = "Cài PLC";
+            btnPLCSetting.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnPLCSetting.Click += btnPLCSetting_Click;
             // 
             // btnClearPLC
             // 
@@ -1523,7 +1525,7 @@
         private Sunny.UI.UISymbolButton btnChangeBatch;
         private Sunny.UI.UISymbolButton btnScan;
         private Sunny.UI.UISymbolButton uiSymbolButton3;
-        private Sunny.UI.UISymbolButton uiSymbolButton4;
+        private Sunny.UI.UISymbolButton btnPLCSetting;
         private Sunny.UI.UISymbolButton btnClearPLC;
         private Sunny.UI.UISymbolButton btnResetCounterPLC;
         private Microsoft.Web.WebView2.WinForms.WebView2 opCameraView;

@@ -134,6 +134,8 @@ namespace TApp.Views.Extention
                     opStatus.Symbol = 61527;
                     opStatus.SymbolColor = Color.White;
                     opStatus.ForeColor = Color.White;
+
+                    opConsole.Items.Insert(0, $"[LỖI] Không thể truy xuất database: {resultAll.message}");
                 });
                 return;
             }
@@ -148,6 +150,7 @@ namespace TApp.Views.Extention
                     opStatus.Symbol = 61453;
                     opStatus.SymbolColor = Color.White;
                     opStatus.ForeColor = Color.White;
+                    opConsole.Items.Insert(0, $"Mã : {qrCode} Không tìm thấy");
                 });
                 return;
             }
