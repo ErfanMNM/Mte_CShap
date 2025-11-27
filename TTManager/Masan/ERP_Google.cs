@@ -97,6 +97,8 @@ namespace TTManager.Masan
                  };
                 BigQueryResults results = client.ExecuteQuery(query, parameters);
 
+ 
+
                 string currentERP = string.Empty;
                 //kiểm tra ERP đang dùng 
                 if (cbbBatchNO.SelectedItem != null)
@@ -135,6 +137,7 @@ namespace TTManager.Masan
             }
 
         }
+
 
         public Dictionary<string,string> LoadExcelToProductListD (string filePath)
         {
