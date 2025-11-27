@@ -54,7 +54,6 @@
             tabPage1 = new TabPage();
             opView = new Sunny.UI.UIListBox();
             tabPage2 = new TabPage();
-            opCameraView = new Microsoft.Web.WebView2.WinForms.WebView2();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiTitlePanel4 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel11 = new Sunny.UI.UITableLayoutPanel();
@@ -124,8 +123,6 @@
             uiTitlePanel3.SuspendLayout();
             opNoteCameraView.SuspendLayout();
             tabPage1.SuspendLayout();
-            tabPage2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)opCameraView).BeginInit();
             uiTableLayoutPanel1.SuspendLayout();
             uiTitlePanel4.SuspendLayout();
             uiTableLayoutPanel11.SuspendLayout();
@@ -577,25 +574,12 @@
             // 
             // tabPage2
             // 
-            tabPage2.Controls.Add(opCameraView);
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
             tabPage2.Size = new Size(491, 410);
             tabPage2.TabIndex = 1;
-            tabPage2.Text = "Xem ảnh";
+            tabPage2.Text = "Kiểm tra lỗi";
             tabPage2.UseVisualStyleBackColor = true;
-            // 
-            // opCameraView
-            // 
-            opCameraView.AllowExternalDrop = true;
-            opCameraView.CreationProperties = null;
-            opCameraView.DefaultBackgroundColor = Color.White;
-            opCameraView.Dock = DockStyle.Fill;
-            opCameraView.Location = new Point(0, 0);
-            opCameraView.Name = "opCameraView";
-            opCameraView.Size = new Size(491, 410);
-            opCameraView.TabIndex = 0;
-            opCameraView.ZoomFactor = 1D;
             // 
             // uiTableLayoutPanel1
             // 
@@ -1444,8 +1428,6 @@
             uiTitlePanel3.ResumeLayout(false);
             opNoteCameraView.ResumeLayout(false);
             tabPage1.ResumeLayout(false);
-            tabPage2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)opCameraView).EndInit();
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTitlePanel4.ResumeLayout(false);
             uiTableLayoutPanel11.ResumeLayout(false);
@@ -1528,7 +1510,6 @@
         private Sunny.UI.UISymbolButton btnPLCSetting;
         private Sunny.UI.UISymbolButton btnClearPLC;
         private Sunny.UI.UISymbolButton btnResetCounterPLC;
-        private Microsoft.Web.WebView2.WinForms.WebView2 opCameraView;
         private Sunny.UI.UIListBox opView;
         private TTManager.PLCHelpers.OmronPLC_Hsl omronPLC_Hsl1;
         private System.ComponentModel.BackgroundWorker WK_Camera;
