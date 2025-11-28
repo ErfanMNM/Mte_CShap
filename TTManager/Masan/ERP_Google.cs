@@ -138,6 +138,66 @@ namespace TTManager.Masan
 
         }
 
+        public TResult Get_Erp_To_Table()
+        {
+            try
+                {
+                DataTable dataTable = new DataTable();
+                GoogleCredential credential = GoogleCredential.FromFile(credentialPath);
+                BigQueryClient client = BigQueryClient.Create(ProjectID, credential);
+                BigQueryTable table = client.GetTable(ProjectID, DatasetID, TableID);
+                // Truy vấn BigQuery
+                string query = @"
+            SELECT *
+            FROM `sales-268504.FactoryIntegration.BatchProduction` 
+            WHERE `SUB_INV` = @sub_inv
+            AND `ORG_CODE` = @org_code
+            ORDER BY `LAST_UPDATE_DATE` DESC;
+            ";
+
+                BigQueryParameter[] parameters = new[]
+                {
+                new BigQueryParameter("sub_inv", BigQueryDbType.String,SUB_INV),
+                new BigQueryParameter("org_code", BigQueryDbType.String,ORG_CODE),
+               // new BigQueryParameter("linename", BigQueryDbType.String,Configs.ConfigsParameter.LineName_m)
+            };
+                BigQueryResults results = client.ExecuteQuery(query, parameters);
+
+                // Thêm cột vào DataTable
+                foreach (var field in results.Schema.Fields)
+                {
+                    dataTable.Columns.Add(field.Name);
+                }
+
+                // Thêm hàng vào DataTable
+                foreach (var row in results)
+                {
+                    DataRow dataRow = dataTable.NewRow();
+                    foreach (var field in results.Schema.Fields)
+                    {
+                        dataRow[field.Name] = row[field.Name];
+                    }
+                    dataTable.Rows.Add(dataRow);
+                }
+
+                return new TResult
+                {
+                    IsSuccess = true,
+                    data = dataTable,
+                    message = "Lấy dữ liệu ERP thành công!"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new TResult
+                {
+                    IsSuccess = false,
+                    data = null,
+                    message = $"Lỗi lấy dữ liệu ERP: {ex.Message}"
+                };
+            }
+        }
+
 
         public Dictionary<string,string> LoadExcelToProductListD (string filePath)
         {
@@ -219,6 +279,13 @@ namespace TTManager.Masan
                 return barcodeResult;
             }
         }
+    }
+
+    public class TResult
+    {
+        public bool IsSuccess { get; set; }
+        public DataTable data { get; set; }
+        public string message { get; set; }
     }
 
     public class ProductInfoList

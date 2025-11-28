@@ -1,4 +1,5 @@
 ﻿using Sunny.UI;
+using TTManager.Masan;
 
 namespace TApp.Configs
 {
@@ -41,6 +42,12 @@ namespace TApp.Configs
         public string? credentialPLCAddressPath { get; set; }
         public string? credentialERPPath { get; set; }
 
+        public string? ERP_Sub_Inv { get; set; }
+        public string? ERP_Org_Code { get; set; }
+        public string? ERP_DatasetID { get; set; }
+        public string? ERP_TableID { get; set; }
+        public string? ERP_ProjectID { get; set; }
+
         public override void SetDefault()
         {
             base.SetDefault();
@@ -61,6 +68,11 @@ namespace TApp.Configs
             credentialERPPath = "C:/Users/DANOMT/Downloads/Masan/sales-268504-20a4b06ea0fb.json";
             AWS_Credential_Path = "D:/Masan/aws_credentials.json";
             Data_Mode = "normal";
+            ERP_DatasetID = "FactoryIntegration";
+            ERP_TableID = "BatchProduction";
+            ERP_Sub_Inv = "W05";
+            ERP_Org_Code = "MIP";
+            ERP_ProjectID = "sales-268504";
         }
     }
 }
