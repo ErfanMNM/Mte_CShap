@@ -38,6 +38,7 @@ namespace TApp.Views.Dashboard
         public void Start()
         {
             InitializeConfigs();
+            InitializeERP();
             InitializeDevices();
             InitializeProductionInformation();
             InitializeProductionDatabase();
@@ -231,6 +232,16 @@ namespace TApp.Views.Dashboard
             {
                 this.ShowErrorDialog($"Lỗi khởi tạo PLC: {ex.Message}");
             }
+        }
+
+        public void InitializeERP()
+        {
+            erP_Google2.credentialPath = AppConfigs.Current.credentialERPPath;
+            erP_Google2.SUB_INV = AppConfigs.Current.ERP_Sub_Inv;
+            erP_Google2.ORG_CODE = AppConfigs.Current.ERP_Org_Code;
+            erP_Google2.DatasetID = AppConfigs.Current.ERP_DatasetID;
+            erP_Google2.TableID = AppConfigs.Current.ERP_TableID;
+            erP_Google2.LineName = AppConfigs.Current.Line_Name;
         }
 
         #endregion

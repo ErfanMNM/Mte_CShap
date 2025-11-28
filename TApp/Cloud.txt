@@ -1,0 +1,483 @@
+﻿using Google.Apis.Auth.OAuth2;
+using Google.Cloud.Storage.V1;
+//using QRAPP.Configs;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Data.SQLite;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using static CloudV5.Form1;
+
+namespace CloudV5
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        {
+            int dem = 300;
+            while (!backgroundWorker1.CancellationPending)
+            {
+                dem++;
+                this.Invoke(new Action(() =>
+                {
+                    label3.Text = $"Kiểm lag {dem} lần";
+                    if(listBox1.Items.Count > 1000)
+                    {
+                        listBox1.Items.Clear();
+                    }
+                }));
+                // Simulate some work being done
+                if(dem >= 300)
+                {
+                    dem = 0;
+                    this.Invoke(new Action(() =>
+                    {
+                        listBox1.Items.Add($"1.Đang kiểm tra dữ liệu mới để tải lên Cloud...");
+                    }));
+                    try
+                    {
+                        Cloud_V2();
+                        this.Invoke(new Action(() =>
+                        {
+                            listBox1.Items.Add($"2.Đã kiểm tra dữ liệu mới để tải lên Cloud.");
+                        }));
+
+                        Get_ListFile_Logss();
+
+                        this.Invoke(new Action(() =>
+                        {
+                            listBox1.Items.Add($"3.Đã kiểm tra danh sách file đã tải lên Cloud.");
+                        }));
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            listBox1.Items.Add($"Lỗi: {ex.Message}");
+                        }));
+                        _auditTrails.Add(AuditTrailsV2.AuditTrailCode.Error, "AutoUpload", $"Lỗi khi kiểm tra dữ liệu mới: {ex.Message}");
+                    }
+
+                }
+                
+                Thread.Sleep(1000);
+            }
+        }
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            backgroundWorker1.RunWorkerAsync();
+        }
+       // GoogleAPI _googleAPI = new GoogleAPI();
+        DataSQLite _dataSQLite = new DataSQLite();
+        AuditTrailsV2 _auditTrails = new AuditTrailsV2();
+        string LineName = "Line 7";
+        private void Cloud_V2()
+        {
+            this.Invoke(new Action(() =>
+            {
+                listBox1.Items.Add($"{LineName}");
+            }));
+            DataTable dataLastX = new DataTable();
+            //Lấy số lượng mã chạy trước đó
+            //Kiểm tra ngày chạy gần nhất trước đó có tồn tại hay không
+            string LastTimeUpload = _dataSQLite.V2_Get_LastUpload();
+            //_auditTrails.Add(AuditTrails.AuditTrailCode.CloudLog, "AutoUpload",);
+            dataLastX = _dataSQLite.V2_Get_QRContent(LastTimeUpload);
+            DataTable _data = new DataTable();
+
+            _data.Columns.Add("ID", typeof(string));
+            _data.Columns.Add("BatchID", typeof(string));
+            _data.Columns.Add("Content", typeof(string));
+            _data.Columns.Add("UserName", typeof(string));
+            _data.Columns.Add("Status", typeof(string));
+            _data.Columns.Add("Note", typeof(string));
+            _data.Columns.Add("Timestamp", typeof(string));
+            _data.Columns.Add("Timeunix", typeof(string));
+            _data.Columns.Add("ProductName", typeof(string));
+            DateTime today = DateTime.Now;
+
+            if (dataLastX.Rows.Count > 0)
+            {
+
+                for (int i = 0; i < dataLastX.Rows.Count; i++)
+                {
+                    _data.Rows.Add(dataLastX.Rows[i]["ID"], dataLastX.Rows[i]["BatchID"], dataLastX.Rows[i]["Content"].ToString().Replace("\r\n","").Replace("\r",""), dataLastX.Rows[i]["Operator"], dataLastX.Rows[i]["Status"], dataLastX.Rows[i]["Note"], dataLastX.Rows[i]["Timestamp"], dataLastX.Rows[i]["Timeunix"], dataLastX.Rows[i]["ProductName"]);
+                } 
+                
+                string CsvFilePatch = "C:/DataCloudDone" + "/" + today.ToString("MM-yy") + "/" + LineName+ "_" + today.ToString("ddMMyyyy HHmmss") + ".csv";
+
+                _dataSQLite.DataTableToCsv(CsvFilePatch, _data);
+
+                //Bắt đầu tải lên Cloud
+                this.Invoke(new Action(() =>
+                {
+                    listBox1.Items.Add($"Tạo file {LineName}_{today.ToString("ddMMyyyy HHmmss")}.csv thành công.");
+                    listBox1.Items.Add($"Đang tải lên Cloud file {LineName}_{today.ToString("ddMMyyyy HHmmss")}.csv...");
+                }));
+                bool cloud = UploadFile_V4(CsvFilePatch, @"C:/QRAPP/sales-268504-20a4b06ea0fb.json", "masan-image", "QRCode", LineName + "_" + today.ToString("ddMMyyyy HHmmss"), "csv");
+                if (cloud)
+                {
+                    //up thành công
+                    _auditTrails.Add(AuditTrailsV2.AuditTrailCode.Cloud, "AutoUpload", $"Upload OK: {LineName}_{today.ToString("ddMMyyyy HHmmss")}.csv");
+                    string TimeUnix = _data.Rows[_data.Rows.Count - 1]["TimeUnix"].ToString();
+                    _auditTrails.Add(AuditTrailsV2.AuditTrailCode.CloudLog, "CLL", TimeUnix);
+
+
+                }
+                else
+                {
+                    this.Invoke(new Action(() =>
+                    {
+                        listBox1.Items.Add($"Tải lên Cloud file {LineName}_{today.ToString("ddMMyyyy HHmmss")}.csv thất bại, vui lòng kiểm tra lại.");
+                    }));
+                    //up thất bại - xóa file đã tạo
+                    _auditTrails.Add(AuditTrailsV2.AuditTrailCode.Cloud, "AutoUpload", $"Upload Fail: {LineName}_{today.ToString("ddMMyyyy HHmmss")}.csv");
+
+                    if (File.Exists(CsvFilePatch))
+                    {
+                        File.Delete(CsvFilePatch);
+                    }
+                }
+
+            }
+            else
+            {
+                //
+                this.Invoke(new Action(() =>
+                {
+                    listBox1.Items.Add($"Không có dữ liệu mới để tải lên Cloud.");
+                }));
+            }
+        }
+
+        public bool UploadFile_V4(string localFilePath, string GoogleCredentialjsonPath, string bucketName, string cloudChildFolderName, string FileName, string FileFortmat)
+        {
+            string fullObjectName = $@"{cloudChildFolderName}/{FileName}.{FileFortmat}";
+            try
+            {
+                // Tạo StorageClient từ file xác thực JSON
+                GoogleCredential credential = GoogleCredential.FromFile(GoogleCredentialjsonPath);
+                StorageClient storage = StorageClient.Create(credential);
+                FileStream fileStream = File.OpenRead(localFilePath);
+                // Tải file lên Google Cloud Storage
+
+                var a = storage.UploadObject(bucketName, fullObjectName, null, fileStream);
+                _auditTrails.Add(AuditTrailsV2.AuditTrailCode.Cloud, "Upload", $"UploadV3 file OK : {fullObjectName}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                //_logs.AddErrLog("CLDE1", $"Cloud Upload Fail File name : {fullObjectName}  : " + ex.ToString());
+                _auditTrails.Add(AuditTrailsV2.AuditTrailCode.Cloud, "Upload", $"UploadV3 file fail : {fullObjectName}, Mess:  {ex.Message}");
+                return false;
+            }
+
+        }
+
+        public class DataSQLite
+        {
+           
+
+            public DataTable V2_Get_QRContent(string timeunix)
+            {
+                using (var connection = new SQLiteConnection($"Data Source=C:/QRAPP/Database/DBData.db;Version=3;"))
+                {
+                    connection.Open();
+                    string checkTableQuery = $"SELECT * FROM `DatabaseDefault` WHERE `Timeunix` > '{timeunix}'";
+
+                    using (var command = new SQLiteCommand(checkTableQuery, connection))
+                    {
+                        command.ExecuteNonQuery();
+
+                        using (var adapter = new SQLiteDataAdapter(command))
+                        {
+                            DataTable dataTable = new DataTable();
+                            adapter.Fill(dataTable);
+                            return dataTable;
+                        }
+                    }
+                }
+            }
+
+            public string V2_Get_LastUpload()
+            {
+                using (var connection = new SQLiteConnection($"Data Source=C:/QRAPP/Database/DBAuditTrails_V2.db;Version=3;"))
+                {
+                    connection.Open();
+                    string checkTableQuery = $"SELECT * FROM `AuditTrails` WHERE `CODE` = 'CloudLog' ORDER BY `ID` DESC LIMIT 1";
+
+                    using (var command = new SQLiteCommand(checkTableQuery, connection))
+                    {
+                        command.ExecuteNonQuery();
+
+                        using (var adapter = new SQLiteDataAdapter(command))
+                        {
+                            DataTable dataTable = new DataTable();
+                            adapter.Fill(dataTable);
+                            if (dataTable.Rows.Count > 0)
+                            {
+                                string time = dataTable.Rows[0]["Mess"].ToString();
+                                return time;
+                            }
+                            else
+                            {
+                                return "0";
+                            }
+                        }
+                    }
+                }
+            }
+
+            public void DataTableToCsv(string csvFilePath, DataTable datatable)
+            {
+                FileInfo fileInfo = new FileInfo(csvFilePath);
+
+                // Kiểm tra xem đường dẫn file có tồn tại không, nếu không thì tạo file mới.
+                fileInfo.Directory.Create(); // Nếu thư mục chứa file không tồn tại, tạo thư mục mới.
+                                             // Sử dụng StringBuilder để tạo nội dung CSV.
+                StringBuilder csvContent = new StringBuilder();
+                // Tạo tiêu đề cho CSV từ tên cột của DataTable.
+                string[] columnNames = Array.ConvertAll(datatable.Columns.Cast<DataColumn>().ToArray(), column => column.ColumnName);
+                csvContent.AppendLine(string.Join(",", columnNames));
+                // Thêm dữ liệu từng hàng vào CSV.
+                foreach (DataRow row in datatable.Rows)
+                {
+                    string[] fields = row.ItemArray.Select(field => $"\"{field.ToString().Replace("\"", "\"\"")}\"").ToArray();
+                    csvContent.AppendLine(string.Join(",", fields));
+                }
+
+                File.WriteAllText(fileInfo.FullName, csvContent.ToString());
+            }
+        }
+
+        public class AuditTrailsV2
+        {
+            public void Add(AuditTrailCode code, string name, string mess)
+            {
+                using (var connection = new SQLiteConnection($"Data Source=C:/QRAPP/Database/DBAuditTrails_V2.db;Version=3;"))
+                {
+                    connection.Open();
+                    string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    long timeUnix = ((DateTimeOffset)DateTime.Now).ToUnixTimeMilliseconds();
+
+                    string insertQuery = @"
+                INSERT INTO AuditTrails (CODE, NAME, MESS, OperatorName, TimeStamp, TimeUnix)
+                VALUES (@CODE, @NAME, @MESS, @OperatorName, @Timestamp, @TimeUnix)";
+
+                    using (var command = new SQLiteCommand(insertQuery, connection))
+                    {
+                        command.Parameters.AddWithValue("@CODE", ConvertAuditTrailCode(code));
+                        command.Parameters.AddWithValue("@NAME", name);
+                        command.Parameters.AddWithValue("@OperatorName", "AAAA");
+                        command.Parameters.AddWithValue("@MESS", mess);
+                        command.Parameters.AddWithValue("@Timestamp", timestamp);
+                        command.Parameters.AddWithValue("@TimeUnix", timeUnix);
+
+                        command.ExecuteNonQuery();
+                    }
+                    connection.Close();
+                }
+            }
+
+            public enum AuditTrailCode
+            {
+                UserAction = 0,
+                PLC = 1,
+                ErrorSQLite = 2,
+                Error = 3,
+                Cloud = 4,
+                ProductParameter = 5,
+                Counter = 6,
+                BackupFile = 7,
+                App = 8,
+                CloudLog = 9,
+            }
+
+            public enum AuditTrailCountName
+            {
+                BarcodeFail = 0,
+                CameraCount = 1,
+                CameraFail = 2,
+            }
+
+            public string ConvertAuditTrailCode(AuditTrailCode auditTrailCode)
+            {
+                switch (auditTrailCode)
+                {
+                    case AuditTrailCode.UserAction:
+                        return "UserAction";
+                    case AuditTrailCode.PLC:
+                        return "PLC";
+                    case AuditTrailCode.ErrorSQLite:
+                        return "ErrorSQLite";
+                    case AuditTrailCode.Error:
+                        return "Error";
+                    case AuditTrailCode.Cloud:
+                        return "Cloud";
+                    case AuditTrailCode.ProductParameter:
+                        return "ProductParameter";
+                    case AuditTrailCode.Counter:
+                        return "Counter";
+                    case AuditTrailCode.BackupFile:
+                        return "Backup";
+                    case AuditTrailCode.App:
+                        return "APPEvent";
+                    case AuditTrailCode.CloudLog:
+                        return "CloudLog";
+                    default:
+                        return "DefaultCode";
+                }
+
+            }
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Get_Logss();
+        }
+
+        public void Get_Logss()
+        {
+            using (var connection = new SQLiteConnection($"Data Source=C:/QRAPP/Database/DBAuditTrails_V2.db;Version=3;"))
+            {
+                connection.Open();
+                string checkTableQuery = $"SELECT * FROM `AuditTrails` WHERE `NAME` = 'AutoUpload' ORDER BY `ID` DESC LIMIT 1000";
+
+                using (var command = new SQLiteCommand(checkTableQuery, connection))
+                {
+                    command.ExecuteNonQuery();
+
+                    using (var adapter = new SQLiteDataAdapter(command))
+                    {
+                        DataTable dataTable = new DataTable();
+                        adapter.Fill(dataTable);
+                        dataGridView1.DataSource = null; // Clear previous data
+                        dataGridView1.DataSource = dataTable;
+                    }
+                }
+            }
+        }
+        DataTable lastuploadfile = new DataTable();
+
+
+        public void Get_ListFile_Logss()
+        {
+            lastuploadfile = new DataTable();
+            //thêm các cột tên file, thời gian gửi lên
+            lastuploadfile.Columns.Add("FileName", typeof(string));
+            lastuploadfile.Columns.Add("TimeUpload", typeof(string));
+            string yesterday = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd"); // Lấy ngày hôm qua
+                                                                                //chuyển sang csv
+            string CsvFilePatch = "C:/DataCloudDone" + "/" + DateTime.Now.ToString("MM-yy") + "/" + LineName + "_ListFileUpload_" + DateTime.Now.ToString("ddMMyyyy") + ".csv";
+
+            if (File.Exists(CsvFilePatch))
+            {
+                //đã tồn tại thì k làm gì cả
+
+                this.Invoke(new Action(() =>
+                {
+                   listBox1.Items.Add($"File {LineName}_ListFileUpload_{DateTime.Now.ToString("ddMMyyyy")}.csv đã tồn tại, không cần tạo mới.");
+                }));
+            }
+            else
+            {
+                using (var connection = new SQLiteConnection($"Data Source=C:/QRAPP/Database/DBAuditTrails_V2.db;Version=3;"))
+                {
+                    connection.Open();
+                    string checkTableQuery = $"SELECT * FROM `AuditTrails` WHERE `NAME` = 'AutoUpload' AND \"TimeStamp\" LIKE '%{yesterday}%' ESCAPE '\\' ORDER BY `ID` DESC LIMIT 10000";
+
+                    using (var command = new SQLiteCommand(checkTableQuery, connection))
+                    {
+                        command.ExecuteNonQuery();
+
+                        using (var adapter = new SQLiteDataAdapter(command))
+                        {
+                            DataTable dataTable = new DataTable();
+                            adapter.Fill(dataTable);
+                            if (dataTable.Rows.Count > 0)
+                            {
+                                for (int i = 0; i < dataTable.Rows.Count; i++)
+                                {
+                                    string mess = dataTable.Rows[i]["MESS"].ToString();
+                                    if (mess.Contains("Upload OK"))
+                                    {
+                                        string[] parts = mess.Split(':');
+                                        if (parts.Length > 1)
+                                        {
+                                            string fileName = parts[1].Trim();
+                                            string timeUpload = dataTable.Rows[i]["TimeStamp"].ToString();
+                                            lastuploadfile.Rows.Add(fileName, timeUpload);
+                                        }
+                                    }
+                                }
+
+                                //kiểm tra file đã tồn tại chưa
+
+
+                                _dataSQLite.DataTableToCsv(CsvFilePatch, lastuploadfile);
+
+                                this.Invoke(new Action(() =>
+                                {
+                                    listBox1.Items.Add($"Tạo file {LineName}_ListFileUpload_{DateTime.Now.ToString("ddMMyyyy")}.csv thành công.");
+                                }));
+
+                                //kiểm tra xem đã up lên cloud chưa, nếu chưa up lên
+                                bool cloud = UploadFile_V4(CsvFilePatch, @"C:/QRAPP/sales-268504-20a4b06ea0fb.json", "masan-image", "QRCode/Filename", LineName + "_ListFileUpload_" + DateTime.Now.ToString("ddMMyyyy"), "csv");
+                                if (cloud)
+                                {
+                                    //up thành công
+                                    _auditTrails.Add(AuditTrailsV2.AuditTrailCode.Cloud, "AutoUpload", $"Upload OK: {LineName}_ListFileUpload_{DateTime.Now.ToString("ddMMyyyy")}.csv");
+                                }
+                                else
+                                {
+                                    //up thất bại - xóa file đã tạo
+                                    _auditTrails.Add(AuditTrailsV2.AuditTrailCode.Cloud, "AutoUpload", $"Upload Fail: {LineName}_ListFileUpload_{DateTime.Now.ToString("ddMMyyyy")}.csv");
+                                    if (File.Exists(CsvFilePatch))
+                                    {
+                                        File.Delete(CsvFilePatch);
+                                    }
+                                }
+
+
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void listBox1_DoubleClick(object sender, EventArgs e)
+        {
+            MessageBox.Show(listBox1.SelectedItem.ToString(), "Thông tin", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            Form2 form2 = new Form2();
+            form2.Show();
+        }
+    }
+}

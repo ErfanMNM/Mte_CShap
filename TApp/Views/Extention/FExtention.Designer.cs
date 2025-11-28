@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
@@ -39,19 +40,20 @@
             uiPanel1 = new Sunny.UI.UIPanel();
             uiTitlePanel1 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
+            uiSymbolButton2 = new Sunny.UI.UISymbolButton();
+            uiSymbolButton1 = new Sunny.UI.UISymbolButton();
             btnERPCheck = new Sunny.UI.UISymbolButton();
-            uiDataGridView1 = new Sunny.UI.UIDataGridView();
-            uiListBox1 = new Sunny.UI.UIListBox();
+            opData = new Sunny.UI.UIDataGridView();
+            opConsole = new Sunny.UI.UIListBox();
             tabPage2 = new TabPage();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            uiSymbolButton1 = new Sunny.UI.UISymbolButton();
-            uiSymbolButton2 = new Sunny.UI.UISymbolButton();
+            erP_Google1 = new TTManager.Masan.ERP_Google(components);
             uiTabControl1.SuspendLayout();
             tabPage1.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
             uiTitlePanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)uiDataGridView1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)opData).BeginInit();
             SuspendLayout();
             // 
             // uiTabControl1
@@ -88,8 +90,8 @@
             uiTableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             uiTableLayoutPanel1.Controls.Add(uiPanel1, 0, 0);
             uiTableLayoutPanel1.Controls.Add(uiTitlePanel1, 0, 3);
-            uiTableLayoutPanel1.Controls.Add(uiDataGridView1, 0, 1);
-            uiTableLayoutPanel1.Controls.Add(uiListBox1, 0, 2);
+            uiTableLayoutPanel1.Controls.Add(opData, 0, 1);
+            uiTableLayoutPanel1.Controls.Add(opConsole, 0, 2);
             uiTableLayoutPanel1.Dock = DockStyle.Fill;
             uiTableLayoutPanel1.Location = new Point(0, 0);
             uiTableLayoutPanel1.Margin = new Padding(2);
@@ -151,6 +153,34 @@
             uiTableLayoutPanel2.TabIndex = 0;
             uiTableLayoutPanel2.TagString = null;
             // 
+            // uiSymbolButton2
+            // 
+            uiSymbolButton2.Dock = DockStyle.Fill;
+            uiSymbolButton2.FillColor = Color.FromArgb(0, 192, 192);
+            uiSymbolButton2.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolButton2.Location = new Point(560, 2);
+            uiSymbolButton2.Margin = new Padding(2);
+            uiSymbolButton2.MinimumSize = new Size(1, 1);
+            uiSymbolButton2.Name = "uiSymbolButton2";
+            uiSymbolButton2.Size = new Size(151, 43);
+            uiSymbolButton2.TabIndex = 2;
+            uiSymbolButton2.Text = "Lịch sử tải lên";
+            uiSymbolButton2.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            // 
+            // uiSymbolButton1
+            // 
+            uiSymbolButton1.Dock = DockStyle.Fill;
+            uiSymbolButton1.FillColor = Color.FromArgb(0, 192, 192);
+            uiSymbolButton1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolButton1.Location = new Point(2, 2);
+            uiSymbolButton1.Margin = new Padding(2);
+            uiSymbolButton1.MinimumSize = new Size(1, 1);
+            uiSymbolButton1.Name = "uiSymbolButton1";
+            uiSymbolButton1.Size = new Size(554, 43);
+            uiSymbolButton1.TabIndex = 1;
+            uiSymbolButton1.Text = "Trạng thái OPC UA";
+            uiSymbolButton1.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            // 
             // btnERPCheck
             // 
             btnERPCheck.Dock = DockStyle.Fill;
@@ -166,15 +196,15 @@
             btnERPCheck.TipsFont = new Font("Microsoft Sans Serif", 9F);
             btnERPCheck.Click += btnERPCheck_Click;
             // 
-            // uiDataGridView1
+            // opData
             // 
-            uiDataGridView1.AllowUserToAddRows = false;
-            uiDataGridView1.AllowUserToDeleteRows = false;
+            opData.AllowUserToAddRows = false;
+            opData.AllowUserToDeleteRows = false;
             dataGridViewCellStyle1.BackColor = Color.FromArgb(235, 243, 255);
-            uiDataGridView1.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
-            uiDataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
-            uiDataGridView1.BackgroundColor = Color.White;
-            uiDataGridView1.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
+            opData.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
+            opData.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+            opData.BackgroundColor = Color.White;
+            opData.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dataGridViewCellStyle2.BackColor = Color.FromArgb(80, 160, 255);
             dataGridViewCellStyle2.Font = new Font("Microsoft Sans Serif", 12F);
@@ -182,8 +212,8 @@
             dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
             dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
-            uiDataGridView1.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
-            uiDataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            opData.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            opData.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle3.BackColor = SystemColors.Window;
             dataGridViewCellStyle3.Font = new Font("Microsoft Sans Serif", 12F);
@@ -191,13 +221,13 @@
             dataGridViewCellStyle3.SelectionBackColor = SystemColors.Highlight;
             dataGridViewCellStyle3.SelectionForeColor = SystemColors.HighlightText;
             dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
-            uiDataGridView1.DefaultCellStyle = dataGridViewCellStyle3;
-            uiDataGridView1.Dock = DockStyle.Fill;
-            uiDataGridView1.EnableHeadersVisualStyles = false;
-            uiDataGridView1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiDataGridView1.GridColor = Color.FromArgb(80, 160, 255);
-            uiDataGridView1.Location = new Point(3, 57);
-            uiDataGridView1.Name = "uiDataGridView1";
+            opData.DefaultCellStyle = dataGridViewCellStyle3;
+            opData.Dock = DockStyle.Fill;
+            opData.EnableHeadersVisualStyles = false;
+            opData.Font = new Font("Microsoft Sans Serif", 12F);
+            opData.GridColor = Color.FromArgb(80, 160, 255);
+            opData.Location = new Point(3, 57);
+            opData.Name = "opData";
             dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle4.BackColor = Color.FromArgb(235, 243, 255);
             dataGridViewCellStyle4.Font = new Font("Microsoft Sans Serif", 12F);
@@ -205,30 +235,30 @@
             dataGridViewCellStyle4.SelectionBackColor = Color.FromArgb(80, 160, 255);
             dataGridViewCellStyle4.SelectionForeColor = Color.White;
             dataGridViewCellStyle4.WrapMode = DataGridViewTriState.True;
-            uiDataGridView1.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            opData.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
             dataGridViewCellStyle5.BackColor = Color.White;
             dataGridViewCellStyle5.Font = new Font("Microsoft Sans Serif", 12F);
-            uiDataGridView1.RowsDefaultCellStyle = dataGridViewCellStyle5;
-            uiDataGridView1.SelectedIndex = -1;
-            uiDataGridView1.Size = new Size(868, 370);
-            uiDataGridView1.StripeOddColor = Color.FromArgb(235, 243, 255);
-            uiDataGridView1.TabIndex = 2;
+            opData.RowsDefaultCellStyle = dataGridViewCellStyle5;
+            opData.SelectedIndex = -1;
+            opData.Size = new Size(868, 370);
+            opData.StripeOddColor = Color.FromArgb(235, 243, 255);
+            opData.TabIndex = 2;
             // 
-            // uiListBox1
+            // opConsole
             // 
-            uiListBox1.Dock = DockStyle.Fill;
-            uiListBox1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiListBox1.HoverColor = Color.FromArgb(155, 200, 255);
-            uiListBox1.ItemSelectForeColor = Color.White;
-            uiListBox1.Location = new Point(2, 432);
-            uiListBox1.Margin = new Padding(2);
-            uiListBox1.MinimumSize = new Size(1, 1);
-            uiListBox1.Name = "uiListBox1";
-            uiListBox1.Padding = new Padding(2);
-            uiListBox1.ShowText = false;
-            uiListBox1.Size = new Size(870, 118);
-            uiListBox1.TabIndex = 3;
-            uiListBox1.Text = "uiListBox1";
+            opConsole.Dock = DockStyle.Fill;
+            opConsole.Font = new Font("Microsoft Sans Serif", 12F);
+            opConsole.HoverColor = Color.FromArgb(155, 200, 255);
+            opConsole.ItemSelectForeColor = Color.White;
+            opConsole.Location = new Point(2, 432);
+            opConsole.Margin = new Padding(2);
+            opConsole.MinimumSize = new Size(1, 1);
+            opConsole.Name = "opConsole";
+            opConsole.Padding = new Padding(2);
+            opConsole.ShowText = false;
+            opConsole.Size = new Size(870, 118);
+            opConsole.TabIndex = 3;
+            opConsole.Text = "uiListBox1";
             // 
             // tabPage2
             // 
@@ -245,33 +275,15 @@
             backgroundWorker1.DoWork += backgroundWorker1_DoWork;
             backgroundWorker1.RunWorkerCompleted += backgroundWorker1_RunWorkerCompleted;
             // 
-            // uiSymbolButton1
+            // erP_Google1
             // 
-            uiSymbolButton1.Dock = DockStyle.Fill;
-            uiSymbolButton1.FillColor = Color.FromArgb(0, 192, 192);
-            uiSymbolButton1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolButton1.Location = new Point(2, 2);
-            uiSymbolButton1.Margin = new Padding(2);
-            uiSymbolButton1.MinimumSize = new Size(1, 1);
-            uiSymbolButton1.Name = "uiSymbolButton1";
-            uiSymbolButton1.Size = new Size(554, 43);
-            uiSymbolButton1.TabIndex = 1;
-            uiSymbolButton1.Text = "Trạng thái OPC UA";
-            uiSymbolButton1.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            // 
-            // uiSymbolButton2
-            // 
-            uiSymbolButton2.Dock = DockStyle.Fill;
-            uiSymbolButton2.FillColor = Color.FromArgb(0, 192, 192);
-            uiSymbolButton2.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolButton2.Location = new Point(560, 2);
-            uiSymbolButton2.Margin = new Padding(2);
-            uiSymbolButton2.MinimumSize = new Size(1, 1);
-            uiSymbolButton2.Name = "uiSymbolButton2";
-            uiSymbolButton2.Size = new Size(151, 43);
-            uiSymbolButton2.TabIndex = 2;
-            uiSymbolButton2.Text = "Lịch sử tải lên";
-            uiSymbolButton2.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            erP_Google1.credentialPath = "C:\\Masan_Sales-268504-8f6f3a1f4f7e.json";
+            erP_Google1.DatasetID = "FactoryIntegration";
+            erP_Google1.LineName = "DL01";
+            erP_Google1.ORG_CODE = "MIP";
+            erP_Google1.ProjectID = "sales-268504";
+            erP_Google1.SUB_INV = "110-101-1001";
+            erP_Google1.TableID = "BatchProduction";
             // 
             // FExtention
             // 
@@ -280,12 +292,13 @@
             Controls.Add(uiTabControl1);
             Name = "FExtention";
             Text = "FExtention";
+            Initialize += FExtention_Initialize;
             uiTabControl1.ResumeLayout(false);
             tabPage1.ResumeLayout(false);
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTitlePanel1.ResumeLayout(false);
             uiTableLayoutPanel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)uiDataGridView1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)opData).EndInit();
             ResumeLayout(false);
         }
 
@@ -299,10 +312,11 @@
         private Sunny.UI.UITitlePanel uiTitlePanel1;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel2;
         private Sunny.UI.UISymbolButton btnERPCheck;
-        private Sunny.UI.UIDataGridView uiDataGridView1;
-        private Sunny.UI.UIListBox uiListBox1;
+        private Sunny.UI.UIDataGridView opData;
+        private Sunny.UI.UIListBox opConsole;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private Sunny.UI.UISymbolButton uiSymbolButton2;
         private Sunny.UI.UISymbolButton uiSymbolButton1;
+        private TTManager.Masan.ERP_Google erP_Google1;
     }
 }

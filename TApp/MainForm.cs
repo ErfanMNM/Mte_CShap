@@ -32,6 +32,8 @@ namespace TApp
 
         private FActivityLogs fActivityLogs = new FActivityLogs();
 
+        private FExtention fExtention = new FExtention();
+
         public static e_App_Render_State AppRenderState = e_App_Render_State.LOGIN;
 
         public static e_App_State AppState = e_App_State.LOGIN;
@@ -64,6 +66,7 @@ namespace TApp
                 NavMenu.CreateNode(AddPage(fAddCode, 1004));
                 NavMenu.CreateNode(AddPage(PLCSetting, 1005));
                 NavMenu.CreateNode(AddPage(fActivityLogs, 1006));
+                NavMenu.CreateNode(AddPage(fExtention, 1007));
 
                 NavMenu.CreateNode(AddPage(fLogin, 2001));
                 NavMenu.SelectPage(2001);
@@ -119,6 +122,7 @@ namespace TApp
             fLogin.INIT();
             fScan.InitializeScanner();
             PLCSetting.INIT();
+            fExtention.InitializeERP();
 
             fDashboard.ChangePage += FDashboard_ChangePage;
             ;
