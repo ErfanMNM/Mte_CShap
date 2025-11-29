@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36518.9 d17.14
+VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TApp", "TApp\TApp.csproj", "{883500F5-78B7-40EC-8D83-47AAD3253A92}"
 EndProject
@@ -18,6 +18,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Norwix", "PRINTERs\Unoplus\Norwix\Norwix.csproj", "{CDDEA29C-4759-0E49-79FE-CD65EBA2BDEA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoApp", "DemoApp\DemoApp.csproj", "{AE058D9F-8927-417B-B750-616CA201B5BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudService", "CloudService\CloudService.csproj", "{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -83,6 +85,14 @@ Global
 		{AE058D9F-8927-417B-B750-616CA201B5BE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AE058D9F-8927-417B-B750-616CA201B5BE}.Release|x64.ActiveCfg = Release|Any CPU
 		{AE058D9F-8927-417B-B750-616CA201B5BE}.Release|x64.Build.0 = Release|Any CPU
+		{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}.Debug|x64.Build.0 = Debug|Any CPU
+		{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}.Release|x64.ActiveCfg = Release|Any CPU
+		{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

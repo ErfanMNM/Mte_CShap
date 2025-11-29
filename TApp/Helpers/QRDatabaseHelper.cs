@@ -30,6 +30,8 @@ namespace TApp.Helpers
                 ProductionDatetime TEXT NOT NULL
             );
             CREATE UNIQUE INDEX IF NOT EXISTS IDX_AU_QR_QRContent ON ActiveUniqueQR(QRContent);
+
+            PRAGMA journal_mode=WAL;
         ";
 
         // schema mới: Status TEXT, Reason TEXT
@@ -48,6 +50,8 @@ namespace TApp.Helpers
             );
             CREATE INDEX IF NOT EXISTS IDX_QR_QRContent ON QRProducts(QRContent);
             CREATE INDEX IF NOT EXISTS IDX_QR_BatchCode ON QRProducts(BatchCode);
+
+            PRAGMA journal_mode=WAL;
         ";
 
         // ================== DB CHÍNH: QRProducts (record đầy đủ) ==================
