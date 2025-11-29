@@ -29,17 +29,17 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            DataGridViewCellStyle dataGridViewCellStyle31 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle32 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle33 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle34 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle35 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle26 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle27 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle28 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle29 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle30 = new DataGridViewCellStyle();
-            uiTabControl1 = new Sunny.UI.UITabControl();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle8 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle9 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle10 = new DataGridViewCellStyle();
+            tab2 = new Sunny.UI.UITabControl();
             tabPage1 = new TabPage();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiPanel1 = new Sunny.UI.UIPanel();
@@ -51,22 +51,23 @@
             opData = new Sunny.UI.UIDataGridView();
             opConsole = new Sunny.UI.UIListBox();
             tabPage2 = new TabPage();
+            uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
+            uiTitlePanel6 = new Sunny.UI.UITitlePanel();
+            uiDataGridView1 = new Sunny.UI.UIDataGridView();
+            uiTableLayoutPanel4 = new Sunny.UI.UITableLayoutPanel();
+            uiTitlePanel7 = new Sunny.UI.UITitlePanel();
+            uiSymbolLabel4 = new Sunny.UI.UISymbolLabel();
+            uiSymbolLabel3 = new Sunny.UI.UISymbolLabel();
+            uiTitlePanel3 = new Sunny.UI.UITitlePanel();
+            uiSymbolLabel5 = new Sunny.UI.UISymbolLabel();
+            uiTitlePanel2 = new Sunny.UI.UITitlePanel();
+            uiTableLayoutPanel5 = new Sunny.UI.UITableLayoutPanel();
+            opC1 = new Sunny.UI.UISymbolLabel();
+            uiSymbolLabel1 = new Sunny.UI.UISymbolLabel();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             erP_Google1 = new TTManager.Masan.ERP_Google(components);
-            uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
-            uiTableLayoutPanel4 = new Sunny.UI.UITableLayoutPanel();
-            uiTitlePanel2 = new Sunny.UI.UITitlePanel();
-            uiTitlePanel3 = new Sunny.UI.UITitlePanel();
-            uiTitlePanel6 = new Sunny.UI.UITitlePanel();
-            uiTitlePanel7 = new Sunny.UI.UITitlePanel();
-            uiTableLayoutPanel5 = new Sunny.UI.UITableLayoutPanel();
-            uiSymbolLabel1 = new Sunny.UI.UISymbolLabel();
-            uiSymbolLabel2 = new Sunny.UI.UISymbolLabel();
-            uiSymbolLabel3 = new Sunny.UI.UISymbolLabel();
-            uiSymbolLabel4 = new Sunny.UI.UISymbolLabel();
-            uiSymbolLabel5 = new Sunny.UI.UISymbolLabel();
-            uiDataGridView1 = new Sunny.UI.UIDataGridView();
-            uiTabControl1.SuspendLayout();
+            backgroundWorker2 = new System.ComponentModel.BackgroundWorker();
+            tab2.SuspendLayout();
             tabPage1.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
             uiTitlePanel1.SuspendLayout();
@@ -74,32 +75,32 @@
             ((System.ComponentModel.ISupportInitialize)opData).BeginInit();
             tabPage2.SuspendLayout();
             uiTableLayoutPanel3.SuspendLayout();
-            uiTableLayoutPanel4.SuspendLayout();
-            uiTitlePanel2.SuspendLayout();
-            uiTitlePanel3.SuspendLayout();
             uiTitlePanel6.SuspendLayout();
-            uiTitlePanel7.SuspendLayout();
-            uiTableLayoutPanel5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)uiDataGridView1).BeginInit();
+            uiTableLayoutPanel4.SuspendLayout();
+            uiTitlePanel7.SuspendLayout();
+            uiTitlePanel3.SuspendLayout();
+            uiTitlePanel2.SuspendLayout();
+            uiTableLayoutPanel5.SuspendLayout();
             SuspendLayout();
             // 
-            // uiTabControl1
+            // tab2
             // 
-            uiTabControl1.Controls.Add(tabPage1);
-            uiTabControl1.Controls.Add(tabPage2);
-            uiTabControl1.Dock = DockStyle.Fill;
-            uiTabControl1.DrawMode = TabDrawMode.OwnerDrawFixed;
-            uiTabControl1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTabControl1.ItemSize = new Size(150, 40);
-            uiTabControl1.Location = new Point(0, 0);
-            uiTabControl1.MainPage = "";
-            uiTabControl1.Name = "uiTabControl1";
-            uiTabControl1.SelectedIndex = 0;
-            uiTabControl1.Size = new Size(874, 679);
-            uiTabControl1.SizeMode = TabSizeMode.Fixed;
-            uiTabControl1.TabIndex = 0;
-            uiTabControl1.TabUnSelectedForeColor = Color.FromArgb(240, 240, 240);
-            uiTabControl1.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            tab2.Controls.Add(tabPage1);
+            tab2.Controls.Add(tabPage2);
+            tab2.Dock = DockStyle.Fill;
+            tab2.DrawMode = TabDrawMode.OwnerDrawFixed;
+            tab2.Font = new Font("Microsoft Sans Serif", 12F);
+            tab2.ItemSize = new Size(150, 40);
+            tab2.Location = new Point(0, 0);
+            tab2.MainPage = "";
+            tab2.Name = "tab2";
+            tab2.SelectedIndex = 0;
+            tab2.Size = new Size(874, 679);
+            tab2.SizeMode = TabSizeMode.Fixed;
+            tab2.TabIndex = 0;
+            tab2.TabUnSelectedForeColor = Color.FromArgb(240, 240, 240);
+            tab2.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
             // tabPage1
             // 
@@ -227,45 +228,45 @@
             // 
             opData.AllowUserToAddRows = false;
             opData.AllowUserToDeleteRows = false;
-            dataGridViewCellStyle31.BackColor = Color.FromArgb(235, 243, 255);
-            opData.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle31;
+            dataGridViewCellStyle1.BackColor = Color.FromArgb(235, 243, 255);
+            opData.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
             opData.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
             opData.BackgroundColor = Color.White;
             opData.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle32.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle32.BackColor = Color.FromArgb(80, 160, 255);
-            dataGridViewCellStyle32.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle32.ForeColor = Color.White;
-            dataGridViewCellStyle32.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle32.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle32.WrapMode = DataGridViewTriState.True;
-            opData.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle32;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle2.BackColor = Color.FromArgb(80, 160, 255);
+            dataGridViewCellStyle2.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle2.ForeColor = Color.White;
+            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
+            opData.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             opData.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle33.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle33.BackColor = SystemColors.Window;
-            dataGridViewCellStyle33.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle33.ForeColor = Color.FromArgb(48, 48, 48);
-            dataGridViewCellStyle33.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle33.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle33.WrapMode = DataGridViewTriState.False;
-            opData.DefaultCellStyle = dataGridViewCellStyle33;
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = SystemColors.Window;
+            dataGridViewCellStyle3.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle3.ForeColor = Color.FromArgb(48, 48, 48);
+            dataGridViewCellStyle3.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
+            opData.DefaultCellStyle = dataGridViewCellStyle3;
             opData.Dock = DockStyle.Fill;
             opData.EnableHeadersVisualStyles = false;
             opData.Font = new Font("Microsoft Sans Serif", 12F);
             opData.GridColor = Color.FromArgb(80, 160, 255);
             opData.Location = new Point(3, 57);
             opData.Name = "opData";
-            dataGridViewCellStyle34.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle34.BackColor = Color.FromArgb(235, 243, 255);
-            dataGridViewCellStyle34.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle34.ForeColor = Color.FromArgb(48, 48, 48);
-            dataGridViewCellStyle34.SelectionBackColor = Color.FromArgb(80, 160, 255);
-            dataGridViewCellStyle34.SelectionForeColor = Color.White;
-            dataGridViewCellStyle34.WrapMode = DataGridViewTriState.True;
-            opData.RowHeadersDefaultCellStyle = dataGridViewCellStyle34;
-            dataGridViewCellStyle35.BackColor = Color.White;
-            dataGridViewCellStyle35.Font = new Font("Microsoft Sans Serif", 12F);
-            opData.RowsDefaultCellStyle = dataGridViewCellStyle35;
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = Color.FromArgb(235, 243, 255);
+            dataGridViewCellStyle4.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle4.ForeColor = Color.FromArgb(48, 48, 48);
+            dataGridViewCellStyle4.SelectionBackColor = Color.FromArgb(80, 160, 255);
+            dataGridViewCellStyle4.SelectionForeColor = Color.White;
+            dataGridViewCellStyle4.WrapMode = DataGridViewTriState.True;
+            opData.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle5.BackColor = Color.White;
+            dataGridViewCellStyle5.Font = new Font("Microsoft Sans Serif", 12F);
+            opData.RowsDefaultCellStyle = dataGridViewCellStyle5;
             opData.SelectedIndex = -1;
             opData.Size = new Size(868, 370);
             opData.StripeOddColor = Color.FromArgb(235, 243, 255);
@@ -297,22 +298,6 @@
             tabPage2.Text = "Dữ liệu đám mây";
             tabPage2.UseVisualStyleBackColor = true;
             // 
-            // backgroundWorker1
-            // 
-            backgroundWorker1.WorkerSupportsCancellation = true;
-            backgroundWorker1.DoWork += backgroundWorker1_DoWork;
-            backgroundWorker1.RunWorkerCompleted += backgroundWorker1_RunWorkerCompleted;
-            // 
-            // erP_Google1
-            // 
-            erP_Google1.credentialPath = "C:\\Masan_Sales-268504-8f6f3a1f4f7e.json";
-            erP_Google1.DatasetID = "FactoryIntegration";
-            erP_Google1.LineName = "DL01";
-            erP_Google1.ORG_CODE = "MIP";
-            erP_Google1.ProjectID = "sales-268504";
-            erP_Google1.SUB_INV = "110-101-1001";
-            erP_Google1.TableID = "BatchProduction";
-            // 
             // uiTableLayoutPanel3
             // 
             uiTableLayoutPanel3.ColumnCount = 1;
@@ -329,6 +314,67 @@
             uiTableLayoutPanel3.Size = new Size(874, 639);
             uiTableLayoutPanel3.TabIndex = 0;
             uiTableLayoutPanel3.TagString = null;
+            // 
+            // uiTitlePanel6
+            // 
+            uiTitlePanel6.Controls.Add(uiDataGridView1);
+            uiTitlePanel6.Dock = DockStyle.Fill;
+            uiTitlePanel6.Font = new Font("Microsoft Sans Serif", 12F);
+            uiTitlePanel6.Location = new Point(2, 106);
+            uiTitlePanel6.Margin = new Padding(2);
+            uiTitlePanel6.MinimumSize = new Size(1, 1);
+            uiTitlePanel6.Name = "uiTitlePanel6";
+            uiTitlePanel6.Padding = new Padding(1, 35, 1, 1);
+            uiTitlePanel6.ShowText = false;
+            uiTitlePanel6.Size = new Size(870, 531);
+            uiTitlePanel6.TabIndex = 3;
+            uiTitlePanel6.Text = "Lịch sử 100 lần tải lên gần nhất";
+            uiTitlePanel6.TextAlignment = ContentAlignment.MiddleCenter;
+            // 
+            // uiDataGridView1
+            // 
+            dataGridViewCellStyle6.BackColor = Color.FromArgb(235, 243, 255);
+            uiDataGridView1.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle6;
+            uiDataGridView1.BackgroundColor = Color.White;
+            uiDataGridView1.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
+            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle7.BackColor = Color.FromArgb(80, 160, 255);
+            dataGridViewCellStyle7.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle7.ForeColor = Color.White;
+            dataGridViewCellStyle7.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle7.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle7.WrapMode = DataGridViewTriState.True;
+            uiDataGridView1.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle7;
+            uiDataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridViewCellStyle8.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle8.BackColor = SystemColors.Window;
+            dataGridViewCellStyle8.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle8.ForeColor = Color.FromArgb(48, 48, 48);
+            dataGridViewCellStyle8.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle8.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle8.WrapMode = DataGridViewTriState.False;
+            uiDataGridView1.DefaultCellStyle = dataGridViewCellStyle8;
+            uiDataGridView1.Dock = DockStyle.Fill;
+            uiDataGridView1.EnableHeadersVisualStyles = false;
+            uiDataGridView1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiDataGridView1.GridColor = Color.FromArgb(80, 160, 255);
+            uiDataGridView1.Location = new Point(1, 35);
+            uiDataGridView1.Name = "uiDataGridView1";
+            dataGridViewCellStyle9.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle9.BackColor = Color.FromArgb(235, 243, 255);
+            dataGridViewCellStyle9.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle9.ForeColor = Color.FromArgb(48, 48, 48);
+            dataGridViewCellStyle9.SelectionBackColor = Color.FromArgb(80, 160, 255);
+            dataGridViewCellStyle9.SelectionForeColor = Color.White;
+            dataGridViewCellStyle9.WrapMode = DataGridViewTriState.True;
+            uiDataGridView1.RowHeadersDefaultCellStyle = dataGridViewCellStyle9;
+            dataGridViewCellStyle10.BackColor = Color.White;
+            dataGridViewCellStyle10.Font = new Font("Microsoft Sans Serif", 12F);
+            uiDataGridView1.RowsDefaultCellStyle = dataGridViewCellStyle10;
+            uiDataGridView1.SelectedIndex = -1;
+            uiDataGridView1.Size = new Size(868, 495);
+            uiDataGridView1.StripeOddColor = Color.FromArgb(235, 243, 255);
+            uiDataGridView1.TabIndex = 0;
             // 
             // uiTableLayoutPanel4
             // 
@@ -349,54 +395,6 @@
             uiTableLayoutPanel4.TabIndex = 0;
             uiTableLayoutPanel4.TagString = null;
             // 
-            // uiTitlePanel2
-            // 
-            uiTitlePanel2.Controls.Add(uiTableLayoutPanel5);
-            uiTitlePanel2.Dock = DockStyle.Fill;
-            uiTitlePanel2.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTitlePanel2.Location = new Point(2, 2);
-            uiTitlePanel2.Margin = new Padding(2);
-            uiTitlePanel2.MinimumSize = new Size(1, 1);
-            uiTitlePanel2.Name = "uiTitlePanel2";
-            uiTitlePanel2.Padding = new Padding(1, 35, 1, 1);
-            uiTitlePanel2.ShowText = false;
-            uiTitlePanel2.Size = new Size(314, 96);
-            uiTitlePanel2.TabIndex = 0;
-            uiTitlePanel2.Text = "Thời gian chuẩn bị tải lên";
-            uiTitlePanel2.TextAlignment = ContentAlignment.MiddleCenter;
-            // 
-            // uiTitlePanel3
-            // 
-            uiTitlePanel3.Controls.Add(uiSymbolLabel5);
-            uiTitlePanel3.Dock = DockStyle.Fill;
-            uiTitlePanel3.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTitlePanel3.Location = new Point(562, 2);
-            uiTitlePanel3.Margin = new Padding(2);
-            uiTitlePanel3.MinimumSize = new Size(1, 1);
-            uiTitlePanel3.Name = "uiTitlePanel3";
-            uiTitlePanel3.Padding = new Padding(1, 35, 1, 1);
-            uiTitlePanel3.ShowText = false;
-            uiTitlePanel3.Size = new Size(306, 96);
-            uiTitlePanel3.TabIndex = 1;
-            uiTitlePanel3.Text = "Tên tệp vừa tải lên";
-            uiTitlePanel3.TextAlignment = ContentAlignment.MiddleCenter;
-            // 
-            // uiTitlePanel6
-            // 
-            uiTitlePanel6.Controls.Add(uiDataGridView1);
-            uiTitlePanel6.Dock = DockStyle.Fill;
-            uiTitlePanel6.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTitlePanel6.Location = new Point(2, 106);
-            uiTitlePanel6.Margin = new Padding(2);
-            uiTitlePanel6.MinimumSize = new Size(1, 1);
-            uiTitlePanel6.Name = "uiTitlePanel6";
-            uiTitlePanel6.Padding = new Padding(1, 35, 1, 1);
-            uiTitlePanel6.ShowText = false;
-            uiTitlePanel6.Size = new Size(870, 531);
-            uiTitlePanel6.TabIndex = 3;
-            uiTitlePanel6.Text = "Lịch sử 100 lần tải lên gần nhất";
-            uiTitlePanel6.TextAlignment = ContentAlignment.MiddleCenter;
-            // 
             // uiTitlePanel7
             // 
             uiTitlePanel7.Controls.Add(uiSymbolLabel4);
@@ -414,44 +412,17 @@
             uiTitlePanel7.Text = "Thời gian vừa tải lên";
             uiTitlePanel7.TextAlignment = ContentAlignment.MiddleCenter;
             // 
-            // uiTableLayoutPanel5
+            // uiSymbolLabel4
             // 
-            uiTableLayoutPanel5.ColumnCount = 2;
-            uiTableLayoutPanel5.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72.82609F));
-            uiTableLayoutPanel5.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 27.173914F));
-            uiTableLayoutPanel5.Controls.Add(uiSymbolLabel2, 1, 0);
-            uiTableLayoutPanel5.Controls.Add(uiSymbolLabel1, 0, 0);
-            uiTableLayoutPanel5.Dock = DockStyle.Fill;
-            uiTableLayoutPanel5.Location = new Point(1, 35);
-            uiTableLayoutPanel5.Margin = new Padding(2);
-            uiTableLayoutPanel5.Name = "uiTableLayoutPanel5";
-            uiTableLayoutPanel5.RowCount = 1;
-            uiTableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel5.Size = new Size(312, 60);
-            uiTableLayoutPanel5.TabIndex = 0;
-            uiTableLayoutPanel5.TagString = null;
-            // 
-            // uiSymbolLabel1
-            // 
-            uiSymbolLabel1.Dock = DockStyle.Fill;
-            uiSymbolLabel1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolLabel1.Location = new Point(3, 3);
-            uiSymbolLabel1.MinimumSize = new Size(1, 1);
-            uiSymbolLabel1.Name = "uiSymbolLabel1";
-            uiSymbolLabel1.Size = new Size(221, 54);
-            uiSymbolLabel1.TabIndex = 0;
-            uiSymbolLabel1.Text = "2025-11-29T23:23:23.999";
-            // 
-            // uiSymbolLabel2
-            // 
-            uiSymbolLabel2.Dock = DockStyle.Fill;
-            uiSymbolLabel2.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolLabel2.Location = new Point(230, 3);
-            uiSymbolLabel2.MinimumSize = new Size(1, 1);
-            uiSymbolLabel2.Name = "uiSymbolLabel2";
-            uiSymbolLabel2.Size = new Size(79, 54);
-            uiSymbolLabel2.TabIndex = 1;
-            uiSymbolLabel2.Text = "300";
+            uiSymbolLabel4.Dock = DockStyle.Fill;
+            uiSymbolLabel4.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolLabel4.Location = new Point(1, 35);
+            uiSymbolLabel4.MinimumSize = new Size(1, 1);
+            uiSymbolLabel4.Name = "uiSymbolLabel4";
+            uiSymbolLabel4.Size = new Size(236, 60);
+            uiSymbolLabel4.Symbol = 559480;
+            uiSymbolLabel4.TabIndex = 2;
+            uiSymbolLabel4.Text = "2025-11-29 23:23:23.999";
             // 
             // uiSymbolLabel3
             // 
@@ -464,16 +435,21 @@
             uiSymbolLabel3.TabIndex = 1;
             uiSymbolLabel3.Text = "2025-11-29 23:23:23.999";
             // 
-            // uiSymbolLabel4
+            // uiTitlePanel3
             // 
-            uiSymbolLabel4.Dock = DockStyle.Fill;
-            uiSymbolLabel4.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolLabel4.Location = new Point(1, 35);
-            uiSymbolLabel4.MinimumSize = new Size(1, 1);
-            uiSymbolLabel4.Name = "uiSymbolLabel4";
-            uiSymbolLabel4.Size = new Size(236, 60);
-            uiSymbolLabel4.TabIndex = 2;
-            uiSymbolLabel4.Text = "2025-11-29 23:23:23.999";
+            uiTitlePanel3.Controls.Add(uiSymbolLabel5);
+            uiTitlePanel3.Dock = DockStyle.Fill;
+            uiTitlePanel3.Font = new Font("Microsoft Sans Serif", 12F);
+            uiTitlePanel3.Location = new Point(562, 2);
+            uiTitlePanel3.Margin = new Padding(2);
+            uiTitlePanel3.MinimumSize = new Size(1, 1);
+            uiTitlePanel3.Name = "uiTitlePanel3";
+            uiTitlePanel3.Padding = new Padding(1, 35, 1, 1);
+            uiTitlePanel3.ShowText = false;
+            uiTitlePanel3.Size = new Size(306, 96);
+            uiTitlePanel3.TabIndex = 1;
+            uiTitlePanel3.Text = "Tên tệp vừa tải lên";
+            uiTitlePanel3.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // uiSymbolLabel5
             // 
@@ -486,60 +462,93 @@
             uiSymbolLabel5.TabIndex = 2;
             uiSymbolLabel5.Text = "Line 3_";
             // 
-            // uiDataGridView1
+            // uiTitlePanel2
             // 
-            dataGridViewCellStyle26.BackColor = Color.FromArgb(235, 243, 255);
-            uiDataGridView1.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle26;
-            uiDataGridView1.BackgroundColor = Color.White;
-            uiDataGridView1.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle27.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle27.BackColor = Color.FromArgb(80, 160, 255);
-            dataGridViewCellStyle27.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle27.ForeColor = Color.White;
-            dataGridViewCellStyle27.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle27.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle27.WrapMode = DataGridViewTriState.True;
-            uiDataGridView1.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle27;
-            uiDataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle28.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle28.BackColor = SystemColors.Window;
-            dataGridViewCellStyle28.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle28.ForeColor = Color.FromArgb(48, 48, 48);
-            dataGridViewCellStyle28.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle28.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle28.WrapMode = DataGridViewTriState.False;
-            uiDataGridView1.DefaultCellStyle = dataGridViewCellStyle28;
-            uiDataGridView1.Dock = DockStyle.Fill;
-            uiDataGridView1.EnableHeadersVisualStyles = false;
-            uiDataGridView1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiDataGridView1.GridColor = Color.FromArgb(80, 160, 255);
-            uiDataGridView1.Location = new Point(1, 35);
-            uiDataGridView1.Name = "uiDataGridView1";
-            dataGridViewCellStyle29.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle29.BackColor = Color.FromArgb(235, 243, 255);
-            dataGridViewCellStyle29.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle29.ForeColor = Color.FromArgb(48, 48, 48);
-            dataGridViewCellStyle29.SelectionBackColor = Color.FromArgb(80, 160, 255);
-            dataGridViewCellStyle29.SelectionForeColor = Color.White;
-            dataGridViewCellStyle29.WrapMode = DataGridViewTriState.True;
-            uiDataGridView1.RowHeadersDefaultCellStyle = dataGridViewCellStyle29;
-            dataGridViewCellStyle30.BackColor = Color.White;
-            dataGridViewCellStyle30.Font = new Font("Microsoft Sans Serif", 12F);
-            uiDataGridView1.RowsDefaultCellStyle = dataGridViewCellStyle30;
-            uiDataGridView1.SelectedIndex = -1;
-            uiDataGridView1.Size = new Size(868, 495);
-            uiDataGridView1.StripeOddColor = Color.FromArgb(235, 243, 255);
-            uiDataGridView1.TabIndex = 0;
+            uiTitlePanel2.Controls.Add(uiTableLayoutPanel5);
+            uiTitlePanel2.Dock = DockStyle.Fill;
+            uiTitlePanel2.Font = new Font("Microsoft Sans Serif", 12F);
+            uiTitlePanel2.Location = new Point(2, 2);
+            uiTitlePanel2.Margin = new Padding(2);
+            uiTitlePanel2.MinimumSize = new Size(1, 1);
+            uiTitlePanel2.Name = "uiTitlePanel2";
+            uiTitlePanel2.Padding = new Padding(1, 35, 1, 1);
+            uiTitlePanel2.ShowText = false;
+            uiTitlePanel2.Size = new Size(314, 96);
+            uiTitlePanel2.TabIndex = 0;
+            uiTitlePanel2.Text = "Thời gian chuẩn bị tải lên";
+            uiTitlePanel2.TextAlignment = ContentAlignment.MiddleCenter;
+            // 
+            // uiTableLayoutPanel5
+            // 
+            uiTableLayoutPanel5.ColumnCount = 2;
+            uiTableLayoutPanel5.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72.82609F));
+            uiTableLayoutPanel5.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 27.173914F));
+            uiTableLayoutPanel5.Controls.Add(opC1, 1, 0);
+            uiTableLayoutPanel5.Controls.Add(uiSymbolLabel1, 0, 0);
+            uiTableLayoutPanel5.Dock = DockStyle.Fill;
+            uiTableLayoutPanel5.Location = new Point(1, 35);
+            uiTableLayoutPanel5.Margin = new Padding(2);
+            uiTableLayoutPanel5.Name = "uiTableLayoutPanel5";
+            uiTableLayoutPanel5.RowCount = 1;
+            uiTableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel5.Size = new Size(312, 60);
+            uiTableLayoutPanel5.TabIndex = 0;
+            uiTableLayoutPanel5.TagString = null;
+            // 
+            // opC1
+            // 
+            opC1.Dock = DockStyle.Fill;
+            opC1.Font = new Font("Microsoft Sans Serif", 12F);
+            opC1.Location = new Point(230, 3);
+            opC1.MinimumSize = new Size(1, 1);
+            opC1.Name = "opC1";
+            opC1.Size = new Size(79, 54);
+            opC1.Symbol = 557747;
+            opC1.TabIndex = 1;
+            opC1.Text = "300";
+            // 
+            // uiSymbolLabel1
+            // 
+            uiSymbolLabel1.Dock = DockStyle.Fill;
+            uiSymbolLabel1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolLabel1.Location = new Point(3, 3);
+            uiSymbolLabel1.MinimumSize = new Size(1, 1);
+            uiSymbolLabel1.Name = "uiSymbolLabel1";
+            uiSymbolLabel1.Size = new Size(221, 54);
+            uiSymbolLabel1.Symbol = 261463;
+            uiSymbolLabel1.TabIndex = 0;
+            uiSymbolLabel1.Text = "2025-11-29T23:23:23.999";
+            // 
+            // backgroundWorker1
+            // 
+            backgroundWorker1.WorkerSupportsCancellation = true;
+            backgroundWorker1.DoWork += backgroundWorker1_DoWork;
+            backgroundWorker1.RunWorkerCompleted += backgroundWorker1_RunWorkerCompleted;
+            // 
+            // erP_Google1
+            // 
+            erP_Google1.credentialPath = "C:\\Masan_Sales-268504-8f6f3a1f4f7e.json";
+            erP_Google1.DatasetID = "FactoryIntegration";
+            erP_Google1.LineName = "DL01";
+            erP_Google1.ORG_CODE = "MIP";
+            erP_Google1.ProjectID = "sales-268504";
+            erP_Google1.SUB_INV = "110-101-1001";
+            erP_Google1.TableID = "BatchProduction";
+            // 
+            // backgroundWorker2
+            // 
+            backgroundWorker2.WorkerSupportsCancellation = true;
+            backgroundWorker2.DoWork += backgroundWorker2_DoWork;
             // 
             // FExtention
             // 
             AutoScaleMode = AutoScaleMode.None;
             ClientSize = new Size(874, 679);
-            Controls.Add(uiTabControl1);
+            Controls.Add(tab2);
             Name = "FExtention";
             Text = "FExtention";
             Initialize += FExtention_Initialize;
-            uiTabControl1.ResumeLayout(false);
+            tab2.ResumeLayout(false);
             tabPage1.ResumeLayout(false);
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTitlePanel1.ResumeLayout(false);
@@ -547,19 +556,19 @@
             ((System.ComponentModel.ISupportInitialize)opData).EndInit();
             tabPage2.ResumeLayout(false);
             uiTableLayoutPanel3.ResumeLayout(false);
-            uiTableLayoutPanel4.ResumeLayout(false);
-            uiTitlePanel2.ResumeLayout(false);
-            uiTitlePanel3.ResumeLayout(false);
             uiTitlePanel6.ResumeLayout(false);
-            uiTitlePanel7.ResumeLayout(false);
-            uiTableLayoutPanel5.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)uiDataGridView1).EndInit();
+            uiTableLayoutPanel4.ResumeLayout(false);
+            uiTitlePanel7.ResumeLayout(false);
+            uiTitlePanel3.ResumeLayout(false);
+            uiTitlePanel2.ResumeLayout(false);
+            uiTableLayoutPanel5.ResumeLayout(false);
             ResumeLayout(false);
         }
 
         #endregion
 
-        private Sunny.UI.UITabControl uiTabControl1;
+        private Sunny.UI.UITabControl tab2;
         private TabPage tabPage1;
         private TabPage tabPage2;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel1;
@@ -581,10 +590,11 @@
         private Sunny.UI.UITitlePanel uiTitlePanel7;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel5;
         private Sunny.UI.UISymbolLabel uiSymbolLabel3;
-        private Sunny.UI.UISymbolLabel uiSymbolLabel2;
+        private Sunny.UI.UISymbolLabel opC1;
         private Sunny.UI.UISymbolLabel uiSymbolLabel1;
         private Sunny.UI.UIDataGridView uiDataGridView1;
         private Sunny.UI.UISymbolLabel uiSymbolLabel4;
         private Sunny.UI.UISymbolLabel uiSymbolLabel5;
+        private System.ComponentModel.BackgroundWorker backgroundWorker2;
     }
 }

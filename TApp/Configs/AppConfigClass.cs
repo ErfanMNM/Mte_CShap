@@ -48,6 +48,9 @@ namespace TApp.Configs
         public string? ERP_TableID { get; set; }
         public string? ERP_ProjectID { get; set; }
 
+        public bool Cloud_Connection_Enabled { get; set; }
+        public int Cloud_Refresh_Interval_Minute { get; set; }
+
         public override void SetDefault()
         {
             base.SetDefault();
@@ -73,6 +76,8 @@ namespace TApp.Configs
             ERP_Sub_Inv = "W05";
             ERP_Org_Code = "MIP";
             ERP_ProjectID = "sales-268504";
+            Cloud_Connection_Enabled = false;
+            Cloud_Refresh_Interval_Minute = 60;
         }
     }
 }

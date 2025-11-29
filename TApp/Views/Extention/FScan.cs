@@ -5,6 +5,7 @@ using TApp.Helpers;
 using TApp.Infrastructure;
 using TApp.Utils;
 using TTManager.Diaglogs;
+using TTManager.Masan;
 
 namespace TApp.Views.Extention
 {
@@ -153,7 +154,7 @@ namespace TApp.Views.Extention
                 return;
             }
 
-            if (resultAll.count < 1)
+            if (resultAll.data.Rows.Count < 1)
             {
                 //không tìm thấy
                 this.InvokeIfRequired(() =>
@@ -184,13 +185,13 @@ namespace TApp.Views.Extention
                     GlobalVarialbles.CurrentUser.Username,
                     e_LogType.UserAction,
                     "Tìm kiếm mã thành công",
-                    $"{{'QRContent':'{qrCode.Substring(0, Math.Min(30, qrCode.Length))}...','ResultCount':'{resultAll.count}'}}",
+                    $"{{'QRContent':'{qrCode.Substring(0, Math.Min(30, qrCode.Length))}...','ResultCount':'{resultAll.data.Rows.Count}'}}",
                     "UA-FSCAN-02"
                 );
             });
 
             // Kiểm tra mã có active không
-            if (resultActive.issuccess && resultActive.count > 0)
+            if (resultActive.issuccess && resultActive.data.Rows.Count > 0)
             {
                 //đã kích hoạt
                 this.InvokeIfRequired(() =>

@@ -3,6 +3,8 @@ using System.Data;
 using TApp.Configs;
 using TApp.Utils;
 using TTManager.Masan;
+using TApp.Helpers.Masan_Backup;
+using TApp.Helpers;
 
 namespace TApp.Views.Extention
 {
@@ -12,6 +14,7 @@ namespace TApp.Views.Extention
         {
             InitializeComponent();
         }
+        private string BackupLogDbPath = @"C:/MASAN/CloudBackupLog.tls";
 
         public void InitializeERP()
         {
@@ -21,6 +24,15 @@ namespace TApp.Views.Extention
             erP_Google1.DatasetID = AppConfigs.Current.ERP_DatasetID;
             erP_Google1.TableID = AppConfigs.Current.ERP_TableID;
             erP_Google1.LineName = AppConfigs.Current.Line_Name;
+
+            if(AppConfigs.Current.Cloud_Connection_Enabled)
+            {
+                if (!backgroundWorker2.IsBusy)
+                {
+                    backgroundWorker2.RunWorkerAsync();
+                }
+                    
+            }
         }
 
         private void btnERPCheck_Click(object sender, EventArgs e)
@@ -41,7 +53,7 @@ namespace TApp.Views.Extention
                 opConsole.Items.Insert(0, "[THÔNG BÁO] Bắt đầu lấy dữ liệu ERP...");
             });
             TResult result = erP_Google1.Get_Erp_To_Table();
-            if (result.IsSuccess)
+            if (result.issuccess)
             {
                 if (result.data != null)
                 {
@@ -82,5 +94,79 @@ namespace TApp.Views.Extention
             opConsole.Items.Clear();
             opData.DataSource = null;
         }
-    }
+
+        int countSync = 100000;
+        int maxInterval = 5;
+        private void backgroundWorker2_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        {
+            while (!backgroundWorker2.CancellationPending)
+            {
+                maxInterval = (AppConfigs.Current.Cloud_Refresh_Interval_Minute*60* 1000)/500;
+                countSync++;
+                this.InvokeIfRequired(() =>
+                {
+                    opC1.Text = (maxInterval - countSync).ToString();
+                });
+
+                if (countSync >= maxInterval)
+                {
+                    countSync = 0;
+
+                    this.InvokeIfRequired(() =>
+                    {
+                        opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [THÔNG BÁO] Bắt đầu tải dữ liệu lên máy chủ theo chu kì...");
+                    });
+
+                    long lastUnix = 0;
+
+                    try
+                    {
+                        lastUnix = CloudBackupHelper.GetLastTimeBackup(BackupLogDbPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        this.InvokeIfRequired(() =>
+                        {
+                            opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [LỖI] Lấy thời gian sao lưu cuối cùng thất bại: {ex.Message}");
+                        });
+                    }
+
+                    //lấy danh sách dữ liệu cần sao lưu
+
+                    TResult result = QRDatabaseHelper.Get_ActiveQR_By_TimeUnix(lastUnix);
+                    //chuyển dữ liệu sang csv
+                    if(!result.issuccess)
+                    {
+                        //lỗi lấy dữ liệu
+                        this.InvokeIfRequired(() =>
+                        {
+                            opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [LỖI] Lấy dữ liệu cần sao lưu thất bại: {result.message}");
+                        });
+                        continue;
+                    }
+
+                    DataTable dataToBackup = result.data!;
+
+                    string csvPath = Path.Combine(Path.GetTempPath(), $"CloudBackup_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.csv");
+
+                    ExportResult exportResult = CsvHelper.ExportDataTableToCsv(dataToBackup, csvPath);
+
+                    if (!exportResult.IsSucces)
+                    {
+                        this.InvokeIfRequired(() =>
+                        {
+                            opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [LỖI] Xuất dữ liệu sang CSV thất bại: {exportResult.Message}");
+                        });
+                        continue;
+                    }
+                    //báo thành công
+                    this.InvokeIfRequired(() =>
+                    {
+                        opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [THÀNH CÔNG] Xuất dữ liệu sang CSV thành công: {csvPath}");
+                    });
+                }
+                Thread.Sleep(500);
+            }
+        }
+    } 
 }

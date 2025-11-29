@@ -180,21 +180,11 @@ namespace TTManager.Masan
                     dataTable.Rows.Add(dataRow);
                 }
 
-                return new TResult
-                {
-                    IsSuccess = true,
-                    data = dataTable,
-                    message = "Lấy dữ liệu ERP thành công!"
-                };
+                return new TResult(true, "Lấy dữ liệu ERP thành công.",dataTable);
             }
             catch (Exception ex)
             {
-                return new TResult
-                {
-                    IsSuccess = false,
-                    data = null,
-                    message = $"Lỗi lấy dữ liệu ERP: {ex.Message}"
-                };
+                return new TResult(false, $"Lỗi tải dữ liệu ERP vào bảng: {ex.Message}");
             }
         }
 
@@ -283,9 +273,16 @@ namespace TTManager.Masan
 
     public class TResult
     {
-        public bool IsSuccess { get; set; }
-        public DataTable data { get; set; }
+        public bool issuccess { get; set; }
         public string message { get; set; }
+        public DataTable data { get; set; }
+
+        public TResult(bool issuccess, string message, DataTable data = null)
+        {
+            this.issuccess = issuccess;
+            this.message = message;
+            this.data = data;
+        }
     }
 
     public class ProductInfoList

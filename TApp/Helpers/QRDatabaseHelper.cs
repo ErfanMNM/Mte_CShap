@@ -5,6 +5,7 @@ using System.Data.SQLite;
 using System.IO;
 using System.Windows.Forms;
 using TApp.Models;
+using TTManager.Masan;
 using ZXing;
 using static System.ComponentModel.Design.ObjectSelectorEditor;
 
@@ -223,7 +224,7 @@ namespace TApp.Helpers
                         adapter.Fill(table);
 
                         return (table.Rows.Count > 0)
-                            ? new TResult(true, "Lấy thông tin mã thành công.", table.Rows.Count, table)
+                            ? new TResult(true, "Lấy thông tin mã thành công.", table)
                             : new TResult(true, "Không tìm thấy");
                     }
                 }
@@ -235,55 +236,42 @@ namespace TApp.Helpers
                 
         }
 
-        public static Dictionary<string, QRProductRecord> LoadToDictionary(
-            bool onlyActivePass = false,
-            string dbPath = DefaultDbPath)
+        public static TResult Get_ActiveQR_By_TimeUnix(long timeunix, string dbPath = ActiveUniqueDbPath)
         {
             EnsureDatabase(dbPath);
 
-            var dict = new Dictionary<string, QRProductRecord>(StringComparer.OrdinalIgnoreCase);
-
-            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            try
             {
-                con.Open();
+                using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+                {
+                    con.Open();
 
-                string sql = @"
-                SELECT ID, QRContent, BatchCode, Barcode, Status, UserName,
-                       TimeStampActive, TimeUnixActive, ProductionDatetime, Reason
-                FROM QRProducts
+                    string sql = @"
+                SELECT ID, BatchCode, QRContent, UserName, TimeStampActive, TimeUnixActive
+                FROM ActiveUniqueQR
+                WHERE TimeUnixActive > @u
+                ORDER BY TimeUnixActive ASC;
             ";
 
-                if (onlyActivePass)
-                    sql += " WHERE Status = 'Pass';";
-
-                using (var cmd = new SQLiteCommand(sql, con))
-                using (var rd = cmd.ExecuteReader())
-                {
-                    while (rd.Read())
+                    using (var cmd = new SQLiteCommand(sql, con))
                     {
-                        e_Production_Status st = Enum.TryParse<e_Production_Status>(rd.GetString(4), true, out var tmp)
-                                    ? tmp
-                                    : e_Production_Status.Error;   // default fallback
-                        var rec = new QRProductRecord
-                        {
-                            ID = rd.GetInt32(0),
-                            QRContent = rd.GetString(1),
-                            BatchCode = rd.GetString(2),
-                            Barcode = rd.GetString(3),
-                            Status = st,
-                            UserName = rd.GetString(5),
-                            TimeStampActive = rd.GetString(6),
-                            TimeUnixActive = rd.GetInt64(7),
-                            ProductionDatetime = rd.GetString(8),
-                            Reason = rd.GetString(9)
-                        };
+                        cmd.Parameters.AddWithValue("@u", timeunix);
 
-                        dict[rec.QRContent] = rec;
+                        var adapter = new SQLiteDataAdapter(cmd);
+                        var table = new DataTable();
+                        adapter.Fill(table);
+
+                        return (table.Rows.Count > 0)
+                            ? new TResult(true, "Lấy thông tin mã thành công.", table)
+                            : new TResult(true, "Không tìm thấy");
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                return new TResult(false, $"Lỗi khi truy vấn database: {ex.Message}");
+            }
 
-            return dict;
         }
 
         public static int GetRowCount(string batchCode = null, string status = null, string dbPath = DefaultDbPath)
@@ -705,7 +693,7 @@ namespace TApp.Helpers
                     adapter.Fill(table);
 
                     return (table.Rows.Count > 0)
-                        ? new TResult(true, "Lấy thông tin mã thành công.", table.Rows.Count, table)
+                        ? new TResult(true, "Lấy thông tin mã thành công.", table)
                         : new TResult(false, "Không tìm thấy");
                 }
             }
@@ -740,26 +728,12 @@ namespace TApp.Helpers
                     adapter.Fill(table);
 
                     return (table.Rows.Count > 0)
-                        ? new TResult(true, "Lấy danh sách mã active thành công.", table.Rows.Count, table)
+                        ? new TResult(true, "Lấy danh sách mã active thành công.", table)
                         : new TResult(false, "Không có mã active nào.");
                 }
             }
         }
     }
 
-    public class TResult
-    {
-        public bool issuccess { get; set; }
-        public string message { get; set; }
-        public DataTable data { get; set; }
-        public int count { get; set; }
-
-        public TResult(bool issuccess, string message, int count = 0, DataTable data = null)
-        {
-            this.issuccess = issuccess;
-            this.message = message;
-            this.data = data;
-            this.count = count;
-        }
-    }
+ 
 }
