@@ -19,7 +19,7 @@ namespace TApp.Views.Extention
             InitializeComponent();
         }
         private string BackupLogDbPath = @"C:/MASAN/CloudBackupLog.tls";
-
+        private DataTable upCloudHis = new DataTable();
         public void InitializeERP()
         {
             erP_Google1.credentialPath = AppConfigs.Current.credentialERPPath;
@@ -29,13 +29,13 @@ namespace TApp.Views.Extention
             erP_Google1.TableID = AppConfigs.Current.ERP_TableID;
             erP_Google1.LineName = AppConfigs.Current.Line_Name;
 
-            if(AppConfigs.Current.Cloud_Connection_Enabled)
+            if (AppConfigs.Current.Cloud_Connection_Enabled)
             {
                 if (!backgroundWorker2.IsBusy)
                 {
                     backgroundWorker2.RunWorkerAsync();
                 }
-                    
+
             }
         }
 
@@ -105,6 +105,8 @@ namespace TApp.Views.Extention
         /// <summary>
         /// Load 100 lịch sử backup gần nhất
         /// </summary>
+        /// 
+        
         private void LoadBackupHistory()
         {
             try
@@ -114,8 +116,9 @@ namespace TApp.Views.Extention
                 {
                     this.InvokeIfRequired(() =>
                     {
-                        uiDataGridView1.DataSource = result.data;
+                        // uiDataGridView1.DataSource = result.data;
 
+                        upCloudHis = result.data;
                         // Lấy thông tin lần upload gần nhất thành công
                         var successRows = result.data.AsEnumerable()
                             .Where(row => row["Status"].ToString() == "1")
@@ -164,22 +167,33 @@ namespace TApp.Views.Extention
 
         int countSync = 100000;
         int maxInterval = 5;
+        int seconSync = 0;
         private void backgroundWorker2_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
-            
+
             while (!backgroundWorker2.CancellationPending)
             {
-                maxInterval = (AppConfigs.Current.Cloud_Refresh_Interval_Minute*60* 1000)/500;
+                maxInterval = (AppConfigs.Current.Cloud_Refresh_Interval_Minute * 60 * 1000) / 500;
                 countSync++;
-                this.InvokeIfRequired(() =>
+
+                if (countSync % 2 == 0)
                 {
-                    opC1.Text = (maxInterval - countSync).ToString();
-                });
+                    this.InvokeIfRequired(() =>
+                    {
+                        opC1.Text = ((maxInterval - countSync) / 2).ToString();
+                    });
+                }
+
+
 
                 if (countSync >= maxInterval)
                 {
                     countSync = 0;
-
+                    this.InvokeIfRequired(() =>
+                    {
+                        btnCloudHis.Enabled = true;
+                    });
+                    
                     // Cập nhật thời gian upload tiếp theo
                     UpdateNextUploadTime();
 
@@ -257,11 +271,11 @@ namespace TApp.Views.Extention
 
                     // Lấy TimeUnixQR lớn nhất từ dữ liệu
                     long maxUnixQR = lastUnix;
-                    if (dataToBackup.Columns.Contains("TimeUnix"))
+                    if (dataToBackup.Columns.Contains("TimeUnixActive"))
                     {
                         foreach (DataRow row in dataToBackup.Rows)
                         {
-                            long unixValue = Convert.ToInt64(row["TimeUnix"]);
+                            long unixValue = Convert.ToInt64(row["TimeUnixActive"]);
                             if (unixValue > maxUnixQR)
                                 maxUnixQR = unixValue;
                         }
@@ -291,7 +305,7 @@ namespace TApp.Views.Extention
                             //fileStream = null;
 
                             uploadSuccess = true;
-                           // uploadMessage = $"Upload cloud thành công: {uploadedObject.Name}";
+                            // uploadMessage = $"Upload cloud thành công: {uploadedObject.Name}";
 
                             this.InvokeIfRequired(() =>
                             {
@@ -383,5 +397,24 @@ namespace TApp.Views.Extention
                 Thread.Sleep(500);
             }
         }
-    } 
+
+        private void opConsole_DoubleClick(object sender, EventArgs e)
+        {
+            this.ShowInfoDialog(opConsole.SelectedItem as string);
+        }
+
+        private void btnCloudHis_Click(object sender, EventArgs e)
+        {
+            btnCloudHis.Enabled = false;
+            try
+            {
+                opData.DataSource = upCloudHis;
+            }
+            catch (Exception ex) 
+            {
+                opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [LỖI] Đang có vấn đề dữ liệu, vui lòng đợi nút sáng lên rồi thử lại {ex.Message}");
+            }
+            
+        }
+    }
 }

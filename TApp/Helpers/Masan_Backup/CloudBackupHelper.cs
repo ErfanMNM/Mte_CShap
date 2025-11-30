@@ -103,7 +103,7 @@ namespace TApp.Helpers.Masan_Backup
                 using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                 {
                     con.Open();
-                    string sql = $"SELECT * FROM `BackupLog` ORDER BY `ID` DESC LIMIT 100";
+                    string sql = $"SELECT * FROM `BackupLog` ORDER BY `ID` DESC LIMIT 25";
                     using (var cmd = new SQLiteCommand(sql, con))
                     {
                         var adapter = new SQLiteDataAdapter(cmd);
