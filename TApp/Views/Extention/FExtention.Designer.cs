@@ -56,14 +56,14 @@
             uiDataGridView1 = new Sunny.UI.UIDataGridView();
             uiTableLayoutPanel4 = new Sunny.UI.UITableLayoutPanel();
             uiTitlePanel7 = new Sunny.UI.UITitlePanel();
-            uiSymbolLabel4 = new Sunny.UI.UISymbolLabel();
+            opLastTimeUpload = new Sunny.UI.UISymbolLabel();
             uiSymbolLabel3 = new Sunny.UI.UISymbolLabel();
             uiTitlePanel3 = new Sunny.UI.UITitlePanel();
-            uiSymbolLabel5 = new Sunny.UI.UISymbolLabel();
+            opLastUploadFileName = new Sunny.UI.UISymbolLabel();
             uiTitlePanel2 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel5 = new Sunny.UI.UITableLayoutPanel();
             opC1 = new Sunny.UI.UISymbolLabel();
-            uiSymbolLabel1 = new Sunny.UI.UISymbolLabel();
+            opNextUploadTime = new Sunny.UI.UISymbolLabel();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             erP_Google1 = new TTManager.Masan.ERP_Google(components);
             backgroundWorker2 = new System.ComponentModel.BackgroundWorker();
@@ -127,7 +127,7 @@
             uiTableLayoutPanel1.RowCount = 4;
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 54F));
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 122F));
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 196F));
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 87F));
             uiTableLayoutPanel1.Size = new Size(874, 639);
             uiTableLayoutPanel1.TabIndex = 0;
@@ -268,7 +268,7 @@
             dataGridViewCellStyle5.Font = new Font("Microsoft Sans Serif", 12F);
             opData.RowsDefaultCellStyle = dataGridViewCellStyle5;
             opData.SelectedIndex = -1;
-            opData.Size = new Size(868, 370);
+            opData.Size = new Size(868, 296);
             opData.StripeOddColor = Color.FromArgb(235, 243, 255);
             opData.TabIndex = 2;
             // 
@@ -278,13 +278,13 @@
             opConsole.Font = new Font("Microsoft Sans Serif", 12F);
             opConsole.HoverColor = Color.FromArgb(155, 200, 255);
             opConsole.ItemSelectForeColor = Color.White;
-            opConsole.Location = new Point(2, 432);
+            opConsole.Location = new Point(2, 358);
             opConsole.Margin = new Padding(2);
             opConsole.MinimumSize = new Size(1, 1);
             opConsole.Name = "opConsole";
             opConsole.Padding = new Padding(2);
             opConsole.ShowText = false;
-            opConsole.Size = new Size(870, 118);
+            opConsole.Size = new Size(870, 192);
             opConsole.TabIndex = 3;
             opConsole.Text = "uiListBox1";
             // 
@@ -397,7 +397,7 @@
             // 
             // uiTitlePanel7
             // 
-            uiTitlePanel7.Controls.Add(uiSymbolLabel4);
+            uiTitlePanel7.Controls.Add(opLastTimeUpload);
             uiTitlePanel7.Controls.Add(uiSymbolLabel3);
             uiTitlePanel7.Dock = DockStyle.Fill;
             uiTitlePanel7.Font = new Font("Microsoft Sans Serif", 12F);
@@ -412,17 +412,17 @@
             uiTitlePanel7.Text = "Thời gian vừa tải lên";
             uiTitlePanel7.TextAlignment = ContentAlignment.MiddleCenter;
             // 
-            // uiSymbolLabel4
+            // opLastTimeUpload
             // 
-            uiSymbolLabel4.Dock = DockStyle.Fill;
-            uiSymbolLabel4.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolLabel4.Location = new Point(1, 35);
-            uiSymbolLabel4.MinimumSize = new Size(1, 1);
-            uiSymbolLabel4.Name = "uiSymbolLabel4";
-            uiSymbolLabel4.Size = new Size(236, 60);
-            uiSymbolLabel4.Symbol = 559480;
-            uiSymbolLabel4.TabIndex = 2;
-            uiSymbolLabel4.Text = "2025-11-29 23:23:23.999";
+            opLastTimeUpload.Dock = DockStyle.Fill;
+            opLastTimeUpload.Font = new Font("Microsoft Sans Serif", 12F);
+            opLastTimeUpload.Location = new Point(1, 35);
+            opLastTimeUpload.MinimumSize = new Size(1, 1);
+            opLastTimeUpload.Name = "opLastTimeUpload";
+            opLastTimeUpload.Size = new Size(236, 60);
+            opLastTimeUpload.Symbol = 559480;
+            opLastTimeUpload.TabIndex = 2;
+            opLastTimeUpload.Text = "2025-11-29 23:23:23.999";
             // 
             // uiSymbolLabel3
             // 
@@ -437,7 +437,7 @@
             // 
             // uiTitlePanel3
             // 
-            uiTitlePanel3.Controls.Add(uiSymbolLabel5);
+            uiTitlePanel3.Controls.Add(opLastUploadFileName);
             uiTitlePanel3.Dock = DockStyle.Fill;
             uiTitlePanel3.Font = new Font("Microsoft Sans Serif", 12F);
             uiTitlePanel3.Location = new Point(562, 2);
@@ -451,16 +451,16 @@
             uiTitlePanel3.Text = "Tên tệp vừa tải lên";
             uiTitlePanel3.TextAlignment = ContentAlignment.MiddleCenter;
             // 
-            // uiSymbolLabel5
+            // opLastUploadFileName
             // 
-            uiSymbolLabel5.Dock = DockStyle.Fill;
-            uiSymbolLabel5.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolLabel5.Location = new Point(1, 35);
-            uiSymbolLabel5.MinimumSize = new Size(1, 1);
-            uiSymbolLabel5.Name = "uiSymbolLabel5";
-            uiSymbolLabel5.Size = new Size(304, 60);
-            uiSymbolLabel5.TabIndex = 2;
-            uiSymbolLabel5.Text = "Line 3_";
+            opLastUploadFileName.Dock = DockStyle.Fill;
+            opLastUploadFileName.Font = new Font("Microsoft Sans Serif", 12F);
+            opLastUploadFileName.Location = new Point(1, 35);
+            opLastUploadFileName.MinimumSize = new Size(1, 1);
+            opLastUploadFileName.Name = "opLastUploadFileName";
+            opLastUploadFileName.Size = new Size(304, 60);
+            opLastUploadFileName.TabIndex = 2;
+            opLastUploadFileName.Text = "Line 3_";
             // 
             // uiTitlePanel2
             // 
@@ -484,7 +484,7 @@
             uiTableLayoutPanel5.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72.82609F));
             uiTableLayoutPanel5.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 27.173914F));
             uiTableLayoutPanel5.Controls.Add(opC1, 1, 0);
-            uiTableLayoutPanel5.Controls.Add(uiSymbolLabel1, 0, 0);
+            uiTableLayoutPanel5.Controls.Add(opNextUploadTime, 0, 0);
             uiTableLayoutPanel5.Dock = DockStyle.Fill;
             uiTableLayoutPanel5.Location = new Point(1, 35);
             uiTableLayoutPanel5.Margin = new Padding(2);
@@ -507,17 +507,17 @@
             opC1.TabIndex = 1;
             opC1.Text = "300";
             // 
-            // uiSymbolLabel1
+            // opNextUploadTime
             // 
-            uiSymbolLabel1.Dock = DockStyle.Fill;
-            uiSymbolLabel1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolLabel1.Location = new Point(3, 3);
-            uiSymbolLabel1.MinimumSize = new Size(1, 1);
-            uiSymbolLabel1.Name = "uiSymbolLabel1";
-            uiSymbolLabel1.Size = new Size(221, 54);
-            uiSymbolLabel1.Symbol = 261463;
-            uiSymbolLabel1.TabIndex = 0;
-            uiSymbolLabel1.Text = "2025-11-29T23:23:23.999";
+            opNextUploadTime.Dock = DockStyle.Fill;
+            opNextUploadTime.Font = new Font("Microsoft Sans Serif", 12F);
+            opNextUploadTime.Location = new Point(3, 3);
+            opNextUploadTime.MinimumSize = new Size(1, 1);
+            opNextUploadTime.Name = "opNextUploadTime";
+            opNextUploadTime.Size = new Size(221, 54);
+            opNextUploadTime.Symbol = 261463;
+            opNextUploadTime.TabIndex = 0;
+            opNextUploadTime.Text = "2025-11-29T23:23:23.999";
             // 
             // backgroundWorker1
             // 
@@ -591,10 +591,10 @@
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel5;
         private Sunny.UI.UISymbolLabel uiSymbolLabel3;
         private Sunny.UI.UISymbolLabel opC1;
-        private Sunny.UI.UISymbolLabel uiSymbolLabel1;
+        private Sunny.UI.UISymbolLabel opNextUploadTime;
         private Sunny.UI.UIDataGridView uiDataGridView1;
-        private Sunny.UI.UISymbolLabel uiSymbolLabel4;
-        private Sunny.UI.UISymbolLabel uiSymbolLabel5;
+        private Sunny.UI.UISymbolLabel opLastTimeUpload;
+        private Sunny.UI.UISymbolLabel opLastUploadFileName;
         private System.ComponentModel.BackgroundWorker backgroundWorker2;
     }
 }

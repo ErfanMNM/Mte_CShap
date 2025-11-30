@@ -2180,3 +2180,35 @@ Tài liệu này cung cấp đầy đủ thông tin về cách sử dụng Hệ 
 *Tài liệu này được biên soạn dựa trên phiên bản phần mềm hiện tại. Có thể có sự thay đổi trong các phiên bản sau.*
 
 *Lần cập nhật cuối: Tháng 11 năm 2025*
+
+
+##Phụ lục##
+  2. Logic hoạt động mới:
+
+  | Cloud_Connection_Enabled | Cloud_Upload_Enabled | Local_Backup_Enabled | Kết quả                                  |
+  |--------------------------|----------------------|----------------------|------------------------------------------|
+  | false                    | -                    | -                    | ❌ Không chạy gì cả                       |
+  | true                     | true                 | true                 | ✅ Upload cloud + Backup local            |
+  | true                     | true                 | false                | ✅ Upload cloud, ❌ Không backup local     |
+  | true                     | false                | true                 | ❌ Không upload cloud, ✅ Chỉ backup local |
+  | true                     | false                | false                | ⚠️ Export CSV tạm nhưng không lưu gì     |
+
+  3. Chi tiết cơ chế:
+
+  Khi Cloud_Upload_Enabled = true:
+  - Upload lên Google Cloud Storage
+  - Nếu thành công → Cập nhật TimeUnixQR để tránh upload lại
+  - Nếu thất bại → Giữ nguyên TimeUnixQR, lần sau retry
+
+  Khi Cloud_Upload_Enabled = false:
+  - Không upload cloud
+  - Coi như "thành công" để tiếp tục backup local
+  - Log: "Cloud upload bị tắt"
+  - Vẫn cập nhật TimeUnixQR để không xử lý lại dữ liệu cũ
+
+  Khi Local_Backup_Enabled = true:
+  - Backup file CSV vào C:/MASAN/Backup/
+  - Chỉ backup khi upload thành công (hoặc không cần upload)
+
+  File tạm:
+  - Luôn xóa file tạm trong C:/MASAN/Temp/ sau khi xử lý xong

@@ -57,7 +57,7 @@ namespace TApp.Helpers.Masan_Backup
 
                         if (table.Rows.Count > 0)
                         {
-                            long time = Convert.ToInt64(table.Rows[0]["Mess"]);
+                            long time = Convert.ToInt64(table.Rows[0]["TimeUnixQR"]);
                             return time;
                         }
                         else

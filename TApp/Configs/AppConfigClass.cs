@@ -50,6 +50,8 @@ namespace TApp.Configs
 
         public bool Cloud_Connection_Enabled { get; set; }
         public int Cloud_Refresh_Interval_Minute { get; set; }
+        public bool Cloud_Upload_Enabled { get; set; }
+        public bool Local_Backup_Enabled { get; set; }
 
         public override void SetDefault()
         {
@@ -78,6 +80,8 @@ namespace TApp.Configs
             ERP_ProjectID = "sales-268504";
             Cloud_Connection_Enabled = false;
             Cloud_Refresh_Interval_Minute = 60;
+            Cloud_Upload_Enabled = true;
+            Local_Backup_Enabled = true;
         }
     }
 }
