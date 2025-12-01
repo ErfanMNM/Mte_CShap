@@ -1,14 +1,16 @@
-﻿using Sunny.UI;
+﻿using Google.Apis.Auth.OAuth2;
+using Google.Cloud.Storage.V1;
+using SQLitePCL;
+using Sunny.UI;
 using System.Data;
 using System.Linq;
 using TApp.Configs;
+using TApp.Helpers;
+using TApp.Helpers.Masan_Backup;
+using TApp.Infrastructure;
 using TApp.Utils;
 using TTManager.Masan;
-using TApp.Helpers.Masan_Backup;
-using TApp.Helpers;
-using TApp.Infrastructure;
-using Google.Apis.Auth.OAuth2;
-using Google.Cloud.Storage.V1;
+using ZXing.QrCode.Internal;
 
 namespace TApp.Views.Extention
 {
@@ -205,7 +207,7 @@ namespace TApp.Views.Extention
                     DateTime dateTime = DateTime.Now;
 
                     string day = $"{DateTime.Now.ToString("yyyy")}/{dateTime.ToString("MM")}";
-                    string csvFileName = $"{AppConfigs.Current.Line_Name}_{dateTime.ToString("ddMMyyyy_HHmmss")}.csv";
+                    string csvFileName = $"{AppConfigs.Current.Line_Name}_{dateTime.ToString("ddMMyyyy HHmmss")}.csv";
                     string csvTempPath = Path.Combine("C:/MASAN/Temp/", csvFileName);
                     string csvBackupPath = Path.Combine("C:/MASAN/Backup/", csvFileName);
 
@@ -226,7 +228,36 @@ namespace TApp.Views.Extention
                     //lấy danh sách dữ liệu cần sao lưu
                     string timeStartUpload = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
                     TResult result = QRDatabaseHelper.Get_ActiveQR_By_TimeUnix(lastUnix);
-                    DataTable dataToBackup = result.data!;
+
+                    DataTable dataToBackup = new DataTable();
+                    dataToBackup.Columns.Add("ID", typeof(string));
+                    dataToBackup.Columns.Add("BatchID", typeof(string));
+                    dataToBackup.Columns.Add("Content", typeof(string));
+                    dataToBackup.Columns.Add("UserName", typeof(string));
+                    dataToBackup.Columns.Add("Status", typeof(string));
+                    dataToBackup.Columns.Add("Note", typeof(string));
+                    dataToBackup.Columns.Add("Timestamp", typeof(string));
+                    dataToBackup.Columns.Add("Timeunix", typeof(string));
+                    dataToBackup.Columns.Add("ProductName", typeof(string));
+
+                    //chuyển dữ liệu
+                    for (int i = 0; i < result.data.Rows.Count; i++)
+                    {
+                        string raw = result.data.Rows[i]["TimeStampActive"].ToString();
+                        // Parse thành DateTimeOffset để giữ timezone
+                        var dto = DateTimeOffset.Parse(raw);
+
+                        // Nếu muốn convert theo local time:
+                        DateTime localTime = dto.LocalDateTime;
+
+                        // Format lại
+                        string formatted = localTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+                        dataToBackup.Rows.Add(result.data.Rows[i]["ID"], result.data.Rows[i]["BatchCode"], result.data.Rows[i]["QRContent"].ToString().Replace("\r\n", "").Replace("\r", ""), result.data.Rows[i]["UserName"],1,"null", formatted, result.data.Rows[i]["TimeUnixActive"], "null");
+                    }
+
+
+                    //= result.data!;
 
                     //chuyển dữ liệu sang csv
                     if (!result.issuccess)

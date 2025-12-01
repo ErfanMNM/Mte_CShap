@@ -157,11 +157,13 @@ namespace TApp.Views.Settings
             if (propertyName.Contains("App"))
                 return "⚙️ Cấu hình ứng dụng";
             if (propertyName.Contains("Camera"))
-                return "📹 Máy ảnh";
+                return "📹 Máy quét QR";
             if (propertyName.Contains("Hardware"))
                 return "🔌 Phần cứng";
             if (propertyName.Contains("Cloud"))
                 return "☁️ Đám Mây";
+            if (propertyName.Contains("ERP"))
+                return "🗄️ Cấu hình ERP";
             if (propertyName.Contains("PLC"))
                 return "📦 Cấu hình PLC";
             if (propertyName.Contains("TCP"))
@@ -181,9 +183,65 @@ namespace TApp.Views.Settings
                 { "TCP_Port", "Cổng TCP" },
                 { "PLC_IP", "Địa chỉ IP PLC" },
                 { "Description", "Description" },
-                { "AWS_Credential_Path", "Đường dẫn AWS Credential" }
+                { "AWS_Credential_Path", "Đường dẫn AWS Credential" },
+                { "Camera_01_IP", "IP Máy Scan" },
+                {"AppTwoFA_Enabled ", "Bật xác thực 2 bước" },
+                {"Data_Mode", "Chế độ dữ liệu" },
+                { "PLC_Port", "Cổng PLC" },
+                { "Camera_01_Port", "Cổng Máy Scan" },
+                { "PLC_Time_Refresh", "Thời gian làm mới PLC (ms)" },
+                { "Line_Name", "Tên dây chuyền" },
+                { "PLC_Test_Mode", "Chế độ thử nghiệm PLC" },
+                { "Handheld_COM_Port", "Cổng COM Thiết bị cầm tay" },
+                { "production_list_path", "Đường dẫn danh sách sản xuất" },
+                { "credentialPLCAddressPath", "Đường dẫn thông tin đăng nhập PLC" },
+                { "credentialERPPath", "Đường dẫn thông tin đăng nhập ERP" },
+                { "ERP_Sub_Inv", "ERP Sub Inventory" },
+                { "ERP_Org_Code", "ERP Organization Code" },
+                { "ERP_DatasetID", "ERP Dataset ID" },
+                { "ERP_TableID", "ERP Table ID" },
+                { "ERP_ProjectID", "ERP Project ID" },
+                { "Cloud_Connection_Enabled", "Bật kết nối đám mây" },
+                { "Cloud_Refresh_Interval_Minute", "Khoảng thời gian làm mới đám mây (phút)" },
+                { "Cloud_Upload_Enabled", "Bật tải lên đám mây" },
+                { "Local_Backup_Enabled", "Bật sao lưu cục bộ" }
 
             };
+
+        //    public bool AppHideEnable { get; set; }
+        //public bool AppTwoFA_Enabled { get; set; }
+
+        //public string Data_Mode { get; set; }
+
+        //public string AWS_Credential_Path { get; set; }
+        //public string? PLC_IP { get; set; }
+        //public int PLC_Port { get; set; }
+
+        //public string? Camera_01_IP { get; set; }
+        //public int Camera_01_Port { get; set; }
+
+        //public int PLC_Time_Refresh { get; set; }
+
+        //public string? Line_Name { get; set; }
+
+        //public bool PLC_Test_Mode { get; set; }
+
+        //public string? Handheld_COM_Port { get; set; }
+
+        //public string? production_list_path { get; set; }
+        //public string? credentialPLCAddressPath { get; set; }
+        //public string? credentialERPPath { get; set; }
+
+        //public string? ERP_Sub_Inv { get; set; }
+        //public string? ERP_Org_Code { get; set; }
+        //public string? ERP_DatasetID { get; set; }
+        //public string? ERP_TableID { get; set; }
+        //public string? ERP_ProjectID { get; set; }
+
+        //public bool Cloud_Connection_Enabled { get; set; }
+        //public int Cloud_Refresh_Interval_Minute { get; set; }
+        //public bool Cloud_Upload_Enabled { get; set; }
+        //public bool Local_Backup_Enabled { get; set; }
 
             return displayNames.ContainsKey(propertyName) ? displayNames[propertyName] : propertyName;
         }
