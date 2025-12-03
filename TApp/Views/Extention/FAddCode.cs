@@ -8,18 +8,20 @@ using TApp.Models;
 using TApp.Utils;
 using TApp.Views.Dashboard;
 using TTManager.Diaglogs;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using Timer = System.Windows.Forms.Timer;
 
 namespace TApp.Views.Extention
 {
     public partial class FAddCode : UIPage
     {
+        #region Fields
         private int _totalAdded = 0;
         private int _totalSuccess = 0;
         private Timer _queueMonitor;
-        private List<QRProductRecord> _pendingRecords = new List<QRProductRecord>();
+        private readonly List<QRProductRecord> _pendingRecords = new List<QRProductRecord>();
+        #endregion
 
+        #region Constructor & Initialization
         public FAddCode()
         {
             InitializeComponent();
@@ -28,7 +30,6 @@ namespace TApp.Views.Extention
 
         private void FAddCode_Initialize(object sender, EventArgs e)
         {
-            // Ghi log mở trang thêm mã
             GlobalVarialbles.Logger?.WriteLogAsync(
                 GlobalVarialbles.CurrentUser.Username,
                 e_LogType.UserAction,
@@ -40,25 +41,223 @@ namespace TApp.Views.Extention
 
         private void InitializeQueueMonitor()
         {
-            // Timer để cập nhật số lượng queue mỗi 500ms
-            _queueMonitor = new Timer();
-            _queueMonitor.Interval = 500;
+            _queueMonitor = new Timer
+            {
+                Interval = 500
+            };
             _queueMonitor.Tick += QueueMonitor_Tick;
             _queueMonitor.Start();
         }
+        #endregion
 
+        #region UI Event Handlers
+        private void ipQRContent_DoubleClick(object sender, EventArgs e)
+        {
+            using (Entertext enterText = new Entertext())
+            {
+                enterText.TileText = "Nhập mã QR cần thêm vào hệ thống";
+                enterText.TextValue = ipQRContent.Text;
+                enterText.IsPassword = false;
+                enterText.EnterClicked += (s, args) =>
+                {
+                    ipQRContent.Text = enterText.TextValue;
+                };
+                enterText.ShowDialog();
+            }
+        }
+
+        private void ipQRContent_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                btnAdd_Click(sender, e);
+            }
+        }
+
+        private void btnAdd_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(ipQRContent.Text))
+            {
+                UpdateStatus("Vui lòng nhập mã QR!", Color.Orange, 61527);
+                return;
+            }
+
+            if (WK_Add.IsBusy)
+            {
+                UpdateStatus("Đang xử lý...", Color.Gainsboro, 61761);
+                return;
+            }
+
+            WK_Add.RunWorkerAsync(ipQRContent.Text.Trim());
+        }
+        #endregion
+
+        #region Background Worker Methods
+        private void WK_Add_DoWork(object sender, DoWorkEventArgs e)
+        {
+            this.InvokeIfRequired(() =>
+            {
+                UpdateStatus("Đang xử lý...", Color.Gainsboro, 61761);
+            });
+
+            string qrCode = e.Argument as string;
+
+            if (!ValidateQRCodeInput(qrCode))
+            {
+                return;
+            }
+
+            if (!ValidateBatchInformation())
+            {
+                return;
+            }
+
+            ProcessQRCodeAddition(qrCode);
+        }
+
+        private bool ValidateQRCodeInput(string qrCode)
+        {
+            if (string.IsNullOrWhiteSpace(qrCode))
+            {
+                this.InvokeIfRequired(() =>
+                {
+                    UpdateStatus("Mã QR không hợp lệ!", Color.Red, 61453);
+                    AddConsoleLog($"[LỖI] Mã QR rỗng hoặc không hợp lệ", Color.Red);
+                });
+                return false;
+            }
+
+            if (FD_Globals.ActiveSet.Contains(qrCode))
+            {
+                this.InvokeIfRequired(() =>
+                {
+                    UpdateStatus("Mã đã tồn tại!", Color.Orange, 61527);
+                    AddConsoleLog($"[CẢNH BÁO] Mã {qrCode} đã tồn tại trong hệ thống", Color.Orange);
+                });
+                return false;
+            }
+
+            if (qrCode.Length < 16)
+            {
+                this.InvokeIfRequired(() =>
+                {
+                    UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
+                    AddConsoleLog(qrCode.Contains(FD_Globals.productionData.Barcode) ?
+                        $"[LỖI] Có thể bạn đã quét nhầm mã vạch, vui lòng che lại rồi quét" :
+                        $"[LỖI] Vui lòng quét mã đúng định dạng", Color.Red);
+                });
+                return false;
+            }
+
+            if (!qrCode.Contains(FD_Globals.productionData.Barcode))
+            {
+                this.InvokeIfRequired(() =>
+                {
+                    UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
+                    AddConsoleLog($"[LỖI] Mã không chứa mã vạch sản phẩm hiện tại", Color.Red);
+                });
+                return false;
+            }
+            return true;
+        }
+
+        private bool ValidateBatchInformation()
+        {
+            string currentBatch = FD_Globals.productionData.BatchCode;
+            if (string.IsNullOrWhiteSpace(currentBatch) || currentBatch == "NNN")
+            {
+                this.InvokeIfRequired(() =>
+                {
+                    UpdateStatus("Chưa có thông tin lô sản xuất!", Color.Red, 61453);
+                    AddConsoleLog($"[LỖI] Chưa thiết lập lô sản xuất. Vui lòng đổi lô trước khi thêm mã", Color.Red);
+                });
+                return false;
+            }
+            return true;
+        }
+
+        private void ProcessQRCodeAddition(string qrCode)
+        {
+            string currentBatch = FD_Globals.productionData.BatchCode;
+            string currentBarcode = FD_Globals.productionData.Barcode;
+
+            try
+            {
+                var record = new QRProductRecord
+                {
+                    QRContent = qrCode,
+                    Status = e_Production_Status.Pass,
+                    BatchCode = currentBatch,
+                    Barcode = currentBarcode,
+                    UserName = GlobalVarialbles.CurrentUser.Username + "Quét tay",
+                    TimeStampActive = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"),
+                    TimeUnixActive = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
+                    ProductionDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ssK"),
+                    Reason = "Manual Add"
+                };
+
+                FD_Globals.QueueActive.Enqueue(record);
+                FD_Globals.QueueRecord.Enqueue(record);
+                FD_Globals.ActiveSet.Add(qrCode);
+
+                this.InvokeIfRequired(() =>
+                {
+                    _pendingRecords.Add(record);
+                    _totalAdded++;
+                    _totalSuccess++;
+
+                    UpdateStatus("Thêm mã thành công!", Color.LimeGreen, 61527);
+                    AddConsoleLog($"[OK] Đã thêm mã: {qrCode.Substring(0, Math.Min(30, qrCode.Length))}...", Color.Green);
+
+                    ipQRContent.Text = string.Empty;
+                    ipQRContent.Focus();
+
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.UserAction,
+                        "Thêm mã kích hoạt thủ công",
+                        $"{{'QRContent':'{qrCode}','BatchCode':'{currentBatch}','Barcode':'{currentBarcode}'}}",
+                        "UA-FADD-01"
+                    );
+                });
+            }
+            catch (Exception ex)
+            {
+                HandleQRCodeAdditionError(ex, qrCode);
+            }
+        }
+
+        private void HandleQRCodeAdditionError(Exception ex, string qrCode)
+        {
+            this.InvokeIfRequired(() =>
+            {
+                UpdateStatus("Lỗi xử lý!", Color.Red, 61453);
+                AddConsoleLog($"[LỖI] Không thể thêm mã: {ex.Message}", Color.Red);
+
+                GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.CurrentUser.Username,
+                    e_LogType.Error,
+                    "Lỗi thêm mã kích hoạt thủ công",
+                    ex.Message,
+                    "ERR-FADD-01"
+                );
+            });
+        }
+        #endregion
+
+        #region Queue Management
         private void QueueMonitor_Tick(object sender, EventArgs e)
         {
             UpdateQueueDisplay();
         }
-                                       
-        private void UpdateQueueDisplay()           
+
+        private void UpdateQueueDisplay()
         {
             this.InvokeIfRequired(() =>
             {
                 opQueueCount.Text = FD_Globals.QueueActive.Count.ToString();
 
-                // Cập nhật danh sách pending records
                 if (_pendingRecords.Count > 0)
                 {
                     var dt = new DataTable();
@@ -76,7 +275,6 @@ namespace TApp.Views.Extention
 
                     opQueueTable.DataSource = dt;
 
-                    // Tự động resize columns
                     foreach (DataGridViewColumn column in opQueueTable.Columns)
                     {
                         column.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
@@ -84,194 +282,9 @@ namespace TApp.Views.Extention
                 }
             });
         }
+        #endregion
 
-        private void ipQRContent_DoubleClick(object sender, EventArgs e)
-        {
-            // Bật bàn phím ảo
-            using (Entertext enterText = new Entertext())
-            {
-                enterText.TileText = "Nhập mã QR cần thêm vào hệ thống";
-                enterText.TextValue = ipQRContent.Text;
-                enterText.IsPassword = false;
-                enterText.EnterClicked += (s, args) =>
-                {
-                    ipQRContent.Text = enterText.TextValue;
-                };
-                enterText.ShowDialog();
-            }
-        }
-
-        private void ipQRContent_KeyDown(object sender, KeyEventArgs e)
-        {
-            // Cho phép thêm mã bằng phím Enter
-            if (e.KeyCode == Keys.Enter)
-            {
-                e.SuppressKeyPress = true;
-                btnAdd_Click(sender, e);
-            }
-        }
-
-        private void btnAdd_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(ipQRContent.Text))
-            {
-                UpdateStatus("Vui lòng nhập mã QR!", Color.Orange, 61527);
-                return;
-            }
-
-            // Kiểm tra nếu WK_Add đang chạy
-            if (WK_Add.IsBusy)
-            {
-                UpdateStatus("Đang xử lý...", Color.Gainsboro, 61761);
-                return;
-            }
-
-            WK_Add.RunWorkerAsync(ipQRContent.Text.Trim());
-        }
-
-        private void WK_Add_DoWork(object sender, DoWorkEventArgs e)
-        {
-            this.InvokeIfRequired(() =>
-            {
-                UpdateStatus("Đang xử lý...", Color.Gainsboro, 61761);
-            });
-
-            string qrCode = e.Argument as string;
-
-            if (string.IsNullOrWhiteSpace(qrCode))
-            {
-                this.InvokeIfRequired(() =>
-                {
-                    UpdateStatus("Mã QR không hợp lệ!", Color.Red, 61453);
-                    AddConsoleLog($"[LỖI] Mã QR rỗng hoặc không hợp lệ", Color.Red);
-                });
-                return;
-            }
-
-            // Kiểm tra mã đã tồn tại trong ActiveSet chưa
-            if (FD_Globals.ActiveSet.Contains(qrCode))
-            {
-                this.InvokeIfRequired(() =>
-                {
-                    UpdateStatus("Mã đã tồn tại!", Color.Orange, 61527);
-                    AddConsoleLog($"[CẢNH BÁO] Mã {qrCode} đã tồn tại trong hệ thống", Color.Orange);
-                });
-                return;
-            }
-
-            // Lấy thông tin batch hiện tại
-            string currentBatch = FD_Globals.productionData.BatchCode;
-            string currentBarcode = FD_Globals.productionData.Barcode;
-
-            // Kiểm tra batch có hợp lệ không
-            if (string.IsNullOrWhiteSpace(currentBatch) || currentBatch == "NNN")
-            {
-                this.InvokeIfRequired(() =>
-                {
-                    UpdateStatus("Chưa có thông tin lô sản xuất!", Color.Red, 61453);
-                    AddConsoleLog($"[LỖI] Chưa thiết lập lô sản xuất. Vui lòng đổi lô trước khi thêm mã", Color.Red);
-                });
-                return;
-            }
-
-            if (qrCode.Length < 16)
-            {
-                if (qrCode.Contains(FD_Globals.productionData.Barcode))
-                {
-                    //quét nhầm cái barcode
-                    this.InvokeIfRequired(() =>
-                    {
-                        UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
-                        AddConsoleLog($"[LỖI] Có thể bạn đã quét nhầm mã vạch, vui lòng che lại rồi quét", Color.Red);
-                    });
-                    return;
-                }
-
-                this.InvokeIfRequired(() =>
-                {
-                    UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
-                    AddConsoleLog($"[LỖI] Vui lòng quét mã đúng định dạng", Color.Red);
-                });
-                return;
-            }
-
-            if(!qrCode.Contains(FD_Globals.productionData.Barcode))
-            {
-                //sai barcode
-                this.InvokeIfRequired(() =>
-                {
-                    UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
-                    AddConsoleLog($"[LỖI] Mã không chứa mã vạch sản phẩm hiện tại", Color.Red);
-                });
-            }
-            try
-            {
-                // Tạo record mới
-                var record = new QRProductRecord
-                {
-                    QRContent = qrCode,
-                    Status = e_Production_Status.Pass,
-                    BatchCode = currentBatch,
-                    Barcode = currentBarcode,
-                    UserName = GlobalVarialbles.CurrentUser.Username + "Quét tay",
-                    TimeStampActive = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"),
-                    TimeUnixActive = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
-                    ProductionDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ssK"),
-                    Reason = "Manual Add"
-                };
-
-                // Thêm vào QueueActive để xử lý trong luồng riêng
-                FD_Globals.QueueActive.Enqueue(record);
-
-                //thêm vào record vào database trong luồng xử lý chính
-                FD_Globals.QueueRecord.Enqueue(record);
-
-                // Thêm vào ActiveSet để tránh trùng lặp
-                FD_Globals.ActiveSet.Add(qrCode);
-
-                // Thêm vào danh sách pending để hiển thị
-                this.InvokeIfRequired(() =>
-                {
-                    _pendingRecords.Add(record);
-                    _totalAdded++;
-                    _totalSuccess++;
-
-                    UpdateStatus("Thêm mã thành công!", Color.LimeGreen, 61527);
-                    AddConsoleLog($"[OK] Đã thêm mã: {qrCode.Substring(0, Math.Min(30, qrCode.Length))}...", Color.Green);
-
-                    // Xóa textbox để sẵn sàng nhập mã tiếp theo
-                    ipQRContent.Text = string.Empty;
-                    ipQRContent.Focus();
-
-                    // Ghi log
-                    GlobalVarialbles.Logger?.WriteLogAsync(
-                        GlobalVarialbles.CurrentUser.Username,
-                        e_LogType.UserAction,
-                        "Thêm mã kích hoạt thủ công",
-                        $"{{'QRContent':'{qrCode}','BatchCode':'{currentBatch}','Barcode':'{currentBarcode}'}}",
-                        "UA-FADD-01"
-                    );
-                });
-            }
-            catch (Exception ex)
-            {
-                this.InvokeIfRequired(() =>
-                {
-                    UpdateStatus("Lỗi xử lý!", Color.Red, 61453);
-                    AddConsoleLog($"[LỖI] Không thể thêm mã: {ex.Message}", Color.Red);
-
-                    // Ghi log lỗi
-                    GlobalVarialbles.Logger?.WriteLogAsync(
-                        GlobalVarialbles.CurrentUser.Username,
-                        e_LogType.Error,
-                        "Lỗi thêm mã kích hoạt thủ công",
-                        ex.Message,
-                        "ERR-FADD-01"
-                    );
-                });
-            }
-        }
-
+        #region Helper Methods
         private void UpdateStatus(string text, Color color, int symbol)
         {
             this.InvokeIfRequired(() =>
@@ -297,6 +310,6 @@ namespace TApp.Views.Extention
                 }
             });
         }
-
+        #endregion
     }
 }

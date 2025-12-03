@@ -9,17 +9,36 @@ using TApp.Helpers;
 using TApp.Infrastructure;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
+using System.Threading;
 
 namespace TApp.Views.Extention
 {
     public partial class FExtention : UIPage
     {
+        #region Fields
+        private string BackupLogDbPath = @"C:/MASAN/CloudBackupLog.tls";
+        private DataTable upCloudHis = new DataTable();
+        private DataTable dataTable = new DataTable();
+        private int countSync = 100000;
+        private int maxInterval = 5;
+        private int seconSync = 0;
+        #endregion
+
+        #region Constructor & Initialization
         public FExtention()
         {
             InitializeComponent();
         }
-        private string BackupLogDbPath = @"C:/MASAN/CloudBackupLog.tls";
-        private DataTable upCloudHis = new DataTable();
+
+        private void FExtention_Initialize(object sender, EventArgs e)
+        {
+            opConsole.Items.Clear();
+            opData.DataSource = null;
+            LoadBackupHistory();
+        }
+        #endregion
+
+        #region ERP Integration
         public void InitializeERP()
         {
             erP_Google1.credentialPath = AppConfigs.Current.credentialERPPath;
@@ -35,7 +54,6 @@ namespace TApp.Views.Extention
                 {
                     backgroundWorker2.RunWorkerAsync();
                 }
-
             }
         }
 
@@ -46,10 +64,8 @@ namespace TApp.Views.Extention
             {
                 backgroundWorker1.RunWorkerAsync();
             }
-
         }
 
-        DataTable dataTable = new DataTable();
         private void backgroundWorker1_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
             this.InvokeIfRequired(() =>
@@ -73,7 +89,6 @@ namespace TApp.Views.Extention
                     this.InvokeIfRequired(() =>
                     {
                         opConsole.Items.Insert(0, $"[LỖI] Dữ liệu ERP trả về rỗng!");
-
                     });
                 }
             }
@@ -84,29 +99,233 @@ namespace TApp.Views.Extention
                     opConsole.Items.Insert(0, $"[LỖI] Lấy dữ liệu ERP thất bại: {result.message}");
                 });
             }
-
-            //Ghi nhận log 
         }
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
         {
             btnERPCheck.Enabled = true;
         }
+        #endregion
 
-        private void FExtention_Initialize(object sender, EventArgs e)
+        #region Cloud Backup
+        private void backgroundWorker2_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
-            opConsole.Items.Clear();
-            opData.DataSource = null;
+            while (!backgroundWorker2.CancellationPending)
+            {
+                UpdateSyncCounterDisplay();
 
-            // Load lịch sử backup khi khởi tạo
-            LoadBackupHistory();
+                if (countSync >= maxInterval)
+                {
+                    countSync = 0;
+                    this.InvokeIfRequired(() =>
+                    {
+                        btnCloudHis.Enabled = true;
+                    });
+
+                    UpdateNextUploadTime();
+                    LogConsoleMessage("[THÔNG BÁO] Bắt đầu tải dữ liệu lên máy chủ theo chu kì...");
+
+                    string timeStartUpload = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    (DataTable dataToBackup, long lastUnix, string errorMessage) = PrepareBackupFiles();
+
+                    if (dataToBackup == null)
+                    {
+                        LogBackupResult("null", "0", timeStartUpload, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), lastUnix, errorMessage);
+                        continue;
+                    }
+
+                    if (dataToBackup.Rows.Count == 0)
+                    {
+                        LogConsoleMessage("[THÔNG BÁO] Không có dữ liệu mới để sao lưu.");
+                        continue;
+                    }
+
+                    string csvFileName = $"{AppConfigs.Current.Line_Name}_{DateTime.Now.ToString("ddMMyyyy_HHmmss")}.csv";
+                    string csvTempPath = Path.Combine("C:/MASAN/Temp/", csvFileName);
+                    string csvBackupPath = Path.Combine("C:/MASAN/Backup/", csvFileName);
+
+                    ExportResult exportResult = CsvHelper.ExportDataTableToCsv(dataToBackup, csvTempPath);
+
+                    if (!exportResult.IsSucces)
+                    {
+                        LogConsoleMessage($"[LỖI] Xuất dữ liệu sang CSV thất bại: {exportResult.Message}");
+                        LogBackupResult(csvFileName, "0", timeStartUpload, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), lastUnix, $"Lỗi xuất CSV: {exportResult.Message}");
+                        continue;
+                    }
+
+                    bool shouldUploadCloud = AppConfigs.Current.Cloud_Upload_Enabled;
+                    bool shouldBackupLocal = AppConfigs.Current.Local_Backup_Enabled;
+
+                    long maxUnixQR = GetMaxTimeUnixActive(dataToBackup, lastUnix);
+
+                    bool uploadSuccess = PerformCloudUpload(shouldUploadCloud, exportResult.FilePath, csvFileName, dataToBackup.Rows.Count);
+                    string uploadMessage = uploadSuccess ? "Upload cloud thành công" : "Upload cloud thất bại";
+
+                    if (shouldBackupLocal && uploadSuccess)
+                    {
+                        PerformLocalBackup(exportResult.FilePath, csvBackupPath);
+                    }
+
+                    CleanUpTempFile(exportResult.FilePath);
+                    LogBackupResult(csvFileName, uploadSuccess ? "1" : "0", timeStartUpload, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), uploadSuccess ? maxUnixQR : lastUnix, uploadMessage);
+
+                    if (uploadSuccess)
+                    {
+                        this.InvokeIfRequired(() =>
+                        {
+                            opLastTimeUpload.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                            opLastUploadFileName.Text = csvFileName;
+                        });
+                    }
+                    LoadBackupHistory();
+                }
+                Thread.Sleep(500);
+            }
         }
 
-        /// <summary>
-        /// Load 100 lịch sử backup gần nhất
-        /// </summary>
-        /// 
-        
+        private void UpdateSyncCounterDisplay()
+        {
+            maxInterval = (AppConfigs.Current.Cloud_Refresh_Interval_Minute * 60 * 1000) / 500;
+            countSync++;
+
+            if (countSync % 2 == 0)
+            {
+                this.InvokeIfRequired(() =>
+                {
+                    opC1.Text = ((maxInterval - countSync) / 2).ToString();
+                });
+            }
+        }
+
+        private (DataTable, long, string) PrepareBackupFiles()
+        {
+            long lastUnix = 0;
+            try
+            {
+                lastUnix = CloudBackupHelper.GetLastTimeBackup(BackupLogDbPath);
+            }
+            catch (Exception ex)
+            {
+                LogConsoleMessage($"[LỖI] Lấy thời gian sao lưu cuối cùng thất bại: {ex.Message}");
+                return (null, lastUnix, $"Lỗi lấy thời gian sao lưu: {ex.Message}");
+            }
+
+            TResult result = QRDatabaseHelper.Get_ActiveQR_By_TimeUnix(lastUnix);
+            if (!result.issuccess)
+            {
+                LogConsoleMessage($"[LỖI] Lấy dữ liệu cần sao lưu thất bại: {result.message}");
+                return (null, lastUnix, $"Lỗi lấy dữ liệu: {result.message}");
+            }
+            return (result.data, lastUnix, string.Empty);
+        }
+
+        private long GetMaxTimeUnixActive(DataTable data, long defaultUnix)
+        {
+            long maxUnixQR = defaultUnix;
+            if (data.Columns.Contains("TimeUnixActive"))
+            {
+                foreach (DataRow row in data.Rows)
+                {
+                    long unixValue = Convert.ToInt64(row["TimeUnixActive"]);
+                    if (unixValue > maxUnixQR)
+                        maxUnixQR = unixValue;
+                }
+            }
+            return maxUnixQR;
+        }
+
+        private bool PerformCloudUpload(bool shouldUploadCloud, string filePath, string csvFileName, int rowCount)
+        {
+            if (!shouldUploadCloud)
+            {
+                LogConsoleMessage("[THÔNG BÁO] Cloud upload bị tắt, chỉ backup local.");
+                return true; // Coi như thành công vì không cần upload
+            }
+
+            FileStream fileStream = null;
+            try
+            {
+                // Commented out actual cloud upload logic as it requires Google Cloud credentials
+                // and should be handled securely.
+                // Example of what would be here:
+                /*
+                GoogleCredential credential = GoogleCredential.FromFile(AppConfigs.Current.credentialERPPath);
+                StorageClient storage = StorageClient.Create(credential);
+                fileStream = File.OpenRead(filePath);
+                string objectPath = $"QRCode/{DateTime.Now.ToString("yyyy")}/{DateTime.Now.ToString("MM")}/{csvFileName}";
+                var uploadedObject = storage.UploadObject("masan-image", objectPath, null, fileStream);
+                fileStream.Close();
+                fileStream.Dispose();
+                fileStream = null;
+                */
+
+                LogConsoleMessage($"[THÀNH CÔNG] Tải lên cloud thành công: {csvFileName} ({rowCount} bản ghi)");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (fileStream != null)
+                {
+                    fileStream.Close();
+                    fileStream.Dispose();
+                }
+                LogConsoleMessage($"[LỖI] Tải lên cloud thất bại: {ex.Message}");
+                return false;
+            }
+        }
+
+        private void PerformLocalBackup(string sourceFilePath, string destinationFilePath)
+        {
+            try
+            {
+                File.Copy(sourceFilePath, destinationFilePath, true);
+                LogConsoleMessage($"[THÀNH CÔNG] Backup local thành công: {destinationFilePath}");
+            }
+            catch (Exception ex)
+            {
+                LogConsoleMessage($"[LỖI] Backup local thất bại: {ex.Message}");
+            }
+        }
+
+        private void CleanUpTempFile(string filePath)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+            catch { /* Ignore errors during temp file cleanup */ }
+        }
+
+        private void LogBackupResult(string fileName, string status, string timeStart, string timeCompleted, long lastUnix, string message)
+        {
+            CloudBackupHelper.InsertLog(BackupLogDbPath, fileName, status, timeStart, timeCompleted, lastUnix, message);
+        }
+        #endregion
+
+        #region UI Event Handlers
+        private void opConsole_DoubleClick(object sender, EventArgs e)
+        {
+            this.ShowInfoDialog(opConsole.SelectedItem as string);
+        }
+
+        private void btnCloudHis_Click(object sender, EventArgs e)
+        {
+            btnCloudHis.Enabled = false;
+            try
+            {
+                opData.DataSource = upCloudHis;
+            }
+            catch (Exception ex)
+            {
+                LogConsoleMessage($"[LỖI] Đang có vấn đề dữ liệu, vui lòng đợi nút sáng lên rồi thử lại {ex.Message}");
+            }
+        }
+        #endregion
+
+        #region Helper Methods
         private void LoadBackupHistory()
         {
             try
@@ -116,10 +335,7 @@ namespace TApp.Views.Extention
                 {
                     this.InvokeIfRequired(() =>
                     {
-                        // uiDataGridView1.DataSource = result.data;
-
                         upCloudHis = result.data;
-                        // Lấy thông tin lần upload gần nhất thành công
                         var successRows = result.data.AsEnumerable()
                             .Where(row => row["Status"].ToString() == "1")
                             .OrderByDescending(row => row["ID"]);
@@ -140,16 +356,10 @@ namespace TApp.Views.Extention
             }
             catch (Exception ex)
             {
-                this.InvokeIfRequired(() =>
-                {
-                    opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [LỖI] Load lịch sử backup thất bại: {ex.Message}");
-                });
+                LogConsoleMessage($"[LỖI] Load lịch sử backup thất bại: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// Cập nhật thông tin thời gian upload tiếp theo
-        /// </summary>
         private void UpdateNextUploadTime()
         {
             try
@@ -162,259 +372,16 @@ namespace TApp.Views.Extention
                     opNextUploadTime.Text = nextTime.ToString("yyyy-MM-dd HH:mm:ss");
                 });
             }
-            catch { }
+            catch { /* Ignore */ }
         }
 
-        int countSync = 100000;
-        int maxInterval = 5;
-        int seconSync = 0;
-        private void backgroundWorker2_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        private void LogConsoleMessage(string message)
         {
-
-            while (!backgroundWorker2.CancellationPending)
+            this.InvokeIfRequired(() =>
             {
-                maxInterval = (AppConfigs.Current.Cloud_Refresh_Interval_Minute * 60 * 1000) / 500;
-                countSync++;
-
-                if (countSync % 2 == 0)
-                {
-                    this.InvokeIfRequired(() =>
-                    {
-                        opC1.Text = ((maxInterval - countSync) / 2).ToString();
-                    });
-                }
-
-
-
-                if (countSync >= maxInterval)
-                {
-                    countSync = 0;
-                    this.InvokeIfRequired(() =>
-                    {
-                        btnCloudHis.Enabled = true;
-                    });
-                    
-                    // Cập nhật thời gian upload tiếp theo
-                    UpdateNextUploadTime();
-
-                    this.InvokeIfRequired(() =>
-                    {
-                        opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [THÔNG BÁO] Bắt đầu tải dữ liệu lên máy chủ theo chu kì...");
-                    });
-
-                    DateTime dateTime = DateTime.Now;
-
-                    string day = $"{DateTime.Now.ToString("yyyy")}/{dateTime.ToString("MM")}";
-                    string csvFileName = $"{AppConfigs.Current.Line_Name}_{dateTime.ToString("ddMMyyyy_HHmmss")}.csv";
-                    string csvTempPath = Path.Combine("C:/MASAN/Temp/", csvFileName);
-                    string csvBackupPath = Path.Combine("C:/MASAN/Backup/", csvFileName);
-
-                    long lastUnix = 0;
-
-                    try
-                    {
-                        lastUnix = CloudBackupHelper.GetLastTimeBackup(BackupLogDbPath);
-                    }
-                    catch (Exception ex)
-                    {
-                        this.InvokeIfRequired(() =>
-                        {
-                            opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [LỖI] Lấy thời gian sao lưu cuối cùng thất bại: {ex.Message}");
-                        });
-                    }
-
-                    //lấy danh sách dữ liệu cần sao lưu
-                    string timeStartUpload = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                    TResult result = QRDatabaseHelper.Get_ActiveQR_By_TimeUnix(lastUnix);
-                    DataTable dataToBackup = result.data!;
-
-                    //chuyển dữ liệu sang csv
-                    if (!result.issuccess)
-                    {
-                        //lỗi lấy dữ liệu
-                        this.InvokeIfRequired(() =>
-                        {
-                            opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [LỖI] Lấy dữ liệu cần sao lưu thất bại: {result.message}");
-                        });
-
-                        // Ghi log thất bại
-                        CloudBackupHelper.InsertLog(BackupLogDbPath, "null", "0", timeStartUpload,
-                            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), lastUnix,
-                            $"Lỗi lấy dữ liệu: {result.message}");
-                        continue;
-                    }
-
-                    // Kiểm tra nếu không có dữ liệu mới
-                    if (dataToBackup == null || dataToBackup.Rows.Count == 0)
-                    {
-                        this.InvokeIfRequired(() =>
-                        {
-                            opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [THÔNG BÁO] Không có dữ liệu mới để sao lưu.");
-                        });
-                        continue;
-                    }
-
-                    ExportResult exportResult = CsvHelper.ExportDataTableToCsv(dataToBackup, csvTempPath);
-
-                    if (!exportResult.IsSucces)
-                    {
-                        this.InvokeIfRequired(() =>
-                        {
-                            opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [LỖI] Xuất dữ liệu sang CSV thất bại: {exportResult.Message}");
-                        });
-                        continue;
-                    }
-
-                    // Kiểm tra cấu hình upload và backup
-                    bool shouldUploadCloud = AppConfigs.Current.Cloud_Upload_Enabled;
-                    bool shouldBackupLocal = AppConfigs.Current.Local_Backup_Enabled;
-
-                    // Lấy TimeUnixQR lớn nhất từ dữ liệu
-                    long maxUnixQR = lastUnix;
-                    if (dataToBackup.Columns.Contains("TimeUnixActive"))
-                    {
-                        foreach (DataRow row in dataToBackup.Rows)
-                        {
-                            long unixValue = Convert.ToInt64(row["TimeUnixActive"]);
-                            if (unixValue > maxUnixQR)
-                                maxUnixQR = unixValue;
-                        }
-                    }
-
-                    bool uploadSuccess = false;
-                    string uploadMessage = "";
-
-                    //up lên cloud (nếu được bật)
-                    if (shouldUploadCloud)
-                    {
-                        FileStream fileStream = null;
-                        try
-                        {
-                            //// Tạo StorageClient từ file xác thực JSON
-                            //GoogleCredential credential = GoogleCredential.FromFile(AppConfigs.Current.credentialERPPath);
-                            //StorageClient storage = StorageClient.Create(credential);
-                            //fileStream = File.OpenRead(exportResult.FilePath);
-
-                            //// Tải file lên Google Cloud Storage với đường dẫn đầy đủ
-                            //string objectPath = $"QRCode/{day}/{csvFileName}";
-                            //var uploadedObject = storage.UploadObject("masan-image", objectPath, null, fileStream);
-
-                            //// Đóng fileStream
-                            //fileStream.Close();
-                            //fileStream.Dispose();
-                            //fileStream = null;
-
-                            uploadSuccess = true;
-                            // uploadMessage = $"Upload cloud thành công: {uploadedObject.Name}";
-
-                            this.InvokeIfRequired(() =>
-                            {
-                                opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [THÀNH CÔNG] Tải lên cloud thành công: {csvFileName} ({dataToBackup.Rows.Count} bản ghi)");
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            // Đóng fileStream nếu còn mở
-                            if (fileStream != null)
-                            {
-                                fileStream.Close();
-                                fileStream.Dispose();
-                            }
-
-                            uploadSuccess = false;
-                            uploadMessage = $"Lỗi upload cloud: {ex.Message}";
-
-                            this.InvokeIfRequired(() =>
-                            {
-                                opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [LỖI] Tải lên cloud thất bại: {ex.Message}");
-                            });
-                        }
-                    }
-                    else
-                    {
-                        // Không upload cloud
-                        uploadSuccess = true; // Coi như thành công vì không cần upload
-                        uploadMessage = "Cloud upload bị tắt";
-
-                        this.InvokeIfRequired(() =>
-                        {
-                            opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [THÔNG BÁO] Cloud upload bị tắt, chỉ backup local.");
-                        });
-                    }
-
-                    // Backup local (nếu được bật)
-                    if (shouldBackupLocal && uploadSuccess)
-                    {
-                        try
-                        {
-                            // Backup file CSV vào thư mục backup
-                            File.Copy(exportResult.FilePath, csvBackupPath, true);
-
-                            this.InvokeIfRequired(() =>
-                            {
-                                opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [THÀNH CÔNG] Backup local thành công: {csvBackupPath}");
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            this.InvokeIfRequired(() =>
-                            {
-                                opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [LỖI] Backup local thất bại: {ex.Message}");
-                            });
-                        }
-                    }
-
-                    // Xóa file tạm
-                    try
-                    {
-                        if (File.Exists(exportResult.FilePath))
-                        {
-                            File.Delete(exportResult.FilePath);
-                        }
-                    }
-                    catch { }
-
-                    // Ghi log vào database
-                    string logStatus = uploadSuccess ? "1" : "0";
-                    string completedTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-
-                    CloudBackupHelper.InsertLog(BackupLogDbPath, csvFileName, logStatus, timeStartUpload,
-                        completedTime, uploadSuccess ? maxUnixQR : lastUnix, uploadMessage);
-
-                    // Cập nhật UI nếu upload thành công
-                    if (uploadSuccess)
-                    {
-                        this.InvokeIfRequired(() =>
-                        {
-                            opLastTimeUpload.Text = completedTime;
-                            opLastUploadFileName.Text = csvFileName;
-                        });
-                    }
-
-                    // Load lại lịch sử backup
-                    LoadBackupHistory();
-                }
-                Thread.Sleep(500);
-            }
+                opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - {message}");
+            });
         }
-
-        private void opConsole_DoubleClick(object sender, EventArgs e)
-        {
-            this.ShowInfoDialog(opConsole.SelectedItem as string);
-        }
-
-        private void btnCloudHis_Click(object sender, EventArgs e)
-        {
-            btnCloudHis.Enabled = false;
-            try
-            {
-                opData.DataSource = upCloudHis;
-            }
-            catch (Exception ex) 
-            {
-                opConsole.Items.Insert(0, $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffk")} - [LỖI] Đang có vấn đề dữ liệu, vui lòng đợi nút sáng lên rồi thử lại {ex.Message}");
-            }
-            
-        }
+        #endregion
     }
 }
