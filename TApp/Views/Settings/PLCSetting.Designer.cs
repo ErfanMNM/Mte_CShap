@@ -88,7 +88,7 @@
             // 
             // backgroundWorker1
             // 
-            backgroundWorker1.DoWork += backgroundWorker1_DoWork;
+           // backgroundWorker1.DoWork += backgroundWorker1_DoWork;
             // 
             // tabPage3
             // 
@@ -305,7 +305,7 @@
             uiTableLayoutPanel1.Size = new Size(840, 612);
             uiTableLayoutPanel1.TabIndex = 0;
             uiTableLayoutPanel1.TagString = null;
-            uiTableLayoutPanel1.Paint += uiTableLayoutPanel1_Paint;
+            //uiTableLayoutPanel1.Paint += uiTableLayoutPanel1_Paint;
             // 
             // uiTitlePanel2
             // 

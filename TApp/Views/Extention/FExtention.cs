@@ -252,13 +252,13 @@ namespace TApp.Views.Extention
                 // and should be handled securely.
                 // Example of what would be here:
                 
-                GoogleCredential credential = GoogleCredential.FromFile(AppConfigs.Current.credentialERPPath);
-                StorageClient storage = StorageClient.Create(credential);
-                fileStream = File.OpenRead(filePath);
-                string objectPath = $"QRCode/{DateTime.Now.ToString("yyyy")}/{DateTime.Now.ToString("MM")}/{csvFileName}";
-                var uploadedObject = storage.UploadObject("masan-image", objectPath, null, fileStream);
-                fileStream.Close();
-                fileStream.Dispose();
+                //GoogleCredential credential = GoogleCredential.FromFile(AppConfigs.Current.credentialERPPath);
+                //StorageClient storage = StorageClient.Create(credential);
+                //fileStream = File.OpenRead(filePath);
+                //string objectPath = $"QRCode/{DateTime.Now.ToString("yyyy")}/{DateTime.Now.ToString("MM")}/{csvFileName}";
+                //var uploadedObject = storage.UploadObject("masan-image", objectPath, null, fileStream);
+                //fileStream.Close();
+                //fileStream.Dispose();
                 fileStream = null;
                 
 

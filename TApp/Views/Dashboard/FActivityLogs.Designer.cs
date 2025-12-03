@@ -62,9 +62,9 @@ namespace TApp.Views.Dashboard
             // 
             // WK_AutoLog
             // 
-            WK_AutoLog.WorkerReportsProgress = true;
-            WK_AutoLog.WorkerSupportsCancellation = true;
-            WK_AutoLog.DoWork += WK_AutoLog_DoWork;
+            //WK_AutoLog.WorkerReportsProgress = true;
+            //WK_AutoLog.WorkerSupportsCancellation = true;
+            //WK_AutoLog.DoWork += WK_AutoLog_DoWork;
             // 
             // WK_Getlogs
             // 
@@ -455,7 +455,7 @@ namespace TApp.Views.Dashboard
             Name = "FActivityLogs";
             Symbol = 57591;
             Text = "Nhật ký";
-            Initialize += FActivityLogs_Initialize;
+           // Initialize += FActivityLogs_Initialize;
             uiTitlePanel1.ResumeLayout(false);
             uiTableLayoutPanel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)opDataG).EndInit();

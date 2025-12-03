@@ -1,12 +1,12 @@
 ﻿using Sunny.UI;
 using TApp.Configs;
 using TApp.Infrastructure;
-using TApp.Views.Dashboard;
 
 namespace TApp.Views.Auth
 {
     public partial class Login : UIPage
     {
+        #region Constructor & Initialization
         public Login()
         {
             InitializeComponent();
@@ -17,38 +17,49 @@ namespace TApp.Views.Auth
             ucLogin1.IS2FAEnabled = AppConfigs.Current.AppTwoFA_Enabled;
             ucLogin1.INIT();
         }
+        #endregion
 
+        #region Event Handlers
         private void ucLogin1_OnLoginAction(object sender, TTManager.Auth.LoginActionEventArgs e)
         {
             if (e.Status)
             {
-                // Hiển thị thông báo đăng nhập thành công
-                this.ShowSuccessTip($"Đăng nhập thành công, vui lòng chờ trong giây lát");
-                //ghi thông tin user
-                GlobalVarialbles.CurrentUser = ucLogin1.CurrentUser;
-
-                // Ghi log đăng nhập thành công
-                GlobalVarialbles.Logger?.WriteLogAsync(
-                    GlobalVarialbles.CurrentUser.Username,
-                    e_LogType.UserAction,
-                    "Đăng nhập thành công",
-                    $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}','Role':'{GlobalVarialbles.CurrentUser.Role}'}}",
-                    "UA-LOGIN-01"
-                );
+                HandleSuccessfulLogin(e);
             }
             else
             {
-                this.ShowErrorTip($"{e.Message}");
-
-                // Ghi log đăng nhập thất bại
-                GlobalVarialbles.Logger?.WriteLogAsync(
-                    "Anonymous",
-                    e_LogType.Error,
-                    "Đăng nhập thất bại",
-                    $"{{'Message':'{e.Message}'}}",
-                    "ERR-LOGIN-01"
-                );
+                HandleFailedLogin(e);
             }
         }
+        #endregion
+
+        #region Private Helper Methods
+        private void HandleSuccessfulLogin(TTManager.Auth.LoginActionEventArgs e)
+        {
+            this.ShowSuccessTip("Đăng nhập thành công, vui lòng chờ trong giây lát");
+            GlobalVarialbles.CurrentUser = ucLogin1.CurrentUser;
+
+            GlobalVarialbles.Logger?.WriteLogAsync(
+                GlobalVarialbles.CurrentUser.Username,
+                e_LogType.UserAction,
+                "Đăng nhập thành công",
+                $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}','Role':'{GlobalVarialbles.CurrentUser.Role}'}}",
+                "UA-LOGIN-01"
+            );
+        }
+
+        private void HandleFailedLogin(TTManager.Auth.LoginActionEventArgs e)
+        {
+            this.ShowErrorTip($"{e.Message}");
+
+            GlobalVarialbles.Logger?.WriteLogAsync(
+                "Anonymous",
+                e_LogType.Error,
+                "Đăng nhập thất bại",
+                $"{{'Message':'{e.Message}'}}",
+                "ERR-LOGIN-01"
+            );
+        }
+        #endregion
     }
 }

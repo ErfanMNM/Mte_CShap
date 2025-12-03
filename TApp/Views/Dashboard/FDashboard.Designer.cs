@@ -1333,7 +1333,7 @@
             btnClearPLC.TabIndex = 0;
             btnClearPLC.Text = "Xóa lỗi";
             btnClearPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            btnClearPLC.Click += btnClearPLC_Click;
+           // btnClearPLC.Click += btnClearPLC_Click;
             // 
             // btnResetCounterPLC
             // 

@@ -1,5 +1,5 @@
-﻿
-using HslCommunication;
+﻿using HslCommunication;
+using HslCommunication.Profinet.Omron;
 using Newtonsoft.Json;
 using Sunny.UI;
 using System;
@@ -7,13 +7,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Data.SQLite;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using TApp.Configs;
 using TApp.Helpers;
 using TApp.Infrastructure;
@@ -22,272 +18,155 @@ using TTManager.Diaglogs;
 
 namespace TApp.Views.Settings
 {
-    public partial class PLCSetting : UIPage
+    #region RecipeManager Class
+    public class RecipeManager
     {
-        // Thêm biến BackgroundWorker
-        private BackgroundWorker bgwSavePLC;
-        private BackgroundWorker bgwSavePLCCS;
-        private BackgroundWorker bgwUpdate;
+        private readonly string _recipeDirectory;
+        private readonly string _logFilePath;
+        private readonly PLC_Parameter _defaultConfig;
 
-        public PLCSetting()
+        public PLC_Parameter CurrentRecipeOnPC { get; private set; }
+        public string SelectedRecipeName { get; private set; }
+
+        public RecipeManager(string directory, PLC_Parameter defaultConfig)
         {
-            InitializeComponent();
-
-            // Khởi tạo BackgroundWorker cho lưu PLC
-            bgwSavePLC = new BackgroundWorker();
-            bgwSavePLC.DoWork += bgwSavePLC_DoWork;
-            bgwSavePLC.RunWorkerCompleted += bgwSavePLC_RunWorkerCompleted;
-
-            //backgroundWorker cập nhật thông số PLC
-            bgwUpdate = new BackgroundWorker();
-            bgwUpdate.WorkerSupportsCancellation = true;
-            bgwUpdate.DoWork += PLC_Comfirm_Async;
+            _recipeDirectory = directory;
+            _logFilePath = Path.Combine(_recipeDirectory, "log.rlplc");
+            _defaultConfig = defaultConfig;
         }
 
-        public string SelectRecipeName = string.Empty;
-        public string log_FilePath = "PLC_RECIPEs/log.rlplc";
-        public string defaultFilePath = "PLC_RECIPEs/Default.rplc";
-        public static PLC_Parameter PLC_Parameter_On_PC { get; set; } = new PLC_Parameter();
-        public static PLC_Parameter PLC_Parameter_On_PLC { get; set; } = new PLC_Parameter();
-
-        public bool isOpen { get; set; } = false;
-        public bool isLoading { get; set; } = false;
-
-        public string SelectRecipeName_CS = string.Empty;
-        public string log_FilePath_CS = "PLC_RECIPEs_CS/log.rlplc";
-        public string defaultFilePath_CS = "PLC_RECIPEs_CS/Default.rplc";
-        public static PLC_Parameter PLC_Parameter_On_PC_CS { get; set; } = new PLC_Parameter();
-        public static PLC_Parameter PLC_Parameter_On_PLC_CS { get; set; } = new PLC_Parameter();
-
-        public void INIT()
+        public void Initialize()
         {
-            isLoading = true;
-            FirstCheck();
-            FirstCheck_CS();
-            omronplC_Hsl1.PLC_IP = AppConfigs.Current.PLC_IP;
-            omronplC_Hsl1.PLC_PORT = AppConfigs.Current.PLC_Port;
-
-            if(AppConfigs.Current.PLC_Test_Mode)
+            if (!Directory.Exists(_recipeDirectory))
             {
-                omronplC_Hsl1.PLC_IP = "127.0.0.1";
-                omronplC_Hsl1.PLC_PORT = 9600;
+                Directory.CreateDirectory(_recipeDirectory);
+            }
+            if (!File.Exists(_logFilePath))
+            {
+                CreateLogTable();
             }
 
-            omronplC_Hsl1.InitPLC();
-            bgwUpdate.RunWorkerAsync();
-
-            isLoading = false;
+            LoadLastSelectedRecipe();
         }
 
-        public void FirstCheck()
+        private void LoadLastSelectedRecipe()
         {
-            PLC_Parameter defaultConfig;
-            defaultConfig = new PLC_Parameter
+            DataTable lastRecipeTable = GetLastActionFromLog("SELECT");
+            if (lastRecipeTable.Rows.Count > 0)
             {
-                DelayCamera = "1000",
-                DelayReject = "2000",
-                RejectStreng = "20",
-            };
+                SelectedRecipeName = lastRecipeTable.Rows[0]["RecipeName"].ToString();
+                string recipePath = Path.Combine(_recipeDirectory, $"{SelectedRecipeName}.rplc");
 
-            if (!Directory.Exists("PLC_RECIPEs"))
-            {
-                Directory.CreateDirectory("PLC_RECIPEs");
-            }
-            if (!File.Exists(log_FilePath))
-            {
-                SQLiteConnection.CreateFile(log_FilePath);
-                CreateLogTable(log_FilePath);
-            }
-            if (!File.Exists(defaultFilePath))
-            {
-                //tạo file json mặc định
-                File.WriteAllText(defaultFilePath, JsonConvert.SerializeObject(defaultConfig, Formatting.Indented));
-               // return;
-            }
-            DataTable datatable = Get_Last_Select_Recipe();
-            
-            if (datatable.Rows.Count >= 1)
-            {
-                SelectRecipeName = datatable.Rows[0]["RecipeName"].ToString();
-                string[] valueR = datatable.Rows[0]["RecipeValue"].ToString().Split(",");
-                defaultConfig = new PLC_Parameter
+                if (File.Exists(recipePath))
                 {
-                    DelayCamera = valueR[0],
-                    DelayReject = valueR[1],
-                    RejectStreng = valueR[2]
-                };
+                    string json = File.ReadAllText(recipePath);
+                    CurrentRecipeOnPC = JsonConvert.DeserializeObject<PLC_Parameter>(json) ?? _defaultConfig;
+                }
+                else
+                {
+                    // If file is missing, revert to default
+                    SelectRecipe("Default", _defaultConfig);
+                }
             }
             else
             {
-                SelectRecipeName = "Default";
-                defaultConfig = new PLC_Parameter
-                {
-                    DelayCamera = "1000",
-                    DelayReject = "2000",
-                    RejectStreng = "20",
-                };
+                SelectRecipe("Default", _defaultConfig);
             }
-            Check_Recipe(SelectRecipeName, defaultConfig);
         }
 
-        public void FirstCheck_CS()
+        public void SelectRecipe(string recipeName, PLC_Parameter config = null)
         {
-            PLC_Parameter defaultConfig_CS;
-            defaultConfig_CS = new PLC_Parameter
+            SelectedRecipeName = recipeName;
+            string recipePath = Path.Combine(_recipeDirectory, $"{recipeName}.rplc");
+
+            if (config != null)
             {
-                DelayCamera = "1000",
-                DelayReject = "2000",
-                RejectStreng = "20",
-            };
-            if (!Directory.Exists("PLC_RECIPEs_CS"))
-            {
-                Directory.CreateDirectory("PLC_RECIPEs_CS");
+                CurrentRecipeOnPC = config;
             }
-            if (!File.Exists(log_FilePath_CS))
+            else if (File.Exists(recipePath))
             {
-                SQLiteConnection.CreateFile(log_FilePath_CS);
-                CreateLogTable(log_FilePath_CS);
-            }
-            if (!File.Exists(defaultFilePath_CS))
-            {
-                //tạo file json mặc định
-                File.WriteAllText(defaultFilePath_CS, JsonConvert.SerializeObject(defaultConfig_CS, Formatting.Indented));
-            }
-            DataTable datatable = Get_Last_Select_Recipe_CS();
-            
-            if (datatable.Rows.Count >= 1)
-            {
-                SelectRecipeName_CS = datatable.Rows[0]["RecipeName"].ToString();
-                string[] valueR = datatable.Rows[0]["RecipeValue"].ToString().Split(",");
-                defaultConfig_CS = new PLC_Parameter
-                {
-                    DelayCamera = valueR[0],
-                    DelayReject = valueR[1],
-                    RejectStreng = valueR[2]
-                };
+                string json = File.ReadAllText(recipePath);
+                CurrentRecipeOnPC = JsonConvert.DeserializeObject<PLC_Parameter>(json);
             }
             else
             {
-                SelectRecipeName_CS = "Default";
-                defaultConfig_CS = new PLC_Parameter
-                {
-                    DelayCamera = "1000",
-                    DelayReject = "2000",
-                    RejectStreng = "20",
-                };
+                CurrentRecipeOnPC = _defaultConfig;
+                SaveRecipe(CurrentRecipeOnPC); // Create the file
             }
 
+            AddLog("SELECT", RecipeToString(CurrentRecipeOnPC), GlobalVarialbles.CurrentUser.Username);
         }
 
-        private void uiTableLayoutPanel1_Paint(object sender, PaintEventArgs e) { }
-
-        public void GetParameterFromPLC()
+        public void SaveRecipe(PLC_Parameter newConfig)
         {
-            OperateResult<int[]> read = omronplC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Delay_Camera_DM_C2"), 3);
-            if (read.IsSuccess)
+            CurrentRecipeOnPC = newConfig;
+            string json = JsonConvert.SerializeObject(newConfig, Formatting.Indented);
+            File.WriteAllText(Path.Combine(_recipeDirectory, $"{SelectedRecipeName}.rplc"), json);
+            AddLog("UPDATE", RecipeToString(newConfig), GlobalVarialbles.CurrentUser.Username);
+        }
+
+        public string CreateNewRecipe(string newRecipeName, PLC_Parameter currentConfig)
+        {
+            string newRecipePath = Path.Combine(_recipeDirectory, $"{newRecipeName}.rplc");
+            if (File.Exists(newRecipePath))
             {
-                PLC_Parameter_On_PLC.DelayCamera = read.Content[0].ToString();
-                PLC_Parameter_On_PLC.DelayReject = read.Content[1].ToString();
-                PLC_Parameter_On_PLC.RejectStreng = read.Content[2].ToString();
+                return "Tên Recipe đã tồn tại, vui lòng chọn tên khác.";
             }
-            else
-            {
-                PLC_Parameter_On_PLC.DelayCamera = "-1";
-                PLC_Parameter_On_PLC.DelayReject = "-1";
-                PLC_Parameter_On_PLC.RejectStreng = "-1";
-            }
+
+            string json = JsonConvert.SerializeObject(currentConfig, Formatting.Indented);
+            File.WriteAllText(newRecipePath, json);
+
+            SelectedRecipeName = newRecipeName;
+            AddLog("CREATE", RecipeToString(currentConfig), GlobalVarialbles.CurrentUser.Username);
+            AddLog("SELECT", RecipeToString(currentConfig), GlobalVarialbles.CurrentUser.Username);
+
+            return null; // Success
         }
 
-        PLC_Parameter defaultConfig = new PLC_Parameter
+        public bool DeleteRecipe(string recipeName)
         {
-            DelayCamera = "1000",
-            DelayReject = "2000",
-            RejectStreng = "20",
-        };
-        public void CreateDefaultRecipeTable()
-        {
-            string json = JsonConvert.SerializeObject(defaultConfig, Formatting.Indented);
-            File.WriteAllText(defaultFilePath, json);
-            SelectRecipeName = "Default";
-            string RecipeValue = $"{defaultConfig.DelayCamera},{defaultConfig.DelayReject},{defaultConfig.RejectStreng}";
-            AddLogRecipe("Default", RecipeValue, "CREATE", "Operator");
-            AddLogRecipe("Default", RecipeValue, "SELECT", "Operator");
-            PLC_Parameter_On_PC = defaultConfig;
+            if (recipeName.Equals("Default", StringComparison.OrdinalIgnoreCase)) return false;
+
+            string filePath = Path.Combine(_recipeDirectory, $"{recipeName}.rplc");
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+                AddLog("DELETE", "N/A", GlobalVarialbles.CurrentUser.Username, recipeName);
+                SelectRecipe("Default");
+                return true;
+            }
+            return false;
         }
-        public void Write_Recipe_To_File(string json)
+
+        private string RecipeToString(PLC_Parameter recipe) => $"{recipe.DelayCamera},{recipe.DelayReject},{recipe.RejectStreng}";
+
+        #region SQLite Helpers
+        private void CreateLogTable()
         {
-            File.WriteAllText($"PLC_RECIPEs/{SelectRecipeName}.rplc", json);
-            AddLogRecipe(SelectRecipeName, json, "UPDATE", "Operator");
-        }
-        public void CreateLogTable(string Camera_Folder)
-        {
-            using (var conn = new SQLiteConnection($"Data Source={Camera_Folder};Version=3;"))
+            using (var conn = new SQLiteConnection($"Data Source={_logFilePath};Version=3;"))
             {
                 conn.Open();
-                string createTableQuery = @"CREATE TABLE ""Log"" (
-                                             ""ID""	INTEGER NOT NULL UNIQUE,
-                                             ""RecipeName""	TEXT,
-                                                ""RecipeValue""	TEXT,
-                                             ""Action""	TEXT,
-                                             ""Timestamp""	TEXT,
-                                             ""UserName""	TEXT,
-                                             PRIMARY KEY(""ID"" AUTOINCREMENT)
-                                                )";
+                const string createTableQuery = @"CREATE TABLE ""Log"" (
+                    ""ID"" INTEGER NOT NULL UNIQUE,
+                    ""RecipeName"" TEXT, ""RecipeValue"" TEXT, ""Action"" TEXT,
+                    ""Timestamp"" TEXT, ""UserName"" TEXT, PRIMARY KEY(""ID"" AUTOINCREMENT))";
                 using (var cmd = new SQLiteCommand(createTableQuery, conn))
                 {
                     cmd.ExecuteNonQuery();
                 }
             }
         }
-        public void Check_Recipe(string recipeName, PLC_Parameter configs)
+
+        private void AddLog(string action, string recipeValue, string userName, string recipeName = null)
         {
-            string[] files = Directory.GetFiles("PLC_RECIPEs", "*.rplc");
-            if (files.Length == 0)
-            {
-                string json = JsonConvert.SerializeObject(defaultConfig, Formatting.Indented);
-                File.WriteAllText($"PLC_RECIPEs/{SelectRecipeName}.rplc", json);
-                AddLogRecipe(SelectRecipeName, $"{defaultConfig.DelayCamera},{defaultConfig.DelayReject},{defaultConfig.RejectStreng}", "CREATE", "Operator");
-                AddLogRecipe(SelectRecipeName, $"{defaultConfig.DelayCamera},{defaultConfig.DelayReject},{defaultConfig.RejectStreng}", "SELECT", "Operator");
-                PLC_Parameter_On_PC = defaultConfig;
-            }
-            else
-            {
-                bool fileExists = files.Any(file => Path.GetFileName(file).Equals(SelectRecipeName, StringComparison.OrdinalIgnoreCase));
-                if (!fileExists)
-                {
-                    string json = JsonConvert.SerializeObject(defaultConfig, Formatting.Indented);
-                    File.WriteAllText($"PLC_RECIPEs/{SelectRecipeName}.rplc", json);
-                    AddLogRecipe(SelectRecipeName, $"{defaultConfig.DelayCamera},{defaultConfig.DelayReject},{defaultConfig.RejectStreng}", "CREATE", "Operator");
-                    AddLogRecipe(SelectRecipeName, $"{defaultConfig.DelayCamera},{defaultConfig.DelayReject},{defaultConfig.RejectStreng}", "SELECT", "Operator");
-                    PLC_Parameter_On_PC = defaultConfig;
-                }
-                else
-                {
-                    string jsonContent = File.ReadAllText($"PLC_RECIPEs/{SelectRecipeName}.rplc");
-                    PLC_Parameter_On_PC = JsonConvert.DeserializeObject<PLC_Parameter>(jsonContent);
-                }
-            }
-            this.InvokeIfRequired(() =>
-            {
-                ipDelayTriger.Text = PLC_Parameter_On_PC.DelayCamera;
-                ipDelayReject.Text = PLC_Parameter_On_PC.DelayReject;
-                ipRejectStreng.Text = PLC_Parameter_On_PC.RejectStreng;
-            });
-        }
-        public void AddLogRecipe(string recipeName, string recipeValue, string action, string userName)
-        {
-            //kiểm tra file log tồn tại chưa nếu chưa tạo mới
-
-
-
-            using (var conn = new SQLiteConnection($"Data Source={log_FilePath};Version=3;"))
+            using (var conn = new SQLiteConnection($"Data Source={_logFilePath};Version=3;"))
             {
                 conn.Open();
-                string insertQuery = @"INSERT INTO Log (RecipeName, RecipeValue, Action, Timestamp, UserName) 
-                                       VALUES (@RecipeName, @RecipeValue, @Action, @Timestamp, @UserName)";
+                const string insertQuery = @"INSERT INTO Log (RecipeName, RecipeValue, Action, Timestamp, UserName) 
+                                             VALUES (@RecipeName, @RecipeValue, @Action, @Timestamp, @UserName)";
                 using (var cmd = new SQLiteCommand(insertQuery, conn))
                 {
-                    cmd.Parameters.AddWithValue("@RecipeName", recipeName);
+                    cmd.Parameters.AddWithValue("@RecipeName", recipeName ?? SelectedRecipeName);
                     cmd.Parameters.AddWithValue("@RecipeValue", recipeValue);
                     cmd.Parameters.AddWithValue("@Action", action);
                     cmd.Parameters.AddWithValue("@Timestamp", DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss"));
@@ -296,89 +175,244 @@ namespace TApp.Views.Settings
                 }
             }
         }
-        public DataTable Get_Last_Select_Recipe()
+
+        private DataTable GetLastActionFromLog(string action)
         {
-            using (SQLiteConnection connection = new SQLiteConnection($"Data Source=PLC_RECIPEs/log.rlplc;Version=3;"))
+            using (var connection = new SQLiteConnection($"Data Source={_logFilePath};Version=3;"))
             {
                 connection.Open();
-                string query = $"SELECT * FROM Log WHERE Action = 'SELECT' ORDER BY `ID` DESC LIMIT 1;";
-                using (SQLiteCommand command = new SQLiteCommand(query, connection))
+                string query = $"SELECT * FROM Log WHERE Action = @Action ORDER BY `ID` DESC LIMIT 1;";
+                using (var command = new SQLiteCommand(query, connection))
                 {
-                    using (SQLiteDataAdapter da = new SQLiteDataAdapter(command))
+                    command.Parameters.AddWithValue("@Action", action);
+                    using (var da = new SQLiteDataAdapter(command))
                     {
-                        DataTable dt = new DataTable();
+                        var dt = new DataTable();
                         da.Fill(dt);
                         return dt;
                     }
                 }
             }
         }
+        #endregion
+    }
 
+    public class PLC_Parameter
+    {
+        public string DelayCamera { get; set; } = "0";
+        public string DelayReject { get; set; } = "0";
+        public string RejectStreng { get; set; } = "0";
+    }
+    #endregion
 
-        public class PLC_Parameter
+    public partial class PLCSetting : UIPage
+    {
+        #region Fields & Properties
+        private RecipeManager _recipeManager;
+        private BackgroundWorker _bgwSavePLC;
+        private BackgroundWorker _bgwUpdatePLCValues;
+        private BackgroundWorker _bgwCustomRead;
+        private BackgroundWorker _bgwCustomWrite;
+
+        public bool IsPageOpen { get; set; } = false;
+        private bool _isLoading = false;
+
+        public static PLC_Parameter PLC_Parameter_On_PLC { get; set; } = new PLC_Parameter();
+        #endregion
+
+        #region Constructor & Page Initialization
+        public PLCSetting()
         {
-            public string DelayCamera { get; set; } = "0";
-            public string DelayReject { get; set; } = "0";
-            public string RejectStreng { get; set; } = "0";
+            InitializeComponent();
+            InitializeBackgroundWorkers();
+        }
+
+        public void INIT()
+        {
+            _isLoading = true;
+
+            var defaultConfig = new PLC_Parameter { DelayCamera = "1000", DelayReject = "2000", RejectStreng = "20" };
+            _recipeManager = new RecipeManager("PLC_RECIPEs", defaultConfig);
+            _recipeManager.Initialize();
+
+            omronplC_Hsl1.PLC_IP = AppConfigs.Current.PLC_Test_Mode ? "127.0.0.1" : AppConfigs.Current.PLC_IP;
+            omronplC_Hsl1.PLC_PORT = AppConfigs.Current.PLC_Test_Mode ? 9600 : AppConfigs.Current.PLC_Port;
+            omronplC_Hsl1.InitPLC();
+
+            UpdateUIFromRecipe(_recipeManager.CurrentRecipeOnPC);
+            LoadRecipeList();
+
+            if (!_bgwUpdatePLCValues.IsBusy)
+            {
+                _bgwUpdatePLCValues.RunWorkerAsync();
+            }
+
+            _isLoading = false;
+        }
+
+        private void InitializeBackgroundWorkers()
+        {
+            _bgwSavePLC = new BackgroundWorker();
+            _bgwSavePLC.DoWork += bgwSavePLC_DoWork;
+            _bgwSavePLC.RunWorkerCompleted += bgwSavePLC_RunWorkerCompleted;
+
+            _bgwUpdatePLCValues = new BackgroundWorker { WorkerSupportsCancellation = true };
+            _bgwUpdatePLCValues.DoWork += bgwUpdatePLCValues_DoWork;
+
+            _bgwCustomRead = new BackgroundWorker();
+            _bgwCustomRead.DoWork += bgwCustomRead_DoWork;
+
+            _bgwCustomWrite = new BackgroundWorker();
+            _bgwCustomWrite.DoWork += bgwCustomWrite_DoWork;
         }
 
         private void PLCSetting_Initialize(object sender, EventArgs e)
         {
-            isOpen = true;
-            Uri uri = new Uri($"http://{AppConfigs.Current.Camera_01_IP}/monitor");
-            Uri uri1 = new Uri($"https://google.com");
-            webView21.Source = uri;
-
-            // Ghi log mở trang cài đặt PLC
-            GlobalVarialbles.Logger?.WriteLogAsync(
-                GlobalVarialbles.CurrentUser.Username,
-                e_LogType.UserAction,
-                "Mở trang cài đặt PLC",
-                "",
-                "UA-PLCSETTING-01"
-            );
+            IsPageOpen = true;
+            webView21.Source = new Uri($"http://{AppConfigs.Current.Camera_01_IP}/monitor");
+            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Mở trang cài đặt PLC", "", "UA-PLCSETTING-01");
         }
+
         private void PLCSetting_Finalize(object sender, EventArgs e)
         {
-            isOpen = false;
-            webView21.Source = new Uri("https://google.com");
+            IsPageOpen = false;
+            webView21.Source = new Uri("about:blank");
         }
 
+        private void LoadRecipeList()
+        {
+            ipRecipe.Items.Clear();
+            string[] files = Directory.GetFiles("PLC_RECIPEs", "*.rplc");
+            foreach (var file in files)
+            {
+                ipRecipe.Items.Add(Path.GetFileNameWithoutExtension(file));
+            }
+            ipRecipe.SelectedItem = _recipeManager.SelectedRecipeName;
+        }
+        #endregion
+
+        #region Recipe Management UI
         private void ipRecipe_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (ipRecipe.SelectedText.Length > 3)
-            {
-                SelectRecipeName = ipRecipe.SelectedText;
-                string jsonContent = File.ReadAllText($"PLC_RECIPEs/{SelectRecipeName}.rplc");
-                PLC_Parameter az = JsonConvert.DeserializeObject<PLC_Parameter>(jsonContent);
-                ipDelayTriger.Text = az.DelayCamera;
-                ipDelayReject.Text = az.DelayReject;
-                ipRejectStreng.Text = az.RejectStreng;
-            }
-            if (isLoading)
-                return;
+            if (_isLoading || ipRecipe.SelectedItem == null) return;
+
+            string selectedName = ipRecipe.SelectedItem.ToString();
+            _recipeManager.SelectRecipe(selectedName);
+            UpdateUIFromRecipe(_recipeManager.CurrentRecipeOnPC);
         }
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            if (!bgwSavePLC.IsBusy)
-                bgwSavePLC.RunWorkerAsync();
+            if (_bgwSavePLC.IsBusy) return;
+
+            var newConfig = new PLC_Parameter
+            {
+                DelayCamera = ipDelayTriger.Text,
+                DelayReject = ipDelayReject.Text,
+                RejectStreng = ipRejectStreng.Text
+            };
+            _bgwSavePLC.RunWorkerAsync(newConfig);
+        }
+
+        private void btnUndo_Click(object sender, EventArgs e)
+        {
+            UpdateUIFromRecipe(_recipeManager.CurrentRecipeOnPC);
+        }
+
+        private void btnNewRecipe_Click(object sender, EventArgs e)
+        {
+            using (var enterText = new Entertext { TileText = "Nhập tên Recipe", TextValue = "New Recipe" })
+            {
+                if (enterText.ShowDialog() == DialogResult.OK)
+                {
+                    string newName = enterText.TextValue;
+                    var currentConfig = new PLC_Parameter { DelayCamera = ipDelayTriger.Text, DelayReject = ipDelayReject.Text, RejectStreng = ipRejectStreng.Text };
+                    string errorMessage = _recipeManager.CreateNewRecipe(newName, currentConfig);
+
+                    if (errorMessage != null)
+                    {
+                        this.ShowErrorDialog(errorMessage);
+                    }
+                    else
+                    {
+                        LoadRecipeList();
+                        this.ShowSuccessDialog($"Đã tạo Recipe mới: {newName}");
+                    }
+                }
+            }
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            string selectedRecipe = ipRecipe.SelectedItem?.ToString();
+            if (string.IsNullOrEmpty(selectedRecipe)) return;
+
+            if (_recipeManager.DeleteRecipe(selectedRecipe))
+            {
+                LoadRecipeList();
+                UpdateUIFromRecipe(_recipeManager.CurrentRecipeOnPC);
+                this.ShowSuccessDialog($"Đã xóa Recipe: {selectedRecipe}");
+            }
+            else
+            {
+                this.ShowErrorDialog("Không thể xóa Recipe mặc định.");
+            }
+        }
+
+        private void UpdateUIFromRecipe(PLC_Parameter recipe)
+        {
+            ipDelayTriger.Text = recipe.DelayCamera;
+            ipDelayReject.Text = recipe.DelayReject;
+            ipRejectStreng.Text = recipe.RejectStreng;
+        }
+        #endregion
+
+        #region PLC Communication
+        private void GetParameterFromPLC()
+        {
+            OperateResult<int[]> read = omronplC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Delay_Camera_DM_C2"), 3);
+            if (read.IsSuccess)
+            {
+                PLC_Parameter_On_PLC = new PLC_Parameter
+                {
+                    DelayCamera = read.Content[0].ToString(),
+                    DelayReject = read.Content[1].ToString(),
+                    RejectStreng = read.Content[2].ToString()
+                };
+            }
+            else
+            {
+                PLC_Parameter_On_PLC = new PLC_Parameter { DelayCamera = "-1", DelayReject = "-1", RejectStreng = "-1" };
+            }
+        }
+
+        private void bgwUpdatePLCValues_DoWork(object sender, DoWorkEventArgs e)
+        {
+            while (!_bgwUpdatePLCValues.CancellationPending)
+            {
+                if (IsPageOpen)
+                {
+                    GetParameterFromPLC();
+                    this.InvokeIfRequired(() =>
+                    {
+                        opDelayTriger.Text = PLC_Parameter_On_PLC.DelayCamera;
+                        opDelayReject.Text = PLC_Parameter_On_PLC.DelayReject;
+                        opRejectStreng.Text = PLC_Parameter_On_PLC.RejectStreng;
+                    });
+                }
+                Thread.Sleep(500);
+            }
         }
 
         private void bgwSavePLC_DoWork(object sender, DoWorkEventArgs e)
         {
             try
             {
-                string delayCamera = ipDelayTriger.Text;
-                string delayReject = ipDelayReject.Text;
-                string rejectStreng = ipRejectStreng.Text;
-                PLC_Parameter_On_PC.DelayCamera = delayCamera;
-                PLC_Parameter_On_PC.DelayReject = delayReject;
-                PLC_Parameter_On_PC.RejectStreng = rejectStreng;
-                string json = JsonConvert.SerializeObject(PLC_Parameter_On_PC, Formatting.Indented);
-                Write_Recipe_To_File(json);
-                OperateResult operateResult = omronplC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Delay_Camera_DM_C2"), new int[] { int.Parse(delayCamera), int.Parse(delayReject), int.Parse(rejectStreng) });
-                e.Result = operateResult;
+                var plcParams = e.Argument as PLC_Parameter;
+                _recipeManager.SaveRecipe(plcParams);
+                var values = new int[] { int.Parse(plcParams.DelayCamera), int.Parse(plcParams.DelayReject), int.Parse(plcParams.RejectStreng) };
+                OperateResult writeResult = omronplC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Delay_Camera_DM_C2"), values);
+                e.Result = new Tuple<OperateResult, PLC_Parameter>(writeResult, plcParams);
             }
             catch (Exception ex)
             {
@@ -388,284 +422,95 @@ namespace TApp.Views.Settings
 
         private void bgwSavePLC_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            if (e.Result is OperateResult operateResult)
-            {
-                if (!operateResult.IsSuccess)
-                {
-                    this.ShowErrorDialog($"Lỗi khi ghi vào PLC: {operateResult.Message}");
-                    GlobalVarialbles.Logger?.WriteLogAsync(
-                        GlobalVarialbles.CurrentUser.Username,
-                        e_LogType.Error,
-                        "Lỗi lưu cài đặt PLC",
-                        operateResult.Message,
-                        "ERR-PLCSETTING-01"
-                    );
-                }
-                else
-                {
-                    this.ShowSuccessDialog("Cập nhật thành công!");
-                    GlobalVarialbles.Logger?.WriteLogAsync(
-                        GlobalVarialbles.CurrentUser.Username,
-                        e_LogType.UserAction,
-                        "Lưu cài đặt PLC thành công",
-                        $"{{'DelayCamera':'{PLC_Parameter_On_PC.DelayCamera}','DelayReject':'{PLC_Parameter_On_PC.DelayReject}','RejectStreng':'{PLC_Parameter_On_PC.RejectStreng}'}}",
-                        "UA-PLCSETTING-02"
-                    );
-                }
-            }
-            else if (e.Result is Exception ex)
+            if (e.Result is Exception ex)
             {
                 this.ShowErrorDialog($"Lỗi khi cập nhật: {ex.Message}");
-                GlobalVarialbles.Logger?.WriteLogAsync(
-                    GlobalVarialbles.CurrentUser.Username,
-                    e_LogType.Error,
-                    "Lỗi cập nhật PLC",
-                    ex.Message,
-                    "ERR-PLCSETTING-02"
-                );
-            }
-        }
-
-        private void btnUndo_Click(object sender, EventArgs e)
-        {
-            ipDelayReject.Text = PLC_Parameter_On_PLC.DelayReject;
-            ipDelayTriger.Text = PLC_Parameter_On_PLC.DelayCamera;
-            ipRejectStreng.Text = PLC_Parameter_On_PLC.RejectStreng;
-        }
-
-        private void btnNewRecipe_Click(object sender, EventArgs e)
-        {
-            using (Entertext enterText = new Entertext())
-            {
-                enterText.TileText = "Nhập tên Recipe";
-                enterText.TextValue = "New Recipe";
-                enterText.EnterClicked += (s, args) =>
-                {
-                    if (File.Exists($"PLC_RECIPEs/{enterText.TextValue}.rplc"))
-                    {
-                        this.ShowErrorDialog("Tên Recipe đã tồn tại, vui lòng chọn tên khác.");
-                        return;
-                    }
-                    PLC_Parameter newRecipe = new PLC_Parameter
-                    {
-                        DelayCamera = PLC_Parameter_On_PC.DelayCamera,
-                        DelayReject = PLC_Parameter_On_PC.DelayReject,
-                        RejectStreng = PLC_Parameter_On_PC.RejectStreng
-                    };
-                    string json = JsonConvert.SerializeObject(newRecipe, Formatting.Indented);
-                    File.WriteAllText($"PLC_RECIPEs/{enterText.TextValue}.rplc", json);
-                    AddLogRecipe(enterText.TextValue , $"{newRecipe.DelayCamera},{newRecipe.DelayReject},{newRecipe.RejectStreng}", "CREATE", GlobalVarialbles.CurrentUser.Username);
-                    AddLogRecipe(enterText.TextValue, $"{newRecipe.DelayCamera},{newRecipe.DelayReject},{newRecipe.RejectStreng}", "SELECT", GlobalVarialbles.CurrentUser.Username);
-                    ipRecipe.Items.Add(enterText.TextValue);
-                    SelectRecipeName = enterText.TextValue;
-                    ipRecipe.SelectedItem = SelectRecipeName;
-                    this.ShowSuccessDialog($"Đã tạo Recipe mới: {enterText.TextValue}");
-                };
-                enterText.ShowDialog();
-            }
-        }
-
-        private void btnDelete_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrEmpty(SelectRecipeName) || SelectRecipeName == "Default")
-            {
-                this.ShowErrorDialog("Không thể xóa Recipe mặc định.");
+                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi cập nhật PLC", ex.Message, "ERR-PLCSETTING-02");
                 return;
             }
-            string filePath = $"PLC_RECIPEs/{SelectRecipeName}.rplc";
-            if (File.Exists(filePath))
+
+            var resultTuple = (Tuple<OperateResult, PLC_Parameter>)e.Result;
+            OperateResult operateResult = resultTuple.Item1;
+            PLC_Parameter savedParams = resultTuple.Item2;
+
+            if (operateResult.IsSuccess)
             {
-                try
-                {
-                    File.Delete(filePath);
-                    ipRecipe.Items.Remove(SelectRecipeName);
-                    SelectRecipeName = "Default";
-                    ipRecipe.SelectedItem = SelectRecipeName;
-                    PLC_Parameter_On_PC.DelayCamera = defaultConfig.DelayCamera;
-                    PLC_Parameter_On_PC.DelayReject = defaultConfig.DelayReject;
-                    PLC_Parameter_On_PC.RejectStreng = defaultConfig.DelayReject;
-                    AddLogRecipe(SelectRecipeName, "N/A", "DELETE", GlobalVarialbles.CurrentUser.Username);
-                    this.ShowSuccessDialog($"Đã xóa Recipe: {SelectRecipeName}");
-                }
-                catch (Exception ex)
-                {
-                    this.ShowErrorDialog($"Lỗi khi xóa Recipe: {ex.Message}");
-                }
+                this.ShowSuccessDialog("Cập nhật thành công!");
+                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Lưu cài đặt PLC thành công",
+                    $"{{'DelayCamera':'{savedParams.DelayCamera}','DelayReject':'{savedParams.DelayReject}','RejectStreng':'{savedParams.RejectStreng}'}}", "UA-PLCSETTING-02");
             }
             else
             {
-                this.ShowErrorDialog("Recipe không tồn tại.");
+                this.ShowErrorDialog($"Lỗi khi ghi vào PLC: {operateResult.Message}");
+                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi lưu cài đặt PLC", operateResult.Message, "ERR-PLCSETTING-01");
             }
         }
+        #endregion
 
-        PLC_Parameter defaultConfig_CS = new PLC_Parameter
+        #region Custom PLC R/W
+        private void uiSymbolButton1_Click(object sender, EventArgs e) // Read
         {
-            DelayCamera = "1000",
-            DelayReject = "2000",
-            RejectStreng = "20",
-        };
-        public void CreateDefaultRecipeTable_CS()
-        {
-            string json = JsonConvert.SerializeObject(defaultConfig_CS, Formatting.Indented);
-            File.WriteAllText(defaultFilePath_CS, json);
-            SelectRecipeName_CS = "Default";
-            string RecipeValue = $"{defaultConfig_CS.DelayCamera},{defaultConfig_CS.DelayReject},{defaultConfig_CS.RejectStreng}";
-            AddLogRecipe("Default", RecipeValue, "CREATE", "Operator");
-            AddLogRecipe("Default", RecipeValue, "SELECT", "Operator");
-            PLC_Parameter_On_PC_CS = defaultConfig_CS;
-        }
-
-        public DataTable Get_Last_Select_Recipe_CS()
-        {
-            using (SQLiteConnection connection = new SQLiteConnection($"Data Source=PLC_RECIPEs_CS/log.rlplc;Version=3;"))
+            if (_bgwCustomRead.IsBusy)
             {
-                connection.Open();
-                string query = $"SELECT * FROM Log WHERE Action = 'SELECT' ORDER BY `ID` DESC LIMIT 1;";
-                using (SQLiteCommand command = new SQLiteCommand(query, connection))
-                {
-                    using (SQLiteDataAdapter da = new SQLiteDataAdapter(command))
-                    {
-                        DataTable dt = new DataTable();
-                        da.Fill(dt);
-                        return dt;
-                    }
-                }
+                this.ShowWarningTip("Đang đọc dữ liệu, vui lòng chờ!");
+                return;
             }
+            _bgwCustomRead.RunWorkerAsync();
         }
 
-
-
-
-        private void PLC_Comfirm_Async(object sender, DoWorkEventArgs e)
+        private void uiSymbolButton2_Click(object sender, EventArgs e) // Write
         {
-
-            while (!bgwUpdate.CancellationPending)
+            if (_bgwCustomWrite.IsBusy)
             {
-                if (isOpen)
-                {
-
-                    GetParameterFromPLC();
-                    this.InvokeIfRequired(() =>
-                    {
-
-                        opDelayTriger.Text = PLC_Parameter_On_PLC.DelayCamera;
-                        opDelayReject.Text = PLC_Parameter_On_PLC.DelayReject;
-                        opRejectStreng.Text = PLC_Parameter_On_PLC.RejectStreng;
-                    });
-                }
-                Thread.Sleep(500); // Cập nhật mỗi 0.5 giây
+                this.ShowWarningTip("Đang ghi dữ liệu, vui lòng chờ!");
+                return;
             }
-
+            _bgwCustomWrite.RunWorkerAsync();
         }
 
-        private void uiSymbolButton1_Click(object sender, EventArgs e)
+        private OmronFinsUdp CreateCustomPlcClient()
         {
-            if(!backgroundWorker1.IsBusy)
+            return new OmronFinsUdp
             {
-                backgroundWorker1.RunWorkerAsync();
-            }
-            else
-            {
-                this.ShowErrorDialog("Đang đọc dữ liệu, vui lòng chờ!");
-            }
-
-
+                CommunicationPipe = new HslCommunication.Core.Pipe.PipeUdpNet(ipCPLCIP.Text, ipCPLPort.Text.ToInt()) { ReceiveTimeOut = 5000 },
+                PlcType = HslCommunication.Profinet.Omron.OmronPlcType.CSCJ,
+                SA1 = 1, GCT = 2, DA1 = 0, SID = 0,
+                ByteTransform = { DataFormat = HslCommunication.Core.DataFormat.CDAB, IsStringReverseByteWord = true }
+            };
         }
 
-        private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        private void bgwCustomRead_DoWork(object sender, DoWorkEventArgs e)
         {
             try
             {
-                HslCommunication.Profinet.Omron.OmronFinsUdp plc = new HslCommunication.Profinet.Omron.OmronFinsUdp();
-                plc.CommunicationPipe = new HslCommunication.Core.Pipe.PipeUdpNet(ipCPLCIP.Text, ipCPLPort.Text.ToInt())
+                using (var plc = CreateCustomPlcClient())
                 {
-                    ReceiveTimeOut = 10000,
-                    SleepTime = 0,
-                    SocketKeepAliveTime = -1,
-                    IsPersistentConnection = true,
-                };
-                plc.PlcType = HslCommunication.Profinet.Omron.OmronPlcType.CSCJ;
-                plc.SA1 = 1;
-                plc.GCT = 2;
-                plc.DA1 = 0;
-                plc.SID = 0;
-                plc.ByteTransform.DataFormat = HslCommunication.Core.DataFormat.CDAB;
-                plc.ByteTransform.IsStringReverseByteWord = true;
-                OperateResult<int> read = plc.ReadInt32(uiNumPadTextBox5.Text);
-                if (read.IsSuccess)
-                {
-                    opValueCus.Text = read.Content.ToString();
-                }
-                else
-                {
-                    opValueCus.Text = "Lỗi";
+                    OperateResult<int> read = plc.ReadInt32(uiNumPadTextBox5.Text);
+                    this.InvokeIfRequired(() => opValueCus.Text = read.IsSuccess ? read.Content.ToString() : "Lỗi đọc");
                 }
             }
             catch (Exception ex)
             {
                 this.ShowErrorDialog($"Lỗi khi kết nối PLC: {ex.Message}");
-
             }
         }
 
-        private void uiSymbolButton2_Click(object sender, EventArgs e)
-        {
-            if (!backgroundWorker2.IsBusy)
-            {
-                backgroundWorker2.RunWorkerAsync();
-            }
-            else
-            {
-                this.ShowErrorDialog("Đang ghi dữ liệu, vui lòng chờ!");
-            }
-        }
-
-        private void backgroundWorker2_DoWork(object sender, DoWorkEventArgs e)
+        private void bgwCustomWrite_DoWork(object sender, DoWorkEventArgs e)
         {
             try
             {
-                HslCommunication.Profinet.Omron.OmronFinsUdp plc = new HslCommunication.Profinet.Omron.OmronFinsUdp();
-                plc.CommunicationPipe = new HslCommunication.Core.Pipe.PipeUdpNet(ipCPLCIP.Text, ipCPLPort.Text.ToInt())
+                using (var plc = CreateCustomPlcClient())
                 {
-                    ReceiveTimeOut = 10000,
-                    SleepTime = 0,
-                    SocketKeepAliveTime = -1,
-                    IsPersistentConnection = true,
-                };
-                plc.PlcType = HslCommunication.Profinet.Omron.OmronPlcType.CSCJ;
-                plc.SA1 = 1;
-                plc.GCT = 2;
-                plc.DA1 = 0;
-                plc.SID = 0;
-                plc.ByteTransform.DataFormat = HslCommunication.Core.DataFormat.CDAB;
-                plc.ByteTransform.IsStringReverseByteWord = true;
-
-
-                OperateResult write = plc.Write(uiNumPadTextBox5.Text, int.Parse(ipValueCust.Text));
-                if (write.IsSuccess)
-                {
-
-                }
-                else
-                {
-
-                }
-
-                OperateResult<int> read = plc.ReadInt32(uiNumPadTextBox5.Text);
-                if (read.IsSuccess)
-                {
-                    opValueCus.Text = read.Content.ToString();
-                }
-                else
-                {
-                    opValueCus.Text = "Lỗi";
+                    plc.Write(uiNumPadTextBox5.Text, int.Parse(ipValueCust.Text));
+                    OperateResult<int> read = plc.ReadInt32(uiNumPadTextBox5.Text);
+                    this.InvokeIfRequired(() => opValueCus.Text = read.IsSuccess ? read.Content.ToString() : "Lỗi đọc sau ghi");
                 }
             }
             catch (Exception ex)
             {
                 this.ShowErrorDialog($"Lỗi khi kết nối PLC: {ex.Message}");
-
             }
         }
+        #endregion
     }
 }
