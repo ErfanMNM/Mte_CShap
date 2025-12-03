@@ -247,7 +247,7 @@ namespace TApp.Helpers
                     con.Open();
 
                     string sql = @"
-                SELECT ID, BatchCode, QRContent, UserName, TimeStampActive, TimeUnixActive
+                SELECT *
                 FROM ActiveUniqueQR
                 WHERE TimeUnixActive > @u
                 ORDER BY TimeUnixActive ASC;

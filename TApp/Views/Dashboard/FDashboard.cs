@@ -485,7 +485,7 @@ namespace TApp.Views.Dashboard
                 {
                     btnChangeBatch.Enabled = true;
                     btnChangeBatch.Text = "Đổi lô";
-                    this.ShowErrorDialog("Tải xuống ERP thất bại, HÃY CHỤP LẠI THÔNG BÁO NÀY. Vui lòng nhấn vào mục Kiểm tra-> chọn mục B09 -> Nhấn bắt đầu và đợi một lát. Nếu A01 báo thành công nhưng hiện trống, vui lòng kiểm tra Tên line, Tên nhà máy, Tên xưởng đã đúng chưa? Nếu đã đúng hãy liên hệ người quản lý ERP hoặc IT nhà máy");
+                    this.ShowErrorDialog("Tải xuống ERP thất bại, HÃY CHỤP LẠI THÔNG BÁO NÀY. Làm theo hướng dẫn sau: Bước 1: Nhấn vào bảng Chức Năng -> Nhấn nút kiểm tra ERP -> Nhấp đúp vào thông báo -> Chụp lại -> Gửi cho kỹ thuật viên phụ trách");
                     GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", $"{{'Thông tin lỗi':'{loadErpResult}'}}", "ERP-F-01");
                 }
             }
