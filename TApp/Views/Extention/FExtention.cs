@@ -11,6 +11,8 @@ using TApp.Infrastructure;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
 using System.Threading;
+using TApp.Utils;
+using TTManager.Masan;
 
 namespace TApp.Views.Extention
 {
@@ -131,7 +133,7 @@ namespace TApp.Views.Extention
 
                     if (dataToBackup == null)
                     {
-                        LogBackupResult("null", "0", timeStartUpload, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), lastUnix, errorMessage);
+                        //LogBackupResult("null", "0", timeStartUpload, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), lastUnix, errorMessage);
                         continue;
                     }
 
