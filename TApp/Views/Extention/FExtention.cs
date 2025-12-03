@@ -251,7 +251,7 @@ namespace TApp.Views.Extention
                 // Commented out actual cloud upload logic as it requires Google Cloud credentials
                 // and should be handled securely.
                 // Example of what would be here:
-                /*
+                
                 GoogleCredential credential = GoogleCredential.FromFile(AppConfigs.Current.credentialERPPath);
                 StorageClient storage = StorageClient.Create(credential);
                 fileStream = File.OpenRead(filePath);
@@ -260,7 +260,7 @@ namespace TApp.Views.Extention
                 fileStream.Close();
                 fileStream.Dispose();
                 fileStream = null;
-                */
+                
 
                 LogConsoleMessage($"[THÀNH CÔNG] Tải lên cloud thành công: {csvFileName} ({rowCount} bản ghi)");
                 return true;
