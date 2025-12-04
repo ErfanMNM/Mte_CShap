@@ -40,13 +40,13 @@
             uiPanel3 = new Sunny.UI.UIPanel();
             NavMenu = new Sunny.UI.UINavMenu();
             opUser = new Sunny.UI.UISymbolLabel();
+            btnHome = new Sunny.UI.UISymbolButton();
             headNav = new Sunny.UI.UINavBar();
             uiPanel2 = new Sunny.UI.UIPanel();
             uiPanel1 = new Sunny.UI.UIPanel();
             uiImageButton1 = new Sunny.UI.UIImageButton();
             WK1 = new System.ComponentModel.BackgroundWorker();
             clock = new System.ComponentModel.BackgroundWorker();
-            btnHome = new Sunny.UI.UISymbolButton();
             uiTableLayoutPanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
             uiTableLayoutPanel3.SuspendLayout();
@@ -244,6 +244,20 @@
             opUser.TabIndex = 3;
             opUser.Text = "Admin";
             // 
+            // btnHome
+            // 
+            btnHome.Dock = DockStyle.Fill;
+            btnHome.Font = new Font("Microsoft Sans Serif", 12F);
+            btnHome.Location = new Point(3, 593);
+            btnHome.MinimumSize = new Size(1, 1);
+            btnHome.Name = "btnHome";
+            btnHome.Size = new Size(144, 42);
+            btnHome.Symbol = 61461;
+            btnHome.TabIndex = 5;
+            btnHome.Text = "Về Trang Chủ";
+            btnHome.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnHome.Click += btnHome_Click;
+            // 
             // headNav
             // 
             headNav.BackColor = Color.LightSteelBlue;
@@ -319,20 +333,6 @@
             // 
             clock.WorkerSupportsCancellation = true;
             clock.DoWork += clock_DoWork;
-            // 
-            // btnHome
-            // 
-            btnHome.Dock = DockStyle.Fill;
-            btnHome.Font = new Font("Microsoft Sans Serif", 12F);
-            btnHome.Location = new Point(3, 593);
-            btnHome.MinimumSize = new Size(1, 1);
-            btnHome.Name = "btnHome";
-            btnHome.Size = new Size(144, 42);
-            btnHome.Symbol = 61461;
-            btnHome.TabIndex = 5;
-            btnHome.Text = "Về Trang Chủ";
-            btnHome.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            btnHome.Click += btnHome_Click;
             // 
             // MainForm
             // 
