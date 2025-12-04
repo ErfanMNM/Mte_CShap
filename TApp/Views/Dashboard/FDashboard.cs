@@ -20,10 +20,15 @@ namespace TApp.Views.Dashboard
         private PLCStatus _plcStatus = PLCStatus.Disconnect;
         private bool _batchChangeMode = false;
         private int _blinkAlarm = 0;
+        private bool _lastDeactiveState = false;
         #endregion
 
         #region Events
         public event Action<int> ChangePage;
+        /// <summary>
+        /// Event được gọi khi trạng thái DEACTIVE từ PLC thay đổi.
+        /// </summary>
+        public event Action<bool> DeactiveStateChanged;
         #endregion
 
         #region Constructor & Page Load
@@ -49,6 +54,77 @@ namespace TApp.Views.Dashboard
         {
             OperateResult write = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Reject_DM"), (short)rs);
             return write.IsSuccess;
+        }
+
+        /// <summary>
+        /// Kiểm tra trạng thái DEACTIVE từ PLC khi khởi động.
+        /// </summary>
+        public bool CheckDeactiveStateOnStartup()
+        {
+            try
+            {
+                if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
+                {
+                    GlobalVarialbles.Logger?.WriteLogAsync("System", e_LogType.Warning, "PLC chưa kết nối, không thể kiểm tra trạng thái DEACTIVE", "", "WARN-FDASH-DEACTIVE-01");
+                    return false;
+                }
+
+                OperateResult<int> readResult = omronPLC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Deactive_DM"));
+                if (readResult.IsSuccess)
+                {
+                    bool isDeactive = readResult.Content == 1;
+                    _lastDeactiveState = isDeactive;
+                    return isDeactive;
+                }
+                else
+                {
+                    GlobalVarialbles.Logger?.WriteLogAsync("System", e_LogType.Error, "Lỗi đọc PLC_Deactive_DM khi khởi động", readResult.ToMessageShowString(), "ERR-FDASH-DEACTIVE-01");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                GlobalVarialbles.Logger?.WriteLogAsync("System", e_LogType.Error, "Lỗi kiểm tra trạng thái DEACTIVE khi khởi động", ex.Message, "ERR-FDASH-DEACTIVE-02");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gửi lệnh DEACTIVE xuống PLC (ghi PLC_Deactive_DM = 1).
+        /// </summary>
+        public bool SetDeactiveState(bool isDeactive)
+        {
+            try
+            {
+                if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
+                {
+                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "PLC chưa kết nối, không thể gửi lệnh DEACTIVE", "", "ERR-FDASH-DEACTIVE-03");
+                    return false;
+                }
+
+                short value = (short)(isDeactive ? 1 : 0);
+                OperateResult writeResult = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Deactive_DM"), value);
+                
+                if (writeResult.IsSuccess)
+                {
+                    // Đọc lại để xác nhận
+                    Thread.Sleep(100);
+                    OperateResult<int> readResult = omronPLC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Deactive_DM"));
+                    if (readResult.IsSuccess && readResult.Content == value)
+                    {
+                        _lastDeactiveState = isDeactive;
+                        return true;
+                    }
+                }
+
+                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi gửi lệnh DEACTIVE xuống PLC", writeResult.ToMessageShowString(), "ERR-FDASH-DEACTIVE-04");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi gửi lệnh DEACTIVE", ex.Message, "ERR-FDASH-DEACTIVE-05");
+                return false;
+            }
         }
         #endregion
 
@@ -274,7 +350,36 @@ namespace TApp.Views.Dashboard
                 Render_Camera_Counter();
                 Render_Order_Statistics();
                 Render_Production_Statistics();
+                CheckDeactiveStateFromPLC();
                 Thread.Sleep(500);
+            }
+        }
+
+        /// <summary>
+        /// Kiểm tra trạng thái DEACTIVE từ PLC và gửi event nếu có thay đổi.
+        /// </summary>
+        private void CheckDeactiveStateFromPLC()
+        {
+            try
+            {
+                if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
+                    return;
+
+                OperateResult<int> readResult = omronPLC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Deactive_DM"));
+                if (readResult.IsSuccess)
+                {
+                    bool currentDeactiveState = readResult.Content == 1;
+                    if (currentDeactiveState != _lastDeactiveState)
+                    {
+                        _lastDeactiveState = currentDeactiveState;
+                        DeactiveStateChanged?.Invoke(currentDeactiveState);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi nhưng không làm gián đoạn luồng chính
+                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Debug, "Lỗi kiểm tra trạng thái DEACTIVE từ PLC", ex.Message, "ERR-FDASH-DEACTIVE-06");
             }
         }
 
@@ -462,6 +567,19 @@ namespace TApp.Views.Dashboard
 
         private void HandleCameraDataReceived(string data)
         {
+            // Kiểm tra nếu hệ thống đang ở chế độ DEACTIVE thì không xử lý
+            if (_lastDeactiveState)
+            {
+                GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.CurrentUser.Username,
+                    e_LogType.Warning,
+                    "Bỏ qua dữ liệu camera - hệ thống đang ở chế độ VÔ HIỆU HÓA",
+                    $"{{'QRContent':'{data}'}}",
+                    "WARN-FDASH-DEACTIVE-01"
+                );
+                return;
+            }
+
             if (!WK_Camera.IsBusy)
             {
                 WK_Camera.RunWorkerAsync(data);

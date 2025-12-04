@@ -1,6 +1,7 @@
 ﻿using MTs.Auditrails;
 using Sunny.UI;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 using TApp.Configs;
 using TApp.Infrastructure;
 using TApp.Utils;
@@ -9,6 +10,7 @@ using TApp.Views.Dashboard;
 using TApp.Views.Extention;
 using TApp.Views.Settings;
 using TTManager.Auth;
+using TTManager.Diaglogs;
 using static TApp.Views.Dashboard.FDashboard;
 
 namespace TApp
@@ -33,6 +35,7 @@ namespace TApp
         private readonly PLCSetting PLCSetting = new PLCSetting();
         private readonly FActivityLogs fActivityLogs = new FActivityLogs();
         private readonly FExtention fExtention = new FExtention();
+        private readonly FDeactive fDeactive = new FDeactive();
 
         #endregion
 
@@ -137,6 +140,10 @@ namespace TApp
             NavMenu.SelectPage(2001);
             NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
 
+            // Trang vô hiệu hóa (ẩn khỏi menu, chỉ hiển thị khi DEACTIVE)
+            NavMenu.CreateNode(AddPage(fDeactive, 2002));
+            NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
+
             // Ẩn menu cho tới khi đăng nhập
             NavMenu.Visible = false;
             NavMenu.Enabled = false;
@@ -188,6 +195,11 @@ namespace TApp
             fExtention.InitializeERP();
 
             fDashboard.ChangePage += FDashboard_ChangePage;
+            fDashboard.DeactiveStateChanged += FDashboard_DeactiveStateChanged;
+            fDeactive.OnReactivateRequested += FDeactive_OnReactivateRequested;
+
+            // Kiểm tra trạng thái DEACTIVE từ PLC khi khởi động
+            CheckDeactiveStateOnStartup();
         }
 
         #endregion
@@ -197,6 +209,72 @@ namespace TApp
         private void FDashboard_ChangePage(int pageIndex)
         {
             NavMenu.SelectPage(pageIndex);
+        }
+
+        /// <summary>
+        /// Xử lý khi trạng thái DEACTIVE từ PLC thay đổi.
+        /// </summary>
+        private void FDashboard_DeactiveStateChanged(bool isDeactive)
+        {
+            this.InvokeIfRequired(() =>
+            {
+                if (isDeactive)
+                {
+                    ACTIVE_State = false;
+                    AppState = e_App_State.DEACTIVE;
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.System,
+                        "Hệ thống bị vô hiệu hóa từ PLC",
+                        "{{'Source':'PLC','State':'DEACTIVE'}}",
+                        "SYS-DEACTIVE-01"
+                    );
+                }
+                else
+                {
+                    ACTIVE_State = true;
+                    if (GlobalVarialbles.CurrentUser.Username != string.Empty)
+                    {
+                        AppState = e_App_State.ACTIVE;
+                    }
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.System,
+                        "Hệ thống được kích hoạt lại từ PLC",
+                        "{{'Source':'PLC','State':'ACTIVE'}}",
+                        "SYS-DEACTIVE-02"
+                    );
+                }
+            });
+        }
+
+        /// <summary>
+        /// Kiểm tra trạng thái DEACTIVE từ PLC khi khởi động app.
+        /// </summary>
+        private void CheckDeactiveStateOnStartup()
+        {
+            Task.Run(() =>
+            {
+                // Chờ một chút để PLC kết nối
+                Thread.Sleep(2000);
+                
+                bool isDeactive = fDashboard.CheckDeactiveStateOnStartup();
+                if (isDeactive)
+                {
+                    this.InvokeIfRequired(() =>
+                    {
+                        ACTIVE_State = false;
+                        AppState = e_App_State.DEACTIVE;
+                        GlobalVarialbles.Logger?.WriteLogAsync(
+                            "System",
+                            e_LogType.System,
+                            "Phát hiện hệ thống đang ở chế độ VÔ HIỆU HÓA khi khởi động",
+                            "{{'Source':'Startup','PLC_Deactive_DM':'1'}}",
+                            "SYS-DEACTIVE-03"
+                        );
+                    });
+                }
+            });
         }
 
         public void SelectPage(int pageIndex)
@@ -325,7 +403,7 @@ namespace TApp
                     AppState = e_App_State.LOGIN;
                     break;
                 case 3003:
-                    //Tính năng vô hiệu hóa
+                    HandleDeactivateRequest();
                     break;
             }
         }
@@ -419,30 +497,44 @@ namespace TApp
         {
             if (AppRenderState != e_App_Render_State.DEACTIVE)
             {
+                AppRenderState = e_App_Render_State.DEACTIVE;
+
                 this.Invoke(new Action(() =>
                 {
-                    if (AppRenderState == e_App_Render_State.LOGIN &&
-                        NavMenu.Nodes.Count > 0)
+                    // Xóa node cũ nếu có (từ LOGIN hoặc ACTIVE)
+                    if (NavMenu.Nodes.Count > 0)
                     {
                         NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
                     }
 
-                    NavMenu.CreateNode("DMA", 2001);
-                    NavMenu.SelectPage(2001);
+                    // Hiển thị page DEACTIVE (tương tự như Login)
+                    NavMenu.CreateNode("DMA", 2002);
+                    NavMenu.SelectPage(2002);
+                    NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
+
+                    // Ẩn menu khi ở DEACTIVE
                     NavMenu.Enabled = false;
                     NavMenu.Visible = false;
+                    NavMenu.Size = new Size(0, 636);
                 }));
-
-                AppRenderState = e_App_Render_State.DEACTIVE;
             }
 
-            if (GlobalVarialbles.CurrentUser.Username == string.Empty)
+            // Khi DEACTIVE, luôn giữ trạng thái DEACTIVE cho đến khi được kích hoạt lại
+            if (!ACTIVE_State)
             {
-                AppState = e_App_State.LOGIN;
+                AppState = e_App_State.DEACTIVE;
             }
             else
             {
-                AppState = ACTIVE_State ? e_App_State.ACTIVE : e_App_State.DEACTIVE;
+                // Nếu ACTIVE_State = true nhưng đang ở DEACTIVE state, chuyển về ACTIVE hoặc LOGIN
+                if (GlobalVarialbles.CurrentUser.Username == string.Empty)
+                {
+                    AppState = e_App_State.LOGIN;
+                }
+                else
+                {
+                    AppState = e_App_State.ACTIVE;
+                }
             }
         }
 
@@ -484,6 +576,162 @@ namespace TApp
                 case e_App_State.DEACTIVE:
                     HandleDeactiveState();
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Xử lý yêu cầu vô hiệu hóa hệ thống từ nút headNav.
+        /// </summary>
+        private void HandleDeactivateRequest()
+        {
+            // Yêu cầu nhập mật khẩu
+            using (var enterPassword = new TTManager.Diaglogs.Entertext())
+            {
+                enterPassword.TileText = "Nhập mật khẩu để vô hiệu hóa hệ thống";
+                enterPassword.TextValue = string.Empty;
+                enterPassword.IsPassword = true;
+
+                if (enterPassword.ShowDialog() == DialogResult.OK)
+                {
+                    string password = enterPassword.TextValue;
+
+                    // Ghi log chi tiết
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.UserAction,
+                        "Người dùng yêu cầu vô hiệu hóa hệ thống",
+                        $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}','Role':'{GlobalVarialbles.CurrentUser.Role}','Action':'DEACTIVATE_REQUEST'}}",
+                        "UA-DEACTIVE-01"
+                    );
+
+                    // Gửi lệnh xuống PLC
+                    Task.Run(() =>
+                    {
+                        bool success = fDashboard.SetDeactiveState(true);
+                        this.InvokeIfRequired(() =>
+                        {
+                            if (success)
+                            {
+                                ACTIVE_State = false;
+                                AppState = e_App_State.DEACTIVE;
+                                
+                                GlobalVarialbles.Logger?.WriteLogAsync(
+                                    GlobalVarialbles.CurrentUser.Username,
+                                    e_LogType.UserAction,
+                                    "Vô hiệu hóa hệ thống thành công",
+                                    $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}','PLC_Deactive_DM':'1'}}",
+                                    "UA-DEACTIVE-02"
+                                );
+
+                                this.ShowSuccessTip("Hệ thống đã được vô hiệu hóa!");
+                            }
+                            else
+                            {
+                                GlobalVarialbles.Logger?.WriteLogAsync(
+                                    GlobalVarialbles.CurrentUser.Username,
+                                    e_LogType.Error,
+                                    "Lỗi khi vô hiệu hóa hệ thống - không thể gửi lệnh xuống PLC",
+                                    $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}'}}",
+                                    "ERR-DEACTIVE-01"
+                                );
+
+                                this.ShowErrorDialog("Không thể vô hiệu hóa hệ thống. Vui lòng kiểm tra kết nối PLC.");
+                            }
+                        });
+                    });
+                }
+                else
+                {
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.UserAction,
+                        "Người dùng hủy yêu cầu vô hiệu hóa hệ thống",
+                        $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}'}}",
+                        "UA-DEACTIVE-03"
+                    );
+                }
+            }
+        }
+
+        /// <summary>
+        /// Xử lý yêu cầu kích hoạt lại hệ thống từ page DEACTIVE.
+        /// </summary>
+        private void FDeactive_OnReactivateRequested()
+        {
+            // Yêu cầu nhập mật khẩu
+            using (var enterPassword = new TTManager.Diaglogs.Entertext())
+            {
+                enterPassword.TileText = "Nhập mật khẩu để kích hoạt lại hệ thống";
+                enterPassword.TextValue = string.Empty;
+                enterPassword.IsPassword = true;
+
+                if (enterPassword.ShowDialog() == DialogResult.OK)
+                {
+                    string password = enterPassword.TextValue;
+
+                    // Ghi log chi tiết
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.UserAction,
+                        "Người dùng yêu cầu kích hoạt lại hệ thống",
+                        $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}','Role':'{GlobalVarialbles.CurrentUser.Role}','Action':'REACTIVATE_REQUEST'}}",
+                        "UA-REACTIVE-01"
+                    );
+
+                    // Gửi lệnh xuống PLC
+                    Task.Run(() =>
+                    {
+                        bool success = fDashboard.SetDeactiveState(false);
+                        this.InvokeIfRequired(() =>
+                        {
+                            if (success)
+                            {
+                                ACTIVE_State = true;
+                                
+                                if (GlobalVarialbles.CurrentUser.Username != string.Empty)
+                                {
+                                    AppState = e_App_State.ACTIVE;
+                                }
+                                else
+                                {
+                                    AppState = e_App_State.LOGIN;
+                                }
+
+                                GlobalVarialbles.Logger?.WriteLogAsync(
+                                    GlobalVarialbles.CurrentUser.Username,
+                                    e_LogType.UserAction,
+                                    "Kích hoạt lại hệ thống thành công",
+                                    $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}','PLC_Deactive_DM':'0'}}",
+                                    "UA-REACTIVE-02"
+                                );
+
+                                this.ShowSuccessTip("Hệ thống đã được kích hoạt lại!");
+                            }
+                            else
+                            {
+                                GlobalVarialbles.Logger?.WriteLogAsync(
+                                    GlobalVarialbles.CurrentUser.Username,
+                                    e_LogType.Error,
+                                    "Lỗi khi kích hoạt lại hệ thống - không thể gửi lệnh xuống PLC",
+                                    $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}'}}",
+                                    "ERR-REACTIVE-01"
+                                );
+
+                                this.ShowErrorDialog("Không thể kích hoạt lại hệ thống. Vui lòng kiểm tra kết nối PLC.");
+                            }
+                        });
+                    });
+                }
+                else
+                {
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.UserAction,
+                        "Người dùng hủy yêu cầu kích hoạt lại hệ thống",
+                        $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}'}}",
+                        "UA-REACTIVE-03"
+                    );
+                }
             }
         }
 
