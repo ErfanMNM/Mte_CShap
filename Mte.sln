@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoApp", "DemoApp\DemoApp.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudService", "CloudService\CloudService.csproj", "{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MTVS", "MTVS\MTVS.csproj", "{06D8BBF4-7289-4298-949C-4F91092AFE2B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,6 +95,14 @@ Global
 		{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}.Release|x64.ActiveCfg = Release|Any CPU
 		{C0E4BCE9-F630-434F-9F97-AB6B49529B0D}.Release|x64.Build.0 = Release|Any CPU
+		{06D8BBF4-7289-4298-949C-4F91092AFE2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06D8BBF4-7289-4298-949C-4F91092AFE2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06D8BBF4-7289-4298-949C-4F91092AFE2B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{06D8BBF4-7289-4298-949C-4F91092AFE2B}.Debug|x64.Build.0 = Debug|Any CPU
+		{06D8BBF4-7289-4298-949C-4F91092AFE2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06D8BBF4-7289-4298-949C-4F91092AFE2B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06D8BBF4-7289-4298-949C-4F91092AFE2B}.Release|x64.ActiveCfg = Release|Any CPU
+		{06D8BBF4-7289-4298-949C-4F91092AFE2B}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
