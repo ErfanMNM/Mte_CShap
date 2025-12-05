@@ -1,0 +1,22 @@
+{
+  "Appwrite": {
+    "Endpoint": "https://cloud.appwrite.io/v1",
+    "ProjectId": "YOUR_PROJECT_ID",
+    "ApiKey": "YOUR_API_KEY"
+  },
+  "Client": {
+    "ClientId": "",
+    "Product": "MTVS",
+    "Site": "Site1",
+    "Tenant": "Tenant1",
+    "UpdateChannel": "stable",
+    "InstallPath": "C:\\Program Files\\MTVS",
+    "BackupPath": "C:\\Users\\%USERNAME%\\AppData\\Local\\MTVS\\Backups",
+    "CheckIntervalMinutes": 60
+  },
+  "Security": {
+    "PublicKeyPath": "public_key.pem",
+    "VerifySignature": true
+  }
+}
+

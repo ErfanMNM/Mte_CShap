@@ -1,0 +1,278 @@
+==========================================
+CẤU HÌNH APPWRITE CHO VERSION MANAGER
+==========================================
+
+1. THÔNG TIN KẾT NỐI APPWRITE
+------------------------------------------
+Endpoint: https://cloud.appwrite.io/v1
+  (hoặc self-hosted: http://your-appwrite-server/v1)
+
+Project ID: [CẦN ĐIỀN]
+  - Lấy từ Appwrite Console > Settings > Project ID
+
+API Key (Server/Admin): [CẦN ĐIỀN]
+  - Lấy từ Appwrite Console > Settings > API Keys
+  - Cần quyền: databases.read, databases.write, storage.read, storage.write, functions.read
+  - Lưu ý: Không commit API key vào git, dùng environment variable hoặc config file riêng
+
+Client API Key (Optional - cho client-side): [CẦN ĐIỀN]
+  - Nếu cần client-side access (ít khuyến nghị cho security)
+
+
+2. DATABASE COLLECTIONS CẦN TẠO
+------------------------------------------
+
+Collection: "releases"
+  Attributes:
+    - product (string, required): Tên sản phẩm (vd: "MTVS", "TApp", "TTManager")
+    - version (string, required): Phiên bản (vd: "1.2.3")
+    - channel (string, required): Kênh phát hành ("stable", "beta", "dev")
+    - manifestRef (string, required): Reference đến manifest JSON trong Storage
+    - files (string[], required): Array các fileId trong Storage
+    - os (string, required): Hệ điều hành ("windows", "linux", "macos")
+    - arch (string, required): Kiến trúc CPU ("x64", "x86", "arm64")
+    - minVersion (string, optional): Phiên bản tối thiểu cần có để update
+    - publishedAt (datetime, required): Thời gian publish
+    - signedHash (string, required): SHA256 hash của artifact
+    - changelog (string, optional): Mô tả thay đổi
+    - riskLevel (string, optional): Mức độ rủi ro ("low", "medium", "high")
+    - constraints (string, optional): JSON string chứa các ràng buộc khác
+  Indexes:
+    - product_version (unique)
+    - channel
+    - publishedAt (descending)
+    - os_arch
+
+Collection: "clients"
+  Attributes:
+    - clientId (string, required, unique): ID duy nhất của client (có thể dùng MAC address hoặc machine GUID)
+    - product (string, required): Tên sản phẩm đang chạy
+    - site (string, optional): Site/chi nhánh
+    - tenant (string, optional): Tenant/khách hàng
+    - currentVersion (string, required): Phiên bản hiện tại
+    - os (string, required): Hệ điều hành
+    - arch (string, required): Kiến trúc CPU
+    - lastSeen (datetime, required): Lần cuối check-in
+    - status (string, required): Trạng thái ("active", "inactive", "error")
+    - updateChannel (string, required): Kênh update đang theo dõi ("stable", "beta", "dev")
+  Indexes:
+    - clientId (unique)
+    - product
+    - site
+    - lastSeen
+
+Collection: "rolloutPolicies"
+  Attributes:
+    - releaseId (string, required): ID của release
+    - product (string, required)
+    - channel (string, required)
+    - targetGroups (string[], optional): Array các group/site được phép
+    - timeWindow (string, optional): JSON string chứa khung giờ cho phép update
+    - mode (string, required): "user-click-only" hoặc "auto"
+    - rolloutPercentage (integer, optional): Phần trăm rollout (0-100)
+  Indexes:
+    - releaseId
+    - product_channel
+
+Collection: "backups"
+  Attributes:
+    - clientId (string, required)
+    - backupId (string, required, unique): ID backup
+    - storageFileId (string, required): FileId trong Storage
+    - product (string, required)
+    - version (string, required): Phiên bản được backup
+    - size (integer, required): Kích thước file (bytes)
+    - checksum (string, required): SHA256 checksum
+    - createdAt (datetime, required)
+    - encrypted (boolean, required): Có mã hóa hay không
+    - metadata (string, optional): JSON string chứa thông tin bổ sung
+  Indexes:
+    - clientId
+    - createdAt (descending)
+    - product_version
+
+Collection: "events"
+  Attributes:
+    - clientId (string, required)
+    - type (string, required): Loại event ("check", "download", "backup_ok", "install_ok", "health_fail", "rollback", "error")
+    - product (string, required)
+    - version (string, optional): Phiên bản liên quan
+    - payload (string, optional): JSON string chứa chi tiết event
+    - timestamp (datetime, required)
+  Indexes:
+    - clientId
+    - type
+    - timestamp (descending)
+    - product
+
+
+3. STORAGE BUCKETS CẦN TẠO
+------------------------------------------
+
+Bucket: "artifacts"
+  - Permissions: Read cho authenticated users, Write cho admin
+  - File Security: true (sử dụng signed URLs)
+  - Max File Size: Tùy theo kích thước artifact (vd: 500MB)
+  - Allowed File Extensions: zip, 7z, tar.gz, exe, msi
+  - Compression: Gzip (nếu có thể)
+
+Bucket: "backups"
+  - Permissions: Read/Write cho authenticated users (theo clientId)
+  - File Security: true
+  - Max File Size: Tùy theo kích thước backup
+  - Allowed File Extensions: zip, 7z, tar.gz
+  - Compression: Gzip
+  - Encryption: Nên mã hóa trước khi upload
+
+Bucket: "manifests"
+  - Permissions: Read cho authenticated users
+  - File Security: true
+  - Max File Size: 1MB (manifest thường nhỏ)
+  - Allowed File Extensions: json
+  - Compression: Gzip
+
+
+4. APPWRITE FUNCTIONS (OPTIONAL - NẾU CẦN)
+------------------------------------------
+
+Function: "checkLatest"
+  - Endpoint: /checkLatest
+  - Input: { product, channel, currentVersion, os, arch }
+  - Output: { hasUpdate, latestVersion, manifestUrl, downloadUrl, changelog }
+  - Logic: Query releases collection, kiểm tra policy, trả về thông tin update
+
+Function: "reportEvent"
+  - Endpoint: /reportEvent
+  - Input: { clientId, type, product, version, payload }
+  - Output: { success }
+  - Logic: Ghi event vào collection events
+
+Function: "listBackups"
+  - Endpoint: /listBackups
+  - Input: { clientId, product }
+  - Output: { backups: [{ backupId, version, createdAt, size, downloadUrl }] }
+  - Logic: Query backups collection, tạo signed URLs
+
+
+5. CẤU HÌNH CLIENT (TRONG ỨNG DỤNG C#)
+------------------------------------------
+
+AppConfig.json (hoặc AppSettings.json):
+{
+  "Appwrite": {
+    "Endpoint": "https://cloud.appwrite.io/v1",
+    "ProjectId": "[CẦN ĐIỀN]",
+    "ApiKey": "[CẦN ĐIỀN - hoặc dùng environment variable]"
+  },
+  "Client": {
+    "ClientId": "[Tự động tạo từ MAC/GUID hoặc cấu hình]",
+    "Product": "MTVS",
+    "Site": "[Tên site/chi nhánh]",
+    "Tenant": "[Tên tenant/khách hàng]",
+    "UpdateChannel": "stable",
+    "InstallPath": "C:\\Duan\\MTVS",
+    "BackupPath": "C:\\Duan\\MTVS\\Backups",
+    "CheckIntervalMinutes": 60
+  },
+  "Security": {
+    "PublicKeyPath": "public_key.pem",
+    "VerifySignature": true
+  }
+}
+
+Environment Variables (khuyến nghị cho API Key):
+  - APPWRITE_API_KEY: [API Key]
+  - APPWRITE_PROJECT_ID: [Project ID]
+
+
+6. QUY TRÌNH SETUP
+------------------------------------------
+
+Bước 1: Tạo Project trong Appwrite Console
+Bước 2: Tạo các Collections như mô tả ở trên
+Bước 3: Tạo các Storage Buckets
+Bước 4: Tạo API Keys với đủ quyền
+Bước 5: (Optional) Tạo Functions nếu cần
+Bước 6: Cấu hình AppConfig.json trong ứng dụng C#
+Bước 7: Test kết nối và thử upload/download artifact
+
+
+7. LƯU Ý BẢO MẬT
+------------------------------------------
+
+- KHÔNG commit API keys vào git
+- Sử dụng signed URLs cho tất cả download
+- Mã hóa backups trước khi upload
+- Verify signature của artifacts trước khi cài đặt
+- Sử dụng HTTPS cho tất cả kết nối
+- Implement rate limiting cho API calls
+- Log tất cả events để audit
+
+
+8. VÍ DỤ MANIFEST JSON
+------------------------------------------
+
+{
+  "version": "1.2.3",
+  "product": "MTVS",
+  "channel": "stable",
+  "components": [
+    {
+      "type": "exe",
+      "name": "MTVS.exe",
+      "sourcePath": "MTVS.exe",
+      "targetPath": "MTVS.exe",
+      "preserve": [],
+      "hooks": {
+        "preInstall": "stop_service.bat",
+        "postInstall": "start_service.bat",
+        "healthcheck": "healthcheck.exe"
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "config",
+      "name": "appsettings.json",
+      "sourcePath": "appsettings.json",
+      "targetPath": "appsettings.json",
+      "preserve": true
+    }
+  ],
+  "backup": {
+    "paths": [
+      "appsettings.json",
+      "Data"
+    ],
+    "exclude": [
+      "*.log",
+      "temp"
+    ]
+  },
+  "policy": {
+    "requireUserClick": true,
+    "maintenanceWindow": {
+      "start": "02:00",
+      "end": "04:00"
+    }
+  }
+}
+
+
+9. TESTING CHECKLIST
+------------------------------------------
+
+[ ] Kết nối Appwrite thành công
+[ ] Đọc được releases collection
+[ ] Tạo được client record
+[ ] Download artifact bằng signed URL
+[ ] Upload backup thành công
+[ ] Verify signature artifact
+[ ] Backup trước khi update
+[ ] Install update thành công
+[ ] Healthcheck sau update
+[ ] Rollback từ backup
+[ ] Report events về server
+[ ] Xử lý lỗi network/timeout
+[ ] Xử lý lỗi disk space
+[ ] Xử lý lỗi permission
+
