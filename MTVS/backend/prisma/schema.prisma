@@ -1,0 +1,119 @@
+// Prisma Schema for MTVS Database
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Release {
+  id                    Int       @id @default(autoincrement())
+  product               String    @db.VarChar(100)
+  version               String    @db.VarChar(50)
+  channel               String    @db.VarChar(20)
+  manifestRef           String?   @db.Text
+  files                 Json?
+  os                    String    @db.VarChar(20)
+  arch                  String    @db.VarChar(20)
+  minVersion            String?   @db.VarChar(50)
+  publishedAt           DateTime  @default(now())
+  signedHash            String    @db.VarChar(64)
+  changelog             String?   @db.Text
+  riskLevel             String?   @db.VarChar(20)
+  constraints           Json?
+  googleDriveFileId     String?  @db.VarChar(255)
+  googleDriveFileName   String?  @db.VarChar(255)
+  filePassword          String?  @db.VarChar(255)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  rolloutPolicies       RolloutPolicy[]
+
+  @@unique([product, version], name: "unique_product_version")
+  @@index([channel], name: "idx_channel")
+  @@index([publishedAt(sort: Desc)], name: "idx_published_at")
+  @@index([os, arch], name: "idx_os_arch")
+  @@index([product, channel], name: "idx_product_channel")
+  @@map("releases")
+}
+
+model Client {
+  id            Int       @id @default(autoincrement())
+  clientId      String    @unique @db.VarChar(255)
+  product       String    @db.VarChar(100)
+  site          String?   @db.VarChar(100)
+  tenant        String?   @db.VarChar(100)
+  currentVersion String   @db.VarChar(50)
+  os            String    @db.VarChar(20)
+  arch          String    @db.VarChar(20)
+  lastSeen      DateTime  @default(now())
+  status        String    @default("active") @db.VarChar(20)
+  updateChannel String    @default("stable") @db.VarChar(20)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([product], name: "idx_product")
+  @@index([site], name: "idx_site")
+  @@index([lastSeen(sort: Desc)], name: "idx_last_seen")
+  @@index([status], name: "idx_status")
+  @@map("clients")
+}
+
+model RolloutPolicy {
+  id               Int      @id @default(autoincrement())
+  releaseId        Int
+  product          String   @db.VarChar(100)
+  channel          String   @db.VarChar(20)
+  targetGroups     Json?
+  timeWindow       Json?
+  mode             String   @db.VarChar(50)
+  rolloutPercentage Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  release          Release  @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+
+  @@index([releaseId], name: "idx_release_id")
+  @@index([product, channel], name: "idx_product_channel")
+  @@map("rollout_policies")
+}
+
+model Backup {
+  id                  Int       @id @default(autoincrement())
+  clientId            String    @db.VarChar(255)
+  backupId            String    @unique @db.VarChar(255)
+  googleDriveFileId   String    @db.VarChar(255)
+  googleDriveFileName String?   @db.VarChar(255)
+  product             String    @db.VarChar(100)
+  version             String    @db.VarChar(50)
+  size                BigInt
+  checksum            String    @db.VarChar(64)
+  createdAt           DateTime  @default(now())
+  encrypted           Boolean   @default(false)
+  filePassword        String?   @db.VarChar(255)
+  metadata            Json?
+
+  @@index([clientId], name: "idx_client_id")
+  @@index([createdAt(sort: Desc)], name: "idx_created_at")
+  @@index([product, version], name: "idx_product_version")
+  @@map("backups")
+}
+
+model Event {
+  id        Int       @id @default(autoincrement())
+  clientId  String    @db.VarChar(255)
+  type      String    @db.VarChar(50)
+  product   String    @db.VarChar(100)
+  version   String?   @db.VarChar(50)
+  payload   Json?
+  timestamp DateTime  @default(now())
+
+  @@index([clientId], name: "idx_client_id")
+  @@index([type], name: "idx_type")
+  @@index([timestamp(sort: Desc)], name: "idx_timestamp")
+  @@index([product], name: "idx_product")
+  @@map("events")
+}
+
