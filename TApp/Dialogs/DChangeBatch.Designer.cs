@@ -34,7 +34,7 @@
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
             uiTableLayoutPanel5 = new Sunny.UI.UITableLayoutPanel();
             uiSymbolLabel2 = new Sunny.UI.UISymbolLabel();
-            uiTextBox1 = new Sunny.UI.UITextBox();
+            ipBarcode = new Sunny.UI.UITextBox();
             uiTableLayoutPanel4 = new Sunny.UI.UITableLayoutPanel();
             ipBatch = new Sunny.UI.UIComboBox();
             uiSymbolLabel1 = new Sunny.UI.UISymbolLabel();
@@ -124,7 +124,7 @@
             uiTableLayoutPanel5.ColumnCount = 1;
             uiTableLayoutPanel5.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             uiTableLayoutPanel5.Controls.Add(uiSymbolLabel2, 0, 0);
-            uiTableLayoutPanel5.Controls.Add(uiTextBox1, 0, 1);
+            uiTableLayoutPanel5.Controls.Add(ipBarcode, 0, 1);
             uiTableLayoutPanel5.Dock = DockStyle.Fill;
             uiTableLayoutPanel5.Location = new Point(0, 95);
             uiTableLayoutPanel5.Margin = new Padding(0, 2, 2, 0);
@@ -140,30 +140,31 @@
             // uiSymbolLabel2
             // 
             uiSymbolLabel2.Dock = DockStyle.Fill;
-            uiSymbolLabel2.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolLabel2.Font = new Font("Saira SemiBold", 14.2499981F, FontStyle.Bold, GraphicsUnit.Point, 0);
             uiSymbolLabel2.Location = new Point(3, 3);
             uiSymbolLabel2.MinimumSize = new Size(1, 1);
             uiSymbolLabel2.Name = "uiSymbolLabel2";
             uiSymbolLabel2.Size = new Size(568, 30);
+            uiSymbolLabel2.Symbol = 300050;
             uiSymbolLabel2.TabIndex = 1;
             uiSymbolLabel2.Text = "Kiểm tra lại mã vạch";
             // 
-            // uiTextBox1
+            // ipBarcode
             // 
-            uiTextBox1.Dock = DockStyle.Fill;
-            uiTextBox1.Enabled = false;
-            uiTextBox1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTextBox1.Location = new Point(0, 38);
-            uiTextBox1.Margin = new Padding(0, 2, 0, 2);
-            uiTextBox1.MinimumSize = new Size(1, 16);
-            uiTextBox1.Name = "uiTextBox1";
-            uiTextBox1.Padding = new Padding(5);
-            uiTextBox1.ShowText = false;
-            uiTextBox1.Size = new Size(574, 59);
-            uiTextBox1.TabIndex = 2;
-            uiTextBox1.TextAlignment = ContentAlignment.MiddleLeft;
-            uiTextBox1.Watermark = "";
-            uiTextBox1.DoubleClick += uiTextBox1_DoubleClick;
+            ipBarcode.Dock = DockStyle.Fill;
+            ipBarcode.Enabled = false;
+            ipBarcode.Font = new Font("Microsoft Sans Serif", 12F);
+            ipBarcode.Location = new Point(0, 38);
+            ipBarcode.Margin = new Padding(0, 2, 0, 2);
+            ipBarcode.MinimumSize = new Size(1, 16);
+            ipBarcode.Name = "ipBarcode";
+            ipBarcode.Padding = new Padding(5);
+            ipBarcode.ShowText = false;
+            ipBarcode.Size = new Size(574, 59);
+            ipBarcode.TabIndex = 2;
+            ipBarcode.TextAlignment = ContentAlignment.MiddleLeft;
+            ipBarcode.Watermark = "";
+            ipBarcode.DoubleClick += uiTextBox1_DoubleClick;
             // 
             // uiTableLayoutPanel4
             // 
@@ -207,13 +208,14 @@
             // uiSymbolLabel1
             // 
             uiSymbolLabel1.Dock = DockStyle.Fill;
-            uiSymbolLabel1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolLabel1.Font = new Font("Saira SemiBold", 14.2499981F, FontStyle.Bold, GraphicsUnit.Point, 0);
             uiSymbolLabel1.Location = new Point(3, 3);
             uiSymbolLabel1.MinimumSize = new Size(1, 1);
             uiSymbolLabel1.Name = "uiSymbolLabel1";
             uiSymbolLabel1.Size = new Size(568, 27);
+            uiSymbolLabel1.Symbol = 300049;
             uiSymbolLabel1.TabIndex = 1;
-            uiSymbolLabel1.Text = "Chọn số lô";
+            uiSymbolLabel1.Text = "Chọn số lô sản xuất";
             // 
             // uiTableLayoutPanel3
             // 
@@ -243,6 +245,7 @@
             btnSave.MinimumSize = new Size(1, 1);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(93, 43);
+            btnSave.Symbol = 61639;
             btnSave.TabIndex = 3;
             btnSave.Text = "Lưu lại";
             btnSave.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -252,11 +255,13 @@
             // 
             btnedit.Dock = DockStyle.Fill;
             btnedit.Enabled = false;
+            btnedit.FillColor = Color.FromArgb(0, 192, 192);
             btnedit.Font = new Font("Microsoft Sans Serif", 12F);
             btnedit.Location = new Point(239, 3);
             btnedit.MinimumSize = new Size(1, 1);
             btnedit.Name = "btnedit";
             btnedit.Size = new Size(151, 43);
+            btnedit.Symbol = 561707;
             btnedit.TabIndex = 2;
             btnedit.Text = "Nhập thủ công";
             btnedit.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -265,11 +270,13 @@
             // btnClose
             // 
             btnClose.Dock = DockStyle.Fill;
+            btnClose.FillColor = Color.FromArgb(255, 128, 0);
             btnClose.Font = new Font("Microsoft Sans Serif", 12F);
             btnClose.Location = new Point(495, 3);
             btnClose.MinimumSize = new Size(1, 1);
             btnClose.Name = "btnClose";
             btnClose.Size = new Size(74, 43);
+            btnClose.Symbol = 61527;
             btnClose.TabIndex = 0;
             btnClose.Text = "Hủy";
             btnClose.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -310,11 +317,12 @@
             // uiSymbolLabel3
             // 
             uiSymbolLabel3.Dock = DockStyle.Fill;
-            uiSymbolLabel3.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolLabel3.Font = new Font("Saira SemiBold", 14.2499981F, FontStyle.Bold);
             uiSymbolLabel3.Location = new Point(3, 3);
             uiSymbolLabel3.MinimumSize = new Size(1, 1);
             uiSymbolLabel3.Name = "uiSymbolLabel3";
             uiSymbolLabel3.Size = new Size(570, 32);
+            uiSymbolLabel3.Symbol = 300051;
             uiSymbolLabel3.TabIndex = 1;
             uiSymbolLabel3.Text = "Nhập thông tin Quản trị";
             // 
@@ -342,22 +350,24 @@
             // uiSymbolLabel4
             // 
             uiSymbolLabel4.Dock = DockStyle.Fill;
-            uiSymbolLabel4.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolLabel4.Font = new Font("Saira SemiBold", 11.249999F, FontStyle.Bold);
             uiSymbolLabel4.Location = new Point(3, 3);
             uiSymbolLabel4.MinimumSize = new Size(1, 1);
             uiSymbolLabel4.Name = "uiSymbolLabel4";
             uiSymbolLabel4.Size = new Size(92, 43);
+            uiSymbolLabel4.Symbol = 362141;
             uiSymbolLabel4.TabIndex = 2;
             uiSymbolLabel4.Text = "Tài khoản";
             // 
             // uiSymbolLabel5
             // 
             uiSymbolLabel5.Dock = DockStyle.Fill;
-            uiSymbolLabel5.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolLabel5.Font = new Font("Saira SemiBold", 11.249999F, FontStyle.Bold);
             uiSymbolLabel5.Location = new Point(278, 3);
             uiSymbolLabel5.MinimumSize = new Size(1, 1);
             uiSymbolLabel5.Name = "uiSymbolLabel5";
             uiSymbolLabel5.Size = new Size(119, 43);
+            uiSymbolLabel5.Symbol = 61572;
             uiSymbolLabel5.TabIndex = 2;
             uiSymbolLabel5.Text = "Mã bảo mật";
             // 
@@ -439,7 +449,7 @@
         private Sunny.UI.UISymbolLabel uiSymbolLabel1;
         private Sunny.UI.UISymbolButton btnSave;
         private Sunny.UI.UISymbolButton btnedit;
-        private Sunny.UI.UITextBox uiTextBox1;
+        private Sunny.UI.UITextBox ipBarcode;
         private Sunny.UI.UIPanel uiPanel1;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel6;
         private Sunny.UI.UISymbolLabel uiSymbolLabel3;

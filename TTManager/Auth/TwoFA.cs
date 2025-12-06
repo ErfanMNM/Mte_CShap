@@ -54,6 +54,18 @@ namespace TTManager.Auth
             return false;
         }
 
+        public static bool VerifyOTP_120(string base32Secret, string userCode1, int digits = 6, int timeStep = 60, int window = 3)
+        {
+            for (int i = -window; i <= window; i++)
+            {
+                DateTime time1 = DateTime.UtcNow.AddSeconds(i * timeStep);
+                string generatedCode1 = GenerateOTP(base32Secret, digits, timeStep, time1);
+                if (generatedCode1 == userCode1)
+                    return true;
+            }
+            return false;
+        }
+
         public static string GenerateQrCodeUri(string secret, string accountName, string issuer)
         {
             string label = HttpUtility.UrlEncode($"{issuer}:{accountName}");

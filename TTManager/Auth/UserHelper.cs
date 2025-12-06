@@ -126,7 +126,7 @@ namespace TTManager.Auth
     }
     public class UserHelper
     {
-        public static bool Validate2FA(string username, string code, string data_file_path)
+        public static bool Validate2FA(string username, string code, string data_file_path, int windown = 1)
         {
             UserData user = UserData.GetUserByUsername(username, data_file_path);
             if (user == null || string.IsNullOrEmpty(user.Key2FA))
@@ -134,7 +134,7 @@ namespace TTManager.Auth
                 return false; // Người dùng không tồn tại hoặc không có khóa 2FA
             }
             // Kiểm tra mã 2FA
-            return TwoFAHelper.VerifyOTP(user.Key2FA, code);
+            return TwoFAHelper.VerifyOTP(user.Key2FA, code,6,30,windown);
         }
 
         public static bool IsAdmin(string username, string data_file_path)
