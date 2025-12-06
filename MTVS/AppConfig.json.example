@@ -1,0 +1,22 @@
+{
+  "Appwrite": {
+    "Endpoint": "https://ap.mte.vn/v1",
+    "ProjectId": "69330c12000ffd239803",
+    "ApiKey": "standard_97c18d2cad5f888923b052bc8f573a9e151cbf0033b05f799dedd6ee2aa10ae5987c4ac42aabec0a8d728196e509ecd5c409e19b820e458bf1c15f3b8df38af4402901adec98f19d18f5a0076f3d2a0b502d823933c6a051532a24ca47ca06c14589de22a816abdd4e61a1e9f3d5759ae8267cab17be4f871482407babdc7f25"
+  },
+  "Client": {
+    "ClientId": "",
+    "Product": "MTVS",
+    "Site": "Site1",
+    "Tenant": "Tenant1",
+    "UpdateChannel": "stable",
+    "InstallPath": "C:\\Program Files\\MTVS",
+    "BackupPath": "C:\\Users\\%USERNAME%\\AppData\\Local\\MTVS\\Backups",
+    "CheckIntervalMinutes": 60
+  },
+  "Security": {
+    "PublicKeyPath": "public_key.pem",
+    "VerifySignature": true
+  }
+}
+
