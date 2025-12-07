@@ -14,7 +14,7 @@ namespace TApp.Configs
     }
 
 
-    [ConfigFile("Configs\\App.ini")]
+    [ConfigFile("C:\\MASANQR\\Configs\\App.ini")]
     public class AppConfigs : IniConfig<AppConfigs>
     {
 
@@ -68,10 +68,10 @@ namespace TApp.Configs
             Camera_01_Port = 50001;
             Line_Name = "Line 3";
             PLC_Test_Mode = true;
-            production_list_path = "D:/Masan/DBProductList.xlsx";
-            credentialPLCAddressPath = "D:/Masan/a.json";
-            credentialERPPath = "C:/Users/DANOMT/Downloads/Masan/sales-268504-20a4b06ea0fb.json";
-            AWS_Credential_Path = "D:/Masan/aws_credentials.json";
+            production_list_path = "C:/MASAN/Configs/DBProductList.xlsx";
+            credentialPLCAddressPath = "C:/MASAN/Configs/GoogleSheet.json";
+            credentialERPPath = "C:/MASAN/Configs/sales-268504-20a4b06ea0fb.json";
+            AWS_Credential_Path = "C:/MASAN/Configs/aws_credentials.json";
             Data_Mode = "normal";
             ERP_DatasetID = "FactoryIntegration";
             ERP_TableID = "BatchProduction";

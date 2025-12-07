@@ -15,7 +15,7 @@ namespace TApp.Helpers
     public static class PLCAddressWithGoogleSheetHelper
     {
         private static readonly string LocalCachePath = "plc_addresses.json";
-        public static string FilePath { get; set; } = @"C:\Users\THUC\Downloads\a.json";
+        public static string FilePath { get; set; } = @"C:\MASANQR\Configs\GoogleSheet.json";
         private static readonly Dictionary<string, string> _addressMap = new Dictionary<string, string>();
 
         public static IReadOnlyDictionary<string, string> AddressMap => _addressMap;

@@ -8,8 +8,6 @@ using TApp.Configs;
 using TApp.Helpers;
 using TApp.Helpers.Masan_Backup;
 using TApp.Infrastructure;
-using Google.Apis.Auth.OAuth2;
-using Google.Cloud.Storage.V1;
 using System.Threading;
 using TApp.Utils;
 using TTManager.Masan;
@@ -144,8 +142,8 @@ namespace TApp.Views.Extention
                     }
 
                     string csvFileName = $"{AppConfigs.Current.Line_Name}_{DateTime.Now.ToString("ddMMyyyy_HHmmss")}.csv";
-                    string csvTempPath = Path.Combine("C:/MASAN/Temp/", csvFileName);
-                    string csvBackupPath = Path.Combine("C:/MASAN/Backup/", csvFileName);
+                    string csvTempPath = Path.Combine("C:/MASANQR/Temp/", csvFileName);
+                    string csvBackupPath = Path.Combine("C:/MASANQR/Backup/", csvFileName);
 
                     ExportResult exportResult = CsvHelper.ExportDataTableToCsv(dataToBackup, csvTempPath);
 
