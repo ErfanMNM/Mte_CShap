@@ -14,7 +14,7 @@ namespace TApp.Configs
     }
 
 
-    [ConfigFile("C:\\MASANQR\\Configs\\App.ini")]
+    [ConfigFile("Configs\\App.ini")]
     public class AppConfigs : IniConfig<AppConfigs>
     {
 

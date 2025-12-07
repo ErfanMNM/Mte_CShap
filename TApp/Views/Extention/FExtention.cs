@@ -158,9 +158,9 @@ namespace TApp.Views.Extention
                     bool shouldBackupLocal = AppConfigs.Current.Local_Backup_Enabled;
 
                     long maxUnixQR = GetMaxTimeUnixActive(dataToBackup, lastUnix);
-
-                    bool uploadSuccess = PerformCloudUpload(shouldUploadCloud, exportResult.FilePath, csvFileName, dataToBackup.Rows.Count);
-                    string uploadMessage = uploadSuccess ? "Upload cloud thành công" : "Upload cloud thất bại";
+                    var upload = PerformCloudUpload(shouldUploadCloud, exportResult.FilePath, csvFileName, dataToBackup.Rows.Count);
+                    bool uploadSuccess = upload.Item1;
+                    string uploadMessage = upload.Item2; //uploadSuccess ? "Upload cloud thành công" : "Upload cloud thất bại";
 
                     if (shouldBackupLocal && uploadSuccess)
                     {
@@ -235,12 +235,12 @@ namespace TApp.Views.Extention
             return maxUnixQR;
         }
 
-        private bool PerformCloudUpload(bool shouldUploadCloud, string filePath, string csvFileName, int rowCount)
+        private (bool, string) PerformCloudUpload(bool shouldUploadCloud, string filePath, string csvFileName, int rowCount)
         {
             if (!shouldUploadCloud)
             {
                 LogConsoleMessage("[THÔNG BÁO] Cloud upload bị tắt, chỉ backup local.");
-                return true; // Coi như thành công vì không cần upload
+                return (true, "Bỏ qua tải lên"); // Coi như thành công vì không cần upload
             }
 
             FileStream fileStream = null;
@@ -249,19 +249,19 @@ namespace TApp.Views.Extention
                 // Commented out actual cloud upload logic as it requires Google Cloud credentials
                 // and should be handled securely.
                 // Example of what would be here:
-                
-                //GoogleCredential credential = GoogleCredential.FromFile(AppConfigs.Current.credentialERPPath);
-                //StorageClient storage = StorageClient.Create(credential);
-                //fileStream = File.OpenRead(filePath);
-                //string objectPath = $"QRCode/{DateTime.Now.ToString("yyyy")}/{DateTime.Now.ToString("MM")}/{csvFileName}";
-                //var uploadedObject = storage.UploadObject("masan-image", objectPath, null, fileStream);
-                //fileStream.Close();
-                //fileStream.Dispose();
+
+                GoogleCredential credential = GoogleCredential.FromFile(AppConfigs.Current.credentialERPPath);
+                StorageClient storage = StorageClient.Create(credential);
+                fileStream = File.OpenRead(filePath);
+                string objectPath = $"QRCode/{DateTime.Now.ToString("yyyy")}/{DateTime.Now.ToString("MM")}/{csvFileName}";
+                var uploadedObject = storage.UploadObject("masan-image", objectPath, null, fileStream);
+                fileStream.Close();
+                fileStream.Dispose();
                 fileStream = null;
                 
 
                 LogConsoleMessage($"[THÀNH CÔNG] Tải lên cloud thành công: {csvFileName} ({rowCount} bản ghi)");
-                return true;
+                return (true, "Tải lên thành công");
             }
             catch (Exception ex)
             {
@@ -271,7 +271,7 @@ namespace TApp.Views.Extention
                     fileStream.Dispose();
                 }
                 LogConsoleMessage($"[LỖI] Tải lên cloud thất bại: {ex.Message}");
-                return false;
+                return (false, ex.Message);
             }
         }
 
