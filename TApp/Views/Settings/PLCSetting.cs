@@ -18,192 +18,7 @@ using TTManager.Diaglogs;
 
 namespace TApp.Views.Settings
 {
-    #region RecipeManager Class
-    public class RecipeManager
-    {
-        private readonly string _recipeDirectory;
-        private readonly string _logFilePath;
-        private readonly PLC_Parameter _defaultConfig;
-
-        public PLC_Parameter CurrentRecipeOnPC { get; private set; }
-        public string SelectedRecipeName { get; private set; }
-
-        public RecipeManager(string directory, PLC_Parameter defaultConfig)
-        {
-            _recipeDirectory = directory;
-            _logFilePath = Path.Combine(_recipeDirectory, "log.rlplc");
-            _defaultConfig = defaultConfig;
-        }
-
-        public void Initialize()
-        {
-            if (!Directory.Exists(_recipeDirectory))
-            {
-                Directory.CreateDirectory(_recipeDirectory);
-            }
-            if (!File.Exists(_logFilePath))
-            {
-                CreateLogTable();
-            }
-
-            LoadLastSelectedRecipe();
-        }
-
-        private void LoadLastSelectedRecipe()
-        {
-            DataTable lastRecipeTable = GetLastActionFromLog("SELECT");
-            if (lastRecipeTable.Rows.Count > 0)
-            {
-                SelectedRecipeName = lastRecipeTable.Rows[0]["RecipeName"].ToString();
-                string recipePath = Path.Combine(_recipeDirectory, $"{SelectedRecipeName}.rplc");
-
-                if (File.Exists(recipePath))
-                {
-                    string json = File.ReadAllText(recipePath);
-                    CurrentRecipeOnPC = JsonConvert.DeserializeObject<PLC_Parameter>(json) ?? _defaultConfig;
-                }
-                else
-                {
-                    // If file is missing, revert to default
-                    SelectRecipe("Default", _defaultConfig);
-                }
-            }
-            else
-            {
-                SelectRecipe("Default", _defaultConfig);
-            }
-        }
-
-        public void SelectRecipe(string recipeName, PLC_Parameter config = null)
-        {
-            SelectedRecipeName = recipeName;
-            string recipePath = Path.Combine(_recipeDirectory, $"{recipeName}.rplc");
-
-            if (config != null)
-            {
-                CurrentRecipeOnPC = config;
-            }
-            else if (File.Exists(recipePath))
-            {
-                string json = File.ReadAllText(recipePath);
-                CurrentRecipeOnPC = JsonConvert.DeserializeObject<PLC_Parameter>(json);
-            }
-            else
-            {
-                CurrentRecipeOnPC = _defaultConfig;
-                SaveRecipe(CurrentRecipeOnPC); // Create the file
-            }
-
-            AddLog("SELECT", RecipeToString(CurrentRecipeOnPC), GlobalVarialbles.CurrentUser.Username);
-        }
-
-        public void SaveRecipe(PLC_Parameter newConfig)
-        {
-            CurrentRecipeOnPC = newConfig;
-            string json = JsonConvert.SerializeObject(newConfig, Formatting.Indented);
-            File.WriteAllText(Path.Combine(_recipeDirectory, $"{SelectedRecipeName}.rplc"), json);
-            AddLog("UPDATE", RecipeToString(newConfig), GlobalVarialbles.CurrentUser.Username);
-        }
-
-        public string CreateNewRecipe(string newRecipeName, PLC_Parameter currentConfig)
-        {
-            string newRecipePath = Path.Combine(_recipeDirectory, $"{newRecipeName}.rplc");
-            if (File.Exists(newRecipePath))
-            {
-                return "Tên Recipe đã tồn tại, vui lòng chọn tên khác.";
-            }
-
-            string json = JsonConvert.SerializeObject(currentConfig, Formatting.Indented);
-            File.WriteAllText(newRecipePath, json);
-
-            SelectedRecipeName = newRecipeName;
-            AddLog("CREATE", RecipeToString(currentConfig), GlobalVarialbles.CurrentUser.Username);
-            AddLog("SELECT", RecipeToString(currentConfig), GlobalVarialbles.CurrentUser.Username);
-
-            return null; // Success
-        }
-
-        public bool DeleteRecipe(string recipeName)
-        {
-            if (recipeName.Equals("Default", StringComparison.OrdinalIgnoreCase)) return false;
-
-            string filePath = Path.Combine(_recipeDirectory, $"{recipeName}.rplc");
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-                AddLog("DELETE", "N/A", GlobalVarialbles.CurrentUser.Username, recipeName);
-                SelectRecipe("Default");
-                return true;
-            }
-            return false;
-        }
-
-        private string RecipeToString(PLC_Parameter recipe) => $"{recipe.DelayCamera},{recipe.DelayReject},{recipe.RejectStreng}";
-
-        #region SQLite Helpers
-        private void CreateLogTable()
-        {
-            using (var conn = new SQLiteConnection($"Data Source={_logFilePath};Version=3;"))
-            {
-                conn.Open();
-                const string createTableQuery = @"CREATE TABLE ""Log"" (
-                    ""ID"" INTEGER NOT NULL UNIQUE,
-                    ""RecipeName"" TEXT, ""RecipeValue"" TEXT, ""Action"" TEXT,
-                    ""Timestamp"" TEXT, ""UserName"" TEXT, PRIMARY KEY(""ID"" AUTOINCREMENT))";
-                using (var cmd = new SQLiteCommand(createTableQuery, conn))
-                {
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private void AddLog(string action, string recipeValue, string userName, string recipeName = null)
-        {
-            using (var conn = new SQLiteConnection($"Data Source={_logFilePath};Version=3;"))
-            {
-                conn.Open();
-                const string insertQuery = @"INSERT INTO Log (RecipeName, RecipeValue, Action, Timestamp, UserName) 
-                                             VALUES (@RecipeName, @RecipeValue, @Action, @Timestamp, @UserName)";
-                using (var cmd = new SQLiteCommand(insertQuery, conn))
-                {
-                    cmd.Parameters.AddWithValue("@RecipeName", recipeName ?? SelectedRecipeName);
-                    cmd.Parameters.AddWithValue("@RecipeValue", recipeValue);
-                    cmd.Parameters.AddWithValue("@Action", action);
-                    cmd.Parameters.AddWithValue("@Timestamp", DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss"));
-                    cmd.Parameters.AddWithValue("@UserName", userName);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        private DataTable GetLastActionFromLog(string action)
-        {
-            using (var connection = new SQLiteConnection($"Data Source={_logFilePath};Version=3;"))
-            {
-                connection.Open();
-                string query = $"SELECT * FROM Log WHERE Action = @Action ORDER BY `ID` DESC LIMIT 1;";
-                using (var command = new SQLiteCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Action", action);
-                    using (var da = new SQLiteDataAdapter(command))
-                    {
-                        var dt = new DataTable();
-                        da.Fill(dt);
-                        return dt;
-                    }
-                }
-            }
-        }
-        #endregion
-    }
-
-    public class PLC_Parameter
-    {
-        public string DelayCamera { get; set; } = "0";
-        public string DelayReject { get; set; } = "0";
-        public string RejectStreng { get; set; } = "0";
-    }
-    #endregion
+    
 
     public partial class PLCSetting : UIPage
     {
@@ -513,4 +328,191 @@ namespace TApp.Views.Settings
         }
         #endregion
     }
+
+    #region RecipeManager Class
+    public class RecipeManager
+    {
+        private readonly string _recipeDirectory;
+        private readonly string _logFilePath;
+        private readonly PLC_Parameter _defaultConfig;
+
+        public PLC_Parameter CurrentRecipeOnPC { get; private set; }
+        public string SelectedRecipeName { get; private set; }
+
+        public RecipeManager(string directory, PLC_Parameter defaultConfig)
+        {
+            _recipeDirectory = directory;
+            _logFilePath = Path.Combine(_recipeDirectory, "log.rlplc");
+            _defaultConfig = defaultConfig;
+        }
+
+        public void Initialize()
+        {
+            if (!Directory.Exists(_recipeDirectory))
+            {
+                Directory.CreateDirectory(_recipeDirectory);
+            }
+            if (!File.Exists(_logFilePath))
+            {
+                CreateLogTable();
+            }
+
+            LoadLastSelectedRecipe();
+        }
+
+        private void LoadLastSelectedRecipe()
+        {
+            DataTable lastRecipeTable = GetLastActionFromLog("SELECT");
+            if (lastRecipeTable.Rows.Count > 0)
+            {
+                SelectedRecipeName = lastRecipeTable.Rows[0]["RecipeName"].ToString();
+                string recipePath = Path.Combine(_recipeDirectory, $"{SelectedRecipeName}.rplc");
+
+                if (File.Exists(recipePath))
+                {
+                    string json = File.ReadAllText(recipePath);
+                    CurrentRecipeOnPC = JsonConvert.DeserializeObject<PLC_Parameter>(json) ?? _defaultConfig;
+                }
+                else
+                {
+                    // If file is missing, revert to default
+                    SelectRecipe("Default", _defaultConfig);
+                }
+            }
+            else
+            {
+                SelectRecipe("Default", _defaultConfig);
+            }
+        }
+
+        public void SelectRecipe(string recipeName, PLC_Parameter config = null)
+        {
+            SelectedRecipeName = recipeName;
+            string recipePath = Path.Combine(_recipeDirectory, $"{recipeName}.rplc");
+
+            if (config != null)
+            {
+                CurrentRecipeOnPC = config;
+            }
+            else if (File.Exists(recipePath))
+            {
+                string json = File.ReadAllText(recipePath);
+                CurrentRecipeOnPC = JsonConvert.DeserializeObject<PLC_Parameter>(json);
+            }
+            else
+            {
+                CurrentRecipeOnPC = _defaultConfig;
+                SaveRecipe(CurrentRecipeOnPC); // Create the file
+            }
+
+            AddLog("SELECT", RecipeToString(CurrentRecipeOnPC), GlobalVarialbles.CurrentUser.Username);
+        }
+
+        public void SaveRecipe(PLC_Parameter newConfig)
+        {
+            CurrentRecipeOnPC = newConfig;
+            string json = JsonConvert.SerializeObject(newConfig, Formatting.Indented);
+            File.WriteAllText(Path.Combine(_recipeDirectory, $"{SelectedRecipeName}.rplc"), json);
+            AddLog("UPDATE", RecipeToString(newConfig), GlobalVarialbles.CurrentUser.Username);
+        }
+
+        public string CreateNewRecipe(string newRecipeName, PLC_Parameter currentConfig)
+        {
+            string newRecipePath = Path.Combine(_recipeDirectory, $"{newRecipeName}.rplc");
+            if (File.Exists(newRecipePath))
+            {
+                return "Tên Recipe đã tồn tại, vui lòng chọn tên khác.";
+            }
+
+            string json = JsonConvert.SerializeObject(currentConfig, Formatting.Indented);
+            File.WriteAllText(newRecipePath, json);
+
+            SelectedRecipeName = newRecipeName;
+            AddLog("CREATE", RecipeToString(currentConfig), GlobalVarialbles.CurrentUser.Username);
+            AddLog("SELECT", RecipeToString(currentConfig), GlobalVarialbles.CurrentUser.Username);
+
+            return null; // Success
+        }
+
+        public bool DeleteRecipe(string recipeName)
+        {
+            if (recipeName.Equals("Default", StringComparison.OrdinalIgnoreCase)) return false;
+
+            string filePath = Path.Combine(_recipeDirectory, $"{recipeName}.rplc");
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+                AddLog("DELETE", "N/A", GlobalVarialbles.CurrentUser.Username, recipeName);
+                SelectRecipe("Default");
+                return true;
+            }
+            return false;
+        }
+
+        private string RecipeToString(PLC_Parameter recipe) => $"{recipe.DelayCamera},{recipe.DelayReject},{recipe.RejectStreng}";
+
+        #region SQLite Helpers
+        private void CreateLogTable()
+        {
+            using (var conn = new SQLiteConnection($"Data Source={_logFilePath};Version=3;"))
+            {
+                conn.Open();
+                const string createTableQuery = @"CREATE TABLE ""Log"" (
+                    ""ID"" INTEGER NOT NULL UNIQUE,
+                    ""RecipeName"" TEXT, ""RecipeValue"" TEXT, ""Action"" TEXT,
+                    ""Timestamp"" TEXT, ""UserName"" TEXT, PRIMARY KEY(""ID"" AUTOINCREMENT))";
+                using (var cmd = new SQLiteCommand(createTableQuery, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private void AddLog(string action, string recipeValue, string userName, string recipeName = null)
+        {
+            using (var conn = new SQLiteConnection($"Data Source={_logFilePath};Version=3;"))
+            {
+                conn.Open();
+                const string insertQuery = @"INSERT INTO Log (RecipeName, RecipeValue, Action, Timestamp, UserName) 
+                                             VALUES (@RecipeName, @RecipeValue, @Action, @Timestamp, @UserName)";
+                using (var cmd = new SQLiteCommand(insertQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@RecipeName", recipeName ?? SelectedRecipeName);
+                    cmd.Parameters.AddWithValue("@RecipeValue", recipeValue);
+                    cmd.Parameters.AddWithValue("@Action", action);
+                    cmd.Parameters.AddWithValue("@Timestamp", DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss"));
+                    cmd.Parameters.AddWithValue("@UserName", userName);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private DataTable GetLastActionFromLog(string action)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={_logFilePath};Version=3;"))
+            {
+                connection.Open();
+                string query = $"SELECT * FROM Log WHERE Action = @Action ORDER BY `ID` DESC LIMIT 1;";
+                using (var command = new SQLiteCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Action", action);
+                    using (var da = new SQLiteDataAdapter(command))
+                    {
+                        var dt = new DataTable();
+                        da.Fill(dt);
+                        return dt;
+                    }
+                }
+            }
+        }
+        #endregion
+    }
+
+    public class PLC_Parameter
+    {
+        public string DelayCamera { get; set; } = "0";
+        public string DelayReject { get; set; } = "0";
+        public string RejectStreng { get; set; } = "0";
+    }
+    #endregion
 }

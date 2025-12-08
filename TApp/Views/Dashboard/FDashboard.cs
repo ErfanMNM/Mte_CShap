@@ -104,7 +104,7 @@ namespace TApp.Views.Dashboard
 
                 short value = (short)(isDeactive ? 1 : 0);
                 OperateResult writeResult = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Deactive_DM"), value);
-                
+
                 if (writeResult.IsSuccess)
                 {
                     // Đọc lại để xác nhận
@@ -479,7 +479,10 @@ namespace TApp.Views.Dashboard
                 ipBarcode.Text = erP_Google2.LoadExcelToProductList(ipBatchNo.SelectedItem.ToString(), AppConfigs.Current.production_list_path);
             }
         }
+        private void btnClearPLC_Click(object sender, EventArgs e)
+        {
 
+        }
         private void btnScan_Click(object sender, EventArgs e) => ChangePage?.Invoke(1003);
         private void btnPLCSetting_Click(object sender, EventArgs e) => ChangePage?.Invoke(1005);
         private void uiSymbolButton3_Click(object sender, EventArgs e) => ChangePage?.Invoke(1004);
@@ -488,7 +491,7 @@ namespace TApp.Views.Dashboard
         #endregion
 
         #region UI Rendering
-        private void Render_Order_Statistics() => this.InvokeIfRequired(() => { opBatchCount.Value = FD_Globals.ActiveSet.Count; opProductionSpeed.Value = FD_Globals.ProductionPerHour; });
+        private void Render_Order_Statistics() => this.InvokeIfRequired(() => { opBatchCount.Value = FD_Globals.ActiveSet.Count; opProductionSpeed.Value = FD_Globals.productionData.ProductionPerHour; });
         private void Render_Camera_Counter() => this.InvokeIfRequired(() => { opSCount.Text = $"{FD_Globals.productionData.productCameraCounter.Total} - {FD_Globals.productionData.productCameraCounter.Pass} - {FD_Globals.productionData.productCameraCounter.Fail}"; });
         private void Render_Production_Statistics() => this.InvokeIfRequired(() => { opTotalCount.Value = FD_Globals.productionData.PLC_Counter.Total; opPassCount.Value = FD_Globals.productionData.PLC_Counter.Pass; opFail.Value = FD_Globals.productionData.PLC_Counter.Fail; });
 
@@ -710,7 +713,7 @@ namespace TApp.Views.Dashboard
         private void UpdateProductionPerHour()
         {
             List<HourlyProduction> hourlyPassProduction = QRDatabaseHelper.GetHourlyProduction(DateTime.Now, null);
-            FD_Globals.ProductionPerHour = hourlyPassProduction.FirstOrDefault(p => p.Hour == DateTime.Now.Hour)?.Count ?? 0;
+            FD_Globals.productionData.ProductionPerHour = hourlyPassProduction.FirstOrDefault(p => p.Hour == DateTime.Now.Hour)?.Count ?? 0;
         }
 
         private void ProcessChangeBatchDialog(DChangeBatch dialog, string loadErpResult)
@@ -773,6 +776,8 @@ namespace TApp.Views.Dashboard
 
         private void SetAlarm(string text, Color fillColor, Color rectColor) => this.InvokeIfRequired(() => { opAlarm.Text = text; opAlarm.FillColor = fillColor; opAlarm.RectColor = rectColor; });
         #endregion
+
+        
     }
 
     #region Nested Types
@@ -785,8 +790,6 @@ namespace TApp.Views.Dashboard
         public static HashSet<string> ActiveSet { get; set; } = new HashSet<string>();
         public static ConcurrentQueue<QRProductRecord> QueueRecord { get; set; } = new ConcurrentQueue<QRProductRecord>();
         public static ConcurrentQueue<QRProductRecord> QueueActive { get; set; } = new ConcurrentQueue<QRProductRecord>();
-        public static int LineSpeed { get; set; }
-        public static int ProductionPerHour { get; set; } = 0;
     }
     #endregion
 }

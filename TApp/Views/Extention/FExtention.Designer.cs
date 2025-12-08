@@ -56,13 +56,14 @@
             tabPage3 = new TabPage();
             uiTableLayoutPanel6 = new Sunny.UI.UITableLayoutPanel();
             uiPanel2 = new Sunny.UI.UIPanel();
+            uiTitlePanel4 = new Sunny.UI.UITitlePanel();
+            uiTableLayoutPanel7 = new Sunny.UI.UITableLayoutPanel();
+            uiTitlePanel5 = new Sunny.UI.UITitlePanel();
+            uiListBox1 = new Sunny.UI.UIListBox();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             erP_Google1 = new TTManager.Masan.ERP_Google(components);
             backgroundWorker2 = new System.ComponentModel.BackgroundWorker();
-            uiTableLayoutPanel7 = new Sunny.UI.UITableLayoutPanel();
-            uiTitlePanel4 = new Sunny.UI.UITitlePanel();
-            uiTitlePanel5 = new Sunny.UI.UITitlePanel();
-            uiListBox1 = new Sunny.UI.UIListBox();
+            WK_IOT_SCADA = new System.ComponentModel.BackgroundWorker();
             tab2.SuspendLayout();
             tabPage1.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
@@ -408,7 +409,7 @@
             tabPage3.Controls.Add(uiTableLayoutPanel6);
             tabPage3.Location = new Point(0, 40);
             tabPage3.Name = "tabPage3";
-            tabPage3.Size = new Size(874, 639);
+            tabPage3.Size = new Size(200, 60);
             tabPage3.TabIndex = 2;
             tabPage3.Text = "Kiểm tra hệ thống";
             tabPage3.UseVisualStyleBackColor = true;
@@ -429,7 +430,7 @@
             uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Absolute, 176F));
             uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-            uiTableLayoutPanel6.Size = new Size(874, 639);
+            uiTableLayoutPanel6.Size = new Size(200, 60);
             uiTableLayoutPanel6.TabIndex = 1;
             uiTableLayoutPanel6.TagString = null;
             // 
@@ -441,10 +442,77 @@
             uiPanel2.Margin = new Padding(2);
             uiPanel2.MinimumSize = new Size(1, 1);
             uiPanel2.Name = "uiPanel2";
-            uiPanel2.Size = new Size(870, 50);
+            uiPanel2.Size = new Size(196, 50);
             uiPanel2.TabIndex = 0;
             uiPanel2.Text = "Trang này cung cấp các tính năng nâng cao để kiểm tra lỗi của thiết bị";
             uiPanel2.TextAlignment = ContentAlignment.MiddleCenter;
+            // 
+            // uiTitlePanel4
+            // 
+            uiTitlePanel4.Controls.Add(uiTableLayoutPanel7);
+            uiTitlePanel4.Dock = DockStyle.Fill;
+            uiTitlePanel4.Font = new Font("Microsoft Sans Serif", 12F);
+            uiTitlePanel4.Location = new Point(2, -114);
+            uiTitlePanel4.Margin = new Padding(2);
+            uiTitlePanel4.MinimumSize = new Size(1, 1);
+            uiTitlePanel4.Name = "uiTitlePanel4";
+            uiTitlePanel4.Padding = new Padding(1, 35, 1, 1);
+            uiTitlePanel4.ShowText = false;
+            uiTitlePanel4.Size = new Size(196, 172);
+            uiTitlePanel4.TabIndex = 1;
+            uiTitlePanel4.Text = "Chức Năng";
+            uiTitlePanel4.TextAlignment = ContentAlignment.MiddleCenter;
+            // 
+            // uiTableLayoutPanel7
+            // 
+            uiTableLayoutPanel7.ColumnCount = 5;
+            uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 152F));
+            uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 171F));
+            uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 176F));
+            uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 182F));
+            uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90F));
+            uiTableLayoutPanel7.Dock = DockStyle.Fill;
+            uiTableLayoutPanel7.Location = new Point(1, 35);
+            uiTableLayoutPanel7.Margin = new Padding(2);
+            uiTableLayoutPanel7.Name = "uiTableLayoutPanel7";
+            uiTableLayoutPanel7.RowCount = 2;
+            uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel7.Size = new Size(194, 136);
+            uiTableLayoutPanel7.TabIndex = 0;
+            uiTableLayoutPanel7.TagString = null;
+            // 
+            // uiTitlePanel5
+            // 
+            uiTitlePanel5.Controls.Add(uiListBox1);
+            uiTitlePanel5.Dock = DockStyle.Fill;
+            uiTitlePanel5.Font = new Font("Microsoft Sans Serif", 12F);
+            uiTitlePanel5.Location = new Point(2, 56);
+            uiTitlePanel5.Margin = new Padding(2);
+            uiTitlePanel5.MinimumSize = new Size(1, 1);
+            uiTitlePanel5.Name = "uiTitlePanel5";
+            uiTitlePanel5.Padding = new Padding(1, 35, 1, 1);
+            uiTitlePanel5.ShowText = false;
+            uiTitlePanel5.Size = new Size(196, 1);
+            uiTitlePanel5.TabIndex = 2;
+            uiTitlePanel5.Text = "Bảng Thông Báo";
+            uiTitlePanel5.TextAlignment = ContentAlignment.MiddleCenter;
+            // 
+            // uiListBox1
+            // 
+            uiListBox1.Dock = DockStyle.Fill;
+            uiListBox1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiListBox1.HoverColor = Color.FromArgb(155, 200, 255);
+            uiListBox1.ItemSelectForeColor = Color.White;
+            uiListBox1.Location = new Point(1, 35);
+            uiListBox1.Margin = new Padding(2);
+            uiListBox1.MinimumSize = new Size(1, 1);
+            uiListBox1.Name = "uiListBox1";
+            uiListBox1.Padding = new Padding(2);
+            uiListBox1.ShowText = false;
+            uiListBox1.Size = new Size(194, 1);
+            uiListBox1.TabIndex = 4;
+            uiListBox1.Text = "uiListBox1";
             // 
             // backgroundWorker1
             // 
@@ -467,72 +535,10 @@
             backgroundWorker2.WorkerSupportsCancellation = true;
             backgroundWorker2.DoWork += backgroundWorker2_DoWork;
             // 
-            // uiTableLayoutPanel7
+            // WK_IOT_SCADA
             // 
-            uiTableLayoutPanel7.ColumnCount = 5;
-            uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 152F));
-            uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 171F));
-            uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 176F));
-            uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 182F));
-            uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90F));
-            uiTableLayoutPanel7.Dock = DockStyle.Fill;
-            uiTableLayoutPanel7.Location = new Point(1, 35);
-            uiTableLayoutPanel7.Margin = new Padding(2);
-            uiTableLayoutPanel7.Name = "uiTableLayoutPanel7";
-            uiTableLayoutPanel7.RowCount = 2;
-            uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel7.Size = new Size(868, 136);
-            uiTableLayoutPanel7.TabIndex = 0;
-            uiTableLayoutPanel7.TagString = null;
-            // 
-            // uiTitlePanel4
-            // 
-            uiTitlePanel4.Controls.Add(uiTableLayoutPanel7);
-            uiTitlePanel4.Dock = DockStyle.Fill;
-            uiTitlePanel4.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTitlePanel4.Location = new Point(2, 465);
-            uiTitlePanel4.Margin = new Padding(2);
-            uiTitlePanel4.MinimumSize = new Size(1, 1);
-            uiTitlePanel4.Name = "uiTitlePanel4";
-            uiTitlePanel4.Padding = new Padding(1, 35, 1, 1);
-            uiTitlePanel4.ShowText = false;
-            uiTitlePanel4.Size = new Size(870, 172);
-            uiTitlePanel4.TabIndex = 1;
-            uiTitlePanel4.Text = "Chức Năng";
-            uiTitlePanel4.TextAlignment = ContentAlignment.MiddleCenter;
-            // 
-            // uiTitlePanel5
-            // 
-            uiTitlePanel5.Controls.Add(uiListBox1);
-            uiTitlePanel5.Dock = DockStyle.Fill;
-            uiTitlePanel5.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTitlePanel5.Location = new Point(2, 56);
-            uiTitlePanel5.Margin = new Padding(2);
-            uiTitlePanel5.MinimumSize = new Size(1, 1);
-            uiTitlePanel5.Name = "uiTitlePanel5";
-            uiTitlePanel5.Padding = new Padding(1, 35, 1, 1);
-            uiTitlePanel5.ShowText = false;
-            uiTitlePanel5.Size = new Size(870, 405);
-            uiTitlePanel5.TabIndex = 2;
-            uiTitlePanel5.Text = "Bảng Thông Báo";
-            uiTitlePanel5.TextAlignment = ContentAlignment.MiddleCenter;
-            // 
-            // uiListBox1
-            // 
-            uiListBox1.Dock = DockStyle.Fill;
-            uiListBox1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiListBox1.HoverColor = Color.FromArgb(155, 200, 255);
-            uiListBox1.ItemSelectForeColor = Color.White;
-            uiListBox1.Location = new Point(1, 35);
-            uiListBox1.Margin = new Padding(2);
-            uiListBox1.MinimumSize = new Size(1, 1);
-            uiListBox1.Name = "uiListBox1";
-            uiListBox1.Padding = new Padding(2);
-            uiListBox1.ShowText = false;
-            uiListBox1.Size = new Size(868, 369);
-            uiListBox1.TabIndex = 4;
-            uiListBox1.Text = "uiListBox1";
+            WK_IOT_SCADA.WorkerSupportsCancellation = true;
+            WK_IOT_SCADA.DoWork += WK_IOT_SCADA_DoWork;
             // 
             // FExtention
             // 
@@ -592,5 +598,6 @@
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel7;
         private Sunny.UI.UITitlePanel uiTitlePanel5;
         private Sunny.UI.UIListBox uiListBox1;
+        private System.ComponentModel.BackgroundWorker WK_IOT_SCADA;
     }
 }

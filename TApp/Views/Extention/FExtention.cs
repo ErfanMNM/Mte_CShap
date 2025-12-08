@@ -1,15 +1,20 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
+using HslCommunication;
+using HslCommunication.Profinet.Omron;
+using MTs.Auditrails;
 using SQLitePCL;
 using Sunny.UI;
 using System.Data;
 using System.Linq;
+using System.Text;
+using System.Threading;
 using TApp.Configs;
 using TApp.Helpers;
 using TApp.Helpers.Masan_Backup;
 using TApp.Infrastructure;
-using System.Threading;
 using TApp.Utils;
+using TApp.Views.Dashboard;
 using TTManager.Masan;
 
 namespace TApp.Views.Extention
@@ -22,7 +27,8 @@ namespace TApp.Views.Extention
         private DataTable dataTable = new DataTable();
         private int countSync = 100000;
         private int maxInterval = 5;
-        private int seconSync = 0;
+        private OmronFinsUdp plc;
+        private LogHelper <e_LogType> PLC_IOT_Logs = new LogHelper<e_LogType>("C:/MASANQR/IOT/logs.ttl");
         #endregion
 
         #region Constructor & Initialization
@@ -56,6 +62,19 @@ namespace TApp.Views.Extention
                     backgroundWorker2.RunWorkerAsync();
                 }
             }
+
+             plc = new OmronFinsUdp();
+            plc.CommunicationPipe = new HslCommunication.Core.Pipe.PipeUdpNet(AppConfigs.Current.PLC_IP, AppConfigs.Current.PLC_Port)
+            {
+                ReceiveTimeOut = 10000, 
+            };
+            plc.PlcType = OmronPlcType.CSCJ;
+            plc.SA1 = 1;
+            plc.GCT = 2;
+            plc.DA1 = 0;
+            plc.SID = 0;
+            plc.ByteTransform.DataFormat = HslCommunication.Core.DataFormat.CDAB;
+            plc.ByteTransform.IsStringReverseByteWord = true;
         }
 
         private void btnERPCheck_Click(object sender, EventArgs e)
@@ -258,7 +277,7 @@ namespace TApp.Views.Extention
                 fileStream.Close();
                 fileStream.Dispose();
                 fileStream = null;
-                
+
 
                 LogConsoleMessage($"[THÀNH CÔNG] Tải lên cloud thành công: {csvFileName} ({rowCount} bản ghi)");
                 return (true, "Tải lên thành công");
@@ -304,6 +323,7 @@ namespace TApp.Views.Extention
         {
             CloudBackupHelper.InsertLog(BackupLogDbPath, fileName, status, timeStart, timeCompleted, lastUnix, message);
         }
+
         #endregion
 
         #region UI Event Handlers
@@ -384,5 +404,62 @@ namespace TApp.Views.Extention
             });
         }
         #endregion
+
+        private void WK_IOT_SCADA_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        {
+            while (!WK_IOT_SCADA.CancellationPending)
+            {
+                //xóa dữ liệu cũ
+                OperateResult write = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Batch_Code_DM"), "[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]".ToStringArray<int>());
+                if (write.IsSuccess)
+                {
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username,e_LogType.Info, "Xóa dữ liệu IOT SCADA thành công D5008");
+                }
+                else
+                {
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Xóa dữ liệu IOT SCADA thất bại :" + write.Message);
+                }
+
+
+                //Ghi dữ liệu mới
+                //batch code
+                OperateResult wbatchcode = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Batch_Code_DM"), FD_Globals.productionData.BatchCode, Encoding.ASCII);
+                if (write.IsSuccess)
+                {
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Batch Thành công");
+                }
+                else
+                {
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Batch Thất bại :" + wbatchcode.Message);
+                }
+
+                //barcode
+                OperateResult wbarcode = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_DM"), FD_Globals.productionData.BatchCode, Encoding.ASCII);
+                if (write.IsSuccess)
+                {
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Barcode Thành công");
+                }
+                else
+                {
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode Thất bại :" + wbatchcode.Message);
+                }
+
+
+                //barcodeformaterror
+
+                //systemstatusDM
+                //OperateResult wsyscode = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_App_System_Status_DM"), GlobalVarialbles.CurrentAppState, Encoding.ASCII);
+                //if (write.IsSuccess)
+                //{
+                //    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Barcode Thành công");
+                //}
+                //else
+                //{
+                //    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode Thất bại :" + wbatchcode.Message);
+                //}
+
+                Thread.Sleep(5000);
+            }
+        }
     }
 }

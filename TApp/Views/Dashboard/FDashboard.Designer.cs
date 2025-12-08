@@ -576,7 +576,7 @@
             // 
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(491, 410);
+            tabPage2.Size = new Size(200, 60);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Kiểm tra lỗi";
             tabPage2.UseVisualStyleBackColor = true;
@@ -1333,7 +1333,7 @@
             btnClearPLC.TabIndex = 0;
             btnClearPLC.Text = "Xóa lỗi";
             btnClearPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
-           // btnClearPLC.Click += btnClearPLC_Click;
+            btnClearPLC.Click += btnClearPLC_Click;
             // 
             // btnResetCounterPLC
             // 

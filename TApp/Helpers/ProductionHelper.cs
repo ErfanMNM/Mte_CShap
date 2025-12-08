@@ -44,6 +44,8 @@ namespace TApp.Helpers
 
         public Product_Camera_Counter productCameraCounter = new Product_Camera_Counter();
 
+        public int ProductionPerHour;
+
         public ProductionData()
         {
             BatchCode = string.Empty;

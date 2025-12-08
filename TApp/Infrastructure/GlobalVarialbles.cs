@@ -50,7 +50,6 @@ namespace TApp.Infrastructure
         Ready = 1,
         Stopped = 2,
         Error = 3,
-        
         Editing = 4,
         DeviceError = 5,
 
