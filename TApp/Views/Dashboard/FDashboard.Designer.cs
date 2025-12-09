@@ -54,6 +54,7 @@
             tabPage1 = new TabPage();
             opView = new Sunny.UI.UIListBox();
             tabPage2 = new TabPage();
+            uiListBox1 = new Sunny.UI.UIListBox();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiTitlePanel4 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel11 = new Sunny.UI.UITableLayoutPanel();
@@ -123,6 +124,7 @@
             uiTitlePanel3.SuspendLayout();
             opNoteCameraView.SuspendLayout();
             tabPage1.SuspendLayout();
+            tabPage2.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
             uiTitlePanel4.SuspendLayout();
             uiTableLayoutPanel11.SuspendLayout();
@@ -574,12 +576,29 @@
             // 
             // tabPage2
             // 
+            tabPage2.Controls.Add(uiListBox1);
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(200, 60);
+            tabPage2.Size = new Size(491, 410);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Kiểm tra lỗi";
             tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // uiListBox1
+            // 
+            uiListBox1.Dock = DockStyle.Fill;
+            uiListBox1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiListBox1.HoverColor = Color.FromArgb(155, 200, 255);
+            uiListBox1.ItemSelectForeColor = Color.White;
+            uiListBox1.Location = new Point(0, 0);
+            uiListBox1.Margin = new Padding(4, 5, 4, 5);
+            uiListBox1.MinimumSize = new Size(1, 1);
+            uiListBox1.Name = "uiListBox1";
+            uiListBox1.Padding = new Padding(2);
+            uiListBox1.ShowText = false;
+            uiListBox1.Size = new Size(491, 410);
+            uiListBox1.TabIndex = 0;
+            uiListBox1.Text = "uiListBox1";
             // 
             // uiTableLayoutPanel1
             // 
@@ -1168,7 +1187,6 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(87, 3);
             opPLCLed.Name = "opPLCLed";
-            opPLCLed.On = false;
             opPLCLed.Size = new Size(27, 30);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";
@@ -1428,6 +1446,7 @@
             uiTitlePanel3.ResumeLayout(false);
             opNoteCameraView.ResumeLayout(false);
             tabPage1.ResumeLayout(false);
+            tabPage2.ResumeLayout(false);
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTitlePanel4.ResumeLayout(false);
             uiTableLayoutPanel11.ResumeLayout(false);
@@ -1531,5 +1550,6 @@
         private Sunny.UI.UIDigitalLabel opBatchCount;
         private Sunny.UI.UIPanel opAlarm;
         private System.ComponentModel.BackgroundWorker WK_Load_Counter;
+        private Sunny.UI.UIListBox uiListBox1;
     }
 }

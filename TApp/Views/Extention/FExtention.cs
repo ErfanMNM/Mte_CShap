@@ -448,15 +448,8 @@ namespace TApp.Views.Extention
                 //barcodeformaterror
 
                 //systemstatusDM
-                //OperateResult wsyscode = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_App_System_Status_DM"), GlobalVarialbles.CurrentAppState, Encoding.ASCII);
-                //if (write.IsSuccess)
-                //{
-                //    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Barcode Thành công");
-                //}
-                //else
-                //{
-                //    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode Thất bại :" + wbatchcode.Message);
-                //}
+                
+
 
                 Thread.Sleep(5000);
             }

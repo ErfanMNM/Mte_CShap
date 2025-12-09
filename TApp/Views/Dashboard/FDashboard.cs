@@ -79,12 +79,14 @@ namespace TApp.Views.Dashboard
                 else
                 {
                     GlobalVarialbles.Logger?.WriteLogAsync("System", e_LogType.Error, "Lỗi đọc PLC_Deactive_DM khi khởi động", readResult.ToMessageShowString(), "ERR-FDASH-DEACTIVE-01");
+                    DisplayErrorToUI("FDE_0001", "Lỗi đọc PLC_Deactive_DM khi khởi động", readResult.ToMessageShowString());
                     return false;
                 }
             }
             catch (Exception ex)
             {
                 GlobalVarialbles.Logger?.WriteLogAsync("System", e_LogType.Error, "Lỗi kiểm tra trạng thái DEACTIVE khi khởi động", ex.Message, "ERR-FDASH-DEACTIVE-02");
+                DisplayErrorToUI("FDE_0002", "Lỗi kiểm tra trạng thái DEACTIVE khi khởi động", ex.Message);
                 return false;
             }
         }
@@ -99,6 +101,7 @@ namespace TApp.Views.Dashboard
                 if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
                 {
                     GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "PLC chưa kết nối, không thể gửi lệnh DEACTIVE", "", "ERR-FDASH-DEACTIVE-03");
+                    DisplayErrorToUI("FDE_0003", "PLC chưa kết nối, không thể gửi lệnh DEACTIVE");
                     return false;
                 }
 
@@ -118,11 +121,13 @@ namespace TApp.Views.Dashboard
                 }
 
                 GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi gửi lệnh DEACTIVE xuống PLC", writeResult.ToMessageShowString(), "ERR-FDASH-DEACTIVE-04");
+                DisplayErrorToUI("FDE_0004", "Lỗi gửi lệnh DEACTIVE xuống PLC", writeResult.ToMessageShowString());
                 return false;
             }
             catch (Exception ex)
             {
                 GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi gửi lệnh DEACTIVE", ex.Message, "ERR-FDASH-DEACTIVE-05");
+                DisplayErrorToUI("FDE_0005", "Lỗi gửi lệnh DEACTIVE", ex.Message);
                 return false;
             }
         }
@@ -380,6 +385,7 @@ namespace TApp.Views.Dashboard
             {
                 // Log lỗi nhưng không làm gián đoạn luồng chính
                 GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Debug, "Lỗi kiểm tra trạng thái DEACTIVE từ PLC", ex.Message, "ERR-FDASH-DEACTIVE-06");
+                DisplayErrorToUI("FDE_0006", "Lỗi kiểm tra trạng thái DEACTIVE từ PLC", ex.Message);
             }
         }
 
@@ -397,6 +403,7 @@ namespace TApp.Views.Dashboard
                 catch (Exception ex)
                 {
                     GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Debug, "Lỗi ghi bản ghi sản xuất", ex.Message, "ERR-F-02");
+                    DisplayErrorToUI("FDE_0007", "Lỗi ghi bản ghi sản xuất", ex.Message);
                 }
             }
         }
@@ -793,6 +800,7 @@ namespace TApp.Views.Dashboard
                 FD_Globals.productionData.PLC_Counter.ReadFail = -1;
                 FD_Globals.productionData.PLC_Counter.Pass = -1;
                 FD_Globals.productionData.PLC_Counter.Timeout = -1;
+                DisplayErrorToUI("FDE_0008", "Lỗi đọc số liệu PLC", result.ToMessageShowString());
             }
         }
 
@@ -861,6 +869,28 @@ namespace TApp.Views.Dashboard
         }
 
         private void SetAlarm(string text, Color fillColor, Color rectColor) => this.InvokeIfRequired(() => { opAlarm.Text = text; opAlarm.FillColor = fillColor; opAlarm.RectColor = rectColor; });
+
+        /// <summary>
+        /// Hiển thị lỗi lên dialog và ghi vào opView (uiListBox). Tag code dùng để truy vết.
+        /// </summary>
+        private void DisplayErrorToUI(string code, string message, string detail = "")
+        {
+            this.InvokeIfRequired(() =>
+            {
+                try
+                {
+                    string dialogMessage = string.IsNullOrEmpty(detail) ? $"{code}: {message}" : $"{code}: {message}\n{detail}";
+                    this.ShowErrorDialog(dialogMessage);
+                }
+                catch
+                {
+                    // Bỏ qua nếu dialog fail (tránh crash UI)
+                }
+
+                opView.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] [{code}] {message}");
+                if (opView.Items.Count > 200) opView.Items.RemoveAt(opView.Items.Count - 1);
+            });
+        }
         #endregion
 
         
