@@ -308,6 +308,14 @@ namespace TApp.Views.Dashboard
 
         private void Camera_ProcessData(string data)
         {
+            // Tách riêng trường hợp camera trả về "FAIL" (lỗi đọc)
+            if (string.Equals(data, "FAIL", StringComparison.OrdinalIgnoreCase))
+            {
+                Send_Result_To_PLC(e_PLC_Result.Fail);
+                Send_Result_Content(e_Production_Status.ReadFail, data);
+                return;
+            }
+
             if (FD_Globals.ActiveSet.Contains(data))
             {
                 Send_Result_To_PLC(e_PLC_Result.Fail);
