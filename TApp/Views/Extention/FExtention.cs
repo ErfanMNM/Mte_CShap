@@ -435,19 +435,35 @@ namespace TApp.Views.Extention
 
                 //barcode
                 OperateResult wbarcode = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_DM"), FD_Globals.productionData.BatchCode, Encoding.ASCII);
-                if (write.IsSuccess)
+                if (wbarcode.IsSuccess)
                 {
                     PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Barcode Thành công");
                 }
                 else
                 {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode Thất bại :" + wbatchcode.Message);
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode Thất bại :" + wbarcode.Message, "", "FDE_0009");
                 }
 
 
-                //barcodeformaterror
+                //barcodeformaterror -> gửi số lỗi sai định dạng QR/Barcode
+                OperateResult wBarcodeFormatError = plc.Write(
+                    PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_Format_Fail_DM"),
+                    FD_Globals.productionData.productCameraCounter.FormatError);
+                if (!wBarcodeFormatError.IsSuccess)
+                {
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode FormatError thất bại :" + wBarcodeFormatError.Message, "", "FDE_0010");
+                }
 
-                //systemstatusDM
+                //systemstatusDM -> gửi trạng thái hệ thống (AppState)
+                OperateResult wSystemStatus = plc.Write(
+                    PLCAddressWithGoogleSheetHelper.Get("PLC_App_System_Status_DM"),
+                    (short)GlobalVarialbles.CurrentAppState);
+                if (!wSystemStatus.IsSuccess)
+                {
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu trạng thái hệ thống thất bại :" + wSystemStatus.Message, "", "FDE_0011");
+                }
+
+                
                 
 
 
