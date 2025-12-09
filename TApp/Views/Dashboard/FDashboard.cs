@@ -481,7 +481,93 @@ namespace TApp.Views.Dashboard
         }
         private void btnClearPLC_Click(object sender, EventArgs e)
         {
+            try
+            {
+                btnClearPLC.Enabled = false;
+                btnClearPLC.Text = "Đang xóa...";
 
+                // Gửi tín hiệu Clear xuống PLC để xóa lỗi
+                OperateResult clearRs = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Clear_DM"), (short)1);
+                if (!clearRs.IsSuccess)
+                {
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser?.Username ?? "System",
+                        e_LogType.Error,
+                        "Gửi lệnh Clear PLC thất bại",
+                        clearRs.ToMessageShowString(),
+                        "ERR-FDASH-CLEAR-PLC"
+                    );
+                    this.ShowErrorDialog("Gửi lệnh xóa lỗi xuống PLC thất bại.");
+                    return;
+                }
+
+                // Delay ngắn để tránh nhấn liên tục
+                Thread.Sleep(500);
+
+                // Kiểm tra nếu không có lỗi thì không cần xóa
+                if (FD_Globals.AlarmCount <= 0)
+                {
+                    this.ShowInfoDialog("Không có lỗi FormatError nào để xóa.");
+                    btnClearPLC.Enabled = true;
+                    btnClearPLC.Text = "Xóa lỗi";
+                    return;
+                }
+
+                // Xác nhận trước khi xóa
+                if (!this.ShowAskDialog($"Bạn có chắc chắn muốn xóa {FD_Globals.AlarmCount} lỗi FormatError?\nLịch sử xóa sẽ được lưu lại."))
+                {
+                    btnClearPLC.Enabled = true;
+                    btnClearPLC.Text = "Xóa lỗi";
+                    return;
+                }
+
+                // Lưu log trước khi xóa
+                int clearedCount = FD_Globals.AlarmCount;
+                DateTime clearTime = DateTime.Now;
+                string username = GlobalVarialbles.CurrentUser?.Username ?? "System";
+                string batchCode = FD_Globals.productionData?.BatchCode ?? "N/A";
+                string barcode = FD_Globals.productionData?.Barcode ?? "N/A";
+
+                // Tạo log record
+                var clearLog = new FormatErrorClearLog(clearTime, username, clearedCount, batchCode, barcode);
+                FD_Globals.FormatErrorClearHistory.Add(clearLog);
+
+                // Ghi log vào hệ thống
+                string logDetail = $"{{\"ClearedCount\":{clearedCount},\"BatchCode\":\"{batchCode}\",\"Barcode\":\"{barcode}\",\"ClearTime\":\"{clearTime:yyyy-MM-dd HH:mm:ss}\"}}";
+                GlobalVarialbles.Logger?.WriteLogAsync(
+                    username,
+                    e_LogType.UserAction,
+                    $"Xóa lỗi FormatError",
+                    logDetail,
+                    "UA-FDASH-CLEAR-FORMAT-ERROR"
+                );
+
+                // Reset AlarmCount về 0
+                FD_Globals.AlarmCount = 0;
+
+                // Cập nhật UI
+                UpdateAlarmDisplay();
+
+                // Hiển thị thông báo thành công
+                this.ShowSuccessTip($"Đã xóa {clearedCount} lỗi FormatError thành công!");
+
+                btnClearPLC.Enabled = true;
+                btnClearPLC.Text = "Xóa lỗi";
+            }
+            catch (Exception ex)
+            {
+                GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.CurrentUser?.Username ?? "System",
+                    e_LogType.Error,
+                    "Lỗi khi xóa FormatError",
+                    ex.Message,
+                    "ERR-FDASH-CLEAR-FORMAT-ERROR"
+                );
+                this.ShowErrorDialog($"Lỗi khi xóa FormatError: {ex.Message}");
+
+                btnClearPLC.Enabled = true;
+                btnClearPLC.Text = "Xóa lỗi";
+            }
         }
         private void btnScan_Click(object sender, EventArgs e) => ChangePage?.Invoke(1003);
         private void btnPLCSetting_Click(object sender, EventArgs e) => ChangePage?.Invoke(1005);
@@ -781,6 +867,27 @@ namespace TApp.Views.Dashboard
     }
 
     #region Nested Types
+    /// <summary>
+    /// Lưu thông tin log các lần xóa lỗi FormatError
+    /// </summary>
+    public class FormatErrorClearLog
+    {
+        public DateTime ClearTime { get; set; }
+        public string Username { get; set; }
+        public int ClearedCount { get; set; }
+        public string BatchCode { get; set; }
+        public string Barcode { get; set; }
+
+        public FormatErrorClearLog(DateTime clearTime, string username, int clearedCount, string batchCode, string barcode)
+        {
+            ClearTime = clearTime;
+            Username = username;
+            ClearedCount = clearedCount;
+            BatchCode = batchCode;
+            Barcode = barcode;
+        }
+    }
+
     public static class FD_Globals
     {
         public static CameraStatus CameraStatus { get; set; } = CameraStatus.Disconnected;
@@ -790,6 +897,10 @@ namespace TApp.Views.Dashboard
         public static HashSet<string> ActiveSet { get; set; } = new HashSet<string>();
         public static ConcurrentQueue<QRProductRecord> QueueRecord { get; set; } = new ConcurrentQueue<QRProductRecord>();
         public static ConcurrentQueue<QRProductRecord> QueueActive { get; set; } = new ConcurrentQueue<QRProductRecord>();
+        /// <summary>
+        /// Lịch sử các lần xóa lỗi FormatError
+        /// </summary>
+        public static List<FormatErrorClearLog> FormatErrorClearHistory { get; set; } = new List<FormatErrorClearLog>();
     }
     #endregion
 }
