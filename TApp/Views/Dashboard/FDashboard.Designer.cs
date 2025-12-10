@@ -352,6 +352,7 @@
             opResopse.TabIndex = 0;
             opResopse.Text = "#1 Mã QR";
             opResopse.TextAlignment = ContentAlignment.MiddleCenter;
+            //opResopse.TextChanged += opResopse_TextChanged;
             // 
             // opResultStatus
             // 
@@ -367,6 +368,7 @@
             opResultStatus.TabIndex = 1;
             opResultStatus.Text = "TỐT";
             opResultStatus.TextAlignment = ContentAlignment.MiddleCenter;
+           // opResultStatus.Click += opResultStatus_Click;
             // 
             // uiTitlePanel2
             // 
@@ -579,7 +581,7 @@
             tabPage2.Controls.Add(uiListBox1);
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(491, 410);
+            tabPage2.Size = new Size(200, 60);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Kiểm tra lỗi";
             tabPage2.UseVisualStyleBackColor = true;
@@ -596,7 +598,7 @@
             uiListBox1.Name = "uiListBox1";
             uiListBox1.Padding = new Padding(2);
             uiListBox1.ShowText = false;
-            uiListBox1.Size = new Size(491, 410);
+            uiListBox1.Size = new Size(200, 60);
             uiListBox1.TabIndex = 0;
             uiListBox1.Text = "uiListBox1";
             // 
@@ -1187,6 +1189,7 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(87, 3);
             opPLCLed.Name = "opPLCLed";
+            opPLCLed.On = false;
             opPLCLed.Size = new Size(27, 30);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";

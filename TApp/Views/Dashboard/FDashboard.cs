@@ -598,14 +598,31 @@ namespace TApp.Views.Dashboard
 
         private void Render_App_Status()
         {
-            e_AppState state = (FD_Globals.pLCStatus != PLCStatus.Connected || FD_Globals.CameraStatus != CameraStatus.Connected) ? e_AppState.DeviceError : (ipBatchNo.Enabled ? e_AppState.Editing : e_AppState.Ready);
+            bool deviceDisconnected = FD_Globals.pLCStatus != PLCStatus.Connected || FD_Globals.CameraStatus != CameraStatus.Connected;
+
+            e_AppState state;
+            if (_lastDeactiveState)
+            {
+                state = e_AppState.Deactive; // PLC yêu cầu vô hiệu hóa
+            }
+            else if (deviceDisconnected)
+            {
+                state = e_AppState.Stopped; // Mất kết nối thiết bị -> dừng máy, bộ đá vẫn hoạt động
+            }
+            else
+            {
+                state = ipBatchNo.Enabled ? e_AppState.Editing : e_AppState.Ready;
+            }
+
             GlobalVarialbles.CurrentAppState = state;
 
             switch (state)
             {
                 case e_AppState.Ready: SetAppStatus("Sẵn Sàng", Color.FromArgb(0, 192, 0), 1); break;
                 case e_AppState.Editing: SetAppStatus("Cấu hình", Color.Blue, 4); break;
-                case e_AppState.DeviceError: SetAppStatus("Lỗi TB", Color.Red, 5); break;
+                case e_AppState.Stopped: SetAppStatus("DỪNG MÁY / MẤT KẾT NỐI", Color.OrangeRed, 2); break;
+                case e_AppState.Deactive: SetAppStatus("VÔ HIỆU HÓA", Color.Red, 3); break;
+                case e_AppState.Error: SetAppStatus("LỖI", Color.Red, 5); break;
             }
         }
 

@@ -68,10 +68,10 @@ namespace TApp.Configs
             Camera_01_Port = 50001;
             Line_Name = "Line 3";
             PLC_Test_Mode = true;
-            production_list_path = "C:/MASAN/Configs/DBProductList.xlsx";
-            credentialPLCAddressPath = "C:/MASAN/Configs/GoogleSheet.json";
-            credentialERPPath = "C:/MASAN/Configs/sales-268504-20a4b06ea0fb.json";
-            AWS_Credential_Path = "C:/MASAN/Configs/aws_credentials.json";
+            production_list_path = "C:/MASANQR/Configs/DBProductList.xlsx";
+            credentialPLCAddressPath = "C:/MASANQR/Configs/GoogleSheet.json";
+            credentialERPPath = "C:/MASANQR/Configs/sales-268504-20a4b06ea0fb.json";
+            AWS_Credential_Path = "C:/MASANQR/Configs/aws_credentials.json";
             Data_Mode = "normal";
             ERP_DatasetID = "FactoryIntegration";
             ERP_TableID = "BatchProduction";

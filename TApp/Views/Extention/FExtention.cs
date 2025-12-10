@@ -6,6 +6,7 @@ using MTs.Auditrails;
 using SQLitePCL;
 using Sunny.UI;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -22,19 +23,39 @@ namespace TApp.Views.Extention
     public partial class FExtention : UIPage
     {
         #region Fields
-        private string BackupLogDbPath = @"C:/MASAN/CloudBackupLog.tls";
+        private string BackupLogDbPath = @"C:/MASANQR/CloudBackupLog.tls";
         private DataTable upCloudHis = new DataTable();
         private DataTable dataTable = new DataTable();
         private int countSync = 100000;
         private int maxInterval = 5;
         private OmronFinsUdp plc;
-        private LogHelper <e_LogType> PLC_IOT_Logs = new LogHelper<e_LogType>("C:/MASANQR/IOT/logs.ttl");
+        private LogHelper <e_LogType> PLC_IOT_Logs;
         #endregion
 
         #region Constructor & Initialization
         public FExtention()
         {
             InitializeComponent();
+
+            // Đảm bảo các thư mục C:\MASANQR tồn tại
+            try
+            {
+                string root = @"C:\MASANQR";
+                Directory.CreateDirectory(root);
+                Directory.CreateDirectory(Path.Combine(root, "Temp"));
+                Directory.CreateDirectory(Path.Combine(root, "Backup"));
+                Directory.CreateDirectory(Path.Combine(root, "IOT"));
+
+                string backupFolder = Path.GetDirectoryName(BackupLogDbPath) ?? root;
+                Directory.CreateDirectory(backupFolder);
+
+                string iotLogPath = Path.Combine(root, "IOT", "logs.ttl");
+                PLC_IOT_Logs = new LogHelper<e_LogType>(iotLogPath);
+            }
+            catch
+            {
+                // Nếu có lỗi khi tạo thư mục/log, vẫn cho phép form khởi tạo
+            }
         }
 
         private void FExtention_Initialize(object sender, EventArgs e)
@@ -161,8 +182,12 @@ namespace TApp.Views.Extention
                     }
 
                     string csvFileName = $"{AppConfigs.Current.Line_Name}_{DateTime.Now.ToString("ddMMyyyy_HHmmss")}.csv";
-                    string csvTempPath = Path.Combine("C:/MASANQR/Temp/", csvFileName);
-                    string csvBackupPath = Path.Combine("C:/MASANQR/Backup/", csvFileName);
+                    string csvTempRoot = @"C:\MASANQR\Temp";
+                    string csvBackupRoot = @"C:\MASANQR\Backup";
+                    Directory.CreateDirectory(csvTempRoot);
+                    Directory.CreateDirectory(csvBackupRoot);
+                    string csvTempPath = Path.Combine(csvTempRoot, csvFileName);
+                    string csvBackupPath = Path.Combine(csvBackupRoot, csvFileName);
 
                     ExportResult exportResult = CsvHelper.ExportDataTableToCsv(dataToBackup, csvTempPath);
 

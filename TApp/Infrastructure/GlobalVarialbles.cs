@@ -46,20 +46,18 @@ namespace TApp.Infrastructure
 
     public enum e_AppState
     {
-        Initializing = 0,
-        Ready = 1,
-        Stopped = 2,
-        Error = 3,
-        Editing = 4,
-        DeviceError = 5,
-
+        Initializing = 0, // Khởi động ứng dụng
+        Ready = 1,        // Đang chạy (ACTIVE)
+        Stopped = 2,      // Dừng máy - bộ đá vẫn hoạt động
+        Deactive = 3,     // Dừng máy, không kiểm và không đá (DEACTIVE)
+        Error = 4,        // Lỗi
+        Editing = 5       // Đang chỉnh sửa
     }
 
     public static class GlobalVarialbles
     {
         public static UserData CurrentUser { get; set; } = new UserData();
         public static e_AppState CurrentAppState { get; set; } = e_AppState.Initializing;
-
         public static LogHelper<e_LogType>? Logger;
     }
 

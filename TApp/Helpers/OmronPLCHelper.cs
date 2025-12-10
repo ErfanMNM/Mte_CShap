@@ -52,6 +52,12 @@ namespace TApp.Helpers
             //credential = credential.CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
 
             GoogleCredential credential;
+            // Đảm bảo thư mục chứa file credential tồn tại
+            string? folder = Path.GetDirectoryName(FilePath);
+            if (!string.IsNullOrEmpty(folder) && !Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
             using (var stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
             {
                 credential = GoogleCredential.FromStream(stream).CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);

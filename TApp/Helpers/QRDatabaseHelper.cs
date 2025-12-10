@@ -13,10 +13,10 @@ namespace TApp.Helpers
 {
     public static class QRDatabaseHelper
     {
-        public const string DefaultDbPath = @"C:\MASAN\QRDatabase.db";
+        public const string DefaultDbPath = @"C:\MASANQR\QRDatabase.db";
 
         // DB phụ: chỉ lưu mã active & unique để check trùng nhanh
-        public const string ActiveUniqueDbPath = @"C:\MASAN\ActiveUnique.db";
+        public const string ActiveUniqueDbPath = @"C:\MASANQR\ActiveUnique.db";
 
         private const string CREATE_TABLE_SQL_UNIQUE = @"
             CREATE TABLE IF NOT EXISTS ActiveUniqueQR (
