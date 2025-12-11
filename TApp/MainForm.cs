@@ -204,7 +204,7 @@ namespace TApp
 
             fDashboard.Start();
             fLogin.INIT();
-            fScan.InitializeScanner();
+            //fScan.InitializeScanner();
             PLCSetting.INIT();
             fExtention.InitializeERP();
 

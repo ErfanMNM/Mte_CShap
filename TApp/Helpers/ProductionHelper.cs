@@ -139,8 +139,7 @@ namespace TApp.Helpers
                 Total = 0;
                 Pass = 0;
                 ReadFail = 0;
-
-
+                Timeout = 0;
             }
 
             public void Reset()
@@ -149,7 +148,6 @@ namespace TApp.Helpers
                 Pass = 0;
                 ReadFail = 0;
                 Timeout = 0;
-
 
             }
 

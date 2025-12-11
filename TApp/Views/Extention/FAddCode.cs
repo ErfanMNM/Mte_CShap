@@ -1,3 +1,4 @@
+using MTs.Communication;
 using Sunny.UI;
 using System.ComponentModel;
 using System.Data;
@@ -19,6 +20,7 @@ namespace TApp.Views.Extention
         private int _totalSuccess = 0;
         private Timer _queueMonitor;
         private readonly List<QRProductRecord> _pendingRecords = new List<QRProductRecord>();
+        private SerialClientHelper _datalogicScanner;
         #endregion
 
         #region Constructor & Initialization
@@ -37,6 +39,12 @@ namespace TApp.Views.Extention
                 "",
                 "UA-FADDCODE-01"
             );
+            InitializeScanner();
+        }
+
+        private void FAddCode_Finalize(object sender, EventArgs e)
+        {
+            DisconnectScanner();
         }
 
         private void InitializeQueueMonitor()
@@ -47,6 +55,74 @@ namespace TApp.Views.Extention
             };
             _queueMonitor.Tick += QueueMonitor_Tick;
             _queueMonitor.Start();
+        }
+
+        public void InitializeScanner()
+        {
+            if (string.IsNullOrEmpty(AppConfigs.Current.Handheld_COM_Port))
+            {
+                AddConsoleLog("[CẢNH BÁO] Chưa cấu hình cổng COM cho máy quét cầm tay.", Color.Orange);
+                AddConsoleLog("[THÔNG BÁO] Vui lòng cấu hình cổng COM trong Settings để sử dụng máy quét.", Color.Orange);
+                return;
+            }
+
+            try
+            {
+                AddConsoleLog($"[THÔNG BÁO] Đang khởi tạo kết nối máy quét tại {AppConfigs.Current.Handheld_COM_Port}...", Color.Gainsboro);
+                _datalogicScanner = new SerialClientHelper(AppConfigs.Current.Handheld_COM_Port, 9600);
+                _datalogicScanner.SerialClientCallback += DatalogicScanner_SerialClientCallback;
+                _datalogicScanner.Connect();
+            }
+            catch (Exception ex)
+            {
+                AddConsoleLog($"[LỖI] Không thể khởi tạo máy quét: {ex.Message}", Color.Red);
+                AddConsoleLog("[THÔNG BÁO] Bạn vẫn có thể nhập mã thủ công hoặc quét bằng máy quét khác.", Color.Orange);
+            }
+        }
+
+        private void DatalogicScanner_SerialClientCallback(SerialClientState state, string data)
+        {
+            switch (state)
+            {
+                case SerialClientState.Connected:
+                    AddConsoleLog($"[THÀNH CÔNG] Đã kết nối máy quét tại {AppConfigs.Current.Handheld_COM_Port}", Color.Green);
+                    break;
+                case SerialClientState.Disconnected:
+                    AddConsoleLog($"[NGẮT KẾT NỐI] Máy quét đã ngắt kết nối: {data}", Color.Orange);
+                    break;
+                case SerialClientState.Received:
+                    this.InvokeIfRequired(() =>
+                    {
+                        ipQRContent.Text = data.Trim();
+                        btnAdd_Click(null, null);
+                    });
+                    break;
+                case SerialClientState.Error:
+                    AddConsoleLog($"[LỖI] Lỗi máy quét: {data}", Color.Red);
+                    break;
+            }
+        }
+
+        private void DisconnectScanner()
+        {
+            if (_datalogicScanner != null)
+            {
+                try
+                {
+                    if (_datalogicScanner.Connected)
+                    {
+                        _datalogicScanner.Disconnect();
+                    }
+                    _datalogicScanner.SerialClientCallback -= DatalogicScanner_SerialClientCallback;
+                    _datalogicScanner = null;
+                    AddConsoleLog("[THÔNG BÁO] Đã ngắt kết nối máy quét", Color.Orange);
+                }
+                catch (Exception ex)
+                {
+                    // Log lỗi nhưng không throw để đảm bảo ngắt kết nối hoàn tất
+                    System.Diagnostics.Debug.WriteLine($"Error disconnecting scanner: {ex.Message}");
+                }
+            }
         }
         #endregion
 
@@ -309,6 +385,42 @@ namespace TApp.Views.Extention
                     opConsole.Items.RemoveAt(opConsole.Items.Count - 1);
                 }
             });
+        }
+        #endregion
+
+        #region Cleanup
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Đóng kết nối máy quét
+                if (_datalogicScanner != null)
+                {
+                    try
+                    {
+                        if (_datalogicScanner.Connected)
+                        {
+                            _datalogicScanner.Disconnect();
+                        }
+                        _datalogicScanner.SerialClientCallback -= DatalogicScanner_SerialClientCallback;
+                        _datalogicScanner = null;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log lỗi nhưng không throw để đảm bảo dispose hoàn tất
+                        System.Diagnostics.Debug.WriteLine($"Error disposing scanner: {ex.Message}");
+                    }
+                }
+
+                // Dừng timer
+                if (_queueMonitor != null)
+                {
+                    _queueMonitor.Stop();
+                    _queueMonitor.Dispose();
+                    _queueMonitor = null;
+                }
+            }
+            base.Dispose(disposing);
         }
         #endregion
     }

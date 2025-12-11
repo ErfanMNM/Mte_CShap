@@ -68,7 +68,7 @@
             uiPanel12 = new Sunny.UI.UIPanel();
             opSCount = new Sunny.UI.UITextBox();
             uiTextBox2 = new Sunny.UI.UITextBox();
-            uiTextBox3 = new Sunny.UI.UITextBox();
+            opLineName = new Sunny.UI.UITextBox();
             uiTableLayoutPanel13 = new Sunny.UI.UITableLayoutPanel();
             ipBarcode = new Sunny.UI.UITextBox();
             uiTitlePanel1 = new Sunny.UI.UITitlePanel();
@@ -352,7 +352,6 @@
             opResopse.TabIndex = 0;
             opResopse.Text = "#1 Mã QR";
             opResopse.TextAlignment = ContentAlignment.MiddleCenter;
-            //opResopse.TextChanged += opResopse_TextChanged;
             // 
             // opResultStatus
             // 
@@ -368,7 +367,6 @@
             opResultStatus.TabIndex = 1;
             opResultStatus.Text = "TỐT";
             opResultStatus.TextAlignment = ContentAlignment.MiddleCenter;
-           // opResultStatus.Click += opResultStatus_Click;
             // 
             // uiTitlePanel2
             // 
@@ -651,7 +649,7 @@
             uiTableLayoutPanel11.Controls.Add(uiPanel12, 0, 4);
             uiTableLayoutPanel11.Controls.Add(opSCount, 1, 2);
             uiTableLayoutPanel11.Controls.Add(uiTextBox2, 1, 3);
-            uiTableLayoutPanel11.Controls.Add(uiTextBox3, 1, 4);
+            uiTableLayoutPanel11.Controls.Add(opLineName, 1, 4);
             uiTableLayoutPanel11.Controls.Add(uiTableLayoutPanel13, 1, 1);
             uiTableLayoutPanel11.Dock = DockStyle.Fill;
             uiTableLayoutPanel11.Location = new Point(1, 35);
@@ -823,22 +821,22 @@
             uiTextBox2.TextAlignment = ContentAlignment.MiddleLeft;
             uiTextBox2.Watermark = "";
             // 
-            // uiTextBox3
+            // opLineName
             // 
-            uiTextBox3.Dock = DockStyle.Fill;
-            uiTextBox3.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTextBox3.Location = new Point(121, 146);
-            uiTextBox3.Margin = new Padding(2);
-            uiTextBox3.MinimumSize = new Size(1, 16);
-            uiTextBox3.Name = "uiTextBox3";
-            uiTextBox3.Padding = new Padding(5);
-            uiTextBox3.ReadOnly = true;
-            uiTextBox3.ShowText = false;
-            uiTextBox3.Size = new Size(242, 32);
-            uiTextBox3.TabIndex = 3;
-            uiTextBox3.Text = "Line 3";
-            uiTextBox3.TextAlignment = ContentAlignment.MiddleLeft;
-            uiTextBox3.Watermark = "";
+            opLineName.Dock = DockStyle.Fill;
+            opLineName.Font = new Font("Microsoft Sans Serif", 12F);
+            opLineName.Location = new Point(121, 146);
+            opLineName.Margin = new Padding(2);
+            opLineName.MinimumSize = new Size(1, 16);
+            opLineName.Name = "opLineName";
+            opLineName.Padding = new Padding(5);
+            opLineName.ReadOnly = true;
+            opLineName.ShowText = false;
+            opLineName.Size = new Size(242, 32);
+            opLineName.TabIndex = 3;
+            opLineName.Text = "Line 3";
+            opLineName.TextAlignment = ContentAlignment.MiddleLeft;
+            opLineName.Watermark = "";
             // 
             // uiTableLayoutPanel13
             // 
@@ -1524,7 +1522,7 @@
         private TabPage tabPage2;
         private Sunny.UI.UITextBox opSCount;
         private Sunny.UI.UITextBox uiTextBox2;
-        private Sunny.UI.UITextBox uiTextBox3;
+        private Sunny.UI.UITextBox opLineName;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel12;
         private Sunny.UI.UISymbolButton btnChangeBatch;
         private Sunny.UI.UISymbolButton btnScan;

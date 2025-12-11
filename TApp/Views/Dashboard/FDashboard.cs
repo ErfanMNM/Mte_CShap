@@ -151,6 +151,7 @@ namespace TApp.Views.Dashboard
         {
             try
             {
+                opLineName.Text = AppConfigs.Current.Line_Name;
                 networkStrength1.StartMonitoring();
             }
             catch (Exception ex)
@@ -810,13 +811,22 @@ namespace TApp.Views.Dashboard
 
         private void UpdateCountersFromPLC()
         {
+            if(GlobalVarialbles.CurrentAppState == e_AppState.Ready)
+            {
+                omronPLC_Hsl1.Ready = 1;
+            }
+            else
+            {
+                omronPLC_Hsl1.Ready = 0;
+            }
+           // GlobalVarialbles.CurrentAppState
             OperateResult<int[]> result = omronPLC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Total_Count_DM"), 5);
             if (result.IsSuccess)
             {
                 FD_Globals.productionData.PLC_Counter.Total = result.Content[0];
                 FD_Globals.productionData.PLC_Counter.ReadFail = result.Content[1];
                 FD_Globals.productionData.PLC_Counter.Pass = result.Content[2];
-                FD_Globals.productionData.PLC_Counter.Timeout = result.Content[3];
+                FD_Globals.productionData.PLC_Counter.Timeout = result.Content[4];
             }
             else
             {

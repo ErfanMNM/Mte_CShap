@@ -8,8 +8,8 @@ namespace TApp.Helpers
 
     public enum e_PLC_Result
     {
-        Pass = 0,
-        Fail = 1
+        Pass = 1,
+        Fail = 0
     }
 
     public static class PLCAddressWithGoogleSheetHelper

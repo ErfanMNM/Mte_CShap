@@ -28,11 +28,11 @@
         /// </summary>
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle8 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle9 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle10 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiTitlePanel1 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
@@ -49,10 +49,10 @@
             opTimePanel = new Sunny.UI.UITitlePanel();
             opTime = new Sunny.UI.UILabel();
             uiLabel1 = new Sunny.UI.UILabel();
-            WK_Find = new System.ComponentModel.BackgroundWorker();
             uiTableLayoutPanel5 = new Sunny.UI.UITableLayoutPanel();
             btnCheckCloud = new Sunny.UI.UISymbolButton();
             uiPanel1 = new Sunny.UI.UIPanel();
+            WK_Find = new System.ComponentModel.BackgroundWorker();
             uiTableLayoutPanel1.SuspendLayout();
             uiTitlePanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
@@ -202,27 +202,27 @@
             // 
             // opInfoTable
             // 
-            dataGridViewCellStyle6.BackColor = Color.FromArgb(235, 243, 255);
-            opInfoTable.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle1.BackColor = Color.FromArgb(235, 243, 255);
+            opInfoTable.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
             opInfoTable.BackgroundColor = Color.White;
             opInfoTable.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle7.BackColor = Color.FromArgb(80, 160, 255);
-            dataGridViewCellStyle7.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle7.ForeColor = Color.White;
-            dataGridViewCellStyle7.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle7.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle7.WrapMode = DataGridViewTriState.True;
-            opInfoTable.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle2.BackColor = Color.FromArgb(80, 160, 255);
+            dataGridViewCellStyle2.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle2.ForeColor = Color.White;
+            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
+            opInfoTable.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             opInfoTable.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle8.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle8.BackColor = SystemColors.Window;
-            dataGridViewCellStyle8.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle8.ForeColor = Color.FromArgb(48, 48, 48);
-            dataGridViewCellStyle8.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle8.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle8.WrapMode = DataGridViewTriState.False;
-            opInfoTable.DefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = SystemColors.Window;
+            dataGridViewCellStyle3.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle3.ForeColor = Color.FromArgb(48, 48, 48);
+            dataGridViewCellStyle3.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
+            opInfoTable.DefaultCellStyle = dataGridViewCellStyle3;
             opInfoTable.Dock = DockStyle.Fill;
             opInfoTable.EnableHeadersVisualStyles = false;
             opInfoTable.Font = new Font("Microsoft Sans Serif", 12F);
@@ -230,17 +230,17 @@
             opInfoTable.Location = new Point(1, 35);
             opInfoTable.Margin = new Padding(2);
             opInfoTable.Name = "opInfoTable";
-            dataGridViewCellStyle9.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle9.BackColor = Color.FromArgb(235, 243, 255);
-            dataGridViewCellStyle9.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle9.ForeColor = Color.FromArgb(48, 48, 48);
-            dataGridViewCellStyle9.SelectionBackColor = Color.FromArgb(80, 160, 255);
-            dataGridViewCellStyle9.SelectionForeColor = Color.White;
-            dataGridViewCellStyle9.WrapMode = DataGridViewTriState.True;
-            opInfoTable.RowHeadersDefaultCellStyle = dataGridViewCellStyle9;
-            dataGridViewCellStyle10.BackColor = Color.White;
-            dataGridViewCellStyle10.Font = new Font("Microsoft Sans Serif", 12F);
-            opInfoTable.RowsDefaultCellStyle = dataGridViewCellStyle10;
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = Color.FromArgb(235, 243, 255);
+            dataGridViewCellStyle4.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle4.ForeColor = Color.FromArgb(48, 48, 48);
+            dataGridViewCellStyle4.SelectionBackColor = Color.FromArgb(80, 160, 255);
+            dataGridViewCellStyle4.SelectionForeColor = Color.White;
+            dataGridViewCellStyle4.WrapMode = DataGridViewTriState.True;
+            opInfoTable.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle5.BackColor = Color.White;
+            dataGridViewCellStyle5.Font = new Font("Microsoft Sans Serif", 12F);
+            opInfoTable.RowsDefaultCellStyle = dataGridViewCellStyle5;
             opInfoTable.SelectedIndex = -1;
             opInfoTable.Size = new Size(864, 227);
             opInfoTable.StripeOddColor = Color.FromArgb(235, 243, 255);
@@ -278,7 +278,7 @@
             opTypePanel.ShowText = false;
             opTypePanel.Size = new Size(150, 65);
             opTypePanel.TabIndex = 5;
-            opTypePanel.Text = "Loại kích hoạt";
+            opTypePanel.Text = "Chế độ";
             opTypePanel.TextAlignment = ContentAlignment.MiddleCenter;
             opTypePanel.TitleColor = Color.Green;
             opTypePanel.TitleHeight = 25;
@@ -309,7 +309,7 @@
             opStatus.SymbolColor = Color.Black;
             opStatus.SymbolSize = 50;
             opStatus.TabIndex = 3;
-            opStatus.Text = "ĐANG TÌM KIẾM ...";
+            opStatus.Text = "-";
             // 
             // opTimePanel
             // 
@@ -339,7 +339,7 @@
             opTime.Name = "opTime";
             opTime.Size = new Size(259, 39);
             opTime.TabIndex = 0;
-            opTime.Text = "2025-11-24 00:01:02.123+0700";
+            opTime.Text = "-";
             opTime.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // uiLabel1
@@ -351,11 +351,6 @@
             uiLabel1.Size = new Size(8, 8);
             uiLabel1.TabIndex = 0;
             uiLabel1.Text = "uiLabel1";
-            // 
-            // WK_Find
-            // 
-            WK_Find.WorkerReportsProgress = true;
-            WK_Find.DoWork += WK_Find_DoWork;
             // 
             // uiTableLayoutPanel5
             // 
@@ -400,6 +395,11 @@
             uiPanel1.Text = "Nhấn vào nút kiểm tra tải lên để kiểm tra trạng thái tải lên của mã, sẽ mất khoảng 1 phút";
             uiPanel1.TextAlignment = ContentAlignment.MiddleCenter;
             // 
+            // WK_Find
+            // 
+            WK_Find.WorkerReportsProgress = true;
+            WK_Find.DoWork += WK_Find_DoWork;
+            // 
             // FScan
             // 
             AutoScaleMode = AutoScaleMode.None;
@@ -408,6 +408,8 @@
             Name = "FScan";
             Symbol = 563580;
             Text = "Kiểm Mã";
+            Initialize += FScan_Initialize;
+            Finalize += FScan_Finalize;
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTitlePanel1.ResumeLayout(false);
             uiTableLayoutPanel2.ResumeLayout(false);

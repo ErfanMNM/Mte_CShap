@@ -210,7 +210,7 @@
             uiPanel3.RectColor = Color.Blue;
             uiPanel3.Size = new Size(150, 41);
             uiPanel3.TabIndex = 4;
-            uiPanel3.Text = "MASAN";
+            uiPanel3.Text = "MASAN v12.11.5.2";
             uiPanel3.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // NavMenu

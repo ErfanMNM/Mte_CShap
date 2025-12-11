@@ -488,8 +488,18 @@ namespace TApp.Views.Extention
                     PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu trạng thái hệ thống thất bại :" + wSystemStatus.Message, "", "FDE_0011");
                 }
 
-                
-                
+                //số đếm
+                //systemstatusDM -> gửi trạng thái hệ thống (AppState)
+                OperateResult wAllFail = plc.Write(
+                    PLCAddressWithGoogleSheetHelper.Get("PLC_Count_AllFail_DM"),
+                    (int)FD_Globals.productionData.PLC_Counter.Fail);
+                if (!wSystemStatus.IsSuccess)
+                {
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu trạng thái hệ thống thất bại :" + wSystemStatus.Message, "", "FDE_0011");
+                }
+
+
+
 
 
                 Thread.Sleep(5000);

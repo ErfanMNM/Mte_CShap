@@ -11,14 +11,7 @@ namespace TApp.Views.Extention
         /// Clean up any resources being used.
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && (components != null))
-            {
-                components.Dispose();
-            }
-            base.Dispose(disposing);
-        }
+
 
         #region Windows Form Designer generated code
 
@@ -409,6 +402,8 @@ namespace TApp.Views.Extention
             Name = "FAddCode";
             Symbol = 559548;
             Text = "Thêm Mã";
+            Initialize += FAddCode_Initialize;
+            Finalize += FAddCode_Finalize;
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTitlePanel1.ResumeLayout(false);
             uiTableLayoutPanel2.ResumeLayout(false);

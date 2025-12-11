@@ -1,10 +1,7 @@
 ﻿using MTs.Communication;
 using Sunny.UI;
-using System.ComponentModel;
-using System.Data;
 using TApp.Configs;
 using TApp.Helpers;
-using TApp.Infrastructure;
 using TApp.Utils;
 using TTManager.Diaglogs;
 using TTManager.Masan;
@@ -13,11 +10,10 @@ namespace TApp.Views.Extention
 {
     public partial class FScan : UIPage
     {
-        #region Fields
-        private SerialClientHelper _datalogicScanner;
-        #endregion
+        private SerialClientHelper DatalogicScaner;
 
-        #region Constructor & Initialization
+        public int DatalogicScaner_DataReceived { get; private set; }
+
         public FScan()
         {
             InitializeComponent();
@@ -25,49 +21,91 @@ namespace TApp.Views.Extention
 
         private void FScan_Initialize(object sender, EventArgs e)
         {
-            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Mở trang quét tra cứu mã", "", "UA-FSCAN-01");
             InitializeScanner();
+        }
+
+        private void FScan_Finalize(object sender, EventArgs e)
+        {
+            DisconnectScanner();
         }
 
         public void InitializeScanner()
         {
             if (string.IsNullOrEmpty(AppConfigs.Current.Handheld_COM_Port))
             {
-                this.ShowWarningTip("Chưa cấu hình cổng COM cho máy quét cầm tay.");
+                opConsole.Items.Insert(0, "[CẢNH BÁO] Chưa cấu hình cổng COM cho máy quét cầm tay.");
                 return;
             }
-            _datalogicScanner = new SerialClientHelper(AppConfigs.Current.Handheld_COM_Port, 9600);
-            _datalogicScanner.SerialClientCallback += DatalogicScanner_SerialClientCallback;
-            _datalogicScanner.Connect();
-        }
-        #endregion
 
-        #region Scanner Handling
-        private void DatalogicScanner_SerialClientCallback(SerialClientState state, string data)
-        {
-            if (state == SerialClientState.Received)
+            try
             {
-                this.InvokeIfRequired(() =>
-                {
-                    ipQRContent.Text = data.Trim();
-                    FindData(data.Trim());
-                });
+                DatalogicScaner = new SerialClientHelper(AppConfigs.Current.Handheld_COM_Port, 9600);
+                DatalogicScaner.SerialClientCallback += DatalogicScaner_SerialClientCallback;
+                DatalogicScaner.Connect();
+                opConsole.Items.Insert(0, $"Giao diện phần mềm 1.0");
+            }
+            catch (Exception ex)
+            {
+                opConsole.Items.Insert(0, $"[LỖI] Không thể kết nối máy quét: {ex.Message}");
             }
         }
-        #endregion
 
-        #region UI Event Handlers
+        private void DisconnectScanner()
+        {
+            if (DatalogicScaner != null)
+            {
+                try
+                {
+                    if (DatalogicScaner.Connected)
+                    {
+                        DatalogicScaner.Disconnect();
+                    }
+                    DatalogicScaner.SerialClientCallback -= DatalogicScaner_SerialClientCallback;
+                    DatalogicScaner = null;
+                }
+                catch (Exception ex)
+                {
+                    // Log lỗi nhưng không throw để đảm bảo ngắt kết nối hoàn tất
+                    System.Diagnostics.Debug.WriteLine($"Error disconnecting scanner: {ex.Message}");
+                }
+            }
+        }
+
+        private void DatalogicScaner_SerialClientCallback(SerialClientState state, string data)
+        {
+            switch (state)
+            {
+                case SerialClientState.Connected:
+                    // Handle connected state if needed
+                    break;
+                case SerialClientState.Disconnected:
+                    // Handle disconnected state if needed
+                    break;
+                case SerialClientState.Received:
+                    this.InvokeIfRequired(() =>
+                    {
+                        ipQRContent.Text = data.Trim();
+                    });
+
+                    WK_Find.RunWorkerAsync(data.Trim());
+                    break;
+                case SerialClientState.Error:
+                    // Handle error state if needed
+                    break;
+            }
+        }
+
         private void ipQRContent_DoubleClick(object sender, EventArgs e)
         {
-            using (var enterText = new Entertext())
+            //bật bàn phím ảo
+            using (Entertext enterText = new Entertext())
             {
                 enterText.TileText = "Nhập toàn bộ mã QR hoặc 1 phần mã";
                 enterText.TextValue = ipQRContent.Text;
-                enterText.IsPassword = false;
+                enterText.IsPassword = false; // Thiết lập chế độ nhập mật khẩu
                 enterText.EnterClicked += (s, args) =>
                 {
                     ipQRContent.Text = enterText.TextValue;
-                    FindData(enterText.TextValue);
                 };
                 enterText.ShowDialog();
             }
@@ -75,167 +113,196 @@ namespace TApp.Views.Extention
 
         private void btnFind_Click(object sender, EventArgs e)
         {
-            string qrCode = ipQRContent.Text.Trim();
-            if (string.IsNullOrWhiteSpace(qrCode))
+            if (string.IsNullOrWhiteSpace(ipQRContent.Text))
             {
-                UpdateStatusLabel(ScanStatus.Warning, "Vui lòng nhập mã QR!");
+                opStatus.Text = "Vui lòng nhập mã QR!";
+                opStatus.BackColor = Color.Orange;
+                opStatus.Symbol = 61527;
+                opStatus.SymbolColor = Color.White;
+                opStatus.ForeColor = Color.White;
                 return;
             }
-            FindData(qrCode);
-        }
-        #endregion
 
-        #region Background Worker & Data Logic
-        private enum ScanStatus { Searching, Success, SuccessButNotActive, NotFound, Error, Warning }
-
-        private class ScanResult
-        {
-            public ScanStatus Status { get; set; }
-            public DataTable Data { get; set; }
-            public string TimeStamp { get; set; }
-            public string Message { get; set; }
-            public string ScannedCode { get; set; }
-        }
-
-        private void FindData(string qrCode)
-        {
+            // Kiểm tra nếu WK_Find đang chạy
             if (WK_Find.IsBusy)
             {
-                UpdateStatusLabel(ScanStatus.Warning, "Đang xử lý yêu cầu trước đó...");
+                opStatus.Text = "Đang xử lý...";
                 return;
             }
-            UpdateStatusLabel(ScanStatus.Searching, "Đang tìm kiếm...");
-            WK_Find.RunWorkerAsync(qrCode);
+
+            WK_Find.RunWorkerAsync(ipQRContent.Text.Trim());
         }
 
-        private void WK_Find_DoWork(object sender, DoWorkEventArgs e)
+
+        private void WK_Find_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
-            string qrCode = e.Argument as string;
-            var result = new ScanResult { ScannedCode = qrCode };
-
-            TResult resultAll = QRDatabaseHelper.GetByQRContent(qrCode);
-            if (!resultAll.issuccess)
+            try
             {
-                result.Status = ScanStatus.Error;
-                result.Message = $"Lỗi truy xuất database: {resultAll.message}";
-                e.Result = result;
-                return;
-            }
-
-            if (resultAll.data.Rows.Count == 0)
-            {
-                result.Status = ScanStatus.NotFound;
-                result.Message = $"Mã: {qrCode} không tồn tại trong hệ thống.";
-                e.Result = result;
-                return;
-            }
-
-            result.Data = resultAll.data;
-            AnalyzeScanResults(result, qrCode);
-            e.Result = result;
-        }
-
-        private void AnalyzeScanResults(ScanResult result, string qrCode)
-        {
-            TResult resultActive = QRDatabaseHelper.GetActiveByQRContent(qrCode);
-            if (resultActive.issuccess && resultActive.data.Rows.Count > 0)
-            {
-                result.Status = ScanStatus.Success;
-                result.Message = "Mã đã được kích hoạt.";
-                result.TimeStamp = resultActive.data.Rows[0]["TimeStampActive"].ToString();
-            }
-            else
-            {
-                string statusInMainDb = result.Data.Rows[0]["Status"].ToString();
-                if (statusInMainDb.Equals("Pass", StringComparison.OrdinalIgnoreCase))
+                // Xử lý lỗi chung
+                this.InvokeIfRequired(() =>
                 {
-                    result.Status = ScanStatus.SuccessButNotActive;
-                    result.Message = "Mã hợp lệ nhưng chưa được kích hoạt.";
+                    opStatus.Text = "Lỗi trong quá trình tìm kiếm!";
+                    opStatus.BackColor = Color.Red;
+                    opStatus.Symbol = 61453;
+                    opStatus.SymbolColor = Color.White;
+                    opStatus.ForeColor = Color.White;
+                });
+                this.InvokeIfRequired(() =>
+                {
+                    opStatus.Text = "Đang tìm kiếm...";
+                    opStatus.BackColor = Color.Gainsboro;
+                    opStatus.Symbol = 61761;
+                    opStatus.SymbolColor = Color.Black;
+                    opStatus.ForeColor = Color.Black;
+
+                    // Clear grid
+                    opInfoTable.DataSource = null;
+                    opTime.Text = "";
+                });
+
+                string? qrCode = e.Argument as string;
+
+                if (qrCode == null)
+                {
+                    //chửi
+                    this.InvokeIfRequired(() =>
+                    {
+                        opStatus.Text = "Mã QR không hợp lệ!";
+                        opStatus.BackColor = Color.Red;
+                        opStatus.Symbol = 61453;
+                        opStatus.SymbolColor = Color.White;
+                        opStatus.ForeColor = Color.White;
+                    });
+
+                    return;
                 }
-                else
+
+                // Lấy dữ liệu từ cả hai database
+                TResult resultActive = QRDatabaseHelper.GetActiveByQRContent(qrCode);
+                TResult resultAll = QRDatabaseHelper.GetByQRContent(qrCode);
+
+                if (!resultAll.issuccess)
                 {
-                    result.Status = ScanStatus.Warning;
-                    result.Message = $"Mã có trạng thái: {statusInMainDb}";
+                    //lỗi truy xuất database
+                    this.InvokeIfRequired(() =>
+                    {
+                        opStatus.Text = "Lỗi truy xuất database!";
+                        opStatus.BackColor = Color.Orange;
+                        opStatus.Symbol = 61527;
+                        opStatus.SymbolColor = Color.White;
+                        opStatus.ForeColor = Color.White;
+                    });
+                    return;
                 }
-                result.TimeStamp = result.Data.Rows[0]["TimeStampActive"].ToString();
-            }
-        }
 
-        private void WK_Find_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            if (e.Result is ScanResult result)
-            {
-                UpdateStatusLabel(result.Status, result.Message);
-                opInfoTable.DataSource = result.Data;
-                opTime.Text = result.TimeStamp;
-
-                if (result.Data != null)
+                if (resultAll.data == null)
                 {
+                    //không tìm thấy
+                    this.InvokeIfRequired(() =>
+                    {
+                        opStatus.Text = "Không tìm thấy mã QR.!";
+                        opStatus.BackColor = Color.Red;
+                        opStatus.Symbol = 61453;
+                        opStatus.SymbolColor = Color.White;
+                        opStatus.ForeColor = Color.White;
+                    });
+                    return;
+                }
+
+                if (resultAll.data.Rows.Count < 1)
+                {
+                    //không tìm thấy
+                    this.InvokeIfRequired(() =>
+                    {
+                        opStatus.Text = "Không tìm thấy mã QR!";
+                        opStatus.BackColor = Color.Red;
+                        opStatus.Symbol = 61453;
+                        opStatus.SymbolColor = Color.White;
+                        opStatus.ForeColor = Color.White;
+                    });
+                    return;
+                }
+
+                // Hiển thị dữ liệu lên grid
+                this.InvokeIfRequired(() =>
+                {
+                    opInfoTable.DataSource = resultAll.data;
+
+                    // Tự động resize columns
                     foreach (DataGridViewColumn column in opInfoTable.Columns)
                     {
                         column.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                     }
-                }
+                });
 
-                if (result.Status != ScanStatus.Searching)
+                // Kiểm tra mã có active không
+                if (resultActive.issuccess && resultActive.data.Rows.Count > 0)
                 {
-                    opConsole.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {result.Message}");
-                }
+                    //đã kích hoạt
+                    this.InvokeIfRequired(() =>
+                    {
+                        opStatus.Text = "Mã đã kích hoạt";
+                        opStatus.BackColor = Color.LimeGreen;
+                        opStatus.Symbol = 61527;
+                        opStatus.SymbolColor = Color.White;
+                        opStatus.ForeColor = Color.White;
 
-                if (result.Status == ScanStatus.Success || result.Status == ScanStatus.SuccessButNotActive)
+                        // Hiển thị thông tin thời gian từ active database
+                        if (resultActive.data.Rows.Count > 0)
+                        {
+                            var row = resultActive.data.Rows[0];
+                            opTime.Text = row["TimeStampActive"].ToString();
+                        }
+                    });
+                }
+                else
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Tìm kiếm mã thành công", $"{{'QR':'{result.ScannedCode}', 'Count':'{result.Data?.Rows.Count ?? 0}'}}", "UA-FSCAN-02");
+                    // Kiểm tra status trong database chính
+                    if (resultAll.data.Rows.Count > 0)
+                    {
+                        var firstRow = resultAll.data.Rows[0];
+                        string status = firstRow["Status"].ToString();
+
+                        this.InvokeIfRequired(() =>
+                        {
+                            if (status.Equals("Pass", StringComparison.OrdinalIgnoreCase))
+                            {
+                                opStatus.Text = "Mã chưa kích hoạt (Pass)";
+                                opStatus.BackColor = Color.Orange;
+                                opStatus.Symbol = 61527;
+                                opStatus.SymbolColor = Color.White;
+                                opStatus.ForeColor = Color.White;
+                            }
+                            else
+                            {
+                                opStatus.Text = $"Mã có status: {status}";
+                                opStatus.BackColor = Color.DarkOrange;
+                                opStatus.Symbol = 61527;
+                                opStatus.SymbolColor = Color.White;
+                                opStatus.ForeColor = Color.White;
+                            }
+
+                            // Hiển thị thông tin thời gian
+                            opTime.Text = firstRow["TimeStampActive"].ToString();
+                        });
+                    }
                 }
             }
-        }
-        #endregion
-
-        #region UI Update Methods
-        private void UpdateStatusLabel(ScanStatus status, string text)
-        {
-            Color backColor, foreColor;
-            int symbol;
-
-            switch (status)
+            catch (Exception ex)
             {
-                case ScanStatus.Searching:
-                    backColor = Color.Gainsboro;
-                    foreColor = Color.Black;
-                    symbol = 61761; // Loading symbol
-                    break;
-                case ScanStatus.Success:
-                    backColor = Color.LimeGreen;
-                    foreColor = Color.White;
-                    symbol = 61527; // Success symbol
-                    break;
-                case ScanStatus.SuccessButNotActive:
-                    backColor = Color.Orange;
-                    foreColor = Color.White;
-                    symbol = 61527; // Warning symbol
-                    break;
-                case ScanStatus.NotFound:
-                case ScanStatus.Error:
-                    backColor = Color.Red;
-                    foreColor = Color.White;
-                    symbol = 61453; // Error symbol
-                    break;
-                case ScanStatus.Warning:
-                default:
-                    backColor = Color.DarkOrange;
-                    foreColor = Color.White;
-                    symbol = 61527; // Warning symbol
-                    break;
+                // Xử lý lỗi chung
+                this.InvokeIfRequired(() =>
+                {
+                    opStatus.Text = $"Lỗi";
+                    opStatus.BackColor = Color.Red;
+                    opStatus.Symbol = 61453;
+                    opStatus.SymbolColor = Color.White;
+                    opStatus.ForeColor = Color.White;
+
+                    opConsole.Items.Insert(0, $"[LỖI] {ex.Message}");
+                });
             }
-
-            this.InvokeIfRequired(() =>
-            {
-                opStatus.Text = text;
-                opStatus.BackColor = backColor;
-                opStatus.ForeColor = foreColor;
-                opStatus.Symbol = symbol;
-                opStatus.SymbolColor = foreColor;
-            });
+                
         }
-        #endregion
     }
 }

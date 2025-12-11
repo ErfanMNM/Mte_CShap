@@ -221,6 +221,7 @@ namespace TApp.Helpers
 
                         var adapter = new SQLiteDataAdapter(cmd);
                         var table = new DataTable();
+                        
                         adapter.Fill(table);
 
                         return (table.Rows.Count > 0)
