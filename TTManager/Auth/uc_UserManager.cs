@@ -175,7 +175,7 @@ namespace TTManager.Auth
                     }
                 }
 
-                
+
             }
         }
 
@@ -184,20 +184,20 @@ namespace TTManager.Auth
 
             //kiểm tra mật khẩu và mã OTP nếu 2FA được bật
 
-            if(ipPassword.Text.Trim() == string.Empty)
+            if (ipPassword.Text.Trim() == string.Empty)
             {
                 OnAction?.Invoke(this, new LoginActionEventArgs { Status = false, Message = "Vui lòng nhập mật khẩu để xác thực thêm người dùng mới." });
                 return;
             }
 
-            if(IS2FAEnabled)
+            if (IS2FAEnabled)
             {
-                if(ipTwoFA.Text.Trim() == string.Empty)
+                if (ipTwoFA.Text.Trim() == string.Empty)
                 {
                     OnAction?.Invoke(this, new LoginActionEventArgs { Status = false, Message = "Vui lòng nhập mã 2FA để xác thực thêm người dùng mới." });
                     return;
                 }
-                if(!UserHelper.Validate2FA(CurrentUserName, ipTwoFA.Text.Trim(), data_file_path))
+                if (!UserHelper.Validate2FA(CurrentUserName, ipTwoFA.Text.Trim(), data_file_path))
                 {
                     OnAction?.Invoke(this, new LoginActionEventArgs { Status = false, Message = "Mã 2FA không đúng!" });
                     return;
@@ -207,8 +207,8 @@ namespace TTManager.Auth
             {
                 //ghi log thất bại
                 OnAction?.Invoke(this, new LoginActionEventArgs { Status = false, Message = "Sai mật khẩu!" });
-                    return;
-                
+                return;
+
 
             }
             using (EnterAddUser enterText = new EnterAddUser())
@@ -257,6 +257,20 @@ namespace TTManager.Auth
         private void btnExportCsv_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void ipPassword_DoubleClick(object sender, EventArgs e)
+        {
+            using (Entertext enterText = new Entertext())
+            {
+                enterText.TileText = "Nhập mật khẩu";
+                enterText.TextValue = ipPassword.Text;
+                enterText.EnterClicked += (s, args) =>
+                {
+                    ipPassword.Text = enterText.TextValue;
+                };
+                enterText.ShowDialog();
+            }
         }
     }
 }

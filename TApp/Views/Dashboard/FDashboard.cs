@@ -438,6 +438,7 @@ namespace TApp.Views.Dashboard
             using (var dialog = new DChangeBatch())
             {
                 dialog.BatchCode = ipBatchNo.Text.Trim();
+                
                 dialog.Barcode = ipBarcode.Text.Trim();
                 dialog.CurrentUser = GlobalVarialbles.CurrentUser;
                 dialog.bt = erP_Google2.LoadExcelToProductListD(AppConfigs.Current.production_list_path);
@@ -740,14 +741,14 @@ namespace TApp.Views.Dashboard
 
         private void HandleEnterBatchChangeMode()
         {
-            btnABatch.Enabled = false;
-            btnABatch.Symbol = 61473; // loading
+            //btnABatch.Enabled = false;
+            //btnABatch.Symbol = 61473; // loading
             string rs = erP_Google2.Load_Erp_to_Cbb_With_Line_Name(ipBatchNo);
             if (rs == "OK")
             {
-                btnABatch.FillColor = Color.OrangeRed;
-                btnABatch.Symbol = 61533; // confirm
-                btnABatch.Enabled = true;
+                //btnABatch.FillColor = Color.OrangeRed;
+                //btnABatch.Symbol = 61533; // confirm
+                //btnABatch.Enabled = true;
                 ipBatchNo.Enabled = true;
                 ipBatchNo.FillColor = Color.Yellow;
             }
@@ -784,9 +785,9 @@ namespace TApp.Views.Dashboard
 
         private void ResetBatchChangeMode(bool resetBatchChangeVar = true)
         {
-            btnABatch.Enabled = true;
-            btnABatch.FillColor = Color.FromArgb(0, 192, 0);
-            btnABatch.Symbol = 563629; // Reset symbol
+            //btnABatch.Enabled = true;
+            //btnABatch.FillColor = Color.FromArgb(0, 192, 0);
+            //btnABatch.Symbol = 563629; // Reset symbol
             ipBatchNo.Enabled = false;
             ipBatchNo.FillColor = Color.White;
             if (resetBatchChangeVar) _batchChangeMode = false;
@@ -849,6 +850,9 @@ namespace TApp.Views.Dashboard
         {
             if (loadErpResult == "OK")
             {
+                dialog.opERPStatus.Text = "ERP OK";
+                dialog.opERPStatus.FillColor = Color.FromArgb(0, 192, 0);
+
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
                     ipBarcode.Text = dialog.Barcode;
@@ -866,7 +870,23 @@ namespace TApp.Views.Dashboard
             }
             else
             {
-                this.ShowErrorDialog("Tải xuống ERP thất bại, HÃY CHỤP LẠI THÔNG BÁO NÀY. Làm theo hướng dẫn sau: Bước 1: Nhấn vào bảng Chức Năng -> Nhấn nút kiểm tra ERP -> Nhấp đúp vào thông báo -> Chụp lại -> Gửi cho kỹ thuật viên phụ trách");
+                dialog.opERPStatus.Text = "ERP Lỗi";
+                dialog.opERPStatus.FillColor = Color.Red;
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    ipBarcode.Text = dialog.Barcode;
+                    ipBatchNo.Text = dialog.BatchCode;
+                    FD_Globals.productionData.BatchCode = dialog.BatchCode;
+                    FD_Globals.productionData.Barcode = dialog.Barcode;
+                    BatchHistoryHelper.AddHistory("Database/Production/batch_history.db", FD_Globals.productionData.BatchCode, FD_Globals.productionData.Barcode, GlobalVarialbles.CurrentUser.Username, DateTime.Now);
+                    this.ShowSuccessTip("Đổi lô thành công!");
+                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
+                }
+                else
+                {
+                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Hủy đổi lô sản xuất", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
+                }
+
                 GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", $"{{'Thông tin lỗi':'{loadErpResult}'}}", "ERP-F-01");
             }
         }

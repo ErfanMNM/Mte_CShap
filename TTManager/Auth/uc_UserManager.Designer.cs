@@ -28,11 +28,11 @@
         /// </summary>
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle8 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle9 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle10 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
             uiTitlePanel1 = new Sunny.UI.UITitlePanel();
             uiDataGridView1 = new Sunny.UI.UIDataGridView();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
@@ -42,11 +42,11 @@
             btnAddUser = new Sunny.UI.UISymbolButton();
             btnExportCsv = new Sunny.UI.UISymbolButton();
             uiSymbolButton1 = new Sunny.UI.UISymbolButton();
+            ipTwoFA = new Sunny.UI.UINumPadTextBox();
             uiPanel2 = new Sunny.UI.UIPanel();
             uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
             ipPassword = new Sunny.UI.UITextBox();
             uiSymbolLabel1 = new Sunny.UI.UISymbolLabel();
-            ipTwoFA = new Sunny.UI.UINumPadTextBox();
             uiTitlePanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)uiDataGridView1).BeginInit();
             uiTableLayoutPanel1.SuspendLayout();
@@ -76,29 +76,29 @@
             // 
             uiDataGridView1.AllowUserToAddRows = false;
             uiDataGridView1.AllowUserToDeleteRows = false;
-            dataGridViewCellStyle6.BackColor = Color.FromArgb(235, 243, 255);
-            uiDataGridView1.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle1.BackColor = Color.FromArgb(235, 243, 255);
+            uiDataGridView1.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
             uiDataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
             uiDataGridView1.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
             uiDataGridView1.BackgroundColor = Color.White;
             uiDataGridView1.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle7.BackColor = Color.FromArgb(80, 160, 255);
-            dataGridViewCellStyle7.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle7.ForeColor = Color.White;
-            dataGridViewCellStyle7.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle7.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle7.WrapMode = DataGridViewTriState.True;
-            uiDataGridView1.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle2.BackColor = Color.FromArgb(80, 160, 255);
+            dataGridViewCellStyle2.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle2.ForeColor = Color.White;
+            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
+            uiDataGridView1.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             uiDataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle8.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle8.BackColor = SystemColors.Window;
-            dataGridViewCellStyle8.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle8.ForeColor = Color.FromArgb(48, 48, 48);
-            dataGridViewCellStyle8.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle8.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle8.WrapMode = DataGridViewTriState.False;
-            uiDataGridView1.DefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = SystemColors.Window;
+            dataGridViewCellStyle3.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle3.ForeColor = Color.FromArgb(48, 48, 48);
+            dataGridViewCellStyle3.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
+            uiDataGridView1.DefaultCellStyle = dataGridViewCellStyle3;
             uiDataGridView1.Dock = DockStyle.Fill;
             uiDataGridView1.EnableHeadersVisualStyles = false;
             uiDataGridView1.Font = new Font("Microsoft Sans Serif", 12F);
@@ -107,17 +107,17 @@
             uiDataGridView1.Margin = new Padding(2);
             uiDataGridView1.Name = "uiDataGridView1";
             uiDataGridView1.ReadOnly = true;
-            dataGridViewCellStyle9.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle9.BackColor = Color.FromArgb(235, 243, 255);
-            dataGridViewCellStyle9.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle9.ForeColor = Color.FromArgb(48, 48, 48);
-            dataGridViewCellStyle9.SelectionBackColor = Color.FromArgb(80, 160, 255);
-            dataGridViewCellStyle9.SelectionForeColor = Color.White;
-            dataGridViewCellStyle9.WrapMode = DataGridViewTriState.True;
-            uiDataGridView1.RowHeadersDefaultCellStyle = dataGridViewCellStyle9;
-            dataGridViewCellStyle10.BackColor = Color.White;
-            dataGridViewCellStyle10.Font = new Font("Microsoft Sans Serif", 12F);
-            uiDataGridView1.RowsDefaultCellStyle = dataGridViewCellStyle10;
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = Color.FromArgb(235, 243, 255);
+            dataGridViewCellStyle4.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle4.ForeColor = Color.FromArgb(48, 48, 48);
+            dataGridViewCellStyle4.SelectionBackColor = Color.FromArgb(80, 160, 255);
+            dataGridViewCellStyle4.SelectionForeColor = Color.White;
+            dataGridViewCellStyle4.WrapMode = DataGridViewTriState.True;
+            uiDataGridView1.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle5.BackColor = Color.White;
+            dataGridViewCellStyle5.Font = new Font("Microsoft Sans Serif", 12F);
+            uiDataGridView1.RowsDefaultCellStyle = dataGridViewCellStyle5;
             uiDataGridView1.SelectedIndex = -1;
             uiDataGridView1.Size = new Size(383, 208);
             uiDataGridView1.StripeOddColor = Color.FromArgb(235, 243, 255);
@@ -260,6 +260,23 @@
             uiSymbolButton1.Text = "Mã OTP";
             uiSymbolButton1.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
+            // ipTwoFA
+            // 
+            ipTwoFA.Dock = DockStyle.Fill;
+            ipTwoFA.FillColor = Color.White;
+            ipTwoFA.Font = new Font("Microsoft Sans Serif", 12F);
+            ipTwoFA.Location = new Point(148, 2);
+            ipTwoFA.Margin = new Padding(2);
+            ipTwoFA.MinimumSize = new Size(63, 0);
+            ipTwoFA.Name = "ipTwoFA";
+            ipTwoFA.Padding = new Padding(0, 0, 30, 2);
+            ipTwoFA.Size = new Size(106, 49);
+            ipTwoFA.SymbolSize = 24;
+            ipTwoFA.TabIndex = 18;
+            ipTwoFA.Text = "111111";
+            ipTwoFA.TextAlignment = ContentAlignment.MiddleLeft;
+            ipTwoFA.Watermark = "";
+            // 
             // uiPanel2
             // 
             uiPanel2.Controls.Add(uiTableLayoutPanel3);
@@ -308,6 +325,7 @@
             ipPassword.Text = "uiTextBox1";
             ipPassword.TextAlignment = ContentAlignment.MiddleLeft;
             ipPassword.Watermark = "";
+            ipPassword.DoubleClick += ipPassword_DoubleClick;
             // 
             // uiSymbolLabel1
             // 
@@ -319,23 +337,6 @@
             uiSymbolLabel1.Size = new Size(104, 41);
             uiSymbolLabel1.TabIndex = 1;
             uiSymbolLabel1.Text = "Mật khẩu";
-            // 
-            // ipTwoFA
-            // 
-            ipTwoFA.Dock = DockStyle.Fill;
-            ipTwoFA.FillColor = Color.White;
-            ipTwoFA.Font = new Font("Microsoft Sans Serif", 12F);
-            ipTwoFA.Location = new Point(148, 2);
-            ipTwoFA.Margin = new Padding(2);
-            ipTwoFA.MinimumSize = new Size(63, 0);
-            ipTwoFA.Name = "ipTwoFA";
-            ipTwoFA.Padding = new Padding(0, 0, 30, 2);
-            ipTwoFA.Size = new Size(106, 49);
-            ipTwoFA.SymbolSize = 24;
-            ipTwoFA.TabIndex = 18;
-            ipTwoFA.Text = "111111";
-            ipTwoFA.TextAlignment = ContentAlignment.MiddleLeft;
-            ipTwoFA.Watermark = "";
             // 
             // uc_UserManager
             // 

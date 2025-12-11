@@ -60,7 +60,6 @@
             uiTableLayoutPanel11 = new Sunny.UI.UITableLayoutPanel();
             uiTableLayoutPanel14 = new Sunny.UI.UITableLayoutPanel();
             ipBatchNo = new Sunny.UI.UIComboBox();
-            btnABatch = new Sunny.UI.UISymbolButton();
             uiPanel8 = new Sunny.UI.UIPanel();
             uiPanel9 = new Sunny.UI.UIPanel();
             uiPanel10 = new Sunny.UI.UIPanel();
@@ -667,11 +666,9 @@
             // 
             // uiTableLayoutPanel14
             // 
-            uiTableLayoutPanel14.ColumnCount = 2;
+            uiTableLayoutPanel14.ColumnCount = 1;
             uiTableLayoutPanel14.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel14.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 47F));
             uiTableLayoutPanel14.Controls.Add(ipBatchNo, 0, 0);
-            uiTableLayoutPanel14.Controls.Add(btnABatch, 1, 0);
             uiTableLayoutPanel14.Dock = DockStyle.Fill;
             uiTableLayoutPanel14.Location = new Point(120, 0);
             uiTableLayoutPanel14.Margin = new Padding(1, 0, 0, 0);
@@ -697,28 +694,13 @@
             ipBatchNo.MinimumSize = new Size(63, 0);
             ipBatchNo.Name = "ipBatchNo";
             ipBatchNo.Padding = new Padding(0, 0, 30, 2);
-            ipBatchNo.Size = new Size(194, 32);
+            ipBatchNo.Size = new Size(241, 32);
             ipBatchNo.SymbolSize = 24;
             ipBatchNo.TabIndex = 3;
             ipBatchNo.Text = "03OT00363-111125-TOL1-2";
             ipBatchNo.TextAlignment = ContentAlignment.MiddleLeft;
             ipBatchNo.Watermark = "";
             ipBatchNo.SelectedIndexChanged += ipBatchNo_SelectedIndexChanged;
-            // 
-            // btnABatch
-            // 
-            btnABatch.Dock = DockStyle.Fill;
-            btnABatch.FillColor = Color.FromArgb(0, 192, 0);
-            btnABatch.Font = new Font("Microsoft Sans Serif", 12F);
-            btnABatch.Location = new Point(200, 2);
-            btnABatch.Margin = new Padding(2);
-            btnABatch.MinimumSize = new Size(1, 1);
-            btnABatch.Name = "btnABatch";
-            btnABatch.Size = new Size(43, 32);
-            btnABatch.Symbol = 563629;
-            btnABatch.TabIndex = 1;
-            btnABatch.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            btnABatch.Click += btnABatch_Click;
             // 
             // uiPanel8
             // 
@@ -1538,7 +1520,6 @@
         private Sunny.UI.UITextBox ipBarcode;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel14;
         private Sunny.UI.UIComboBox ipBatchNo;
-        private Sunny.UI.UISymbolButton btnABatch;
         private TTManager.Masan.ERP_Google erP_Google2;
         private TTManager.Internet.NetworkStrength networkStrength1;
         private System.ComponentModel.BackgroundWorker WK_Dequeue;

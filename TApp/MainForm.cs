@@ -147,7 +147,7 @@ namespace TApp
             NavMenu.CreateNode(AddPage(PLCSetting, 1005));
             NavMenu.CreateNode(AddPage(fActivityLogs, 1006));
             NavMenu.CreateNode(AddPage(fExtention, 1007));
-            NavMenu.CreateNode(AddPage(fCameraSimulator, 1008));
+            //NavMenu.CreateNode(AddPage(fCameraSimulator, 1008));
 
             // Trang đăng nhập
             NavMenu.CreateNode(AddPage(fLogin, 2001));

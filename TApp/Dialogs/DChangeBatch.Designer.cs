@@ -51,6 +51,7 @@
             ip2FACode = new Sunny.UI.UINumPadTextBox();
             ipUser = new Sunny.UI.UITextBox();
             erP_Google1 = new TTManager.Masan.ERP_Google(components);
+            opERPStatus = new Sunny.UI.UIPanel();
             uiTitlePanel1.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
@@ -140,7 +141,7 @@
             // uiSymbolLabel2
             // 
             uiSymbolLabel2.Dock = DockStyle.Fill;
-            uiSymbolLabel2.Font = new Font("Saira SemiBold", 14.2499981F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            uiSymbolLabel2.Font = new Font("Microsoft Sans Serif", 14.2499981F, FontStyle.Bold, GraphicsUnit.Point, 0);
             uiSymbolLabel2.Location = new Point(3, 3);
             uiSymbolLabel2.MinimumSize = new Size(1, 1);
             uiSymbolLabel2.Name = "uiSymbolLabel2";
@@ -208,7 +209,7 @@
             // uiSymbolLabel1
             // 
             uiSymbolLabel1.Dock = DockStyle.Fill;
-            uiSymbolLabel1.Font = new Font("Saira SemiBold", 14.2499981F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            uiSymbolLabel1.Font = new Font("Microsoft Sans Serif", 14.2499981F, FontStyle.Bold, GraphicsUnit.Point, 0);
             uiSymbolLabel1.Location = new Point(3, 3);
             uiSymbolLabel1.MinimumSize = new Size(1, 1);
             uiSymbolLabel1.Name = "uiSymbolLabel1";
@@ -227,6 +228,7 @@
             uiTableLayoutPanel3.Controls.Add(btnSave, 2, 0);
             uiTableLayoutPanel3.Controls.Add(btnedit, 1, 0);
             uiTableLayoutPanel3.Controls.Add(btnClose, 3, 0);
+            uiTableLayoutPanel3.Controls.Add(opERPStatus, 0, 0);
             uiTableLayoutPanel3.Dock = DockStyle.Fill;
             uiTableLayoutPanel3.Location = new Point(5, 296);
             uiTableLayoutPanel3.Margin = new Padding(2);
@@ -317,7 +319,7 @@
             // uiSymbolLabel3
             // 
             uiSymbolLabel3.Dock = DockStyle.Fill;
-            uiSymbolLabel3.Font = new Font("Saira SemiBold", 14.2499981F, FontStyle.Bold);
+            uiSymbolLabel3.Font = new Font("Microsoft Sans Serif", 14.2499981F, FontStyle.Bold);
             uiSymbolLabel3.Location = new Point(3, 3);
             uiSymbolLabel3.MinimumSize = new Size(1, 1);
             uiSymbolLabel3.Name = "uiSymbolLabel3";
@@ -350,7 +352,7 @@
             // uiSymbolLabel4
             // 
             uiSymbolLabel4.Dock = DockStyle.Fill;
-            uiSymbolLabel4.Font = new Font("Saira SemiBold", 11.249999F, FontStyle.Bold);
+            uiSymbolLabel4.Font = new Font("Microsoft Sans Serif", 11.249999F, FontStyle.Bold);
             uiSymbolLabel4.Location = new Point(3, 3);
             uiSymbolLabel4.MinimumSize = new Size(1, 1);
             uiSymbolLabel4.Name = "uiSymbolLabel4";
@@ -362,7 +364,7 @@
             // uiSymbolLabel5
             // 
             uiSymbolLabel5.Dock = DockStyle.Fill;
-            uiSymbolLabel5.Font = new Font("Saira SemiBold", 11.249999F, FontStyle.Bold);
+            uiSymbolLabel5.Font = new Font("Microsoft Sans Serif", 11.249999F, FontStyle.Bold);
             uiSymbolLabel5.Location = new Point(278, 3);
             uiSymbolLabel5.MinimumSize = new Size(1, 1);
             uiSymbolLabel5.Name = "uiSymbolLabel5";
@@ -401,6 +403,7 @@
             ipUser.TabIndex = 5;
             ipUser.TextAlignment = ContentAlignment.MiddleLeft;
             ipUser.Watermark = "";
+            ipUser.DoubleClick += ipUser_DoubleClick;
             // 
             // erP_Google1
             // 
@@ -411,6 +414,18 @@
             erP_Google1.ProjectID = "sales-268504";
             erP_Google1.SUB_INV = "110-101-1001";
             erP_Google1.TableID = "BatchProduction";
+            // 
+            // opERPStatus
+            // 
+            opERPStatus.Font = new Font("Microsoft Sans Serif", 12F);
+            opERPStatus.Location = new Point(4, 5);
+            opERPStatus.Margin = new Padding(4, 5, 4, 5);
+            opERPStatus.MinimumSize = new Size(1, 1);
+            opERPStatus.Name = "opERPStatus";
+            opERPStatus.Size = new Size(228, 39);
+            opERPStatus.TabIndex = 4;
+            opERPStatus.Text = "-";
+            opERPStatus.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // DChangeBatch
             // 
@@ -459,5 +474,6 @@
         private Sunny.UI.UINumPadTextBox ip2FACode;
         private TTManager.Masan.ERP_Google erP_Google1;
         private Sunny.UI.UITextBox ipUser;
+        public Sunny.UI.UIPanel opERPStatus;
     }
 }

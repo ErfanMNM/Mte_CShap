@@ -46,7 +46,7 @@ namespace TApp.Dialogs
 
         private void btnClose_Click(object sender, EventArgs e)
         {
-            Logger.WriteLogAsync(CurrentUser.Username,e_LogType.UserAction,$"Người dùng hủy thay đổi số lô sản xuất từ '{BatchCode}' sang '{ipBatch.Text.Trim()}'","Đổi số lô sản xuất");
+            Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng hủy thay đổi số lô sản xuất từ '{BatchCode}' sang '{ipBatch.Text.Trim()}'", "Đổi số lô sản xuất");
             DialogResult = DialogResult.Cancel;
             Close();
         }
@@ -58,7 +58,7 @@ namespace TApp.Dialogs
 
         private void ipBatch_DoubleClick(object sender, EventArgs e)
         {
-            Logger.WriteLogAsync(CurrentUser.Username,e_LogType.UserAction,$"Người dùng mở hộp thoại nhập số lô sản xuất","Đổi số lô sản xuất");
+            Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng mở hộp thoại nhập số lô sản xuất", "Đổi số lô sản xuất");
 
             using (Entertext enterText = new Entertext())
             {
@@ -75,7 +75,7 @@ namespace TApp.Dialogs
 
         private void uiTextBox1_DoubleClick(object sender, EventArgs e)
         {
-            Logger.WriteLogAsync(CurrentUser.Username,e_LogType.UserAction,$"Người dùng mở hộp thoại nhập vã vạch (barcode)","Đổi số lô sản xuất");
+            Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng mở hộp thoại nhập vã vạch (barcode)", "Đổi số lô sản xuất");
             if (!adminMode)
             {
                 this.ShowErrorDialog("Chế độ nhập vã vạch (barcode) chỉ dành cho quản trị viên.");
@@ -98,7 +98,7 @@ namespace TApp.Dialogs
         private void btnSave_Click(object sender, EventArgs e)
         {
             //ghi log thay đổi lô
-            Logger.WriteLogAsync(CurrentUser.Username,e_LogType.UserAction,$"Người dùng thay đổi số lô sản xuất từ '{BatchCode}' sang '{ipBatch.Text.Trim()}' với Barcode {ipBarcode.Text.Trim()}","Đổi số lô sản xuất");
+            Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng thay đổi số lô sản xuất từ '{BatchCode}' sang '{ipBatch.Text.Trim()}' với Barcode {ipBarcode.Text.Trim()}", "Đổi số lô sản xuất");
             BatchCode = ipBatch.Text.Trim();
             Barcode = ipBarcode.Text.Trim();
             DialogResult = DialogResult.OK;
@@ -108,7 +108,7 @@ namespace TApp.Dialogs
                          "TanTien", "Users", "users.database");
         private void btnedit_Click(object sender, EventArgs e)
         {
-            Logger.WriteLogAsync(CurrentUser.Username,e_LogType.UserAction,$"Người dùng mở chế độ chỉnh sửa số lô sản xuất","Đổi số lô sản xuất");
+            Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng mở chế độ chỉnh sửa số lô sản xuất", "Đổi số lô sản xuất");
             if (CurrentUser.Role != "Admin")
             {
                 bool Is2FA = UserHelper.Validate2FA(ipUser.Text, ip2FACode.Text.Trim(), data_file_path, 3);
@@ -117,19 +117,19 @@ namespace TApp.Dialogs
                 if (!IsAdmin)
                 {
                     this.ShowErrorDialog("Tài khoản bạn nhập không có quyền thay đổi số lô sản xuất, vui lòng liên hệ quản trị viên hệ thống để được hỗ trợ.");
-                    Logger.WriteLogAsync(CurrentUser.Username,e_LogType.UserAction,$"Người dùng '{ipUser.Text}' không có quyền thay đổi số lô sản xuất","Đổi số lô sản xuất");
+                    Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng '{ipUser.Text}' không có quyền thay đổi số lô sản xuất", "Đổi số lô sản xuất");
                     return;
                 }
 
                 if (!Is2FA)
                 {
                     this.ShowErrorDialog("Mã xác thực 2FA không chính xác, vui lòng kiểm tra lại.");
-                    Logger.WriteLogAsync(CurrentUser.Username,e_LogType.UserAction,$"Người dùng nhập '{ipUser.Text}' và nhập mã 2FA không chính xác khi thay đổi số lô sản xuất","Đổi số lô sản xuất");
+                    Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng nhập '{ipUser.Text}' và nhập mã 2FA không chính xác khi thay đổi số lô sản xuất", "Đổi số lô sản xuất");
                     return;
                 }
 
                 // Nếu người dùng là quản trị viên và mã 2FA hợp lệ, cho phép thay đổi số lô
-                
+
                 ipBatch.Enabled = true;
                 ipBatch.DropDownStyle = UIDropDownStyle.DropDown;
                 ipBatch.FillColor = Color.Yellow;
@@ -138,7 +138,7 @@ namespace TApp.Dialogs
                 ipBarcode.FillColor = Color.Yellow;
                 btnedit.Enabled = false;
 
-                Logger.WriteLogAsync(CurrentUser.Username,e_LogType.UserAction,$"Người dùng đã nhập '{ipUser.Text}' đã xác thực thành công và được phép thay đổi số lô sản xuất","Đổi số lô sản xuất");
+                Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng đã nhập '{ipUser.Text}' đã xác thực thành công và được phép thay đổi số lô sản xuất", "Đổi số lô sản xuất");
             }
             else
             {
@@ -150,7 +150,7 @@ namespace TApp.Dialogs
         {
             ipBatch.Text = BatchCode;
             ipBarcode.Text = Barcode;
-            if(CurrentUser.Role == "Admin")
+            if (CurrentUser.Role == "Admin")
             {
                 adminMode = true;
                 ipBatch.DropDownStyle = UIDropDownStyle.DropDownList;
@@ -169,22 +169,36 @@ namespace TApp.Dialogs
 
         private void ipBatch_SelectedIndexChanged(object sender, EventArgs e)
         {
-            Logger.WriteLogAsync(CurrentUser.Username,e_LogType.UserAction,$"Người dùng chọn số lô sản xuất '{ipBatch.SelectedItem}' từ danh sách","Đổi số lô sản xuất");
+            Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng chọn số lô sản xuất '{ipBatch.SelectedItem}' từ danh sách", "Đổi số lô sản xuất");
             //lấy barcode từ dic bt
             if (ipBatch.SelectedItem is not null)
             {
                 string selectedBatch = ipBatch.SelectedItem.ToString().Split("-")[0];
-               if(bt.TryGetValue(selectedBatch, out string barcode))
-               {
+                if (bt.TryGetValue(selectedBatch, out string barcode))
+                {
                     ipBarcode.Text = barcode;
-               }
+                }
                 else
                 {
                     ipBarcode.Text = "00000";
-                    
+
                 }
             }
-            
+
+        }
+
+        private void ipUser_DoubleClick(object sender, EventArgs e)
+        {
+            using (Entertext enterText = new Entertext())
+            {
+                enterText.TileText = "Nhập tên Quản Trị";
+                enterText.TextValue = ipUser.Text;
+                enterText.EnterClicked += (s, args) =>
+                {
+                    ipUser.Text = enterText.TextValue;
+                };
+                enterText.ShowDialog();
+            }
         }
     }
 }
