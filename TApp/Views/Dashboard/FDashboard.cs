@@ -596,7 +596,7 @@ namespace TApp.Views.Dashboard
         #region UI Rendering
         private void Render_Order_Statistics() => this.InvokeIfRequired(() => { opBatchCount.Value = FD_Globals.ActiveSet.Count; opProductionSpeed.Value = FD_Globals.productionData.ProductionPerHour; });
         private void Render_Camera_Counter() => this.InvokeIfRequired(() => { opSCount.Text = $"{FD_Globals.productionData.productCameraCounter.Total} - {FD_Globals.productionData.productCameraCounter.Pass} - {FD_Globals.productionData.productCameraCounter.Fail}"; });
-        private void Render_Production_Statistics() => this.InvokeIfRequired(() => { opTotalCount.Value = FD_Globals.productionData.PLC_Counter.Total; opPassCount.Value = FD_Globals.productionData.PLC_Counter.Pass; opFail.Value = FD_Globals.productionData.PLC_Counter.Fail; });
+        private void Render_Production_Statistics() => this.InvokeIfRequired(() => { opTotalCount.Value = FD_Globals.productionData.PLC_Counter.Total; opPassCount.Value = FD_Globals.productionData.PLC_Counter.Pass; opFail.Value = FD_Globals.productionData.PLC_Counter.Fail; opTimeout.Value = FD_Globals.productionData.PLC_Counter.Timeout; });
 
         private void Render_App_Status()
         {
@@ -919,7 +919,7 @@ namespace TApp.Views.Dashboard
             }
             else
             {
-                SetAlarm("-", Color.FromArgb(243, 249, 255), Color.FromArgb(80, 160, 255));
+                SetAlarm(FD_Globals.AlarmCount.ToString(), Color.FromArgb(243, 249, 255), Color.FromArgb(80, 160, 255));
             }
         }
 

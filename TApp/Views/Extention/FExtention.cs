@@ -27,9 +27,11 @@ namespace TApp.Views.Extention
         private DataTable upCloudHis = new DataTable();
         private DataTable dataTable = new DataTable();
         private int countSync = 100000;
+        private int countSyncOPC = 100000;
         private int maxInterval = 5;
+        private int maxIntervalOPCms = 5000;
         private OmronFinsUdp plc;
-        private LogHelper <e_LogType> PLC_IOT_Logs;
+        private LogHelper<e_LogType> PLC_IOT_Logs;
         #endregion
 
         #region Constructor & Initialization
@@ -82,12 +84,16 @@ namespace TApp.Views.Extention
                 {
                     backgroundWorker2.RunWorkerAsync();
                 }
+                if (!WK_IOT_SCADA.IsBusy)
+                {
+                    WK_IOT_SCADA.RunWorkerAsync();
+                }
             }
 
-             plc = new OmronFinsUdp();
+            plc = new OmronFinsUdp();
             plc.CommunicationPipe = new HslCommunication.Core.Pipe.PipeUdpNet(AppConfigs.Current.PLC_IP, AppConfigs.Current.PLC_Port)
             {
-                ReceiveTimeOut = 10000, 
+                ReceiveTimeOut = 10000,
             };
             plc.PlcType = OmronPlcType.CSCJ;
             plc.SA1 = 1;
@@ -219,7 +225,7 @@ namespace TApp.Views.Extention
                         this.InvokeIfRequired(() =>
                         {
                             opLastTimeUpload.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-                            opLastUploadFileName.Text = csvFileName;
+                            //opLastUploadFileName.Text = csvFileName;
                         });
                     }
                     LoadBackupHistory();
@@ -390,12 +396,12 @@ namespace TApp.Views.Extention
                         {
                             var lastSuccess = successRows.First();
                             opLastTimeUpload.Text = lastSuccess["TimeCompleted"].ToString();
-                            opLastUploadFileName.Text = lastSuccess["FileName"].ToString();
+                            //opLastUploadFileName.Text = lastSuccess["FileName"].ToString();
                         }
                         else
                         {
                             opLastTimeUpload.Text = "Chưa có dữ liệu";
-                            opLastUploadFileName.Text = "Chưa có dữ liệu";
+                            //opLastUploadFileName.Text = "Chưa có dữ liệu";
                         }
                     });
                 }
@@ -434,11 +440,28 @@ namespace TApp.Views.Extention
         {
             while (!WK_IOT_SCADA.CancellationPending)
             {
+                Thread.Sleep(500);
+                maxIntervalOPCms = AppConfigs.Current.OPC_UA_Time_Refresh/500;
+                countSyncOPC++;
+                if (countSyncOPC % 2 == 0)
+                {
+                    this.InvokeIfRequired(() =>
+                    {
+                        opOPCCountdown.Text = ((maxIntervalOPCms - countSyncOPC) / 2).ToString();
+                    });
+                }
+
+                if (countSyncOPC < maxIntervalOPCms)
+                {
+                    continue;
+                }
+
+                countSyncOPC = 0;
                 //xóa dữ liệu cũ
                 OperateResult write = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Batch_Code_DM"), "[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]".ToStringArray<int>());
                 if (write.IsSuccess)
                 {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username,e_LogType.Info, "Xóa dữ liệu IOT SCADA thành công D5008");
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Xóa dữ liệu IOT SCADA thành công D5008");
                 }
                 else
                 {
@@ -459,7 +482,7 @@ namespace TApp.Views.Extention
                 }
 
                 //barcode
-                OperateResult wbarcode = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_DM"), FD_Globals.productionData.BatchCode, Encoding.ASCII);
+                OperateResult wbarcode = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_DM"), FD_Globals.productionData.Barcode, Encoding.ASCII);
                 if (wbarcode.IsSuccess)
                 {
                     PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Barcode Thành công");
@@ -473,7 +496,7 @@ namespace TApp.Views.Extention
                 //barcodeformaterror -> gửi số lỗi sai định dạng QR/Barcode
                 OperateResult wBarcodeFormatError = plc.Write(
                     PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_Format_Fail_DM"),
-                    FD_Globals.productionData.productCameraCounter.FormatError);
+                    FD_Globals.AlarmCount);
                 if (!wBarcodeFormatError.IsSuccess)
                 {
                     PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode FormatError thất bại :" + wBarcodeFormatError.Message, "", "FDE_0010");
@@ -498,11 +521,137 @@ namespace TApp.Views.Extention
                     PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu trạng thái hệ thống thất bại :" + wSystemStatus.Message, "", "FDE_0011");
                 }
 
+                //productionSpeed
+                OperateResult wPS = plc.Write(
+                    PLCAddressWithGoogleSheetHelper.Get("PLC_Production_Speed"),
+                    (int)FD_Globals.productionData.ProductionPerHour);
+                if (!wSystemStatus.IsSuccess)
+                {
+                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu tốc độ thất bại :" + wSystemStatus.Message, "", "FDE_0011");
+                }
 
+            }
+        }
 
+        private void btnOPCHis_Click(object sender, EventArgs e)
+        {
+            btnOPCHis.Enabled = false;
+            try
+            {
+                LogConsoleMessage("[THÔNG BÁO] Bắt đầu đọc dữ liệu D memory từ WK_IOT...");
+                
+                DataTable dtOPCHis = new DataTable();
+                dtOPCHis.Columns.Add("Tên", typeof(string));
+                dtOPCHis.Columns.Add("Địa chỉ", typeof(string));
+                dtOPCHis.Columns.Add("Giá trị", typeof(string));
+                dtOPCHis.Columns.Add("Ghi chú", typeof(string));
 
+                // Đọc PLC_Batch_Code_DM (string, 40 words)
+                try
+                {
+                    string batchCodeAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_Batch_Code_DM");
+                    OperateResult<string> batchCodeResult = plc.ReadString(batchCodeAddr, 40, Encoding.ASCII);
+                    if (batchCodeResult.IsSuccess)
+                    {
+                        dtOPCHis.Rows.Add("PLC_Batch_Code_DM", batchCodeAddr, batchCodeResult.Content?.TrimEnd('\0') ?? "", "Batch Code (String)");
+                    }
+                    else
+                    {
+                        dtOPCHis.Rows.Add("PLC_Batch_Code_DM", batchCodeAddr, $"Lỗi: {batchCodeResult.Message}", "Batch Code (String)");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    dtOPCHis.Rows.Add("PLC_Batch_Code_DM", "N/A", $"Lỗi: {ex.Message}", "Batch Code (String)");
+                }
 
-                Thread.Sleep(5000);
+                // Đọc PLC_Barcode_DM (string)
+                try
+                {
+                    string barcodeAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_DM");
+                    OperateResult<string> barcodeResult = plc.ReadString(barcodeAddr, 40, Encoding.ASCII);
+                    if (barcodeResult.IsSuccess)
+                    {
+                        dtOPCHis.Rows.Add("PLC_Barcode_DM", barcodeAddr, barcodeResult.Content?.TrimEnd('\0') ?? "", "Barcode (String)");
+                    }
+                    else
+                    {
+                        dtOPCHis.Rows.Add("PLC_Barcode_DM", barcodeAddr, $"Lỗi: {barcodeResult.Message}", "Barcode (String)");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    dtOPCHis.Rows.Add("PLC_Barcode_DM", "N/A", $"Lỗi: {ex.Message}", "Barcode (String)");
+                }
+
+                // Đọc PLC_Barcode_Format_Fail_DM (int)
+                try
+                {
+                    string formatFailAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_Format_Fail_DM");
+                    OperateResult<int> formatFailResult = plc.ReadInt32(formatFailAddr);
+                    if (formatFailResult.IsSuccess)
+                    {
+                        dtOPCHis.Rows.Add("PLC_Barcode_Format_Fail_DM", formatFailAddr, formatFailResult.Content.ToString(), "Số lỗi định dạng QR/Barcode (Int32)");
+                    }
+                    else
+                    {
+                        dtOPCHis.Rows.Add("PLC_Barcode_Format_Fail_DM", formatFailAddr, $"Lỗi: {formatFailResult.Message}", "Số lỗi định dạng QR/Barcode (Int32)");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    dtOPCHis.Rows.Add("PLC_Barcode_Format_Fail_DM", "N/A", $"Lỗi: {ex.Message}", "Số lỗi định dạng QR/Barcode (Int32)");
+                }
+
+                // Đọc PLC_App_System_Status_DM (short/int)
+                try
+                {
+                    string systemStatusAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_App_System_Status_DM");
+                    OperateResult<short> systemStatusResult = plc.ReadInt16(systemStatusAddr);
+                    if (systemStatusResult.IsSuccess)
+                    {
+                        dtOPCHis.Rows.Add("PLC_App_System_Status_DM", systemStatusAddr, systemStatusResult.Content.ToString(), "Trạng thái hệ thống (Int16)");
+                    }
+                    else
+                    {
+                        dtOPCHis.Rows.Add("PLC_App_System_Status_DM", systemStatusAddr, $"Lỗi: {systemStatusResult.Message}", "Trạng thái hệ thống (Int16)");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    dtOPCHis.Rows.Add("PLC_App_System_Status_DM", "N/A", $"Lỗi: {ex.Message}", "Trạng thái hệ thống (Int16)");
+                }
+
+                // Đọc PLC_Count_AllFail_DM (int)
+                try
+                {
+                    string allFailAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_Count_AllFail_DM");
+                    OperateResult<int> allFailResult = plc.ReadInt32(allFailAddr);
+                    if (allFailResult.IsSuccess)
+                    {
+                        dtOPCHis.Rows.Add("PLC_Count_AllFail_DM", allFailAddr, allFailResult.Content.ToString(), "Số đếm lỗi (Int32)");
+                    }
+                    else
+                    {
+                        dtOPCHis.Rows.Add("PLC_Count_AllFail_DM", allFailAddr, $"Lỗi: {allFailResult.Message}", "Số đếm lỗi (Int32)");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    dtOPCHis.Rows.Add("PLC_Count_AllFail_DM", "N/A", $"Lỗi: {ex.Message}", "Số đếm lỗi (Int32)");
+                }
+
+                // Load vào datagrid
+                opData.DataSource = dtOPCHis;
+                LogConsoleMessage($"[THÀNH CÔNG] Đọc dữ liệu D memory thành công! Số bản ghi: {dtOPCHis.Rows.Count}");
+            }
+            catch (Exception ex)
+            {
+                LogConsoleMessage($"[LỖI] Đọc dữ liệu D memory thất bại: {ex.Message}");
+            }
+            finally
+            {
+                btnOPCHis.Enabled = true;
             }
         }
     }

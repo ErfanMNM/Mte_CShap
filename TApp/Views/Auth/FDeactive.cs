@@ -20,20 +20,16 @@ namespace TApp.Views.Auth
         private void btnReactivate_Click(object sender, EventArgs e)
         {
             // Yêu cầu nhập mật khẩu để kích hoạt lại
-            using (var enterPassword = new Entertext())
-            {
-                enterPassword.TileText = "Nhập mật khẩu để kích hoạt lại hệ thống";
-                enterPassword.TextValue = string.Empty;
-                enterPassword.IsPassword = true;
 
-                if (enterPassword.ShowDialog() == DialogResult.OK)
-                {
-                    string password = enterPassword.TextValue;
-                    
-                    // Gửi sự kiện yêu cầu kích hoạt lại (MainForm sẽ xử lý)
-                    OnReactivateRequested?.Invoke();
-                }
-            }
+
+            // Gửi sự kiện yêu cầu kích hoạt lại (MainForm sẽ xử lý)
+            OnReactivateRequested?.Invoke();
+
+        }
+
+        private void uiLabel2_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

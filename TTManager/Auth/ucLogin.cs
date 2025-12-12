@@ -91,6 +91,10 @@ namespace TTManager.Auth
             foreach (DataRow row in UsersList.Rows)
             {
                 string username = row["Username"].ToString();
+                if(username == "SA")
+                {
+                    continue;
+                }    
                 if (!string.IsNullOrEmpty(username))
                 {
                     ipUserName.Items.Add(username);

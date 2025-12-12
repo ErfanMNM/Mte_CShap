@@ -201,7 +201,7 @@
             uiPanel3.BackColor = Color.FromArgb(0, 192, 192);
             uiPanel3.Dock = DockStyle.Fill;
             uiPanel3.FillColor = Color.FromArgb(0, 192, 192);
-            uiPanel3.Font = new Font("Tahoma", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            uiPanel3.Font = new Font("Tahoma", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             uiPanel3.ForeColor = Color.MediumBlue;
             uiPanel3.Location = new Point(0, 682);
             uiPanel3.Margin = new Padding(0);
@@ -210,7 +210,7 @@
             uiPanel3.RectColor = Color.Blue;
             uiPanel3.Size = new Size(150, 41);
             uiPanel3.TabIndex = 4;
-            uiPanel3.Text = "MASAN v12.11.5.2";
+            uiPanel3.Text = "MASAN v12.12.5.1";
             uiPanel3.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // NavMenu

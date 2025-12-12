@@ -42,7 +42,6 @@
             opLastTimeUpload = new Sunny.UI.UISymbolLabel();
             uiSymbolLabel3 = new Sunny.UI.UISymbolLabel();
             uiTitlePanel3 = new Sunny.UI.UITitlePanel();
-            opLastUploadFileName = new Sunny.UI.UISymbolLabel();
             uiTitlePanel2 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel5 = new Sunny.UI.UITableLayoutPanel();
             opC1 = new Sunny.UI.UISymbolLabel();
@@ -64,6 +63,10 @@
             erP_Google1 = new TTManager.Masan.ERP_Google(components);
             backgroundWorker2 = new System.ComponentModel.BackgroundWorker();
             WK_IOT_SCADA = new System.ComponentModel.BackgroundWorker();
+            uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
+            opOPCnexttime = new Sunny.UI.UISymbolLabel();
+            opOPCCountdown = new Sunny.UI.UISymbolLabel();
+            btnOPCHis = new Sunny.UI.UISymbolButton();
             tab2.SuspendLayout();
             tabPage1.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
@@ -79,6 +82,7 @@
             uiTableLayoutPanel6.SuspendLayout();
             uiTitlePanel4.SuspendLayout();
             uiTitlePanel5.SuspendLayout();
+            uiTableLayoutPanel3.SuspendLayout();
             SuspendLayout();
             // 
             // tab2
@@ -191,7 +195,7 @@
             // 
             // uiTitlePanel3
             // 
-            uiTitlePanel3.Controls.Add(opLastUploadFileName);
+            uiTitlePanel3.Controls.Add(uiTableLayoutPanel3);
             uiTitlePanel3.Dock = DockStyle.Fill;
             uiTitlePanel3.Font = new Font("Microsoft Sans Serif", 12F);
             uiTitlePanel3.Location = new Point(562, 2);
@@ -202,19 +206,8 @@
             uiTitlePanel3.ShowText = false;
             uiTitlePanel3.Size = new Size(306, 79);
             uiTitlePanel3.TabIndex = 1;
-            uiTitlePanel3.Text = "Tên tệp vừa tải lên";
+            uiTitlePanel3.Text = "OPC UA";
             uiTitlePanel3.TextAlignment = ContentAlignment.MiddleCenter;
-            // 
-            // opLastUploadFileName
-            // 
-            opLastUploadFileName.Dock = DockStyle.Fill;
-            opLastUploadFileName.Font = new Font("Microsoft Sans Serif", 12F);
-            opLastUploadFileName.Location = new Point(1, 35);
-            opLastUploadFileName.MinimumSize = new Size(1, 1);
-            opLastUploadFileName.Name = "opLastUploadFileName";
-            opLastUploadFileName.Size = new Size(304, 43);
-            opLastUploadFileName.TabIndex = 2;
-            opLastUploadFileName.Text = "Line 3_";
             // 
             // uiTitlePanel2
             // 
@@ -291,12 +284,14 @@
             // 
             // uiTableLayoutPanel2
             // 
-            uiTableLayoutPanel2.ColumnCount = 3;
-            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 571F));
+            uiTableLayoutPanel2.ColumnCount = 4;
+            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 368F));
+            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180F));
             uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50.84175F));
             uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 49.15825F));
-            uiTableLayoutPanel2.Controls.Add(btnCloudHis, 1, 0);
-            uiTableLayoutPanel2.Controls.Add(btnERPCheck, 2, 0);
+            uiTableLayoutPanel2.Controls.Add(btnOPCHis, 1, 0);
+            uiTableLayoutPanel2.Controls.Add(btnCloudHis, 2, 0);
+            uiTableLayoutPanel2.Controls.Add(btnERPCheck, 3, 0);
             uiTableLayoutPanel2.Dock = DockStyle.Fill;
             uiTableLayoutPanel2.Location = new Point(1, 35);
             uiTableLayoutPanel2.Margin = new Padding(2);
@@ -312,11 +307,11 @@
             btnCloudHis.Dock = DockStyle.Fill;
             btnCloudHis.FillColor = Color.FromArgb(0, 192, 192);
             btnCloudHis.Font = new Font("Microsoft Sans Serif", 12F);
-            btnCloudHis.Location = new Point(573, 2);
+            btnCloudHis.Location = new Point(550, 2);
             btnCloudHis.Margin = new Padding(2);
             btnCloudHis.MinimumSize = new Size(1, 1);
             btnCloudHis.Name = "btnCloudHis";
-            btnCloudHis.Size = new Size(147, 49);
+            btnCloudHis.Size = new Size(158, 49);
             btnCloudHis.Symbol = 560250;
             btnCloudHis.TabIndex = 2;
             btnCloudHis.Text = "Lịch sử tải lên";
@@ -328,11 +323,11 @@
             btnERPCheck.Dock = DockStyle.Fill;
             btnERPCheck.FillColor = Color.FromArgb(0, 192, 192);
             btnERPCheck.Font = new Font("Microsoft Sans Serif", 12F);
-            btnERPCheck.Location = new Point(724, 2);
+            btnERPCheck.Location = new Point(712, 2);
             btnERPCheck.Margin = new Padding(2);
             btnERPCheck.MinimumSize = new Size(1, 1);
             btnERPCheck.Name = "btnERPCheck";
-            btnERPCheck.Size = new Size(142, 49);
+            btnERPCheck.Size = new Size(154, 49);
             btnERPCheck.Symbol = 561637;
             btnERPCheck.TabIndex = 0;
             btnERPCheck.Text = "Kiểm tra ERP";
@@ -540,6 +535,63 @@
             WK_IOT_SCADA.WorkerSupportsCancellation = true;
             WK_IOT_SCADA.DoWork += WK_IOT_SCADA_DoWork;
             // 
+            // uiTableLayoutPanel3
+            // 
+            uiTableLayoutPanel3.ColumnCount = 2;
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72.82609F));
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 27.173914F));
+            uiTableLayoutPanel3.Controls.Add(opOPCCountdown, 1, 0);
+            uiTableLayoutPanel3.Controls.Add(opOPCnexttime, 0, 0);
+            uiTableLayoutPanel3.Dock = DockStyle.Fill;
+            uiTableLayoutPanel3.Location = new Point(1, 35);
+            uiTableLayoutPanel3.Margin = new Padding(2);
+            uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
+            uiTableLayoutPanel3.RowCount = 1;
+            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel3.Size = new Size(304, 43);
+            uiTableLayoutPanel3.TabIndex = 1;
+            uiTableLayoutPanel3.TagString = null;
+            // 
+            // opOPCnexttime
+            // 
+            opOPCnexttime.Dock = DockStyle.Fill;
+            opOPCnexttime.Font = new Font("Microsoft Sans Serif", 12F);
+            opOPCnexttime.Location = new Point(3, 3);
+            opOPCnexttime.MinimumSize = new Size(1, 1);
+            opOPCnexttime.Name = "opOPCnexttime";
+            opOPCnexttime.Size = new Size(215, 37);
+            opOPCnexttime.Symbol = 261463;
+            opOPCnexttime.TabIndex = 0;
+            opOPCnexttime.Text = "2025-11-29T23:23:23.999";
+            // 
+            // opOPCCountdown
+            // 
+            opOPCCountdown.Dock = DockStyle.Fill;
+            opOPCCountdown.Font = new Font("Microsoft Sans Serif", 12F);
+            opOPCCountdown.Location = new Point(224, 3);
+            opOPCCountdown.MinimumSize = new Size(1, 1);
+            opOPCCountdown.Name = "opOPCCountdown";
+            opOPCCountdown.Size = new Size(77, 37);
+            opOPCCountdown.Symbol = 557747;
+            opOPCCountdown.TabIndex = 1;
+            opOPCCountdown.Text = "300";
+            // 
+            // btnOPCHis
+            // 
+            btnOPCHis.Dock = DockStyle.Fill;
+            btnOPCHis.FillColor = Color.FromArgb(0, 192, 192);
+            btnOPCHis.Font = new Font("Microsoft Sans Serif", 12F);
+            btnOPCHis.Location = new Point(370, 2);
+            btnOPCHis.Margin = new Padding(2);
+            btnOPCHis.MinimumSize = new Size(1, 1);
+            btnOPCHis.Name = "btnOPCHis";
+            btnOPCHis.Size = new Size(176, 49);
+            btnOPCHis.Symbol = 560250;
+            btnOPCHis.TabIndex = 4;
+            btnOPCHis.Text = "Kiểm tra OPC";
+            btnOPCHis.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnOPCHis.Click += btnOPCHis_Click;
+            // 
             // FExtention
             // 
             AutoScaleMode = AutoScaleMode.None;
@@ -564,6 +616,7 @@
             uiTableLayoutPanel6.ResumeLayout(false);
             uiTitlePanel4.ResumeLayout(false);
             uiTitlePanel5.ResumeLayout(false);
+            uiTableLayoutPanel3.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -588,7 +641,6 @@
         private Sunny.UI.UISymbolLabel opLastTimeUpload;
         private Sunny.UI.UISymbolLabel uiSymbolLabel3;
         private Sunny.UI.UITitlePanel uiTitlePanel3;
-        private Sunny.UI.UISymbolLabel opLastUploadFileName;
         private Sunny.UI.UITitlePanel uiTitlePanel2;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel5;
         private Sunny.UI.UISymbolLabel opC1;
@@ -599,5 +651,10 @@
         private Sunny.UI.UITitlePanel uiTitlePanel5;
         private Sunny.UI.UIListBox uiListBox1;
         private System.ComponentModel.BackgroundWorker WK_IOT_SCADA;
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel3;
+        private Sunny.UI.UISymbolLabel uiSymbolLabel1;
+        private Sunny.UI.UISymbolLabel opOPCnexttime;
+        private Sunny.UI.UISymbolLabel opOPCCountdown;
+        private Sunny.UI.UISymbolButton btnOPCHis;
     }
 }

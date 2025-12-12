@@ -462,7 +462,7 @@ namespace TApp
                 this.Invoke(new Action(() =>
                 {
                     NavMenu.CreateNode("DM", 2001);
-                    NavMenu.SelectedNode = NavMenu.Nodes[2];
+                    NavMenu.SelectedNode = NavMenu.Nodes[NavMenu.Nodes.Count - 1];
                     NavMenu.SelectPage(2001);
                     NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
 
@@ -524,12 +524,13 @@ namespace TApp
                         NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
                     }
 
-                    // Hiển thị page DEACTIVE (tương tự như Login)
-                    NavMenu.CreateNode("DMA", 2002);
+
+                   // // Hiển thị page DEACTIVE (tương tự như Login)
+                   NavMenu.CreateNode("DMA", 2002);
+                    NavMenu.SelectedNode = NavMenu.Nodes[NavMenu.Nodes.Count - 1];
                     NavMenu.SelectPage(2002);
                     NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
 
-                    // Ẩn menu khi ở DEACTIVE
                     NavMenu.Enabled = false;
                     NavMenu.Visible = false;
                     NavMenu.Size = new Size(0, 636);
@@ -583,6 +584,7 @@ namespace TApp
             switch (AppState)
             {
                 case e_App_State.LOGIN:
+
                     HandleLoginState();
                     break;
 
@@ -615,6 +617,7 @@ namespace TApp
         /// </summary>
         private void HandleDeactivateRequest()
         {
+            // Hỏi xác nhận đơn giản (không cần mật khẩu nếu người dùng bấm HỦY)
             if (!this.ShowAskDialog("Bạn có chắc chắn muốn VÔ HIỆU HÓA hệ thống?"))
             {
                 GlobalVarialbles.Logger?.WriteLogAsync(
@@ -627,7 +630,40 @@ namespace TApp
                 return;
             }
 
-            // Xác nhận không yêu cầu mật khẩu
+            // Yêu cầu nhập mật khẩu để vô hiệu hóa
+            using (var enterPassword = new TTManager.Diaglogs.Entertext())
+            {
+                enterPassword.TileText = "Nhập mật khẩu để vô hiệu hóa hệ thống";
+                enterPassword.TextValue = string.Empty;
+                enterPassword.IsPassword = true;
+
+                if (enterPassword.ShowDialog() != DialogResult.OK)
+                {
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.UserAction,
+                        "Người dùng hủy nhập mật khẩu khi vô hiệu hóa hệ thống",
+                        $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}'}}",
+                        "UA-DEACTIVE-04"
+                    );
+                    return;
+                }
+
+                string password = enterPassword.TextValue;
+                if (!UserHelper.ValidateCredentials(GlobalVarialbles.CurrentUser.Username, password, _userDbPath))
+                {
+                    GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.CurrentUser.Username,
+                        e_LogType.Error,
+                        "Xác thực mật khẩu vô hiệu hóa hệ thống thất bại",
+                        $"{{'Username':'{GlobalVarialbles.CurrentUser.Username}'}}",
+                        "ERR-DEACTIVE-AUTH-PW"
+                    );
+                    this.ShowErrorDialog("Mật khẩu không đúng, không thể vô hiệu hóa hệ thống.");
+                    return;
+                }
+            }
+
             GlobalVarialbles.Logger?.WriteLogAsync(
                 GlobalVarialbles.CurrentUser.Username,
                 e_LogType.UserAction,

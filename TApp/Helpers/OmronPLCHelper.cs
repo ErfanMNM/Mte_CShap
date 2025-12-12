@@ -14,7 +14,11 @@ namespace TApp.Helpers
 
     public static class PLCAddressWithGoogleSheetHelper
     {
-        private static readonly string LocalCachePath = "plc_addresses.json";
+        // Lưu cache local cạnh file credential để có thể dùng khi mất mạng
+        private static readonly string LocalCachePath =
+            Path.Combine(
+                Path.GetDirectoryName(FilePath) ?? AppDomain.CurrentDomain.BaseDirectory,
+                "plc_addresses.json");
         public static string FilePath { get; set; } = @"C:\MASANQR\Configs\GoogleSheet.json";
         private static readonly Dictionary<string, string> _addressMap = new Dictionary<string, string>();
 
@@ -106,12 +110,12 @@ namespace TApp.Helpers
 
         private static Dictionary<string, string> LoadFromLocal()
         {
-            //tự động tạo file nếu không tồn tại
-            if (!Directory.Exists(Path.GetDirectoryName(LocalCachePath)))
+            // Bảo vệ trường hợp đường dẫn không có folder
+            string? folder = Path.GetDirectoryName(LocalCachePath);
+            if (!string.IsNullOrWhiteSpace(folder) && !Directory.Exists(folder))
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(LocalCachePath));
+                Directory.CreateDirectory(folder);
             }
-            //tạo file nếu không tồn tại
 
             if (!File.Exists(LocalCachePath))
             {
