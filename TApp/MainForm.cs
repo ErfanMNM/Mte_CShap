@@ -519,12 +519,10 @@ namespace TApp
                 this.Invoke(new Action(() =>
                 {
                     // Xóa node cũ nếu có (từ LOGIN hoặc ACTIVE)
-                    if (NavMenu.Nodes.Count > 0)
-                    {
-                        NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
-                    }
-
-
+                    //if (NavMenu.Nodes.Count > 0)
+                    //{
+                    //    NavMenu.Nodes[NavMenu.Nodes.Count - 1].Remove();
+                    //}
                    // // Hiển thị page DEACTIVE (tương tự như Login)
                    NavMenu.CreateNode("DMA", 2002);
                     NavMenu.SelectedNode = NavMenu.Nodes[NavMenu.Nodes.Count - 1];

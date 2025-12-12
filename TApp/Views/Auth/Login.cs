@@ -61,5 +61,10 @@ namespace TApp.Views.Auth
             );
         }
         #endregion
+
+        private void Login_Initialize(object sender, EventArgs e)
+        {
+            ucLogin1.ClearInputs();
+        }
     }
 }

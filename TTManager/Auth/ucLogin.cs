@@ -118,6 +118,12 @@ namespace TTManager.Auth
 
         }
 
+        public void ClearInputs()
+        {
+            //ipUserName.Text = string.Empty;
+            ipPassword.Text = string.Empty;
+            ipTwoFA.Text = string.Empty;
+        }
         private void btnLogin_Click(object sender, EventArgs e)
         {
             try

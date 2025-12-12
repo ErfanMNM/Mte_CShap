@@ -33,7 +33,7 @@
             // 
             // ucLogin1
             // 
-            //ucLogin1.data_file_path = "C:\\Users\\THUC\\AppData\\Local\\TanTien\\Users\\users.database";
+            ucLogin1.data_file_path = "C:\\Users\\DANOMT\\AppData\\Local\\TanTien\\Users\\users.database";
             ucLogin1.IS2FAEnabled = true;
             ucLogin1.Location = new Point(107, 159);
             ucLogin1.Name = "ucLogin1";
@@ -49,6 +49,7 @@
             Name = "Login";
             Text = "Đăng Nhập";
             ZoomScaleRect = new Rectangle(15, 15, 889, 507);
+            Initialize += Login_Initialize;
             ResumeLayout(false);
         }
 
