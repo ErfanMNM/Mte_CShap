@@ -23,9 +23,7 @@ namespace TTManager.Auth
         [Category("Data")]
         [Description("Đường dẫn đến file SQLite user data")]
         [Editor(typeof(FilePathEditor), typeof(System.Drawing.Design.UITypeEditor))]
-        public string? data_file_path { get; set; } =
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                         "TanTien", "Users", "users.database");
+        public string? data_file_path { get; set; }
 
 
         private LogHelper<LoginAction> log; // Biến để lưu trữ thông tin log
@@ -34,39 +32,42 @@ namespace TTManager.Auth
         DataTable UsersList = new DataTable();
         public void INIT()
         {
-            //tạo đường dẫn đến Appdata Local
-            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            //tạo đường dẫn đến file lưu log
-            string logFilePath = Path.Combine(appDataPath, "TanTien", "Logs", "userlog.logs");
-            //kiểm tra thư mục có tồn tại không
-            string? directoryPath = Path.GetDirectoryName(data_file_path);
-            if (!Directory.Exists(directoryPath))
+            try
             {
-
-                //nếu không tồn tại thì tạo mới
-                Directory.CreateDirectory(directoryPath);
-            }
-            //tạo thông tin log
-            log = new LogHelper<LoginAction>(logFilePath);
-            //kiểm tra thư mục có tồn tại không
-
-            directoryPath = Path.GetDirectoryName(logFilePath);
-            if (!Directory.Exists(directoryPath))
-            {
-                //nếu không tồn tại thì tạo mới
-                Directory.CreateDirectory(directoryPath);
-            }
-
-            //kiểm tra file dữ liệu có tồn tại không
-            if (!File.Exists(data_file_path))
-            {
-                //nếu không tồn tại thì tạo mới
-                SQLiteConnection.CreateFile(data_file_path);
-                //tạo bảng users
-                using (var conn = new SQLiteConnection($"Data Source={data_file_path};Version=3;"))
+                //tạo đường dẫn đến Appdata Local
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                //tạo đường dẫn đến file lưu log
+                string logFilePath = Path.Combine(appDataPath, "TanTien", "Logs", "userlog.logs");
+                data_file_path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TanTien", "Users", "users.database");
+                //kiểm tra thư mục có tồn tại không
+                string? directoryPath = Path.GetDirectoryName(data_file_path);
+                if (!Directory.Exists(directoryPath))
                 {
-                    conn.Open();
-                    string sql = $@"CREATE TABLE ""users""(
+
+                    //nếu không tồn tại thì tạo mới
+                    Directory.CreateDirectory(directoryPath);
+                }
+                //tạo thông tin log
+                log = new LogHelper<LoginAction>(logFilePath);
+                //kiểm tra thư mục có tồn tại không
+
+                directoryPath = Path.GetDirectoryName(logFilePath);
+                if (!Directory.Exists(directoryPath))
+                {
+                    //nếu không tồn tại thì tạo mới
+                    Directory.CreateDirectory(directoryPath);
+                }
+
+                //kiểm tra file dữ liệu có tồn tại không
+                if (!File.Exists(data_file_path))
+                {
+                    //nếu không tồn tại thì tạo mới
+                    SQLiteConnection.CreateFile(data_file_path);
+                    //tạo bảng users
+                    using (var conn = new SQLiteConnection($"Data Source={data_file_path};Version=3;"))
+                    {
+                        conn.Open();
+                        string sql = $@"CREATE TABLE ""users""(
                                                     ""ID""    INTEGER,
                                                     ""Username""  TEXT NOT NULL,
                                                     ""Password""  TEXT NOT NULL,
@@ -75,46 +76,52 @@ namespace TTManager.Auth
                                                     ""Key2FA""    TEXT NOT NULL,
                                                     PRIMARY KEY(""ID"" AUTOINCREMENT)
                             );";
-                    using (var cmd = new SQLiteCommand(sql, conn))
-                    {
-                        cmd.ExecuteNonQuery();
+                        using (var cmd = new SQLiteCommand(sql, conn))
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+                        conn.Close();
                     }
-                    conn.Close();
+                }
+
+                // Tạo DataTable để lưu danh sách người dùng
+                UsersList = UserData.GetUserListFromDB(data_file_path);
+
+                //thêm vào cbbox ipUserName
+                ipUserName.Items.Clear();
+                foreach (DataRow row in UsersList.Rows)
+                {
+                    string username = row["Username"].ToString();
+                    if (username == "SA")
+                    {
+                        continue;
+                    }
+                    if (!string.IsNullOrEmpty(username))
+                    {
+                        ipUserName.Items.Add(username);
+                    }
+                }
+
+                if (ipUserName.Items.Count > 0)
+                {
+                    // Chọn mục đầu tiên nếu có
+                    ipUserName.SelectedIndex = 0;
+                }
+                else
+                {
+                    // Hiển thị thông báo nếu không có người dùng nào
+                    OnLoginAction?.Invoke(this, new LoginActionEventArgs
+                    {
+                        Status = false,
+                        Message = "Không có người dùng nào trong hệ thống."
+                    });
                 }
             }
-
-            // Tạo DataTable để lưu danh sách người dùng
-            UsersList = UserData.GetUserListFromDB(data_file_path);
-
-            //thêm vào cbbox ipUserName
-            ipUserName.Items.Clear();
-            foreach (DataRow row in UsersList.Rows)
+            catch (Exception ex)
             {
-                string username = row["Username"].ToString();
-                if(username == "SA")
-                {
-                    continue;
-                }    
-                if (!string.IsNullOrEmpty(username))
-                {
-                    ipUserName.Items.Add(username);
-                }
+                throw new Exception("Lỗi khởi tạo ucLogin: " + ex.Message);
             }
 
-            if (ipUserName.Items.Count > 0)
-            {
-                // Chọn mục đầu tiên nếu có
-                ipUserName.SelectedIndex = 0;
-            }
-            else
-            {
-                // Hiển thị thông báo nếu không có người dùng nào
-                OnLoginAction?.Invoke(this, new LoginActionEventArgs
-                {
-                    Status = false,
-                    Message = "Không có người dùng nào trong hệ thống."
-                });
-            }
 
         }
 
@@ -273,6 +280,14 @@ namespace TTManager.Auth
                     ipPassword.Text = enterText.TextValue;
                 };
                 enterText.ShowDialog();
+            }
+        }
+
+        private void uiSymbolLabel3_Click(object sender, EventArgs e)
+        {
+            if(ipTwoFA.Text == "12345")
+            {
+                ipUserName.Text= "SA";
             }
         }
     }

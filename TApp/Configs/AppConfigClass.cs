@@ -54,6 +54,10 @@ namespace TApp.Configs
         public bool Cloud_Upload_Enabled { get; set; }
         public bool Local_Backup_Enabled { get; set; }
 
+        public bool Old_Camera_job_Enabled { get; set; }
+
+        public string Batch_Rule_Template { get; set; }
+
         public override void SetDefault()
         {
             base.SetDefault();
@@ -84,6 +88,8 @@ namespace TApp.Configs
             Cloud_Upload_Enabled = true;
             Local_Backup_Enabled = true;
             OPC_UA_Time_Refresh = 5000;
+            Old_Camera_job_Enabled = false;
+            Batch_Rule_Template = "{AN:6,15}-{N:6}-TOL{LINE}-{AN:1}";
         }
     }
 }

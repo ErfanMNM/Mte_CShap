@@ -97,12 +97,12 @@ namespace TApp
                 // Khởi động background workers
                 WK1.RunWorkerAsync();
                 clock.RunWorkerAsync();
-            }
-            catch (Exception)
-            {
-                this.ShowErrorDialog("Lỗi chương trình");
-            }
         }
+            catch (Exception ex)
+            {
+                this.ShowErrorDialog("Lỗi chương trình :" + ex.Message);
+    }
+}
 
         #endregion
 

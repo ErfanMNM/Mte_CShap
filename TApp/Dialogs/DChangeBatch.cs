@@ -5,8 +5,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TApp.Configs;
@@ -99,10 +101,84 @@ namespace TApp.Dialogs
         {
             //ghi log thay đổi lô
             Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng thay đổi số lô sản xuất từ '{BatchCode}' sang '{ipBatch.Text.Trim()}' với Barcode {ipBarcode.Text.Trim()}", "Đổi số lô sản xuất");
+            string ruleTemplate = AppConfigs.Current.Batch_Rule_Template;
+            if (string.IsNullOrWhiteSpace(ruleTemplate))
+            {
+                this.ShowErrorDialog("Chưa có quy tắc định dạng mã số lô, vui lòng liên hệ quản trị viên hệ thống để được hỗ trợ.");
+                return;
+            }
+            //kiểm tra trước khi lưu
+            if (!IsValid(ipBatch.Text.Trim(),ruleTemplate, int.Parse(AppConfigs.Current.Line_Name!.Split(' ').Last())))
+            {
+                this.ShowErrorDialog("Mã số lô không hợp lệ, vui lòng kiểm tra lại định dạng.");
+                return;
+            }
+
             BatchCode = ipBatch.Text.Trim();
             Barcode = ipBarcode.Text.Trim();
             DialogResult = DialogResult.OK;
         }
+
+        bool IsValid(string input, string ruleTemplate, int line)
+        {
+            string regex = ruleTemplate.Replace("{LINE}", line.ToString());
+
+            // 1. Replace DATE
+            var dateFormats = new List<string>();
+
+            regex = Regex.Replace(regex,
+                @"\{DATE:([a-zA-Z]+)\}",
+                m =>
+                {
+                    string format = m.Groups[1].Value;
+                    dateFormats.Add(format);
+
+                    int len = format.Length;
+                    return $@"(?<DATE>\d{{{len}}})";
+                });
+
+            // 2. Replace A / N / AN
+            regex = Regex.Replace(regex,
+                @"\{(A|N|AN):(\d+)(,\d+)?\}",
+                m =>
+                {
+                    string type = m.Groups[1].Value;
+                    string min = m.Groups[2].Value;
+                    string max = m.Groups[3].Success
+                        ? m.Groups[3].Value.TrimStart(',')
+                        : min;
+
+                    string range = min == max ? min : $"{min},{max}";
+
+                    return type switch
+                    {
+                        "A" => $@"[A-Za-z]{{{range}}}",
+                        "N" => $@"\d{{{range}}}",
+                        "AN" => $@"[A-Za-z0-9]{{{range}}}",
+                        _ => ""
+                    };
+                });
+
+            regex = "^" + regex + "$";
+
+            var match = Regex.Match(input, regex);
+            if (!match.Success) return false;
+
+            // 3. Validate DATE thật
+            foreach (string fmt in dateFormats)
+            {
+                if (!DateTime.TryParseExact(
+                        match.Groups["DATE"].Value,
+                        fmt,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None,
+                        out _))
+                    return false;
+            }
+
+            return true;
+        }
+
         string? data_file_path { get; set; } =
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                          "TanTien", "Users", "users.database");

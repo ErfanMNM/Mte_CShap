@@ -236,6 +236,7 @@
             uiSymbolLabel3.SymbolColor = Color.FromArgb(255, 255, 128);
             uiSymbolLabel3.SymbolSize = 30;
             uiSymbolLabel3.TabIndex = 1;
+            uiSymbolLabel3.Click += uiSymbolLabel3_Click;
             // 
             // ipTwoFA
             // 

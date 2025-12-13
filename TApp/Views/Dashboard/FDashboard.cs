@@ -309,6 +309,14 @@ namespace TApp.Views.Dashboard
 
         private void Camera_ProcessData(string data)
         {
+            //Tiền xử lý dữ liệu
+            data = data.Trim();
+            data = data.Replace("\r", "");
+            data = data.Replace("\n", "");
+            if (AppConfigs.Current.Old_Camera_job_Enabled)
+            {
+                data = data.Replace(";", ""); // Xóa khoảng trắng nếu có
+            }
             // Tách riêng trường hợp camera trả về "FAIL" (lỗi đọc)
             if (string.Equals(data, "FAIL", StringComparison.OrdinalIgnoreCase))
             {
@@ -622,8 +630,8 @@ namespace TApp.Views.Dashboard
             {
                 case e_AppState.Ready: SetAppStatus("Sẵn Sàng", Color.FromArgb(0, 192, 0), 1); break;
                 case e_AppState.Editing: SetAppStatus("Cấu hình", Color.Blue, 4); break;
-                case e_AppState.Stopped: SetAppStatus("DỪNG MÁY / MẤT KẾT NỐI", Color.OrangeRed, 2); break;
-                case e_AppState.Deactive: SetAppStatus("VÔ HIỆU HÓA", Color.Red, 3); break;
+                case e_AppState.Stopped: SetAppStatus("Lỗi TB", Color.OrangeRed, 2); break;
+                case e_AppState.Deactive: SetAppStatus("K.Dùng", Color.Red, 3); break;
                 case e_AppState.Error: SetAppStatus("LỖI", Color.Red, 5); break;
             }
         }
