@@ -23,7 +23,8 @@ namespace TApp.Views.Extention
     public partial class FExtention : UIPage
     {
         #region Fields
-        private string BackupLogDbPath = @"C:/MASANQR/CloudBackupLog.tls";
+        private string BackupLogDbPath = @"C:/MASANQR/GGCloud/CloudBackupLog.tls";
+        private string PlcSendHistoryPath = Path.Combine(@"C:\MASANQR", "IOT", "opc_send_history.txt");
         private DataTable upCloudHis = new DataTable();
         private DataTable dataTable = new DataTable();
         private int countSync = 100000;
@@ -378,6 +379,29 @@ namespace TApp.Views.Extention
         #endregion
 
         #region Helper Methods
+        private void AppendPlcSendHistory(string content)
+        {
+            try
+            {
+                string root = @"C:\MASANQR\IOT";
+                Directory.CreateDirectory(root);
+
+                string line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff};{GlobalVarialbles.CurrentUser?.Username ?? "Unknown"};{content}";
+                File.AppendAllLines(PlcSendHistoryPath, new[] { line }, Encoding.UTF8);
+
+                string[] lines = File.ReadAllLines(PlcSendHistoryPath, Encoding.UTF8);
+                if (lines.Length > 10)
+                {
+                    var lastLines = lines.Skip(lines.Length - 10).ToArray();
+                    File.WriteAllLines(PlcSendHistoryPath, lastLines, Encoding.UTF8);
+                }
+            }
+            catch
+            {
+                // Bỏ qua lỗi ghi lịch sử để không ảnh hưởng đến luồng chính
+            }
+        }
+
         private void LoadBackupHistory()
         {
             try
@@ -597,6 +621,16 @@ namespace TApp.Views.Extention
                     }
                 }
 
+                // Ghi lại lịch sử gửi xuống (tối đa 10 lần gần nhất)
+                string historyContent =
+                    $"Batch={newBatchCode},Write={needWriteBatchCode};" +
+                    $"Barcode={newBarcode},Write={needWriteBarcode};" +
+                    $"AlarmCount={newAlarmCount},Write={needWriteFormatFail};" +
+                    $"SystemStatus={newSystemStatus},Write={needWriteSystemStatus};" +
+                    $"AllFail={newAllFail},Write={needWriteAllFail};" +
+                    $"ProductionSpeed={newProductionSpeed},Write={needWriteProductionSpeed}";
+                AppendPlcSendHistory(historyContent);
+
             }
         }
 
@@ -719,6 +753,43 @@ namespace TApp.Views.Extention
             finally
             {
                 btnOPCHis.Enabled = true;
+            }
+        }
+
+        private void btnReadOPCSendHistory_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!File.Exists(PlcSendHistoryPath))
+                {
+                    this.ShowInfoDialog("Chưa có lịch sử gửi OPC nào.");
+                    return;
+                }
+
+                var lines = File.ReadAllLines(PlcSendHistoryPath, Encoding.UTF8);
+                DataTable dt = new DataTable();
+                dt.Columns.Add("Thời gian", typeof(string));
+                dt.Columns.Add("Người dùng", typeof(string));
+                dt.Columns.Add("Nội dung", typeof(string));
+
+                foreach (var line in lines)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+
+                    var parts = line.Split(new[] { ';' }, 3);
+                    string time = parts.Length > 0 ? parts[0] : "";
+                    string user = parts.Length > 1 ? parts[1] : "";
+                    string detail = parts.Length > 2 ? parts[2] : "";
+
+                    dt.Rows.Add(time, user, detail);
+                }
+
+                opData.DataSource = dt;
+                LogConsoleMessage($"[THÔNG BÁO] Đã tải {dt.Rows.Count} bản ghi lịch sử gửi OPC.");
+            }
+            catch (Exception ex)
+            {
+                LogConsoleMessage($"[LỖI] Đọc lịch sử gửi OPC thất bại: {ex.Message}");
             }
         }
     }
