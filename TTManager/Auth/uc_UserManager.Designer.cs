@@ -273,7 +273,7 @@
             ipTwoFA.Size = new Size(106, 49);
             ipTwoFA.SymbolSize = 24;
             ipTwoFA.TabIndex = 18;
-            ipTwoFA.Text = "111111";
+            ipTwoFA.Text = "2222";
             ipTwoFA.TextAlignment = ContentAlignment.MiddleLeft;
             ipTwoFA.Watermark = "";
             // 

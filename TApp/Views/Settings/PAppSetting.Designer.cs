@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            TTManager.Auth.UserData userData1 = new TTManager.Auth.UserData();
+            TTManager.Auth.UserData userData2 = new TTManager.Auth.UserData();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiTabControl1 = new Sunny.UI.UITabControl();
             tabPage1 = new TabPage();
@@ -39,6 +39,7 @@
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
             btnSave = new Sunny.UI.UISymbolButton();
             btnDefault = new Sunny.UI.UISymbolButton();
+            btnReload = new Sunny.UI.UISymbolButton();
             uiTableLayoutPanel1.SuspendLayout();
             uiTabControl1.SuspendLayout();
             tabPage2.SuspendLayout();
@@ -144,12 +145,12 @@
             uc_UserSetting1.Text = "uc_UserSetting1";
             uc_UserSetting1.TextAlignment = ContentAlignment.MiddleCenter;
             uc_UserSetting1.TwoFARequired = false;
-            userData1.Key2FA = null;
-            userData1.Password = null;
-            userData1.Role = null;
-            userData1.Salt = null;
-            userData1.Username = "";
-            uc_UserSetting1.userData = userData1;
+            userData2.Key2FA = null;
+            userData2.Password = null;
+            userData2.Role = null;
+            userData2.Salt = null;
+            userData2.Username = "";
+            uc_UserSetting1.userData = userData2;
             uc_UserSetting1.OnUserAction += uc_UserSetting1_OnUserAction;
             // 
             // uiTableLayoutPanel2
@@ -158,6 +159,7 @@
             uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 115F));
             uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100F));
+            uiTableLayoutPanel2.Controls.Add(btnReload, 0, 0);
             uiTableLayoutPanel2.Controls.Add(btnSave, 2, 0);
             uiTableLayoutPanel2.Controls.Add(btnDefault, 1, 0);
             uiTableLayoutPanel2.Dock = DockStyle.Fill;
@@ -200,6 +202,20 @@
             btnDefault.TipsFont = new Font("Microsoft Sans Serif", 9F);
             btnDefault.Click += btnDefault_Click;
             // 
+            // btnReload
+            // 
+            btnReload.Dock = DockStyle.Fill;
+            btnReload.FillColor = Color.Silver;
+            btnReload.Font = new Font("Microsoft Sans Serif", 12F);
+            btnReload.Location = new Point(3, 3);
+            btnReload.MinimumSize = new Size(1, 1);
+            btnReload.Name = "btnReload";
+            btnReload.Size = new Size(649, 43);
+            btnReload.Symbol = 61473;
+            btnReload.TabIndex = 2;
+            btnReload.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnReload.Click += btnReload_Click;
+            // 
             // PAppSetting
             // 
             AllowShowTitle = true;
@@ -233,5 +249,6 @@
         private TTManager.Auth.uc_UserSetting uc_UserSetting1;
         private Sunny.UI.UIListBox uiListBox1;
         private TTManager.Auth.uc_UserManager uc_UserManager1;
+        private Sunny.UI.UISymbolButton btnReload;
     }
 }

@@ -23,6 +23,8 @@ namespace TApp.Views.Settings
         #region Fields
         private Dictionary<string, Control> _configControls = new Dictionary<string, Control>();
         private Dictionary<string, PropertyInfo> _configProperties = new Dictionary<string, PropertyInfo>();
+        // Trạng thái load của uc_UserManager1 để nút Reload có thể toggle
+        private bool _isUserManagerLoaded = true;
         #endregion
 
         #region Constructor
@@ -207,41 +209,6 @@ namespace TApp.Views.Settings
                 { "Local_Backup_Enabled", "Bật sao lưu cục bộ" }
 
             };
-
-        //    public bool AppHideEnable { get; set; }
-        //public bool AppTwoFA_Enabled { get; set; }
-
-        //public string Data_Mode { get; set; }
-
-        //public string AWS_Credential_Path { get; set; }
-        //public string? PLC_IP { get; set; }
-        //public int PLC_Port { get; set; }
-
-        //public string? Camera_01_IP { get; set; }
-        //public int Camera_01_Port { get; set; }
-
-        //public int PLC_Time_Refresh { get; set; }
-
-        //public string? Line_Name { get; set; }
-
-        //public bool PLC_Test_Mode { get; set; }
-
-        //public string? Handheld_COM_Port { get; set; }
-
-        //public string? production_list_path { get; set; }
-        //public string? credentialPLCAddressPath { get; set; }
-        //public string? credentialERPPath { get; set; }
-
-        //public string? ERP_Sub_Inv { get; set; }
-        //public string? ERP_Org_Code { get; set; }
-        //public string? ERP_DatasetID { get; set; }
-        //public string? ERP_TableID { get; set; }
-        //public string? ERP_ProjectID { get; set; }
-
-        //public bool Cloud_Connection_Enabled { get; set; }
-        //public int Cloud_Refresh_Interval_Minute { get; set; }
-        //public bool Cloud_Upload_Enabled { get; set; }
-        //public bool Local_Backup_Enabled { get; set; }
 
             return displayNames.ContainsKey(propertyName) ? displayNames[propertyName] : propertyName;
         }
@@ -645,7 +612,7 @@ namespace TApp.Views.Settings
             }
         }
 
-        private void uc_UserSetting1_OnUserAction(object sender, TTManager.Auth.LoginActionEventArgs e)
+        private void uc_UserSetting1_OnUserAction(object sender, LoginActionEventArgs e)
         {
             uiListBox1.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {e.Message}");
         }
@@ -689,6 +656,69 @@ namespace TApp.Views.Settings
         {
             PSLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Sự kiện : " + e.Message,"","UM01");
             uiListBox1.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {e.Message}");
+        }
+
+        /// <summary>
+        /// Nút Reload dùng để hủy / tạo lại uc_UserManager1.
+        /// Lần nhấn thứ nhất: remove + dispose control.
+        /// Lần nhấn tiếp theo: tạo lại control và add vào tabPage2.
+        /// </summary>
+        private void btnReload_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_isUserManagerLoaded && uc_UserManager1 != null && !uc_UserManager1.IsDisposed)
+                {
+                    // Hủy UserManager hiện tại
+                    uc_UserManager1.OnAction -= uc_UserManager1_OnAction;
+                    if (tabPage2.Controls.Contains(uc_UserManager1))
+                    {
+                        tabPage2.Controls.Remove(uc_UserManager1);
+                    }
+                    uc_UserManager1.Dispose();
+                    uc_UserManager1 = null;
+
+                    _isUserManagerLoaded = false;
+                    // Nếu có button reload trong designer, có thể đổi text cho dễ hiểu
+                    if (sender is UISymbolButton btn)
+                    {
+                        btn.Text = "Tải lại UserManager";
+                    }
+                }
+                else
+                {
+                    // Tạo lại UserManager mới và add vào tab Người dùng
+                    uc_UserManager1 = new uc_UserManager
+                    {
+                        Name = "uc_UserManager1",
+                        Font = new Font("Microsoft Sans Serif", 12F),
+                        IS2FAEnabled = false,
+                        Location = new Point(424, 3),
+                        MinimumSize = new Size(1, 1),
+                        Size = new Size(440, 366),
+                        Text = "uc_UserManager1",
+                        TextAlignment = ContentAlignment.MiddleCenter,
+                        CurrentUserName = GlobalVarialbles.CurrentUser.Username
+                    };
+
+                    // Quyền: chỉ Admin mới được thao tác
+                    uc_UserManager1.Enabled = GlobalVarialbles.CurrentUser.Role == "Admin";
+
+                    uc_UserManager1.OnAction += uc_UserManager1_OnAction;
+                    tabPage2.Controls.Add(uc_UserManager1);
+                    uc_UserManager1.INIT();
+
+                    _isUserManagerLoaded = true;
+                    if (sender is UISymbolButton btn)
+                    {
+                        btn.Text = "Hủy UserManager";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.ShowErrorTip($"Lỗi xử lý Reload UserManager: {ex.Message}");
+            }
         }
     }
 }
