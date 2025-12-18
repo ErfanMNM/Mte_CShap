@@ -23,7 +23,8 @@ namespace TApp.Views.Extention
     public partial class FExtention : UIPage
     {
         #region Fields
-        private string BackupLogDbPath = @"C:/MASANQR/CloudBackupLog.tls";
+        private string BackupLogDbPath = @"C:/MASANQR/GGCloud/CloudBackupLog.tls";
+        private string PlcSendHistoryPath = Path.Combine(@"C:\MASANQR", "IOT", "opc_send_history.txt");
         private DataTable upCloudHis = new DataTable();
         private DataTable dataTable = new DataTable();
         private int countSync = 100000;
@@ -378,6 +379,29 @@ namespace TApp.Views.Extention
         #endregion
 
         #region Helper Methods
+        private void AppendPlcSendHistory(string content)
+        {
+            try
+            {
+                string root = @"C:\MASANQR\IOT";
+                Directory.CreateDirectory(root);
+
+                string line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff};{GlobalVarialbles.CurrentUser?.Username ?? "Unknown"};{content}";
+                File.AppendAllLines(PlcSendHistoryPath, new[] { line }, Encoding.UTF8);
+
+                string[] lines = File.ReadAllLines(PlcSendHistoryPath, Encoding.UTF8);
+                if (lines.Length > 10)
+                {
+                    var lastLines = lines.Skip(lines.Length - 10).ToArray();
+                    File.WriteAllLines(PlcSendHistoryPath, lastLines, Encoding.UTF8);
+                }
+            }
+            catch
+            {
+                // Bỏ qua lỗi ghi lịch sử để không ảnh hưởng đến luồng chính
+            }
+        }
+
         private void LoadBackupHistory()
         {
             try
@@ -457,78 +481,155 @@ namespace TApp.Views.Extention
                 }
 
                 countSyncOPC = 0;
-                //xóa dữ liệu cũ
-                OperateResult write = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Batch_Code_DM"), "[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]".ToStringArray<int>());
-                if (write.IsSuccess)
-                {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Xóa dữ liệu IOT SCADA thành công D5008");
-                }
-                else
-                {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Xóa dữ liệu IOT SCADA thất bại :" + write.Message);
-                }
 
-
-                //Ghi dữ liệu mới
+                //Ghi dữ liệu mới - Đọc từ PLC trước, nếu trùng thì không gửi
                 //batch code
-                OperateResult wbatchcode = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Batch_Code_DM"), FD_Globals.productionData.BatchCode, Encoding.ASCII);
-                if (write.IsSuccess)
+                string batchCodeAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_Batch_Code_DM");
+                string newBatchCode = FD_Globals.productionData.BatchCode ?? "";
+                OperateResult<string> readBatchCode = plc.ReadString(batchCodeAddr, 40, Encoding.ASCII);
+                bool needWriteBatchCode = true;
+                
+                if (readBatchCode.IsSuccess)
                 {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Batch Thành công");
+                    string currentBatchCode = readBatchCode.Content?.TrimEnd('\0') ?? "";
+                    if (currentBatchCode == newBatchCode)
+                    {
+                        needWriteBatchCode = false;
+                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, $"Batch Code trùng với PLC, bỏ qua gửi: {newBatchCode}");
+                    }
                 }
-                else
+                
+                if (needWriteBatchCode)
                 {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Batch Thất bại :" + wbatchcode.Message);
+                    OperateResult wbatchcode = plc.Write(batchCodeAddr, newBatchCode, Encoding.ASCII);
+                    if (wbatchcode.IsSuccess)
+                    {
+                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Batch Thành công");
+                    }
+                    else
+                    {
+                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Batch Thất bại :" + wbatchcode.Message);
+                    }
                 }
 
                 //barcode
-                OperateResult wbarcode = plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_DM"), FD_Globals.productionData.Barcode, Encoding.ASCII);
-                if (wbarcode.IsSuccess)
+                string barcodeAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_DM");
+                string newBarcode = FD_Globals.productionData.Barcode ?? "";
+                OperateResult<string> readBarcode = plc.ReadString(barcodeAddr, 40, Encoding.ASCII);
+                bool needWriteBarcode = true;
+                
+                if (readBarcode.IsSuccess)
                 {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Barcode Thành công");
+                    string currentBarcode = readBarcode.Content?.TrimEnd('\0') ?? "";
+                    if (currentBarcode == newBarcode)
+                    {
+                        needWriteBarcode = false;
+                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, $"Barcode trùng với PLC, bỏ qua gửi: {newBarcode}");
+                    }
                 }
-                else
+                
+                if (needWriteBarcode)
                 {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode Thất bại :" + wbarcode.Message, "", "FDE_0009");
+                    OperateResult wbarcode = plc.Write(barcodeAddr, newBarcode, Encoding.ASCII);
+                    if (wbarcode.IsSuccess)
+                    {
+                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Barcode Thành công");
+                    }
+                    else
+                    {
+                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode Thất bại :" + wbarcode.Message, "", "FDE_0009");
+                    }
                 }
-
 
                 //barcodeformaterror -> gửi số lỗi sai định dạng QR/Barcode
-                OperateResult wBarcodeFormatError = plc.Write(
-                    PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_Format_Fail_DM"),
-                    FD_Globals.AlarmCount);
-                if (!wBarcodeFormatError.IsSuccess)
+                string formatFailAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_Format_Fail_DM");
+                int newAlarmCount = FD_Globals.AlarmCount;
+                OperateResult<int> readFormatFail = plc.ReadInt32(formatFailAddr);
+                bool needWriteFormatFail = true;
+                
+                if (readFormatFail.IsSuccess && readFormatFail.Content == newAlarmCount)
                 {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode FormatError thất bại :" + wBarcodeFormatError.Message, "", "FDE_0010");
+                    needWriteFormatFail = false;
+                }
+                
+                if (needWriteFormatFail)
+                {
+                    OperateResult wBarcodeFormatError = plc.Write(formatFailAddr, newAlarmCount);
+                    if (!wBarcodeFormatError.IsSuccess)
+                    {
+                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode FormatError thất bại :" + wBarcodeFormatError.Message, "", "FDE_0010");
+                    }
                 }
 
                 //systemstatusDM -> gửi trạng thái hệ thống (AppState)
-                OperateResult wSystemStatus = plc.Write(
-                    PLCAddressWithGoogleSheetHelper.Get("PLC_App_System_Status_DM"),
-                    (short)GlobalVarialbles.CurrentAppState);
-                if (!wSystemStatus.IsSuccess)
+                string systemStatusAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_App_System_Status_DM");
+                short newSystemStatus = (short)GlobalVarialbles.CurrentAppState;
+                OperateResult<short> readSystemStatus = plc.ReadInt16(systemStatusAddr);
+                bool needWriteSystemStatus = true;
+                
+                if (readSystemStatus.IsSuccess && readSystemStatus.Content == newSystemStatus)
                 {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu trạng thái hệ thống thất bại :" + wSystemStatus.Message, "", "FDE_0011");
+                    needWriteSystemStatus = false;
+                }
+                
+                if (needWriteSystemStatus)
+                {
+                    OperateResult wSystemStatus = plc.Write(systemStatusAddr, newSystemStatus);
+                    if (!wSystemStatus.IsSuccess)
+                    {
+                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu trạng thái hệ thống thất bại :" + wSystemStatus.Message, "", "FDE_0011");
+                    }
                 }
 
                 //số đếm
-                //systemstatusDM -> gửi trạng thái hệ thống (AppState)
-                OperateResult wAllFail = plc.Write(
-                    PLCAddressWithGoogleSheetHelper.Get("PLC_Count_AllFail_DM"),
-                    (int)FD_Globals.productionData.PLC_Counter.Fail);
-                if (!wSystemStatus.IsSuccess)
+                string allFailAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_Count_AllFail_DM");
+                int newAllFail = (int)FD_Globals.productionData.PLC_Counter.Fail;
+                OperateResult<int> readAllFail = plc.ReadInt32(allFailAddr);
+                bool needWriteAllFail = true;
+                
+                if (readAllFail.IsSuccess && readAllFail.Content == newAllFail)
                 {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu trạng thái hệ thống thất bại :" + wSystemStatus.Message, "", "FDE_0011");
+                    needWriteAllFail = false;
+                }
+                
+                if (needWriteAllFail)
+                {
+                    OperateResult wAllFail = plc.Write(allFailAddr, newAllFail);
+                    if (!wAllFail.IsSuccess)
+                    {
+                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu số đếm lỗi thất bại :" + wAllFail.Message, "", "FDE_0011");
+                    }
                 }
 
                 //productionSpeed
-                OperateResult wPS = plc.Write(
-                    PLCAddressWithGoogleSheetHelper.Get("PLC_Production_Speed"),
-                    (int)FD_Globals.productionData.ProductionPerHour);
-                if (!wSystemStatus.IsSuccess)
+                string productionSpeedAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_Production_Speed");
+                int newProductionSpeed = (int)FD_Globals.productionData.ProductionPerHour;
+                OperateResult<int> readProductionSpeed = plc.ReadInt32(productionSpeedAddr);
+                bool needWriteProductionSpeed = true;
+                
+                if (readProductionSpeed.IsSuccess && readProductionSpeed.Content == newProductionSpeed)
                 {
-                    PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu tốc độ thất bại :" + wSystemStatus.Message, "", "FDE_0011");
+                    needWriteProductionSpeed = false;
                 }
+                
+                if (needWriteProductionSpeed)
+                {
+                    OperateResult wPS = plc.Write(productionSpeedAddr, newProductionSpeed);
+                    if (!wPS.IsSuccess)
+                    {
+                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu tốc độ thất bại :" + wPS.Message, "", "FDE_0011");
+                    }
+                }
+
+                // Ghi lại lịch sử gửi xuống (tối đa 10 lần gần nhất)
+                string historyContent =
+                    $"Batch={newBatchCode},Write={needWriteBatchCode};" +
+                    $"Barcode={newBarcode},Write={needWriteBarcode};" +
+                    $"AlarmCount={newAlarmCount},Write={needWriteFormatFail};" +
+                    $"SystemStatus={newSystemStatus},Write={needWriteSystemStatus};" +
+                    $"AllFail={newAllFail},Write={needWriteAllFail};" +
+                    $"ProductionSpeed={newProductionSpeed},Write={needWriteProductionSpeed}";
+                AppendPlcSendHistory(historyContent);
 
             }
         }
@@ -652,6 +753,43 @@ namespace TApp.Views.Extention
             finally
             {
                 btnOPCHis.Enabled = true;
+            }
+        }
+
+        private void btnReadOPCSendHistory_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!File.Exists(PlcSendHistoryPath))
+                {
+                    this.ShowInfoDialog("Chưa có lịch sử gửi OPC nào.");
+                    return;
+                }
+
+                var lines = File.ReadAllLines(PlcSendHistoryPath, Encoding.UTF8);
+                DataTable dt = new DataTable();
+                dt.Columns.Add("Thời gian", typeof(string));
+                dt.Columns.Add("Người dùng", typeof(string));
+                dt.Columns.Add("Nội dung", typeof(string));
+
+                foreach (var line in lines)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+
+                    var parts = line.Split(new[] { ';' }, 3);
+                    string time = parts.Length > 0 ? parts[0] : "";
+                    string user = parts.Length > 1 ? parts[1] : "";
+                    string detail = parts.Length > 2 ? parts[2] : "";
+
+                    dt.Rows.Add(time, user, detail);
+                }
+
+                opData.DataSource = dt;
+                LogConsoleMessage($"[THÔNG BÁO] Đã tải {dt.Rows.Count} bản ghi lịch sử gửi OPC.");
+            }
+            catch (Exception ex)
+            {
+                LogConsoleMessage($"[LỖI] Đọc lịch sử gửi OPC thất bại: {ex.Message}");
             }
         }
     }
