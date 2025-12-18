@@ -58,6 +58,8 @@
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiTitlePanel4 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel11 = new Sunny.UI.UITableLayoutPanel();
+            opLineName = new Sunny.UI.UITextBox();
+            uiPanel12 = new Sunny.UI.UIPanel();
             uiTableLayoutPanel14 = new Sunny.UI.UITableLayoutPanel();
             ipBatchNo = new Sunny.UI.UIComboBox();
             uiPanel8 = new Sunny.UI.UIPanel();
@@ -104,8 +106,6 @@
             erP_Google2 = new TTManager.Masan.ERP_Google(components);
             WK_Dequeue = new System.ComponentModel.BackgroundWorker();
             WK_Load_Counter = new System.ComponentModel.BackgroundWorker();
-            uiPanel12 = new Sunny.UI.UIPanel();
-            opLineName = new Sunny.UI.UITextBox();
             MainPanel.SuspendLayout();
             uiTableLayoutPanel15.SuspendLayout();
             uiTitlePanel17.SuspendLayout();
@@ -576,7 +576,7 @@
             tabPage2.Controls.Add(uiListBox1);
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(200, 60);
+            tabPage2.Size = new Size(491, 410);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Kiểm tra lỗi";
             tabPage2.UseVisualStyleBackColor = true;
@@ -593,7 +593,7 @@
             uiListBox1.Name = "uiListBox1";
             uiListBox1.Padding = new Padding(2);
             uiListBox1.ShowText = false;
-            uiListBox1.Size = new Size(200, 60);
+            uiListBox1.Size = new Size(491, 410);
             uiListBox1.TabIndex = 0;
             uiListBox1.Text = "uiListBox1";
             // 
@@ -658,6 +658,36 @@
             uiTableLayoutPanel11.Size = new Size(365, 154);
             uiTableLayoutPanel11.TabIndex = 0;
             uiTableLayoutPanel11.TagString = null;
+            // 
+            // opLineName
+            // 
+            opLineName.Dock = DockStyle.Fill;
+            opLineName.Font = new Font("Microsoft Sans Serif", 12F);
+            opLineName.Location = new Point(121, 116);
+            opLineName.Margin = new Padding(2);
+            opLineName.MinimumSize = new Size(1, 16);
+            opLineName.Name = "opLineName";
+            opLineName.Padding = new Padding(5);
+            opLineName.ReadOnly = true;
+            opLineName.ShowText = false;
+            opLineName.Size = new Size(242, 36);
+            opLineName.TabIndex = 7;
+            opLineName.Text = "Line 3";
+            opLineName.TextAlignment = ContentAlignment.MiddleLeft;
+            opLineName.Watermark = "";
+            // 
+            // uiPanel12
+            // 
+            uiPanel12.Dock = DockStyle.Fill;
+            uiPanel12.Font = new Font("Microsoft Sans Serif", 12F);
+            uiPanel12.Location = new Point(2, 116);
+            uiPanel12.Margin = new Padding(2);
+            uiPanel12.MinimumSize = new Size(1, 1);
+            uiPanel12.Name = "uiPanel12";
+            uiPanel12.Size = new Size(115, 36);
+            uiPanel12.TabIndex = 6;
+            uiPanel12.Text = "Tên chuyền";
+            uiPanel12.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // uiTableLayoutPanel14
             // 
@@ -1102,7 +1132,6 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(87, 3);
             opPLCLed.Name = "opPLCLed";
-            opPLCLed.On = false;
             opPLCLed.Size = new Size(27, 34);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";
@@ -1338,36 +1367,6 @@
             // 
             WK_Load_Counter.WorkerSupportsCancellation = true;
             WK_Load_Counter.DoWork += WK_Load_PLC_DoWork;
-            // 
-            // uiPanel12
-            // 
-            uiPanel12.Dock = DockStyle.Fill;
-            uiPanel12.Font = new Font("Microsoft Sans Serif", 12F);
-            uiPanel12.Location = new Point(2, 116);
-            uiPanel12.Margin = new Padding(2);
-            uiPanel12.MinimumSize = new Size(1, 1);
-            uiPanel12.Name = "uiPanel12";
-            uiPanel12.Size = new Size(115, 36);
-            uiPanel12.TabIndex = 6;
-            uiPanel12.Text = "Tên chuyền";
-            uiPanel12.TextAlignment = ContentAlignment.MiddleCenter;
-            // 
-            // opLineName
-            // 
-            opLineName.Dock = DockStyle.Fill;
-            opLineName.Font = new Font("Microsoft Sans Serif", 12F);
-            opLineName.Location = new Point(121, 116);
-            opLineName.Margin = new Padding(2);
-            opLineName.MinimumSize = new Size(1, 16);
-            opLineName.Name = "opLineName";
-            opLineName.Padding = new Padding(5);
-            opLineName.ReadOnly = true;
-            opLineName.ShowText = false;
-            opLineName.Size = new Size(242, 36);
-            opLineName.TabIndex = 7;
-            opLineName.Text = "Line 3";
-            opLineName.TextAlignment = ContentAlignment.MiddleLeft;
-            opLineName.Watermark = "";
             // 
             // FDashboard
             // 

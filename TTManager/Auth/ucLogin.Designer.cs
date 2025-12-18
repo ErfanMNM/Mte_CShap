@@ -58,7 +58,7 @@
             uiTitlePanel1.Name = "uiTitlePanel1";
             uiTitlePanel1.Padding = new Padding(1, 50, 1, 1);
             uiTitlePanel1.ShowText = false;
-            uiTitlePanel1.Size = new Size(543, 269);
+            uiTitlePanel1.Size = new Size(505, 248);
             uiTitlePanel1.TabIndex = 0;
             uiTitlePanel1.Text = "Đăng Nhập";
             uiTitlePanel1.TextAlignment = ContentAlignment.MiddleCenter;
@@ -77,7 +77,7 @@
             uiTableLayoutPanel1.RowCount = 2;
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 71F));
-            uiTableLayoutPanel1.Size = new Size(541, 218);
+            uiTableLayoutPanel1.Size = new Size(503, 197);
             uiTableLayoutPanel1.TabIndex = 0;
             uiTableLayoutPanel1.TagString = null;
             // 
@@ -98,7 +98,7 @@
             uiTableLayoutPanel2.RowCount = 2;
             uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
             uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel2.Size = new Size(537, 143);
+            uiTableLayoutPanel2.Size = new Size(499, 122);
             uiTableLayoutPanel2.TabIndex = 0;
             uiTableLayoutPanel2.TagString = null;
             // 
@@ -111,7 +111,7 @@
             uiSymbolLabel1.MinimumSize = new Size(1, 1);
             uiSymbolLabel1.Name = "uiSymbolLabel1";
             uiSymbolLabel1.RectSize = 2;
-            uiSymbolLabel1.Size = new Size(149, 65);
+            uiSymbolLabel1.Size = new Size(138, 55);
             uiSymbolLabel1.Symbol = 62142;
             uiSymbolLabel1.SymbolSize = 40;
             uiSymbolLabel1.TabIndex = 0;
@@ -121,14 +121,14 @@
             // 
             ipPassword.Dock = DockStyle.Fill;
             ipPassword.Font = new Font("Microsoft Sans Serif", 12F);
-            ipPassword.Location = new Point(157, 73);
+            ipPassword.Location = new Point(146, 63);
             ipPassword.Margin = new Padding(2);
             ipPassword.MinimumSize = new Size(1, 16);
             ipPassword.Name = "ipPassword";
             ipPassword.Padding = new Padding(5);
             ipPassword.PasswordChar = '*';
             ipPassword.ShowText = false;
-            ipPassword.Size = new Size(378, 68);
+            ipPassword.Size = new Size(351, 57);
             ipPassword.TabIndex = 1;
             ipPassword.TextAlignment = ContentAlignment.MiddleLeft;
             ipPassword.Watermark = "";
@@ -139,12 +139,12 @@
             uiSymbolLabel2.BackColor = Color.FromArgb(0, 192, 192);
             uiSymbolLabel2.Dock = DockStyle.Fill;
             uiSymbolLabel2.Font = new Font("Microsoft Sans Serif", 14.25F);
-            uiSymbolLabel2.Location = new Point(3, 74);
+            uiSymbolLabel2.Location = new Point(3, 64);
             uiSymbolLabel2.MinimumSize = new Size(1, 1);
             uiSymbolLabel2.Name = "uiSymbolLabel2";
             uiSymbolLabel2.Radius = 20;
             uiSymbolLabel2.RectSize = 2;
-            uiSymbolLabel2.Size = new Size(149, 66);
+            uiSymbolLabel2.Size = new Size(138, 55);
             uiSymbolLabel2.Symbol = 361475;
             uiSymbolLabel2.SymbolSize = 40;
             uiSymbolLabel2.TabIndex = 0;
@@ -159,12 +159,12 @@
             ipUserName.Font = new Font("Microsoft Sans Serif", 12F);
             ipUserName.ItemHoverColor = Color.FromArgb(155, 200, 255);
             ipUserName.ItemSelectForeColor = Color.FromArgb(235, 243, 255);
-            ipUserName.Location = new Point(157, 2);
+            ipUserName.Location = new Point(146, 2);
             ipUserName.Margin = new Padding(2);
             ipUserName.MinimumSize = new Size(63, 0);
             ipUserName.Name = "ipUserName";
             ipUserName.Padding = new Padding(0, 0, 30, 2);
-            ipUserName.Size = new Size(378, 67);
+            ipUserName.Size = new Size(351, 57);
             ipUserName.SymbolSize = 24;
             ipUserName.TabIndex = 1;
             ipUserName.TextAlignment = ContentAlignment.MiddleLeft;
@@ -179,11 +179,11 @@
             uiTableLayoutPanel3.Controls.Add(btnLogin, 1, 0);
             uiTableLayoutPanel3.Controls.Add(uiTableLayoutPanel4, 0, 0);
             uiTableLayoutPanel3.Dock = DockStyle.Fill;
-            uiTableLayoutPanel3.Location = new Point(3, 150);
+            uiTableLayoutPanel3.Location = new Point(3, 129);
             uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
             uiTableLayoutPanel3.RowCount = 1;
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel3.Size = new Size(535, 65);
+            uiTableLayoutPanel3.Size = new Size(497, 65);
             uiTableLayoutPanel3.TabIndex = 1;
             uiTableLayoutPanel3.TagString = null;
             // 
@@ -192,11 +192,11 @@
             btnLogin.Dock = DockStyle.Fill;
             btnLogin.FillColor = Color.FromArgb(0, 192, 0);
             btnLogin.Font = new Font("Microsoft Sans Serif", 12F);
-            btnLogin.Location = new Point(367, 2);
+            btnLogin.Location = new Point(341, 2);
             btnLogin.Margin = new Padding(2);
             btnLogin.MinimumSize = new Size(1, 1);
             btnLogin.Name = "btnLogin";
-            btnLogin.Size = new Size(166, 61);
+            btnLogin.Size = new Size(154, 61);
             btnLogin.TabIndex = 0;
             btnLogin.Text = "Đăng Nhập";
             btnLogin.TipsFont = new Font("Microsoft Sans Serif", 9F);
@@ -215,7 +215,7 @@
             uiTableLayoutPanel4.Name = "uiTableLayoutPanel4";
             uiTableLayoutPanel4.RowCount = 1;
             uiTableLayoutPanel4.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel4.Size = new Size(361, 61);
+            uiTableLayoutPanel4.Size = new Size(335, 61);
             uiTableLayoutPanel4.TabIndex = 1;
             uiTableLayoutPanel4.TagString = null;
             // 
@@ -231,7 +231,7 @@
             uiSymbolLabel3.Name = "uiSymbolLabel3";
             uiSymbolLabel3.Radius = 10;
             uiSymbolLabel3.RectSize = 2;
-            uiSymbolLabel3.Size = new Size(145, 55);
+            uiSymbolLabel3.Size = new Size(134, 55);
             uiSymbolLabel3.Symbol = 57454;
             uiSymbolLabel3.SymbolColor = Color.FromArgb(255, 255, 128);
             uiSymbolLabel3.SymbolSize = 30;
@@ -243,7 +243,7 @@
             ipTwoFA.Dock = DockStyle.Fill;
             ipTwoFA.FillColor = Color.White;
             ipTwoFA.Font = new Font("Microsoft Sans Serif", 12F);
-            ipTwoFA.Location = new Point(153, 2);
+            ipTwoFA.Location = new Point(142, 2);
             ipTwoFA.Margin = new Padding(2);
             ipTwoFA.Maximum = 999999D;
             ipTwoFA.MaxLength = 18;
@@ -252,7 +252,7 @@
             ipTwoFA.Name = "ipTwoFA";
             ipTwoFA.NumPadType = Sunny.UI.NumPadType.IDNumber;
             ipTwoFA.Padding = new Padding(0, 0, 30, 2);
-            ipTwoFA.Size = new Size(206, 57);
+            ipTwoFA.Size = new Size(191, 57);
             ipTwoFA.SymbolNormal = 557532;
             ipTwoFA.SymbolSize = 24;
             ipTwoFA.TabIndex = 2;
@@ -265,7 +265,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(uiTitlePanel1);
             Name = "ucLogin";
-            Size = new Size(543, 269);
+            Size = new Size(505, 248);
             uiTitlePanel1.ResumeLayout(false);
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTableLayoutPanel2.ResumeLayout(false);
