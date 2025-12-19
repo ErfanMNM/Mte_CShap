@@ -1,4 +1,8 @@
-﻿namespace TApp
+﻿using TApp.Services;
+using System.Windows.Forms;
+using System.Threading;
+
+namespace TApp
 {
     internal static class Program
     {
@@ -8,7 +12,23 @@
         [STAThread]
         static void Main()
         {
-            
+            // Verify license trước khi chạy
+            var licenseVerifier = new LicenseVerifier();
+            var (isValid, license, errorMessage) = licenseVerifier.VerifyLicense();
+
+            if (!isValid)
+            {
+                var message = $"License không hợp lệ!\n\n{errorMessage}\n\nVui lòng liên hệ admin để được cấp license.";
+                MessageBox.Show(message, "License Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // Hiển thị thông tin license (optional - có thể bỏ qua)
+            if (license != null && license.DaysRemaining() <= 30)
+            {
+                var warning = $"Cảnh báo: License sẽ hết hạn sau {license.DaysRemaining()} ngày!\nNgày hết hạn: {license.ExpiryDate:dd/MM/yyyy}\n\nVui lòng gia hạn license sớm.";
+                MessageBox.Show(warning, "License Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
 
             bool createdNew;
             using (Mutex mutex = new Mutex(true, "TApp", out createdNew))
