@@ -17,8 +17,9 @@ namespace TApp.Views.Settings
     /// </summary>
     public partial class PAppSetting : UIPage
     {
-
+        #region Properties
         LogHelper<e_LogType> PSLogger { get; set; }
+        #endregion
 
         #region Fields
         private Dictionary<string, Control> _configControls = new Dictionary<string, Control>();
@@ -34,19 +35,21 @@ namespace TApp.Views.Settings
         }
         #endregion
 
+        #region Initialization
         /// <summary>
         /// Initializes dynamic controls and loads current configuration values.
         /// </summary>
         public void START()
         {
             string logPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "MTE", "Logs", "Pages", "PSlog.ptl"
-    );
-            PSLogger = new LogHelper<e_LogType>(logPath); 
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MTE", "Logs", "Pages", "PSlog.ptl"
+            );
+            PSLogger = new LogHelper<e_LogType>(logPath);
             GenerateConfigControls();
             LoadCurrentConfig();
         }
+        #endregion
 
         #region UI Building
         private void GenerateConfigControls()
@@ -182,18 +185,18 @@ namespace TApp.Views.Settings
             {
                 { "AppHideEnable", "Ẩn ứng dụng khi tắt" },
                 { "AppStartWithWindows", "Khởi động cùng Windows" },
+                { "AppTwoFA_Enabled", "Bật xác thực 2 bước" },
                 { "TCP_Port", "Cổng TCP" },
                 { "PLC_IP", "Địa chỉ IP PLC" },
+                { "PLC_Port", "Cổng PLC" },
+                { "PLC_Time_Refresh", "Thời gian làm mới PLC (ms)" },
+                { "PLC_Test_Mode", "Chế độ thử nghiệm PLC" },
                 { "Description", "Description" },
                 { "AWS_Credential_Path", "Đường dẫn AWS Credential" },
                 { "Camera_01_IP", "IP Máy Scan" },
-                {"AppTwoFA_Enabled ", "Bật xác thực 2 bước" },
-                {"Data_Mode", "Chế độ dữ liệu" },
-                { "PLC_Port", "Cổng PLC" },
                 { "Camera_01_Port", "Cổng Máy Scan" },
-                { "PLC_Time_Refresh", "Thời gian làm mới PLC (ms)" },
+                { "Data_Mode", "Chế độ dữ liệu" },
                 { "Line_Name", "Tên dây chuyền" },
-                { "PLC_Test_Mode", "Chế độ thử nghiệm PLC" },
                 { "Handheld_COM_Port", "Cổng COM Thiết bị cầm tay" },
                 { "production_list_path", "Đường dẫn danh sách sản xuất" },
                 { "credentialPLCAddressPath", "Đường dẫn thông tin đăng nhập PLC" },
@@ -207,7 +210,6 @@ namespace TApp.Views.Settings
                 { "Cloud_Refresh_Interval_Minute", "Khoảng thời gian làm mới đám mây (phút)" },
                 { "Cloud_Upload_Enabled", "Bật tải lên đám mây" },
                 { "Local_Backup_Enabled", "Bật sao lưu cục bộ" }
-
             };
 
             return displayNames.ContainsKey(propertyName) ? displayNames[propertyName] : propertyName;
@@ -247,16 +249,13 @@ namespace TApp.Views.Settings
                     RectColor = Color.FromArgb(189, 195, 199),
                     Radius = 8,
                     Font = new Font("Segoe UI", 10F),
-                    //TextAlign = HorizontalAlignment.Center,
-                    //HasMaximum = true,
                     Maximum = property.Name.ToLower().Contains("port") ? 65535 : int.MaxValue,
-                    //HasMinimum = true,
                     Minimum = 0,
                     Watermark = "2-click: numpad | Ctrl+2-click: keyboard"
                 };
 
                 // UINumPadTextBox tự động có numpad dialog khi double click
-                // Thêm thêm option cho bàn phím chữ bằng Ctrl+Double Click
+                // Thêm option cho bàn phím chữ bằng Ctrl+Double Click
                 numPadTextBox.MouseDoubleClick += (s, e) =>
                 {
                     if (Control.ModifierKeys == Keys.Control)
@@ -277,9 +276,6 @@ namespace TApp.Views.Settings
                     Radius = 8,
                     Font = new Font("Segoe UI", 10F)
                 };
-
-                // Thêm double-click event để hiện bàn phím ảo
-                textBox.DoubleClick += (s, e) => ShowVirtualKeyboard(textBox, property.Name);
 
                 // Thêm tooltip để hướng dẫn người dùng
                 textBox.Watermark = "Double-click để mở bàn phím ảo";
@@ -328,6 +324,9 @@ namespace TApp.Views.Settings
                     return container;
                 }
 
+                // Thêm double-click event để hiện bàn phím ảo cho textbox thường
+                textBox.DoubleClick += (s, e) => ShowVirtualKeyboard(textBox, property.Name);
+
                 return textBox;
             }
 
@@ -355,34 +354,6 @@ namespace TApp.Views.Settings
                 {
                     // Log error but continue
                     System.Diagnostics.Debug.WriteLine($"Error loading value for {propertyName}: {ex.Message}");
-                }
-            }
-        }
-
-        #region File Dialog
-        private void BrowseForFile(UITextBox textBox, string propertyName)
-        {
-            using (var openFileDialog = new OpenFileDialog())
-            {
-                if (propertyName.ToLower().Contains("pem") || propertyName.ToLower().Contains("rootca"))
-                {
-                    openFileDialog.Filter = "PEM files (*.pem)|*.pem|All files (*.*)|*.*";
-                    openFileDialog.Title = "Chọn file Root CA";
-                }
-                else if (propertyName.ToLower().Contains("pfx"))
-                {
-                    openFileDialog.Filter = "PFX files (*.pfx)|*.pfx|All files (*.*)|*.*";
-                    openFileDialog.Title = "Chọn file Client Certificate";
-                }
-                else
-                {
-                    openFileDialog.Filter = "All files (*.*)|*.*";
-                    openFileDialog.Title = "Chọn file";
-                }
-
-                if (openFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    textBox.Text = openFileDialog.FileName;
                 }
             }
         }
@@ -415,7 +386,67 @@ namespace TApp.Views.Settings
                 }
             }
         }
+
+        private object GetControlValue(Control control, Type targetType)
+        {
+            if (control is UISwitch uiSwitch && targetType == typeof(bool))
+            {
+                return uiSwitch.Active;
+            }
+            else if (control is UINumPadTextBox numPadTextBox && targetType == typeof(int))
+            {
+                if (int.TryParse(numPadTextBox.Text, out int result))
+                    return result;
+                return 0;
+            }
+            else if (control is UITextBox numTextBox && targetType == typeof(int) && numTextBox.Name.StartsWith("txt_") && !numTextBox.Name.Contains("password") && !numTextBox.Name.Contains("path") && !numTextBox.Name.Contains("host") && !numTextBox.Name.Contains("client") && !numTextBox.Name.Contains("CA") && !numTextBox.Name.Contains("COM"))
+            {
+                if (int.TryParse(numTextBox.Text, out int result))
+                    return result;
+                return 0;
+            }
+            else if (control is UITextBox textBox && targetType == typeof(string))
+            {
+                return textBox.Text;
+            }
+            else if (control is Panel panel && targetType == typeof(string))
+            {
+                // Handle path controls with browse button
+                var textBoxInPanel = panel.Controls.OfType<UITextBox>().FirstOrDefault();
+                return textBoxInPanel?.Text ?? string.Empty;
+            }
+
+            return null;
+        }
         #endregion
+
+        #region File Dialog
+        private void BrowseForFile(UITextBox textBox, string propertyName)
+        {
+            using (var openFileDialog = new OpenFileDialog())
+            {
+                if (propertyName.ToLower().Contains("pem") || propertyName.ToLower().Contains("rootca"))
+                {
+                    openFileDialog.Filter = "PEM files (*.pem)|*.pem|All files (*.*)|*.*";
+                    openFileDialog.Title = "Chọn file Root CA";
+                }
+                else if (propertyName.ToLower().Contains("pfx"))
+                {
+                    openFileDialog.Filter = "PFX files (*.pfx)|*.pfx|All files (*.*)|*.*";
+                    openFileDialog.Title = "Chọn file Client Certificate";
+                }
+                else
+                {
+                    openFileDialog.Filter = "All files (*.*)|*.*";
+                    openFileDialog.Title = "Chọn file";
+                }
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    textBox.Text = openFileDialog.FileName;
+                }
+            }
+        }
         #endregion
 
         #region Virtual Keyboard
@@ -472,38 +503,7 @@ namespace TApp.Views.Settings
         }
         #endregion
 
-        private object GetControlValue(Control control, Type targetType)
-        {
-            if (control is UISwitch uiSwitch && targetType == typeof(bool))
-            {
-                return uiSwitch.Active;
-            }
-            else if (control is UINumPadTextBox numPadTextBox && targetType == typeof(int))
-            {
-                if (int.TryParse(numPadTextBox.Text, out int result))
-                    return result;
-                return 0;
-            }
-            else if (control is UITextBox numTextBox && targetType == typeof(int) && numTextBox.Name.StartsWith("txt_") && !numTextBox.Name.Contains("password") && !numTextBox.Name.Contains("path") && !numTextBox.Name.Contains("host") && !numTextBox.Name.Contains("client") && !numTextBox.Name.Contains("CA") && !numTextBox.Name.Contains("COM"))
-            {
-                if (int.TryParse(numTextBox.Text, out int result))
-                    return result;
-                return 0;
-            }
-            else if (control is UITextBox textBox && targetType == typeof(string))
-            {
-                return textBox.Text;
-            }
-            else if (control is Panel panel && targetType == typeof(string))
-            {
-                // Handle path controls with browse button
-                var textBoxInPanel = panel.Controls.OfType<UITextBox>().FirstOrDefault();
-                return textBoxInPanel?.Text ?? string.Empty;
-            }
-
-            return null;
-        }
-
+        #region Event Handlers - Buttons
         private void btnSave_Click(object sender, EventArgs e)
         {
             try
@@ -612,52 +612,6 @@ namespace TApp.Views.Settings
             }
         }
 
-        private void uc_UserSetting1_OnUserAction(object sender, LoginActionEventArgs e)
-        {
-            uiListBox1.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {e.Message}");
-        }
-
-        private void PAppSetting_Initialize(object sender, EventArgs e)
-        {
-            // Ghi log mở trang cài đặt
-            PSLogger?.WriteLogAsync(
-                GlobalVarialbles.CurrentUser.Username,
-                e_LogType.UserAction,
-                "Mở trang cài đặt ứng dụng",
-                "",
-                "UA-APPSETTING-01"
-            );
-
-            this.uiListBox1.Items.Clear();
-            uc_UserSetting1.CurrentUserName = GlobalVarialbles.CurrentUser.Username; // Thiết lập tên người dùng hiện tại
-            uc_UserSetting1.INIT(); // Khởi tạo thông tin người dùng
-
-
-            if (GlobalVarialbles.CurrentUser.Role != "Admin")
-            {
-                btnDefault.Enabled = false;
-                btnSave.Enabled = false;
-
-                uc_UserManager1.Enabled = false;
-            }
-            else
-            {
-                btnDefault.Enabled = true;
-                btnSave.Enabled = true;
-                uc_UserManager1.Enabled = true;
-            }
-
-            uc_UserManager1.CurrentUserName = GlobalVarialbles.CurrentUser.Username; // Thiết lập tên người dùng hiện tại
-            uc_UserManager1.INIT(); // Khởi tạo thông tin người dùng
-
-        }
-
-        private void uc_UserManager1_OnAction(object sender, LoginActionEventArgs e)
-        {
-            PSLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Sự kiện : " + e.Message,"","UM01");
-            uiListBox1.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {e.Message}");
-        }
-
         /// <summary>
         /// Nút Reload dùng để hủy / tạo lại uc_UserManager1.
         /// Lần nhấn thứ nhất: remove + dispose control.
@@ -720,5 +674,53 @@ namespace TApp.Views.Settings
                 this.ShowErrorTip($"Lỗi xử lý Reload UserManager: {ex.Message}");
             }
         }
+        #endregion
+
+        #region Event Handlers - User Controls
+        private void uc_UserSetting1_OnUserAction(object sender, LoginActionEventArgs e)
+        {
+            uiListBox1.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {e.Message}");
+        }
+
+        private void uc_UserManager1_OnAction(object sender, LoginActionEventArgs e)
+        {
+            PSLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Sự kiện : " + e.Message, "", "UM01");
+            uiListBox1.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {e.Message}");
+        }
+        #endregion
+
+        #region Event Handlers - Page Lifecycle
+        private void PAppSetting_Initialize(object sender, EventArgs e)
+        {
+            // Ghi log mở trang cài đặt
+            PSLogger?.WriteLogAsync(
+                GlobalVarialbles.CurrentUser.Username,
+                e_LogType.UserAction,
+                "Mở trang cài đặt ứng dụng",
+                "",
+                "UA-APPSETTING-01"
+            );
+
+            this.uiListBox1.Items.Clear();
+            uc_UserSetting1.CurrentUserName = GlobalVarialbles.CurrentUser.Username; // Thiết lập tên người dùng hiện tại
+            uc_UserSetting1.INIT(); // Khởi tạo thông tin người dùng
+
+            if (GlobalVarialbles.CurrentUser.Role != "Admin")
+            {
+                btnDefault.Enabled = false;
+                btnSave.Enabled = false;
+                uc_UserManager1.Enabled = false;
+            }
+            else
+            {
+                btnDefault.Enabled = true;
+                btnSave.Enabled = true;
+                uc_UserManager1.Enabled = true;
+            }
+
+            uc_UserManager1.CurrentUserName = GlobalVarialbles.CurrentUser.Username; // Thiết lập tên người dùng hiện tại
+            uc_UserManager1.INIT(); // Khởi tạo thông tin người dùng
+        }
+        #endregion
     }
 }

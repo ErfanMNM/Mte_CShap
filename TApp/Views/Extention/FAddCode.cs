@@ -23,13 +23,15 @@ namespace TApp.Views.Extention
         private SerialClientHelper _datalogicScanner;
         #endregion
 
-        #region Constructor & Initialization
+        #region Constructor
         public FAddCode()
         {
             InitializeComponent();
             InitializeQueueMonitor();
         }
+        #endregion
 
+        #region Initialization
         private void FAddCode_Initialize(object sender, EventArgs e)
         {
             GlobalVarialbles.Logger?.WriteLogAsync(
@@ -56,7 +58,9 @@ namespace TApp.Views.Extention
             _queueMonitor.Tick += QueueMonitor_Tick;
             _queueMonitor.Start();
         }
+        #endregion
 
+        #region Scanner Management
         public void InitializeScanner()
         {
             if (string.IsNullOrEmpty(AppConfigs.Current.Handheld_COM_Port))
@@ -80,6 +84,28 @@ namespace TApp.Views.Extention
             }
         }
 
+        private void DisconnectScanner()
+        {
+            if (_datalogicScanner != null)
+            {
+                try
+                {
+                    if (_datalogicScanner.Connected)
+                    {
+                        _datalogicScanner.Disconnect();
+                    }
+                    _datalogicScanner.SerialClientCallback -= DatalogicScanner_SerialClientCallback;
+                    _datalogicScanner = null;
+                    AddConsoleLog("[THÔNG BÁO] Đã ngắt kết nối máy quét", Color.Orange);
+                }
+                catch (Exception ex)
+                {
+                    // Log lỗi nhưng không throw để đảm bảo ngắt kết nối hoàn tất
+                    System.Diagnostics.Debug.WriteLine($"Error disconnecting scanner: {ex.Message}");
+                }
+            }
+        }
+
         private void DatalogicScanner_SerialClientCallback(SerialClientState state, string data)
         {
             switch (state)
@@ -100,28 +126,6 @@ namespace TApp.Views.Extention
                 case SerialClientState.Error:
                     AddConsoleLog($"[LỖI] Lỗi máy quét: {data}", Color.Red);
                     break;
-            }
-        }
-
-        private void DisconnectScanner()
-        {
-            if (_datalogicScanner != null)
-            {
-                try
-                {
-                    if (_datalogicScanner.Connected)
-                    {
-                        _datalogicScanner.Disconnect();
-                    }
-                    _datalogicScanner.SerialClientCallback -= DatalogicScanner_SerialClientCallback;
-                    _datalogicScanner = null;
-                    AddConsoleLog("[THÔNG BÁO] Đã ngắt kết nối máy quét", Color.Orange);
-                }
-                catch (Exception ex)
-                {
-                    // Log lỗi nhưng không throw để đảm bảo ngắt kết nối hoàn tất
-                    System.Diagnostics.Debug.WriteLine($"Error disconnecting scanner: {ex.Message}");
-                }
             }
         }
         #endregion
