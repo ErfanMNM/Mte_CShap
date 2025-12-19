@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+    File cấu hình ConfuserEx để obfuscate TApp
+    Hướng dẫn:
+    1. Download ConfuserEx từ: https://github.com/mkaring/ConfuserEx/releases
+    2. Đổi tên file này thành confuser.crproj
+    3. Điều chỉnh đường dẫn baseDir và outputDir cho phù hợp
+    4. Chạy: ConfuserEx.CLI.exe confuser.crproj
+-->
+<project baseDir="bin\Release\net8.0-windows" 
+         outputDir="bin\Release\net8.0-windows\obfuscated" 
+         xmlns="http://confuser.codeplex.com">
+  
+  <!-- Module cần obfuscate -->
+  <module path="TApp.exe" />
+  
+  <!-- Rule cho tất cả các type -->
+  <rule pattern="true" inherit="false">
+    
+    <!-- Anti-ILDASM: Ngăn ILDASM đọc code -->
+    <protection id="anti ildasm" />
+    
+    <!-- Anti-Tamper: Bảo vệ code khỏi bị modify -->
+    <protection id="anti tamper" />
+    
+    <!-- Constants: Mã hóa constants -->
+    <protection id="constants" />
+    
+    <!-- Control Flow: Làm rối control flow -->
+    <protection id="ctrl flow" />
+    
+    <!-- Invalid Metadata: Thêm metadata không hợp lệ -->
+    <protection id="invalid metadata" />
+    
+    <!-- Reference Proxy: Thay thế reference bằng proxy -->
+    <protection id="ref proxy" />
+    
+    <!-- Rename: Đổi tên classes, methods, fields -->
+    <protection id="rename">
+      <argument name="mode" value="unicode" />
+      <argument name="flatten" value="true" />
+      <argument name="password" value="TApp2024Secret" />
+    </protection>
+    
+    <!-- Resources: Mã hóa resources -->
+    <protection id="resources">
+      <argument name="mode" value="dynamic" />
+      <argument name="password" value="TApp2024Secret" />
+    </protection>
+    
+  </rule>
+  
+  <!-- Loại trừ một số type không nên obfuscate -->
+  <rule pattern="namespace('TApp.Security')" inherit="false">
+    <!-- Giữ nguyên security classes để tránh conflict -->
+  </rule>
+  
+  <rule pattern="namespace('TApp.Services.LicenseVerifier')" inherit="false">
+    <!-- Giữ nguyên license verifier -->
+  </rule>
+  
+</project>
+

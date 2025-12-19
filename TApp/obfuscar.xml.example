@@ -1,0 +1,32 @@
+<?xml version='1.0'?>
+<!-- 
+    File cấu hình Obfuscar để obfuscate TApp
+    Hướng dẫn:
+    1. Cài đặt: dotnet add package Obfuscar
+    2. Đổi tên file này thành obfuscar.xml
+    3. Điều chỉnh đường dẫn InPath và OutPath
+    4. Chạy: Obfuscar.Console.exe obfuscar.xml
+-->
+<Obfuscator>
+  <!-- Đường dẫn input -->
+  <Var name="InPath" value="bin\Release\net8.0-windows" />
+  
+  <!-- Đường dẫn output -->
+  <Var name="OutPath" value="bin\Release\net8.0-windows\obfuscated" />
+  
+  <!-- Module cần obfuscate -->
+  <Module file="$(InPath)\TApp.exe" />
+  
+  <!-- Loại trừ một số namespace/type -->
+  <SkipType name="TApp.Security.AntiReverseEngineering" />
+  <SkipType name="TApp.Services.LicenseVerifier" />
+  
+  <!-- Các tùy chọn obfuscation -->
+  <Var name="HidePrivateApi" value="true" />
+  <Var name="KeepPublicApi" value="false" />
+  <Var name="HideStrings" value="true" />
+  <Var name="OptimizeMethods" value="true" />
+  <Var name="SuppressIldasm" value="true" />
+  
+</Obfuscator>
+

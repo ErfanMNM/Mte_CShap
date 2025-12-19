@@ -58,6 +58,11 @@ namespace TApp.Configs
 
         public string Batch_Rule_Template { get; set; }
 
+        /// <summary>
+        /// Bypass security checks (chỉ dùng khi debug - KHÔNG BẬT trong production!)
+        /// </summary>
+        public bool Security_Bypass_Enabled { get; set; }
+
         public override void SetDefault()
         {
             base.SetDefault();
@@ -90,6 +95,7 @@ namespace TApp.Configs
             OPC_UA_Time_Refresh = 5000;
             Old_Camera_job_Enabled = false;
             Batch_Rule_Template = "{AN:6,15}-{N:6}-TOL{LINE}-{AN:1}";
+            Security_Bypass_Enabled = false; // Mặc định TẮT - chỉ bật khi debug
         }
     }
 }
