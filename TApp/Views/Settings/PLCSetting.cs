@@ -131,7 +131,25 @@ namespace TApp.Views.Settings
 
         private void btnUndo_Click(object sender, EventArgs e)
         {
-            UpdateUIFromRecipe(_recipeManager.CurrentRecipeOnPC);
+            try
+            {
+                // Lấy giá trị hiện tại từ PLC và hiển thị lên UI
+                GetParameterFromPLC();
+
+                var plcParams = new PLC_Parameter
+                {
+                    DelayCamera = PLC_Parameter_On_PLC.DelayCamera,
+                    DelayReject = PLC_Parameter_On_PLC.DelayReject,
+                    RejectStreng = PLC_Parameter_On_PLC.RejectStreng
+                };
+
+                UpdateUIFromRecipe(plcParams);
+                this.ShowSuccessDialog("Đã tải lại giá trị từ PLC thành công!");
+            }
+            catch (Exception ex)
+            {
+                this.ShowErrorDialog($"Lỗi khi tải lại giá trị từ PLC: {ex.Message}");
+            }
         }
 
         private void btnNewRecipe_Click(object sender, EventArgs e)
