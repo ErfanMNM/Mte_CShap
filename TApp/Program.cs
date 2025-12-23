@@ -59,8 +59,8 @@ namespace TApp
             var (isValid, license, errorMessage) = licenseVerifier.VerifyLicense();
 
 #if DEBUG
-            // Trong DEBUG mode, cho phép chạy không cần license (hoặc có thể bypass)
-            if (!isValid && !AntiReverseEngineering.BypassSecurityChecks)
+            // Trong DEBUG mode, vẫn yêu cầu license; cho phép bypass có chủ đích
+            if (!isValid)
             {
                 var bypassLicense = MessageBox.Show(
                     $"License không hợp lệ!\n\n{errorMessage}\n\nBạn có muốn BYPASS license check để debug không?",
