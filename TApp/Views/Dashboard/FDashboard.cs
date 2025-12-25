@@ -384,19 +384,19 @@ namespace TApp.Views.Dashboard
         {
             try
             {
-                if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
-                    return;
+                //if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
+                //    return;
 
-                OperateResult<int> readResult = omronPLC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Deactive_DM"));
-                if (readResult.IsSuccess)
-                {
-                    bool currentDeactiveState = readResult.Content == 1;
-                    if (currentDeactiveState != _lastDeactiveState)
-                    {
-                        _lastDeactiveState = currentDeactiveState;
-                        DeactiveStateChanged?.Invoke(currentDeactiveState);
-                    }
-                }
+                //OperateResult<int> readResult = omronPLC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Deactive_DM"));
+                //if (readResult.IsSuccess)
+                //{
+                //    bool currentDeactiveState = readResult.Content == 1;
+                //    if (currentDeactiveState != _lastDeactiveState)
+                //    {
+                //        _lastDeactiveState = currentDeactiveState;
+                //        DeactiveStateChanged?.Invoke(currentDeactiveState);
+                //    }
+                //}
             }
             catch (Exception ex)
             {
