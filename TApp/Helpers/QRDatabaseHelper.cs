@@ -502,7 +502,7 @@ namespace TApp.Helpers
                 con.Open();
 
                 string sql = @"
-                    INSERT OR IGNORE INTO ActiveUniqueQR
+                    INSERT INTO ActiveUniqueQR
                     (QRContent, BatchCode, Barcode, UserName,
                      TimeStampActive, TimeUnixActive, ProductionDatetime)
                     VALUES
