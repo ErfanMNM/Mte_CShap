@@ -22,7 +22,7 @@ namespace TApp.Helpers
             CREATE TABLE IF NOT EXISTS ActiveUniqueQR (
                 ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 QRContent TEXT NOT NULL,
-                Status TEXT NOT NULL,
+                Status TEXT NOT NULL DEFAULT 1,
                 BatchCode TEXT NOT NULL,
                 Barcode TEXT NOT NULL,
                 UserName TEXT NOT NULL,
