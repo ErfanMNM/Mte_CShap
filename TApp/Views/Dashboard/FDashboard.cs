@@ -851,7 +851,37 @@ namespace TApp.Views.Dashboard
         private void UpdateProductionPerHour()
         {
             List<HourlyProduction> hourlyPassProduction = QRDatabaseHelper.GetHourlyProduction(DateTime.Now, null);
-            FD_Globals.productionData.ProductionPerHour = hourlyPassProduction.FirstOrDefault(p => p.Hour == DateTime.Now.Hour)?.Count ?? 0;
+            var currentHourData = hourlyPassProduction.FirstOrDefault(p => p.Hour == DateTime.Now.Hour);
+            
+            if (currentHourData == null || currentHourData.Count == 0)
+            {
+                FD_Globals.productionData.ProductionPerHour = 0;
+                return;
+            }
+
+            var now = DateTime.Now;
+            int minutesElapsed = now.Minute;
+            int secondsElapsed = now.Second;
+
+            // Tính tốc độ sản xuất thực tế (sản phẩm/giờ)
+            // Dựa trên thời gian đã trôi qua trong giờ hiện tại
+            if (minutesElapsed > 0)
+            {
+                // Tính dựa trên số phút: (số sản phẩm / số phút) * 60
+                double productionRate = (double)currentHourData.Count / minutesElapsed * 60.0;
+                FD_Globals.productionData.ProductionPerHour = (int)Math.Round(productionRate);
+            }
+            else if (secondsElapsed > 0)
+            {
+                // Nếu chưa đầy 1 phút, tính dựa trên số giây: (số sản phẩm / số giây) * 3600
+                double productionRate = (double)currentHourData.Count / secondsElapsed * 3600.0;
+                FD_Globals.productionData.ProductionPerHour = (int)Math.Round(productionRate);
+            }
+            else
+            {
+                // Nếu mới bắt đầu giờ (0 giây), trả về 0
+                FD_Globals.productionData.ProductionPerHour = 0;
+            }
         }
 
         private void ProcessChangeBatchDialog(DChangeBatch dialog, string loadErpResult)
@@ -955,8 +985,6 @@ namespace TApp.Views.Dashboard
             });
         }
         #endregion
-
-        
     }
 
     #region Nested Types

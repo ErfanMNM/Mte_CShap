@@ -21,11 +21,11 @@ namespace TApp.Views.Extention
         /// </summary>
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle8 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle9 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle10 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiTitlePanel1 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
@@ -152,9 +152,9 @@ namespace TApp.Views.Extention
             uiTableLayoutPanel3.Margin = new Padding(2);
             uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
             uiTableLayoutPanel3.RowCount = 4;
-            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 147F));
+            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 111F));
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 251F));
+            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 188F));
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 43F));
             uiTableLayoutPanel3.Size = new Size(870, 565);
             uiTableLayoutPanel3.TabIndex = 1;
@@ -166,13 +166,13 @@ namespace TApp.Views.Extention
             opConsole.Font = new Font("Microsoft Sans Serif", 12F);
             opConsole.HoverColor = Color.FromArgb(155, 200, 255);
             opConsole.ItemSelectForeColor = Color.White;
-            opConsole.Location = new Point(2, 273);
+            opConsole.Location = new Point(2, 336);
             opConsole.Margin = new Padding(2);
             opConsole.MinimumSize = new Size(1, 1);
             opConsole.Name = "opConsole";
             opConsole.Padding = new Padding(2);
             opConsole.ShowText = false;
-            opConsole.Size = new Size(866, 247);
+            opConsole.Size = new Size(866, 184);
             opConsole.TabIndex = 1;
             opConsole.Text = "uiListBox1";
             // 
@@ -181,13 +181,13 @@ namespace TApp.Views.Extention
             uiTitlePanel2.Controls.Add(opQueueTable);
             uiTitlePanel2.Dock = DockStyle.Fill;
             uiTitlePanel2.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTitlePanel2.Location = new Point(2, 149);
+            uiTitlePanel2.Location = new Point(2, 113);
             uiTitlePanel2.Margin = new Padding(2);
             uiTitlePanel2.MinimumSize = new Size(1, 1);
             uiTitlePanel2.Name = "uiTitlePanel2";
             uiTitlePanel2.Padding = new Padding(1, 35, 1, 1);
             uiTitlePanel2.ShowText = false;
-            uiTitlePanel2.Size = new Size(866, 120);
+            uiTitlePanel2.Size = new Size(866, 219);
             uiTitlePanel2.TabIndex = 3;
             uiTitlePanel2.Text = "Danh sách mã đang chờ xử lý";
             uiTitlePanel2.TextAlignment = ContentAlignment.MiddleCenter;
@@ -195,27 +195,27 @@ namespace TApp.Views.Extention
             // 
             // opQueueTable
             // 
-            dataGridViewCellStyle6.BackColor = Color.FromArgb(235, 243, 255);
-            opQueueTable.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle1.BackColor = Color.FromArgb(235, 243, 255);
+            opQueueTable.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
             opQueueTable.BackgroundColor = Color.White;
             opQueueTable.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle7.BackColor = Color.FromArgb(80, 160, 255);
-            dataGridViewCellStyle7.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle7.ForeColor = Color.White;
-            dataGridViewCellStyle7.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle7.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle7.WrapMode = DataGridViewTriState.True;
-            opQueueTable.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle2.BackColor = Color.FromArgb(80, 160, 255);
+            dataGridViewCellStyle2.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle2.ForeColor = Color.White;
+            dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
+            opQueueTable.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             opQueueTable.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle8.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle8.BackColor = SystemColors.Window;
-            dataGridViewCellStyle8.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle8.ForeColor = Color.FromArgb(48, 48, 48);
-            dataGridViewCellStyle8.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle8.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle8.WrapMode = DataGridViewTriState.False;
-            opQueueTable.DefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = SystemColors.Window;
+            dataGridViewCellStyle3.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle3.ForeColor = Color.FromArgb(48, 48, 48);
+            dataGridViewCellStyle3.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
+            opQueueTable.DefaultCellStyle = dataGridViewCellStyle3;
             opQueueTable.Dock = DockStyle.Fill;
             opQueueTable.EnableHeadersVisualStyles = false;
             opQueueTable.Font = new Font("Microsoft Sans Serif", 12F);
@@ -223,19 +223,19 @@ namespace TApp.Views.Extention
             opQueueTable.Location = new Point(1, 35);
             opQueueTable.Margin = new Padding(2);
             opQueueTable.Name = "opQueueTable";
-            dataGridViewCellStyle9.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle9.BackColor = Color.FromArgb(235, 243, 255);
-            dataGridViewCellStyle9.Font = new Font("Microsoft Sans Serif", 12F);
-            dataGridViewCellStyle9.ForeColor = Color.FromArgb(48, 48, 48);
-            dataGridViewCellStyle9.SelectionBackColor = Color.FromArgb(80, 160, 255);
-            dataGridViewCellStyle9.SelectionForeColor = Color.White;
-            dataGridViewCellStyle9.WrapMode = DataGridViewTriState.True;
-            opQueueTable.RowHeadersDefaultCellStyle = dataGridViewCellStyle9;
-            dataGridViewCellStyle10.BackColor = Color.White;
-            dataGridViewCellStyle10.Font = new Font("Microsoft Sans Serif", 12F);
-            opQueueTable.RowsDefaultCellStyle = dataGridViewCellStyle10;
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = Color.FromArgb(235, 243, 255);
+            dataGridViewCellStyle4.Font = new Font("Microsoft Sans Serif", 12F);
+            dataGridViewCellStyle4.ForeColor = Color.FromArgb(48, 48, 48);
+            dataGridViewCellStyle4.SelectionBackColor = Color.FromArgb(80, 160, 255);
+            dataGridViewCellStyle4.SelectionForeColor = Color.White;
+            dataGridViewCellStyle4.WrapMode = DataGridViewTriState.True;
+            opQueueTable.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle5.BackColor = Color.White;
+            dataGridViewCellStyle5.Font = new Font("Microsoft Sans Serif", 12F);
+            opQueueTable.RowsDefaultCellStyle = dataGridViewCellStyle5;
             opQueueTable.SelectedIndex = -1;
-            opQueueTable.Size = new Size(864, 84);
+            opQueueTable.Size = new Size(864, 183);
             opQueueTable.StripeOddColor = Color.FromArgb(235, 243, 255);
             opQueueTable.TabIndex = 1;
             // 
@@ -252,7 +252,7 @@ namespace TApp.Views.Extention
             uiTableLayoutPanel4.Name = "uiTableLayoutPanel4";
             uiTableLayoutPanel4.RowCount = 1;
             uiTableLayoutPanel4.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel4.Size = new Size(866, 143);
+            uiTableLayoutPanel4.Size = new Size(866, 107);
             uiTableLayoutPanel4.TabIndex = 4;
             uiTableLayoutPanel4.TagString = null;
             // 
@@ -268,7 +268,7 @@ namespace TApp.Views.Extention
             opStatusPanel.Name = "opStatusPanel";
             opStatusPanel.Padding = new Padding(1, 25, 1, 1);
             opStatusPanel.ShowText = false;
-            opStatusPanel.Size = new Size(319, 139);
+            opStatusPanel.Size = new Size(319, 103);
             opStatusPanel.TabIndex = 5;
             opStatusPanel.Text = "Số lượng trong hàng đợi";
             opStatusPanel.TextAlignment = ContentAlignment.MiddleCenter;
@@ -286,7 +286,7 @@ namespace TApp.Views.Extention
             opStatsPanel.Name = "opStatsPanel";
             opStatsPanel.Padding = new Padding(1, 25, 1, 1);
             opStatsPanel.ShowText = false;
-            opStatsPanel.Size = new Size(317, 113);
+            opStatsPanel.Size = new Size(317, 77);
             opStatsPanel.TabIndex = 1;
             opStatsPanel.Text = "Thống kê";
             opStatsPanel.TextAlignment = ContentAlignment.MiddleCenter;
@@ -309,7 +309,7 @@ namespace TApp.Views.Extention
             uiTableLayoutPanel5.RowCount = 2;
             uiTableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
             uiTableLayoutPanel5.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel5.Size = new Size(315, 87);
+            uiTableLayoutPanel5.Size = new Size(315, 51);
             uiTableLayoutPanel5.TabIndex = 0;
             uiTableLayoutPanel5.TagString = null;
             // 
@@ -320,7 +320,7 @@ namespace TApp.Views.Extention
             uiLabel2.ForeColor = Color.FromArgb(48, 48, 48);
             uiLabel2.Location = new Point(3, 0);
             uiLabel2.Name = "uiLabel2";
-            uiLabel2.Size = new Size(151, 43);
+            uiLabel2.Size = new Size(151, 25);
             uiLabel2.TabIndex = 0;
             uiLabel2.Text = "Đã thêm:";
             uiLabel2.TextAlign = ContentAlignment.MiddleLeft;
@@ -330,9 +330,9 @@ namespace TApp.Views.Extention
             uiLabel3.Dock = DockStyle.Fill;
             uiLabel3.Font = new Font("Microsoft Sans Serif", 10F);
             uiLabel3.ForeColor = Color.FromArgb(48, 48, 48);
-            uiLabel3.Location = new Point(3, 43);
+            uiLabel3.Location = new Point(3, 25);
             uiLabel3.Name = "uiLabel3";
-            uiLabel3.Size = new Size(151, 44);
+            uiLabel3.Size = new Size(151, 26);
             uiLabel3.TabIndex = 1;
             uiLabel3.Text = "Thành công:";
             uiLabel3.TextAlign = ContentAlignment.MiddleLeft;
@@ -344,7 +344,7 @@ namespace TApp.Views.Extention
             opTotalAdded.ForeColor = Color.Blue;
             opTotalAdded.Location = new Point(160, 0);
             opTotalAdded.Name = "opTotalAdded";
-            opTotalAdded.Size = new Size(152, 43);
+            opTotalAdded.Size = new Size(152, 25);
             opTotalAdded.TabIndex = 2;
             opTotalAdded.Text = "0";
             opTotalAdded.TextAlign = ContentAlignment.MiddleRight;
@@ -354,9 +354,9 @@ namespace TApp.Views.Extention
             opTotalSuccess.Dock = DockStyle.Fill;
             opTotalSuccess.Font = new Font("Microsoft Sans Serif", 10F);
             opTotalSuccess.ForeColor = Color.Green;
-            opTotalSuccess.Location = new Point(160, 43);
+            opTotalSuccess.Location = new Point(160, 25);
             opTotalSuccess.Name = "opTotalSuccess";
-            opTotalSuccess.Size = new Size(152, 44);
+            opTotalSuccess.Size = new Size(152, 26);
             opTotalSuccess.TabIndex = 3;
             opTotalSuccess.Text = "0";
             opTotalSuccess.TextAlign = ContentAlignment.MiddleRight;
@@ -368,7 +368,7 @@ namespace TApp.Views.Extention
             opQueueCount.ForeColor = Color.FromArgb(48, 48, 48);
             opQueueCount.Location = new Point(1, 25);
             opQueueCount.Name = "opQueueCount";
-            opQueueCount.Size = new Size(317, 113);
+            opQueueCount.Size = new Size(317, 77);
             opQueueCount.TabIndex = 0;
             opQueueCount.Text = "0";
             opQueueCount.TextAlign = ContentAlignment.MiddleCenter;
@@ -382,7 +382,7 @@ namespace TApp.Views.Extention
             opStatus.Location = new Point(3, 3);
             opStatus.MinimumSize = new Size(1, 1);
             opStatus.Name = "opStatus";
-            opStatus.Size = new Size(537, 137);
+            opStatus.Size = new Size(537, 101);
             opStatus.Symbol = 61761;
             opStatus.SymbolColor = Color.Black;
             opStatus.SymbolSize = 50;
