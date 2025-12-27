@@ -188,7 +188,7 @@ namespace TApp.Views.Extention
                         continue;
                     }
 
-                    string csvFileName = $"{AppConfigs.Current.Line_Name}_{DateTime.Now.ToString("ddMMyyyy_HHmmss")}.csv";
+                    string csvFileName = $"{AppConfigs.Current.Line_Name}_{DateTime.Now.ToString("ddMMyyyy HHmmss")}.csv";
                     string csvTempRoot = @"C:\MASANQR\Temp";
                     string csvBackupRoot = @"C:\MASANQR\Backup";
                     Directory.CreateDirectory(csvTempRoot);
@@ -196,7 +196,25 @@ namespace TApp.Views.Extention
                     string csvTempPath = Path.Combine(csvTempRoot, csvFileName);
                     string csvBackupPath = Path.Combine(csvBackupRoot, csvFileName);
 
-                    ExportResult exportResult = CsvHelper.ExportDataTableToCsv(dataToBackup, csvTempPath);
+                    //chuyen du lieu
+                    DataTable _data = new DataTable();
+
+                    _data.Columns.Add("ID", typeof(string));
+                    _data.Columns.Add("BatchID", typeof(string));
+                    _data.Columns.Add("Content", typeof(string));
+                    _data.Columns.Add("UserName", typeof(string));
+                    _data.Columns.Add("Status", typeof(string));
+                    _data.Columns.Add("Note", typeof(string));
+                    _data.Columns.Add("Timestamp", typeof(string));
+                    _data.Columns.Add("Timeunix", typeof(string));
+                    _data.Columns.Add("ProductName", typeof(string));
+
+                    for (int i = 0; i < dataToBackup.Rows.Count; i++)
+                    {
+                        _data.Rows.Add(dataToBackup.Rows[i]["ID"], dataToBackup.Rows[i]["BatchCode"], dataToBackup.Rows[i]["QRContent"].ToString().Replace("\r\n", "").Replace("\r", ""), dataToBackup.Rows[i]["UserName"], dataToBackup.Rows[i]["Status"], dataToBackup.Rows[i]["UserName"], dataToBackup.Rows[i]["TimeStampActive"], dataToBackup.Rows[i]["TimeUnixActive"], dataToBackup.Rows[i]["BatchCode"]);
+                    }
+
+                    ExportResult exportResult = CsvHelper.ExportDataTableToCsv(_data, csvTempPath);
 
                     if (!exportResult.IsSucces)
                     {
@@ -304,7 +322,7 @@ namespace TApp.Views.Extention
                 GoogleCredential credential = GoogleCredential.FromFile(AppConfigs.Current.credentialERPPath);
                 StorageClient storage = StorageClient.Create(credential);
                 fileStream = File.OpenRead(filePath);
-                string objectPath = $"QRCode/{DateTime.Now.ToString("yyyy")}/{DateTime.Now.ToString("MM")}/{csvFileName}";
+                string objectPath = $"QRCode/{csvFileName}";
                 var uploadedObject = storage.UploadObject("masan-image", objectPath, null, fileStream);
                 fileStream.Close();
                 fileStream.Dispose();
