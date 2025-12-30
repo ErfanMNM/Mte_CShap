@@ -209,7 +209,8 @@ namespace TApp.Views.Settings
                 { "Cloud_Connection_Enabled", "Bật kết nối đám mây" },
                 { "Cloud_Refresh_Interval_Minute", "Khoảng thời gian làm mới đám mây (phút)" },
                 { "Cloud_Upload_Enabled", "Bật tải lên đám mây" },
-                { "Local_Backup_Enabled", "Bật sao lưu cục bộ" }
+                { "Local_Backup_Enabled", "Bật sao lưu cục bộ" },
+                { "Backup_Folder_Path", "Thư mục sao lưu (để trống dùng mặc định)" }
             };
 
             return displayNames.ContainsKey(propertyName) ? displayNames[propertyName] : propertyName;

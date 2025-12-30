@@ -53,6 +53,7 @@ namespace TApp.Configs
         public int Cloud_Refresh_Interval_Minute { get; set; }
         public bool Cloud_Upload_Enabled { get; set; }
         public bool Local_Backup_Enabled { get; set; }
+        public string? Backup_Folder_Path { get; set; }
 
         public bool Old_Camera_job_Enabled { get; set; }
 
@@ -92,6 +93,7 @@ namespace TApp.Configs
             Cloud_Refresh_Interval_Minute = 60;
             Cloud_Upload_Enabled = true;
             Local_Backup_Enabled = true;
+            Backup_Folder_Path = ""; // Để trống sẽ dùng mặc định C:\MASANQR\Backup
             OPC_UA_Time_Refresh = 5000;
             Old_Camera_job_Enabled = false;
             Batch_Rule_Template = "{AN:6,15}-{N:6}-TOL{LINE}-{AN:1}";

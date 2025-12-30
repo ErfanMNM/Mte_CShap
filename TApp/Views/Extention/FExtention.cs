@@ -190,9 +190,23 @@ namespace TApp.Views.Extention
 
                     string csvFileName = $"{AppConfigs.Current.Line_Name}_{DateTime.Now.ToString("ddMMyyyy HHmmss")}.csv";
                     string csvTempRoot = @"C:\MASANQR\Temp";
-                    string csvBackupRoot = @"C:\MASANQR\Backup";
+                    
+                    // Lấy thư mục backup từ cấu hình, nếu rỗng thì dùng mặc định
+                    string baseBackupRoot = string.IsNullOrWhiteSpace(AppConfigs.Current.Backup_Folder_Path) 
+                        ? @"C:\MASANQR\Backup" 
+                        : AppConfigs.Current.Backup_Folder_Path;
+                    
+                    // Tạo cấu trúc thư mục theo yyyy/MM/dd
+                    DateTime now = DateTime.Now;
+                    string dateFolder = Path.Combine(now.ToString("yyyy"), now.ToString("MM"), now.ToString("dd"));
+                    string csvBackupRoot = Path.Combine(baseBackupRoot, dateFolder);
+                    
+                    // Tự động tạo thư mục nếu chưa tồn tại
                     Directory.CreateDirectory(csvTempRoot);
                     Directory.CreateDirectory(csvBackupRoot);
+                    
+                    LogConsoleMessage($"[THÔNG BÁO] Thư mục backup: {csvBackupRoot}");
+                    
                     string csvTempPath = Path.Combine(csvTempRoot, csvFileName);
                     string csvBackupPath = Path.Combine(csvBackupRoot, csvFileName);
 
@@ -211,7 +225,18 @@ namespace TApp.Views.Extention
 
                     for (int i = 0; i < dataToBackup.Rows.Count; i++)
                     {
-                        _data.Rows.Add(dataToBackup.Rows[i]["ID"], dataToBackup.Rows[i]["BatchCode"], dataToBackup.Rows[i]["QRContent"].ToString().Replace("\r\n", "").Replace("\r", ""), dataToBackup.Rows[i]["UserName"], dataToBackup.Rows[i]["Status"], dataToBackup.Rows[i]["UserName"], dataToBackup.Rows[i]["TimeStampActive"], dataToBackup.Rows[i]["TimeUnixActive"], dataToBackup.Rows[i]["BatchCode"]);
+                        // Note: ActiveUniqueQR table không có cột Note, để trống hoặc có thể dùng Status
+                        string noteValue = dataToBackup.Rows[i]["Status"]?.ToString() ?? "";
+                        _data.Rows.Add(
+                            dataToBackup.Rows[i]["ID"], 
+                            dataToBackup.Rows[i]["BatchCode"], 
+                            dataToBackup.Rows[i]["QRContent"].ToString().Replace("\r\n", "").Replace("\r", ""), 
+                            dataToBackup.Rows[i]["UserName"], 
+                            dataToBackup.Rows[i]["Status"], 
+                            noteValue, // Sửa: không dùng UserName cho Note
+                            dataToBackup.Rows[i]["TimeStampActive"], 
+                            dataToBackup.Rows[i]["TimeUnixActive"], 
+                            dataToBackup.Rows[i]["BatchCode"]);
                     }
 
                     ExportResult exportResult = CsvHelper.ExportDataTableToCsv(_data, csvTempPath);
@@ -231,15 +256,41 @@ namespace TApp.Views.Extention
                     bool uploadSuccess = upload.Item1;
                     string uploadMessage = upload.Item2; //uploadSuccess ? "Upload cloud thành công" : "Upload cloud thất bại";
 
-                    if (shouldBackupLocal && uploadSuccess)
+                    // Sửa: Backup local độc lập với kết quả upload cloud
+                    // Nếu Local_Backup_Enabled = true thì luôn backup, không phụ thuộc vào upload cloud
+                    bool localBackupSuccess = true;
+                    string localBackupMessage = "";
+                    if (shouldBackupLocal)
                     {
-                        PerformLocalBackup(exportResult.FilePath, csvBackupPath);
+                        var localBackupResult = PerformLocalBackup(exportResult.FilePath, csvBackupPath);
+                        localBackupSuccess = localBackupResult.Item1;
+                        localBackupMessage = localBackupResult.Item2;
                     }
 
-                    CleanUpTempFile(exportResult.FilePath);
-                    LogBackupResult(csvFileName, uploadSuccess ? "1" : "0", timeStartUpload, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), uploadSuccess ? maxUnixQR : lastUnix, uploadMessage);
+                    // Chỉ xóa temp file nếu cả upload và backup đều thành công (hoặc không cần)
+                    // Nếu có lỗi, giữ lại temp file để debug
+                    if ((!shouldUploadCloud || uploadSuccess) && (!shouldBackupLocal || localBackupSuccess))
+                    {
+                        CleanUpTempFile(exportResult.FilePath);
+                    }
+                    else
+                    {
+                        LogConsoleMessage($"[CẢNH BÁO] Giữ lại file temp để kiểm tra: {exportResult.FilePath}");
+                    }
 
-                    if (uploadSuccess)
+                    // Tổng hợp thông báo
+                    string finalMessage = uploadMessage;
+                    if (shouldBackupLocal)
+                    {
+                        finalMessage += localBackupSuccess ? " | Backup local thành công" : $" | Backup local thất bại: {localBackupMessage}";
+                    }
+
+                    // Status = 1 chỉ khi cả upload (nếu bật) và backup (nếu bật) đều thành công
+                    bool overallSuccess = (!shouldUploadCloud || uploadSuccess) && (!shouldBackupLocal || localBackupSuccess);
+                    LogBackupResult(csvFileName, overallSuccess ? "1" : "0", timeStartUpload, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), overallSuccess ? maxUnixQR : lastUnix, finalMessage);
+
+                    // Cập nhật UI nếu tổng thể thành công (upload hoặc backup)
+                    if (overallSuccess)
                     {
                         this.InvokeIfRequired(() =>
                         {
@@ -344,16 +395,52 @@ namespace TApp.Views.Extention
             }
         }
 
-        private void PerformLocalBackup(string sourceFilePath, string destinationFilePath)
+        private (bool, string) PerformLocalBackup(string sourceFilePath, string destinationFilePath)
         {
             try
             {
+                // Đảm bảo thư mục đích tồn tại
+                string destDirectory = Path.GetDirectoryName(destinationFilePath);
+                if (!string.IsNullOrEmpty(destDirectory) && !Directory.Exists(destDirectory))
+                {
+                    Directory.CreateDirectory(destDirectory);
+                }
+
+                // Kiểm tra file nguồn tồn tại
+                if (!File.Exists(sourceFilePath))
+                {
+                    string errorMsg = $"File nguồn không tồn tại: {sourceFilePath}";
+                    LogConsoleMessage($"[LỖI] {errorMsg}");
+                    return (false, errorMsg);
+                }
+
                 File.Copy(sourceFilePath, destinationFilePath, true);
                 LogConsoleMessage($"[THÀNH CÔNG] Backup local thành công: {destinationFilePath}");
+                return (true, "Backup local thành công");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                string errorMsg = $"Không có quyền truy cập thư mục backup: {ex.Message}";
+                LogConsoleMessage($"[LỖI] {errorMsg}");
+                return (false, errorMsg);
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                string errorMsg = $"Thư mục backup không tồn tại: {ex.Message}";
+                LogConsoleMessage($"[LỖI] {errorMsg}");
+                return (false, errorMsg);
+            }
+            catch (IOException ex)
+            {
+                string errorMsg = $"Lỗi I/O khi backup: {ex.Message}";
+                LogConsoleMessage($"[LỖI] {errorMsg}");
+                return (false, errorMsg);
             }
             catch (Exception ex)
             {
-                LogConsoleMessage($"[LỖI] Backup local thất bại: {ex.Message}");
+                string errorMsg = $"Lỗi backup local: {ex.Message}";
+                LogConsoleMessage($"[LỖI] {errorMsg}");
+                return (false, errorMsg);
             }
         }
 
