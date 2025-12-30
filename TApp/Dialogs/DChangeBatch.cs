@@ -61,6 +61,11 @@ namespace TApp.Dialogs
         private void ipBatch_DoubleClick(object sender, EventArgs e)
         {
             Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng mở hộp thoại nhập số lô sản xuất", "Đổi số lô sản xuất");
+            if (!adminMode)
+            {
+                this.ShowErrorDialog("Chế độ nhập số lô (BatchCode) chỉ dành cho quản trị viên.");
+                return;
+            }
 
             using (Entertext enterText = new Entertext())
             {
@@ -193,12 +198,14 @@ namespace TApp.Dialogs
                 if (!IsAdmin)
                 {
                     this.ShowErrorDialog("Tài khoản bạn nhập không có quyền thay đổi số lô sản xuất, vui lòng liên hệ quản trị viên hệ thống để được hỗ trợ.");
+                    adminMode = true;
                     Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng '{ipUser.Text}' không có quyền thay đổi số lô sản xuất", "Đổi số lô sản xuất");
                     return;
                 }
 
                 if (!Is2FA)
                 {
+                    adminMode = false;
                     this.ShowErrorDialog("Mã xác thực 2FA không chính xác, vui lòng kiểm tra lại.");
                     Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng nhập '{ipUser.Text}' và nhập mã 2FA không chính xác khi thay đổi số lô sản xuất", "Đổi số lô sản xuất");
                     return;
