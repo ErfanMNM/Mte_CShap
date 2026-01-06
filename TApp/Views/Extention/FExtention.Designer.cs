@@ -42,12 +42,16 @@
             opLastTimeUpload = new Sunny.UI.UISymbolLabel();
             uiSymbolLabel3 = new Sunny.UI.UISymbolLabel();
             uiTitlePanel3 = new Sunny.UI.UITitlePanel();
+            uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
+            opOPCCountdown = new Sunny.UI.UISymbolLabel();
+            opOPCnexttime = new Sunny.UI.UISymbolLabel();
             uiTitlePanel2 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel5 = new Sunny.UI.UITableLayoutPanel();
             opC1 = new Sunny.UI.UISymbolLabel();
             opNextUploadTime = new Sunny.UI.UISymbolLabel();
             uiTitlePanel1 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
+            btnOPCHis = new Sunny.UI.UISymbolButton();
             btnCloudHis = new Sunny.UI.UISymbolButton();
             btnERPCheck = new Sunny.UI.UISymbolButton();
             opData = new Sunny.UI.UIDataGridView();
@@ -63,16 +67,13 @@
             erP_Google1 = new TTManager.Masan.ERP_Google(components);
             backgroundWorker2 = new System.ComponentModel.BackgroundWorker();
             WK_IOT_SCADA = new System.ComponentModel.BackgroundWorker();
-            uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
-            opOPCnexttime = new Sunny.UI.UISymbolLabel();
-            opOPCCountdown = new Sunny.UI.UISymbolLabel();
-            btnOPCHis = new Sunny.UI.UISymbolButton();
             tab2.SuspendLayout();
             tabPage1.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
             uiTableLayoutPanel4.SuspendLayout();
             uiTitlePanel7.SuspendLayout();
             uiTitlePanel3.SuspendLayout();
+            uiTableLayoutPanel3.SuspendLayout();
             uiTitlePanel2.SuspendLayout();
             uiTableLayoutPanel5.SuspendLayout();
             uiTitlePanel1.SuspendLayout();
@@ -82,7 +83,6 @@
             uiTableLayoutPanel6.SuspendLayout();
             uiTitlePanel4.SuspendLayout();
             uiTitlePanel5.SuspendLayout();
-            uiTableLayoutPanel3.SuspendLayout();
             SuspendLayout();
             // 
             // tab2
@@ -209,6 +209,47 @@
             uiTitlePanel3.Text = "OPC UA";
             uiTitlePanel3.TextAlignment = ContentAlignment.MiddleCenter;
             // 
+            // uiTableLayoutPanel3
+            // 
+            uiTableLayoutPanel3.ColumnCount = 2;
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72.82609F));
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 27.173914F));
+            uiTableLayoutPanel3.Controls.Add(opOPCCountdown, 1, 0);
+            uiTableLayoutPanel3.Controls.Add(opOPCnexttime, 0, 0);
+            uiTableLayoutPanel3.Dock = DockStyle.Fill;
+            uiTableLayoutPanel3.Location = new Point(1, 35);
+            uiTableLayoutPanel3.Margin = new Padding(2);
+            uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
+            uiTableLayoutPanel3.RowCount = 1;
+            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel3.Size = new Size(304, 43);
+            uiTableLayoutPanel3.TabIndex = 1;
+            uiTableLayoutPanel3.TagString = null;
+            // 
+            // opOPCCountdown
+            // 
+            opOPCCountdown.Dock = DockStyle.Fill;
+            opOPCCountdown.Font = new Font("Microsoft Sans Serif", 12F);
+            opOPCCountdown.Location = new Point(224, 3);
+            opOPCCountdown.MinimumSize = new Size(1, 1);
+            opOPCCountdown.Name = "opOPCCountdown";
+            opOPCCountdown.Size = new Size(77, 37);
+            opOPCCountdown.Symbol = 557747;
+            opOPCCountdown.TabIndex = 1;
+            opOPCCountdown.Text = "300";
+            // 
+            // opOPCnexttime
+            // 
+            opOPCnexttime.Dock = DockStyle.Fill;
+            opOPCnexttime.Font = new Font("Microsoft Sans Serif", 12F);
+            opOPCnexttime.Location = new Point(3, 3);
+            opOPCnexttime.MinimumSize = new Size(1, 1);
+            opOPCnexttime.Name = "opOPCnexttime";
+            opOPCnexttime.Size = new Size(215, 37);
+            opOPCnexttime.Symbol = 261463;
+            opOPCnexttime.TabIndex = 0;
+            opOPCnexttime.Text = "2025-11-29T23:23:23.999";
+            // 
             // uiTitlePanel2
             // 
             uiTitlePanel2.Controls.Add(uiTableLayoutPanel5);
@@ -301,6 +342,22 @@
             uiTableLayoutPanel2.Size = new Size(868, 53);
             uiTableLayoutPanel2.TabIndex = 0;
             uiTableLayoutPanel2.TagString = null;
+            // 
+            // btnOPCHis
+            // 
+            btnOPCHis.Dock = DockStyle.Fill;
+            btnOPCHis.FillColor = Color.FromArgb(0, 192, 192);
+            btnOPCHis.Font = new Font("Microsoft Sans Serif", 12F);
+            btnOPCHis.Location = new Point(370, 2);
+            btnOPCHis.Margin = new Padding(2);
+            btnOPCHis.MinimumSize = new Size(1, 1);
+            btnOPCHis.Name = "btnOPCHis";
+            btnOPCHis.Size = new Size(176, 49);
+            btnOPCHis.Symbol = 560250;
+            btnOPCHis.TabIndex = 4;
+            btnOPCHis.Text = "Kiểm tra OPC";
+            btnOPCHis.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnOPCHis.Click += btnOPCHis_Click;
             // 
             // btnCloudHis
             // 
@@ -404,7 +461,7 @@
             tabPage3.Controls.Add(uiTableLayoutPanel6);
             tabPage3.Location = new Point(0, 40);
             tabPage3.Name = "tabPage3";
-            tabPage3.Size = new Size(200, 60);
+            tabPage3.Size = new Size(874, 639);
             tabPage3.TabIndex = 2;
             tabPage3.Text = "Kiểm tra hệ thống";
             tabPage3.UseVisualStyleBackColor = true;
@@ -423,9 +480,9 @@
             uiTableLayoutPanel6.RowCount = 3;
             uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Absolute, 54F));
             uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Absolute, 176F));
+            uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Absolute, 218F));
             uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-            uiTableLayoutPanel6.Size = new Size(200, 60);
+            uiTableLayoutPanel6.Size = new Size(874, 639);
             uiTableLayoutPanel6.TabIndex = 1;
             uiTableLayoutPanel6.TagString = null;
             // 
@@ -437,7 +494,7 @@
             uiPanel2.Margin = new Padding(2);
             uiPanel2.MinimumSize = new Size(1, 1);
             uiPanel2.Name = "uiPanel2";
-            uiPanel2.Size = new Size(196, 50);
+            uiPanel2.Size = new Size(870, 50);
             uiPanel2.TabIndex = 0;
             uiPanel2.Text = "Trang này cung cấp các tính năng nâng cao để kiểm tra lỗi của thiết bị";
             uiPanel2.TextAlignment = ContentAlignment.MiddleCenter;
@@ -447,13 +504,13 @@
             uiTitlePanel4.Controls.Add(uiTableLayoutPanel7);
             uiTitlePanel4.Dock = DockStyle.Fill;
             uiTitlePanel4.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTitlePanel4.Location = new Point(2, -114);
+            uiTitlePanel4.Location = new Point(2, 423);
             uiTitlePanel4.Margin = new Padding(2);
             uiTitlePanel4.MinimumSize = new Size(1, 1);
             uiTitlePanel4.Name = "uiTitlePanel4";
             uiTitlePanel4.Padding = new Padding(1, 35, 1, 1);
             uiTitlePanel4.ShowText = false;
-            uiTitlePanel4.Size = new Size(196, 172);
+            uiTitlePanel4.Size = new Size(870, 214);
             uiTitlePanel4.TabIndex = 1;
             uiTitlePanel4.Text = "Chức Năng";
             uiTitlePanel4.TextAlignment = ContentAlignment.MiddleCenter;
@@ -470,10 +527,11 @@
             uiTableLayoutPanel7.Location = new Point(1, 35);
             uiTableLayoutPanel7.Margin = new Padding(2);
             uiTableLayoutPanel7.Name = "uiTableLayoutPanel7";
-            uiTableLayoutPanel7.RowCount = 2;
-            uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel7.Size = new Size(194, 136);
+            uiTableLayoutPanel7.RowCount = 3;
+            uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 33.3333321F));
+            uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 33.3333321F));
+            uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 33.3333321F));
+            uiTableLayoutPanel7.Size = new Size(868, 178);
             uiTableLayoutPanel7.TabIndex = 0;
             uiTableLayoutPanel7.TagString = null;
             // 
@@ -488,7 +546,7 @@
             uiTitlePanel5.Name = "uiTitlePanel5";
             uiTitlePanel5.Padding = new Padding(1, 35, 1, 1);
             uiTitlePanel5.ShowText = false;
-            uiTitlePanel5.Size = new Size(196, 1);
+            uiTitlePanel5.Size = new Size(870, 363);
             uiTitlePanel5.TabIndex = 2;
             uiTitlePanel5.Text = "Bảng Thông Báo";
             uiTitlePanel5.TextAlignment = ContentAlignment.MiddleCenter;
@@ -505,7 +563,7 @@
             uiListBox1.Name = "uiListBox1";
             uiListBox1.Padding = new Padding(2);
             uiListBox1.ShowText = false;
-            uiListBox1.Size = new Size(194, 1);
+            uiListBox1.Size = new Size(868, 327);
             uiListBox1.TabIndex = 4;
             uiListBox1.Text = "uiListBox1";
             // 
@@ -535,63 +593,6 @@
             WK_IOT_SCADA.WorkerSupportsCancellation = true;
             WK_IOT_SCADA.DoWork += WK_IOT_SCADA_DoWork;
             // 
-            // uiTableLayoutPanel3
-            // 
-            uiTableLayoutPanel3.ColumnCount = 2;
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72.82609F));
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 27.173914F));
-            uiTableLayoutPanel3.Controls.Add(opOPCCountdown, 1, 0);
-            uiTableLayoutPanel3.Controls.Add(opOPCnexttime, 0, 0);
-            uiTableLayoutPanel3.Dock = DockStyle.Fill;
-            uiTableLayoutPanel3.Location = new Point(1, 35);
-            uiTableLayoutPanel3.Margin = new Padding(2);
-            uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
-            uiTableLayoutPanel3.RowCount = 1;
-            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel3.Size = new Size(304, 43);
-            uiTableLayoutPanel3.TabIndex = 1;
-            uiTableLayoutPanel3.TagString = null;
-            // 
-            // opOPCnexttime
-            // 
-            opOPCnexttime.Dock = DockStyle.Fill;
-            opOPCnexttime.Font = new Font("Microsoft Sans Serif", 12F);
-            opOPCnexttime.Location = new Point(3, 3);
-            opOPCnexttime.MinimumSize = new Size(1, 1);
-            opOPCnexttime.Name = "opOPCnexttime";
-            opOPCnexttime.Size = new Size(215, 37);
-            opOPCnexttime.Symbol = 261463;
-            opOPCnexttime.TabIndex = 0;
-            opOPCnexttime.Text = "2025-11-29T23:23:23.999";
-            // 
-            // opOPCCountdown
-            // 
-            opOPCCountdown.Dock = DockStyle.Fill;
-            opOPCCountdown.Font = new Font("Microsoft Sans Serif", 12F);
-            opOPCCountdown.Location = new Point(224, 3);
-            opOPCCountdown.MinimumSize = new Size(1, 1);
-            opOPCCountdown.Name = "opOPCCountdown";
-            opOPCCountdown.Size = new Size(77, 37);
-            opOPCCountdown.Symbol = 557747;
-            opOPCCountdown.TabIndex = 1;
-            opOPCCountdown.Text = "300";
-            // 
-            // btnOPCHis
-            // 
-            btnOPCHis.Dock = DockStyle.Fill;
-            btnOPCHis.FillColor = Color.FromArgb(0, 192, 192);
-            btnOPCHis.Font = new Font("Microsoft Sans Serif", 12F);
-            btnOPCHis.Location = new Point(370, 2);
-            btnOPCHis.Margin = new Padding(2);
-            btnOPCHis.MinimumSize = new Size(1, 1);
-            btnOPCHis.Name = "btnOPCHis";
-            btnOPCHis.Size = new Size(176, 49);
-            btnOPCHis.Symbol = 560250;
-            btnOPCHis.TabIndex = 4;
-            btnOPCHis.Text = "Kiểm tra OPC";
-            btnOPCHis.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            btnOPCHis.Click += btnOPCHis_Click;
-            // 
             // FExtention
             // 
             AutoScaleMode = AutoScaleMode.None;
@@ -607,6 +608,7 @@
             uiTableLayoutPanel4.ResumeLayout(false);
             uiTitlePanel7.ResumeLayout(false);
             uiTitlePanel3.ResumeLayout(false);
+            uiTableLayoutPanel3.ResumeLayout(false);
             uiTitlePanel2.ResumeLayout(false);
             uiTableLayoutPanel5.ResumeLayout(false);
             uiTitlePanel1.ResumeLayout(false);
@@ -616,7 +618,6 @@
             uiTableLayoutPanel6.ResumeLayout(false);
             uiTitlePanel4.ResumeLayout(false);
             uiTitlePanel5.ResumeLayout(false);
-            uiTableLayoutPanel3.ResumeLayout(false);
             ResumeLayout(false);
         }
 

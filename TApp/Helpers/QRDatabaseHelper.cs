@@ -386,16 +386,18 @@ namespace TApp.Helpers
                     else
                         cmd.Parameters.AddWithValue("@Status", statusFilter);
 
-                    using (var rd = cmd.ExecuteReader())
+                    // Dùng DataTable thay vì ExecuteReader để giảm thời gian lock
+                    var table = new DataTable();
+                    var adapter = new SQLiteDataAdapter(cmd);
+                    adapter.Fill(table);
+
+                    foreach (DataRow row in table.Rows)
                     {
-                        while (rd.Read())
+                        list.Add(new HourlyProduction
                         {
-                            list.Add(new HourlyProduction
-                            {
-                                Hour = rd.GetInt32(0),
-                                Count = rd.GetInt32(1)
-                            });
-                        }
+                            Hour = Convert.ToInt32(row["Hour"]),
+                            Count = Convert.ToInt32(row["Cnt"])
+                        });
                     }
                 }
             }

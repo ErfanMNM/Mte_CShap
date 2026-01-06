@@ -1,4 +1,5 @@
 ﻿using HslCommunication;
+using HslCommunication.Profinet.Inovance;
 using MTs.Datalogic;
 using Sunny.UI;
 using System.Collections.Concurrent;
@@ -405,16 +406,25 @@ namespace TApp.Views.Dashboard
                 DisplayErrorToUI("FDE_0006", "Lỗi kiểm tra trạng thái DEACTIVE từ PLC", ex.Message);
             }
         }
-
+        int dem1 = 0;
         private void WK_Dequeue_DoWork(object sender, DoWorkEventArgs e)
         {
             while (!WK_Dequeue.CancellationPending)
             {
+                
                 try
                 {
+                    dem1++;
                     ProcessQueueRecord();
                     ProcessQueueActive();
+
                     UpdateAlarmDisplay();
+                    //cập nhật tốc độ sản xuất
+                    if(dem1 >= 20)
+                    {
+                        dem1 = 0;
+                        UpdateProductionPerHour();
+                    }
                     Thread.Sleep(50);
                 }
                 catch (Exception ex)
@@ -430,7 +440,7 @@ namespace TApp.Views.Dashboard
             while (!WK_Load_Counter.CancellationPending)
             {
                 UpdateCountersFromPLC();
-                UpdateProductionPerHour();
+               // UpdateProductionPerHour();
                 Thread.Sleep(1000);
             }
         }
@@ -532,7 +542,7 @@ namespace TApp.Views.Dashboard
                 // Kiểm tra nếu không có lỗi thì không cần xóa
                 if (FD_Globals.AlarmCount <= 0)
                 {
-                    this.ShowInfoDialog("Không có lỗi FormatError nào để xóa.");
+                    this.ShowInfoDialog("Đã xoá lỗi PLC. Không có lỗi FormatError nào.");
                     btnClearPLC.Enabled = true;
                     btnClearPLC.Text = "Xóa lỗi";
                     return;
@@ -803,18 +813,33 @@ namespace TApp.Views.Dashboard
 
         private void ProcessQueueRecord()
         {
-            if (FD_Globals.QueueRecord.TryDequeue(out QRProductRecord record))
+            try
             {
-                QRDatabaseHelper.AddOrActivateCode(record.QRContent, record.BatchCode, record.UserName, record.Barcode, record.TimeStampActive, record.TimeUnixActive, record.TimeStampActive, record.Status);
-                Render_Production_Result(record);
+                if (FD_Globals.QueueRecord.TryDequeue(out QRProductRecord record))
+                {
+                    QRDatabaseHelper.AddOrActivateCode(record.QRContent, record.BatchCode, record.UserName, record.Barcode, record.TimeStampActive, record.TimeUnixActive, record.TimeStampActive, record.Status);
+                    Render_Production_Result(record);
+                }
             }
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi ghi bản ghi sản xuất QUEUE RECORD: {ex.Message}");
+            }
+            
         }
 
         private void ProcessQueueActive()
         {
-            if (AppConfigs.Current.Data_Mode == "normal" && FD_Globals.QueueActive.TryDequeue(out QRProductRecord otherRecord))
+            try
             {
-                QRDatabaseHelper.AddActiveCodeUnique(otherRecord.QRContent, otherRecord.BatchCode, otherRecord.Barcode, otherRecord.UserName, otherRecord.TimeStampActive, otherRecord.TimeUnixActive);
+                if (AppConfigs.Current.Data_Mode == "normal" && FD_Globals.QueueActive.TryDequeue(out QRProductRecord otherRecord))
+                {
+                    QRDatabaseHelper.AddActiveCodeUnique(otherRecord.QRContent, otherRecord.BatchCode, otherRecord.Barcode, otherRecord.UserName, otherRecord.TimeStampActive, otherRecord.TimeUnixActive);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi ghi bản ghi sản xuất QUEUE ACTIVE: {ex.Message}");
             }
         }
 
@@ -850,6 +875,7 @@ namespace TApp.Views.Dashboard
 
         private void UpdateProductionPerHour()
         {
+            
             List<HourlyProduction> hourlyPassProduction = QRDatabaseHelper.GetHourlyProduction(DateTime.Now, null);
             var currentHourData = hourlyPassProduction.FirstOrDefault(p => p.Hour == DateTime.Now.Hour);
             
