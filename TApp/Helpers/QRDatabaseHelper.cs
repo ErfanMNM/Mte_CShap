@@ -305,8 +305,6 @@ namespace TApp.Helpers
 
         public static long GetHourlyProduction(
             long timeunix,
-            string batchCode = null,
-            string statusFilter = "Pass",
             string dbPath = DefaultDbPath)
         {
             EnsureDatabase(dbPath);
@@ -318,7 +316,7 @@ namespace TApp.Helpers
 
                 string sql = @"SELECT COUNT(*) 
                    FROM QRProducts 
-                   WHERE TimeUnixActive <= @timeunix;";
+                   WHERE TimeUnixActive >= @timeunix;";
 
                 using (var cmd = new SQLiteCommand(sql, con))
                 {

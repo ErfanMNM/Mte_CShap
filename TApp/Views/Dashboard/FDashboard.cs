@@ -420,7 +420,7 @@ namespace TApp.Views.Dashboard
 
                     UpdateAlarmDisplay();
                     //cập nhật tốc độ sản xuất
-                    if(dem1 >= 20)
+                    if (dem1 >= 20)
                     {
                         dem1 = 0;
                         UpdateProductionPerHour();
@@ -880,7 +880,7 @@ namespace TApp.Views.Dashboard
     .ToUnixTimeMilliseconds();
 
 
-            long hourlyPassProduction = QRDatabaseHelper.GetHourlyProduction(timestampMs, null);
+            long hourlyPassProduction = QRDatabaseHelper.GetHourlyProduction(timestampMs);
             FD_Globals.productionData.ProductionPerHour = (int)(hourlyPassProduction); // Quy đổi từ 15 phút lên giờ
         }
 
