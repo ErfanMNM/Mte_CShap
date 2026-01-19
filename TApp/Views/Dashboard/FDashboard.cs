@@ -341,6 +341,7 @@ namespace TApp.Views.Dashboard
             }
 
             FD_Globals.ActiveSet.Add(data); // Update RAM
+            FD_Globals.productionData.LastProductTimestampMs = DateTimeOffset.Now.ToUnixTimeMilliseconds(); // Lưu timestamp cho mode tính tốc độ
             Send_Result_To_PLC(e_PLC_Result.Pass);
             Send_Result_Content(e_Production_Status.Pass, data);
 
@@ -875,13 +876,37 @@ namespace TApp.Views.Dashboard
 
         private void UpdateProductionPerHour()
         {
-            long timestampMs = DateTimeOffset.Now
-    .AddMinutes(-15)
-    .ToUnixTimeMilliseconds();
+            if (AppConfigs.Current.Production_Speed_Mode == 1)
+            {
+                // Mode 1: Tính từ khoảng thời gian giữa 2 sản phẩm
+                long currentMs = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                long lastMs = FD_Globals.productionData.LastProductTimestampMs;
 
-
-            long hourlyPassProduction = QRDatabaseHelper.GetHourlyProduction(timestampMs);
-            FD_Globals.productionData.ProductionPerHour = (int)(hourlyPassProduction); // Quy đổi từ 15 phút lên giờ
+                if (lastMs > 0)
+                {
+                    double diffSeconds = (currentMs - lastMs) / 1000.0;
+                    if (diffSeconds > 0 && diffSeconds <= 3600) // Max 1 hour gap
+                    {
+                        int speedPerHour = (int)(3600.0 / diffSeconds);
+                        FD_Globals.productionData.ProductionPerHour = speedPerHour < 1 ? 0 : speedPerHour;
+                    }
+                    else
+                    {
+                        FD_Globals.productionData.ProductionPerHour = 0;
+                    }
+                }
+                else
+                {
+                    FD_Globals.productionData.ProductionPerHour = 0;
+                }
+            }
+            else
+            {
+                // Mode 0: Tính từ database 15 phút (mode cũ)
+                long timestampMs = DateTimeOffset.Now.AddMinutes(-15).ToUnixTimeMilliseconds();
+                long hourlyPassProduction = QRDatabaseHelper.GetHourlyProduction(timestampMs);
+                FD_Globals.productionData.ProductionPerHour = (int)(hourlyPassProduction);
+            }
         }
 
         private void ProcessChangeBatchDialog(DChangeBatch dialog, string loadErpResult)

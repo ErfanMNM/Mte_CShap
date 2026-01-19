@@ -64,6 +64,11 @@ namespace TApp.Configs
         /// </summary>
         public bool Security_Bypass_Enabled { get; set; }
 
+        /// <summary>
+        /// Chế độ tính tốc độ sản xuất: 0=Database 15min, 1=Time between products
+        /// </summary>
+        public int Production_Speed_Mode { get; set; }
+
         public override void SetDefault()
         {
             base.SetDefault();
@@ -98,6 +103,7 @@ namespace TApp.Configs
             Old_Camera_job_Enabled = false;
             Batch_Rule_Template = "{AN:6,15}-{N:6}-TOL{LINE}-{AN:1}";
             Security_Bypass_Enabled = false; // Mặc định TẮT - chỉ bật khi debug
+            Production_Speed_Mode = 0; // 0=Database 15min, 1=Time between products
         }
     }
 }
