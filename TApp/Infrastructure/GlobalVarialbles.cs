@@ -1,4 +1,4 @@
-﻿using MTs.Auditrails;
+﻿using TTManager.Audit;
 using System.ComponentModel;
 using TTManager.Auth;
 

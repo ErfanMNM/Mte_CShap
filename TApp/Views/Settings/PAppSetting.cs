@@ -1,10 +1,10 @@
 ﻿
-using MTs.Auditrails;
 using Sunny.UI;
 using System.Reflection;
 using TApp.Configs;
 using TApp.Infrastructure;
 using TApp.Views.Dashboard;
+using TTManager.Audit;
 using TTManager.Auth;
 using TTManager.Diaglogs;
 using static TApp.Views.Dashboard.FDashboard;

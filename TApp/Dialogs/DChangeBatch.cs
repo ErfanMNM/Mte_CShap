@@ -1,5 +1,5 @@
 ﻿
-using MTs.Auditrails;
+using TTManager.Audit;
 using Sunny.UI;
 using System;
 using System.Collections.Generic;
@@ -18,6 +18,7 @@ using TApp.Views.Dashboard;
 using TTManager.Auth;
 using TTManager.Diaglogs;
 using TTManager.Masan;
+using TTManager.Audit;
 
 namespace TApp.Dialogs
 {

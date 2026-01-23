@@ -1,6 +1,5 @@
 ﻿using HslCommunication;
 using HslCommunication.Profinet.Inovance;
-using MTs.Datalogic;
 using Sunny.UI;
 using System.Collections.Concurrent;
 using System.ComponentModel;
@@ -11,6 +10,7 @@ using TApp.Infrastructure;
 using TApp.Models;
 using TApp.Utils;
 using static TTManager.PLCHelpers.OmronPLC_Hsl;
+using TTManager.Datalogic;
 
 namespace TApp.Views.Dashboard
 {
