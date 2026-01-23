@@ -69,6 +69,16 @@ namespace TApp.Configs
         /// </summary>
         public int Production_Speed_Mode { get; set; }
 
+        /// <summary>
+        /// Số sản phẩm lấy mẫu để tính trung bình tốc độ (Mode 1)
+        /// </summary>
+        public int Production_Speed_Sample_Count { get; set; }
+
+        /// <summary>
+        /// Thời gian reset tốc độ về 0 nếu không có sản phẩm mới (giây)
+        /// </summary>
+        public int Production_Speed_Reset_Timeout { get; set; }
+
         public override void SetDefault()
         {
             base.SetDefault();
@@ -104,6 +114,8 @@ namespace TApp.Configs
             Batch_Rule_Template = "{AN:6,15}-{N:6}-TOL{LINE}-{AN:1}";
             Security_Bypass_Enabled = false; // Mặc định TẮT - chỉ bật khi debug
             Production_Speed_Mode = 0; // 0=Database 15min, 1=Time between products
+            Production_Speed_Sample_Count = 10; // Số sản phẩm lấy mẫu tính trung bình
+            Production_Speed_Reset_Timeout = 30; // Thời gian reset về 0 (giây)
         }
     }
 }

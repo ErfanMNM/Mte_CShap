@@ -34,6 +34,7 @@
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
             uiTableLayoutPanel5 = new Sunny.UI.UITableLayoutPanel();
             uiSymbolLabel2 = new Sunny.UI.UISymbolLabel();
+            uiTableLayoutPanel8 = new Sunny.UI.UITableLayoutPanel();
             ipBarcode = new Sunny.UI.UITextBox();
             uiTableLayoutPanel4 = new Sunny.UI.UITableLayoutPanel();
             ipBatch = new Sunny.UI.UIComboBox();
@@ -42,6 +43,7 @@
             btnSave = new Sunny.UI.UISymbolButton();
             btnedit = new Sunny.UI.UISymbolButton();
             btnClose = new Sunny.UI.UISymbolButton();
+            opERPStatus = new Sunny.UI.UIPanel();
             uiPanel1 = new Sunny.UI.UIPanel();
             uiTableLayoutPanel6 = new Sunny.UI.UITableLayoutPanel();
             uiSymbolLabel3 = new Sunny.UI.UISymbolLabel();
@@ -51,11 +53,12 @@
             ip2FACode = new Sunny.UI.UINumPadTextBox();
             ipUser = new Sunny.UI.UITextBox();
             erP_Google1 = new TTManager.Masan.ERP_Google(components);
-            opERPStatus = new Sunny.UI.UIPanel();
+            uiSymbolButton1 = new Sunny.UI.UISymbolButton();
             uiTitlePanel1.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
             uiTableLayoutPanel5.SuspendLayout();
+            uiTableLayoutPanel8.SuspendLayout();
             uiTableLayoutPanel4.SuspendLayout();
             uiTableLayoutPanel3.SuspendLayout();
             uiPanel1.SuspendLayout();
@@ -125,7 +128,7 @@
             uiTableLayoutPanel5.ColumnCount = 1;
             uiTableLayoutPanel5.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             uiTableLayoutPanel5.Controls.Add(uiSymbolLabel2, 0, 0);
-            uiTableLayoutPanel5.Controls.Add(ipBarcode, 0, 1);
+            uiTableLayoutPanel5.Controls.Add(uiTableLayoutPanel8, 0, 1);
             uiTableLayoutPanel5.Dock = DockStyle.Fill;
             uiTableLayoutPanel5.Location = new Point(0, 95);
             uiTableLayoutPanel5.Margin = new Padding(0, 2, 2, 0);
@@ -150,22 +153,38 @@
             uiSymbolLabel2.TabIndex = 1;
             uiSymbolLabel2.Text = "Kiểm tra lại mã vạch";
             // 
+            // uiTableLayoutPanel8
+            // 
+            uiTableLayoutPanel8.ColumnCount = 2;
+            uiTableLayoutPanel8.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 86.49123F));
+            uiTableLayoutPanel8.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 13.5087719F));
+            uiTableLayoutPanel8.Controls.Add(ipBarcode, 0, 0);
+            uiTableLayoutPanel8.Controls.Add(uiSymbolButton1, 1, 0);
+            uiTableLayoutPanel8.Dock = DockStyle.Fill;
+            uiTableLayoutPanel8.Location = new Point(2, 38);
+            uiTableLayoutPanel8.Margin = new Padding(2);
+            uiTableLayoutPanel8.Name = "uiTableLayoutPanel8";
+            uiTableLayoutPanel8.RowCount = 1;
+            uiTableLayoutPanel8.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel8.Size = new Size(570, 59);
+            uiTableLayoutPanel8.TabIndex = 2;
+            uiTableLayoutPanel8.TagString = null;
+            // 
             // ipBarcode
             // 
             ipBarcode.Dock = DockStyle.Fill;
             ipBarcode.Enabled = false;
             ipBarcode.Font = new Font("Microsoft Sans Serif", 12F);
-            ipBarcode.Location = new Point(0, 38);
+            ipBarcode.Location = new Point(0, 2);
             ipBarcode.Margin = new Padding(0, 2, 0, 2);
             ipBarcode.MinimumSize = new Size(1, 16);
             ipBarcode.Name = "ipBarcode";
             ipBarcode.Padding = new Padding(5);
             ipBarcode.ShowText = false;
-            ipBarcode.Size = new Size(574, 59);
-            ipBarcode.TabIndex = 2;
+            ipBarcode.Size = new Size(493, 55);
+            ipBarcode.TabIndex = 3;
             ipBarcode.TextAlignment = ContentAlignment.MiddleLeft;
             ipBarcode.Watermark = "";
-            ipBarcode.DoubleClick += uiTextBox1_DoubleClick;
             // 
             // uiTableLayoutPanel4
             // 
@@ -283,6 +302,18 @@
             btnClose.Text = "Hủy";
             btnClose.TipsFont = new Font("Microsoft Sans Serif", 9F);
             btnClose.Click += btnClose_Click;
+            // 
+            // opERPStatus
+            // 
+            opERPStatus.Font = new Font("Microsoft Sans Serif", 12F);
+            opERPStatus.Location = new Point(4, 5);
+            opERPStatus.Margin = new Padding(4, 5, 4, 5);
+            opERPStatus.MinimumSize = new Size(1, 1);
+            opERPStatus.Name = "opERPStatus";
+            opERPStatus.Size = new Size(228, 39);
+            opERPStatus.TabIndex = 4;
+            opERPStatus.Text = "-";
+            opERPStatus.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // uiPanel1
             // 
@@ -415,17 +446,19 @@
             erP_Google1.SUB_INV = "110-101-1001";
             erP_Google1.TableID = "BatchProduction";
             // 
-            // opERPStatus
+            // uiSymbolButton1
             // 
-            opERPStatus.Font = new Font("Microsoft Sans Serif", 12F);
-            opERPStatus.Location = new Point(4, 5);
-            opERPStatus.Margin = new Padding(4, 5, 4, 5);
-            opERPStatus.MinimumSize = new Size(1, 1);
-            opERPStatus.Name = "opERPStatus";
-            opERPStatus.Size = new Size(228, 39);
-            opERPStatus.TabIndex = 4;
-            opERPStatus.Text = "-";
-            opERPStatus.TextAlignment = ContentAlignment.MiddleCenter;
+            uiSymbolButton1.Dock = DockStyle.Fill;
+            uiSymbolButton1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolButton1.Location = new Point(496, 3);
+            uiSymbolButton1.MinimumSize = new Size(1, 1);
+            uiSymbolButton1.Name = "uiSymbolButton1";
+            uiSymbolButton1.Size = new Size(71, 53);
+            uiSymbolButton1.Symbol = 61482;
+            uiSymbolButton1.TabIndex = 4;
+            uiSymbolButton1.Text = "Scan";
+            uiSymbolButton1.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            uiSymbolButton1.Click += uiSymbolButton1_Click;
             // 
             // DChangeBatch
             // 
@@ -442,6 +475,7 @@
             uiTableLayoutPanel1.ResumeLayout(false);
             uiTableLayoutPanel2.ResumeLayout(false);
             uiTableLayoutPanel5.ResumeLayout(false);
+            uiTableLayoutPanel8.ResumeLayout(false);
             uiTableLayoutPanel4.ResumeLayout(false);
             uiTableLayoutPanel3.ResumeLayout(false);
             uiPanel1.ResumeLayout(false);
@@ -464,7 +498,6 @@
         private Sunny.UI.UISymbolLabel uiSymbolLabel1;
         private Sunny.UI.UISymbolButton btnSave;
         private Sunny.UI.UISymbolButton btnedit;
-        private Sunny.UI.UITextBox ipBarcode;
         private Sunny.UI.UIPanel uiPanel1;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel6;
         private Sunny.UI.UISymbolLabel uiSymbolLabel3;
@@ -475,5 +508,8 @@
         private TTManager.Masan.ERP_Google erP_Google1;
         private Sunny.UI.UITextBox ipUser;
         public Sunny.UI.UIPanel opERPStatus;
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel8;
+        private Sunny.UI.UITextBox ipBarcode;
+        private Sunny.UI.UISymbolButton uiSymbolButton1;
     }
 }

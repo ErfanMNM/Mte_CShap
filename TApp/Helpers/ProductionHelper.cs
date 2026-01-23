@@ -51,6 +51,11 @@ namespace TApp.Helpers
         /// </summary>
         public long LastProductTimestampMs;
 
+        /// <summary>
+        /// Danh sách timestamp các sản phẩm gần đây để tính trung bình (Mode 1)
+        /// </summary>
+        public List<long> ProductTimestampSamples = new List<long>();
+
         public ProductionData()
         {
             BatchCode = string.Empty;

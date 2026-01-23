@@ -1,4 +1,5 @@
-﻿using MTs.Auditrails;
+﻿
+using MTs.Auditrails;
 using Sunny.UI;
 using System;
 using System.Collections.Generic;
@@ -113,7 +114,7 @@ namespace TApp.Dialogs
                 return;
             }
             //kiểm tra trước khi lưu
-            if (!IsValid(ipBatch.Text.Trim(),ruleTemplate, int.Parse(AppConfigs.Current.Line_Name!.Split(' ').Last())))
+            if (!IsValid(ipBatch.Text.Trim(), ruleTemplate, int.Parse(AppConfigs.Current.Line_Name!.Split(' ').Last())))
             {
                 this.ShowErrorDialog("Mã số lô không hợp lệ, vui lòng kiểm tra lại định dạng.");
                 return;
@@ -198,7 +199,7 @@ namespace TApp.Dialogs
                 if (!IsAdmin)
                 {
                     this.ShowErrorDialog("Tài khoản bạn nhập không có quyền thay đổi số lô sản xuất, vui lòng liên hệ quản trị viên hệ thống để được hỗ trợ.");
-                    adminMode = true;
+                    adminMode = false;
                     Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng '{ipUser.Text}' không có quyền thay đổi số lô sản xuất", "Đổi số lô sản xuất");
                     return;
                 }
@@ -220,6 +221,8 @@ namespace TApp.Dialogs
                 ipBarcode.Enabled = true;
                 ipBarcode.FillColor = Color.Yellow;
                 btnedit.Enabled = false;
+
+                adminMode = true;
 
                 Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng đã nhập '{ipUser.Text}' đã xác thực thành công và được phép thay đổi số lô sản xuất", "Đổi số lô sản xuất");
             }
@@ -282,6 +285,23 @@ namespace TApp.Dialogs
                 };
                 enterText.ShowDialog();
             }
+        }
+
+        private void uiSymbolButton1_Click(object sender, EventArgs e)
+        {
+            this.ShowErrorDialog("Tính năng quét barcode tạm thời chưa được hỗ trợ.");
+            //using (var dialog = new Scaner())
+            //{
+            //    dialog._Title = "Quét barcode thùng";
+            //    if (dialog.ShowDialog() == DialogResult.OK)
+            //    {
+            //        string onlyNumbers = new string(dialog.TextValue.Where(char.IsDigit).ToArray());
+
+            //        ipBarcode.Text = onlyNumbers;
+            //        //ipCaseBarcode.Text = "1" + onlyNumbers;
+            //    }
+            //}
+
         }
     }
 }

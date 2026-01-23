@@ -310,6 +310,44 @@ namespace TApp.Views.Dashboard
 
         private void Camera_ProcessData(string data)
         {
+            // Tính tốc độ sản xuất từ thời gian giữa N sản phẩm (Mode 1)
+            if (AppConfigs.Current.Production_Speed_Mode == 1)
+            {
+                long currentTimestampMs = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                var samples = FD_Globals.productionData.ProductTimestampSamples;
+                int sampleCount = AppConfigs.Current.Production_Speed_Sample_Count;
+                if (sampleCount < 2) sampleCount = 2; // Tối thiểu 2 mẫu
+
+                // Thêm timestamp hiện tại vào danh sách
+                samples.Add(currentTimestampMs);
+
+                // Giữ chỉ N mẫu gần nhất
+                while (samples.Count > sampleCount)
+                {
+                    samples.RemoveAt(0);
+                }
+
+                // Cập nhật LastProductTimestampMs
+                FD_Globals.productionData.LastProductTimestampMs = currentTimestampMs;
+
+                // Tính tốc độ nếu đủ ít nhất 2 mẫu
+                if (samples.Count >= 2)
+                {
+                    // Tính thời gian trung bình giữa các sản phẩm
+                    long totalDiffMs = samples[samples.Count - 1] - samples[0];
+                    double avgDiffSeconds = (totalDiffMs / 1000.0) / (samples.Count - 1);
+
+                    if (avgDiffSeconds > 0 && avgDiffSeconds <= 3600)
+                    {
+                        int speedPerHour = (int)(3600.0 / avgDiffSeconds);
+                        FD_Globals.productionData.ProductionPerHour = speedPerHour < 1 ? 0 : speedPerHour;
+                    }
+                    else
+                    {
+                        FD_Globals.productionData.ProductionPerHour = 0;
+                    }
+                }
+            }
             //Tiền xử lý dữ liệu
             data = data.Trim();
             data = data.Replace("\r", "");
@@ -341,7 +379,9 @@ namespace TApp.Views.Dashboard
             }
 
             FD_Globals.ActiveSet.Add(data); // Update RAM
-            FD_Globals.productionData.LastProductTimestampMs = DateTimeOffset.Now.ToUnixTimeMilliseconds(); // Lưu timestamp cho mode tính tốc độ
+            
+            
+            
             Send_Result_To_PLC(e_PLC_Result.Pass);
             Send_Result_Content(e_Production_Status.Pass, data);
 
@@ -878,26 +918,20 @@ namespace TApp.Views.Dashboard
         {
             if (AppConfigs.Current.Production_Speed_Mode == 1)
             {
-                // Mode 1: Tính từ khoảng thời gian giữa 2 sản phẩm
+                // Mode 1: Kiểm tra nếu sản phẩm cuối cách thời gian hiện tại > timeout thì cho tốc độ = 0
+                int resetTimeout = AppConfigs.Current.Production_Speed_Reset_Timeout;
+                if (resetTimeout <= 0) resetTimeout = 30; // Default 30s
+                
                 long currentMs = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 long lastMs = FD_Globals.productionData.LastProductTimestampMs;
-
+                
                 if (lastMs > 0)
                 {
                     double diffSeconds = (currentMs - lastMs) / 1000.0;
-                    if (diffSeconds > 0 && diffSeconds <= 3600) // Max 1 hour gap
-                    {
-                        int speedPerHour = (int)(3600.0 / diffSeconds);
-                        FD_Globals.productionData.ProductionPerHour = speedPerHour < 1 ? 0 : speedPerHour;
-                    }
-                    else
+                    if (diffSeconds > resetTimeout) // Nếu quá timeout giây không có sản phẩm mới
                     {
                         FD_Globals.productionData.ProductionPerHour = 0;
                     }
-                }
-                else
-                {
-                    FD_Globals.productionData.ProductionPerHour = 0;
                 }
             }
             else
