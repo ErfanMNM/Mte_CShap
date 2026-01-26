@@ -1,24 +1,19 @@
 ﻿
 using TTManager.Audit;
 using Sunny.UI;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+
 using System.Data;
-using System.Drawing;
+
 using System.Globalization;
-using System.Linq;
-using System.Text;
+
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+
 using TApp.Configs;
 using TApp.Infrastructure;
-using TApp.Views.Dashboard;
+
 using TTManager.Auth;
 using TTManager.Diaglogs;
-using TTManager.Masan;
-using TTManager.Audit;
+
 
 namespace TApp.Dialogs
 {
@@ -215,8 +210,8 @@ namespace TApp.Dialogs
 
                 // Nếu người dùng là quản trị viên và mã 2FA hợp lệ, cho phép thay đổi số lô
 
-                ipBatch.Enabled = true;
-                ipBatch.DropDownStyle = UIDropDownStyle.DropDown;
+                ipBatch.DropDownStyle = UIDropDownStyle.DropDownList;
+                ipBarcode.Enabled = true;
                 ipBatch.FillColor = Color.Yellow;
 
                 ipBarcode.Enabled = true;
@@ -290,18 +285,24 @@ namespace TApp.Dialogs
 
         private void uiSymbolButton1_Click(object sender, EventArgs e)
         {
-            this.ShowErrorDialog("Tính năng quét barcode tạm thời chưa được hỗ trợ.");
-            //using (var dialog = new Scaner())
-            //{
-            //    dialog._Title = "Quét barcode thùng";
-            //    if (dialog.ShowDialog() == DialogResult.OK)
-            //    {
-            //        string onlyNumbers = new string(dialog.TextValue.Where(char.IsDigit).ToArray());
+            Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng mở hộp thoại quét vã vạch (barcode)", "Đổi số lô sản xuất");
+            if (!adminMode)
+            {
+                this.ShowErrorDialog("Chế độ quét vã vạch (barcode) chỉ dành cho quản trị viên.");
+                return;
+            }
+            // this.ShowErrorDialog("Tính năng quét barcode tạm thời chưa được hỗ trợ.");
+            using (var dialog = new Scaner())
+            {
+                dialog._Title = "Quét barcode thùng";
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    string onlyNumbers = new string(dialog.TextValue.Where(char.IsDigit).ToArray());
 
-            //        ipBarcode.Text = onlyNumbers;
-            //        //ipCaseBarcode.Text = "1" + onlyNumbers;
-            //    }
-            //}
+                    ipBarcode.Text = onlyNumbers;
+                    //ipCaseBarcode.Text = "1" + onlyNumbers;
+                }
+            }
 
         }
     }

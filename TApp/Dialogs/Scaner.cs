@@ -11,7 +11,7 @@ namespace TApp.Dialogs
 {
     public partial class Scaner : Form
     {
-        private SerialClientHelper _datalogicScanner;
+        public SerialClientHelper _datalogicScanner;
         public string TextValue { get; private set; }
         public string _Title { get; set; } = "SCANER";
 

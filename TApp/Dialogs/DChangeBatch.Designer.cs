@@ -36,6 +36,7 @@
             uiSymbolLabel2 = new Sunny.UI.UISymbolLabel();
             uiTableLayoutPanel8 = new Sunny.UI.UITableLayoutPanel();
             ipBarcode = new Sunny.UI.UITextBox();
+            uiSymbolButton1 = new Sunny.UI.UISymbolButton();
             uiTableLayoutPanel4 = new Sunny.UI.UITableLayoutPanel();
             ipBatch = new Sunny.UI.UIComboBox();
             uiSymbolLabel1 = new Sunny.UI.UISymbolLabel();
@@ -53,7 +54,6 @@
             ip2FACode = new Sunny.UI.UINumPadTextBox();
             ipUser = new Sunny.UI.UITextBox();
             erP_Google1 = new TTManager.Masan.ERP_Google(components);
-            uiSymbolButton1 = new Sunny.UI.UISymbolButton();
             uiTitlePanel1.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
@@ -185,6 +185,21 @@
             ipBarcode.TabIndex = 3;
             ipBarcode.TextAlignment = ContentAlignment.MiddleLeft;
             ipBarcode.Watermark = "";
+            ipBarcode.DoubleClick += uiTextBox1_DoubleClick;
+            // 
+            // uiSymbolButton1
+            // 
+            uiSymbolButton1.Dock = DockStyle.Fill;
+            uiSymbolButton1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolButton1.Location = new Point(496, 3);
+            uiSymbolButton1.MinimumSize = new Size(1, 1);
+            uiSymbolButton1.Name = "uiSymbolButton1";
+            uiSymbolButton1.Size = new Size(71, 53);
+            uiSymbolButton1.Symbol = 61482;
+            uiSymbolButton1.TabIndex = 4;
+            uiSymbolButton1.Text = "Scan";
+            uiSymbolButton1.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            uiSymbolButton1.Click += uiSymbolButton1_Click;
             // 
             // uiTableLayoutPanel4
             // 
@@ -445,20 +460,6 @@
             erP_Google1.ProjectID = "sales-268504";
             erP_Google1.SUB_INV = "110-101-1001";
             erP_Google1.TableID = "BatchProduction";
-            // 
-            // uiSymbolButton1
-            // 
-            uiSymbolButton1.Dock = DockStyle.Fill;
-            uiSymbolButton1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolButton1.Location = new Point(496, 3);
-            uiSymbolButton1.MinimumSize = new Size(1, 1);
-            uiSymbolButton1.Name = "uiSymbolButton1";
-            uiSymbolButton1.Size = new Size(71, 53);
-            uiSymbolButton1.Symbol = 61482;
-            uiSymbolButton1.TabIndex = 4;
-            uiSymbolButton1.Text = "Scan";
-            uiSymbolButton1.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            uiSymbolButton1.Click += uiSymbolButton1_Click;
             // 
             // DChangeBatch
             // 

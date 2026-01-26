@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SunnyUI" Version="3.9.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PRINTERs\NorwixV2\NorwixV2.csproj" />
+    <ProjectReference Include="..\PRINTERs\Printer\Printer.csproj" />
+    <ProjectReference Include="..\PRINTERs\Unoplus\Norwix\Norwix.csproj" />
+    <ProjectReference Include="..\TTManager\TTManager.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Views\Auth\Login.cs">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+
+</Project>

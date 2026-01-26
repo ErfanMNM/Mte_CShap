@@ -28,16 +28,11 @@
         /// </summary>
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
-            System.Text.ASCIIEncoding asciiEncodingSealed1 = new System.Text.ASCIIEncoding();
-            System.Text.DecoderReplacementFallback decoderReplacementFallback1 = new System.Text.DecoderReplacementFallback();
-            System.Text.EncoderReplacementFallback encoderReplacementFallback1 = new System.Text.EncoderReplacementFallback();
             uiTitlePanel1 = new Sunny.UI.UITitlePanel();
             uiRichTextBox1 = new Sunny.UI.UIRichTextBox();
             btnOK = new Sunny.UI.UISymbolButton();
             btnCancel = new Sunny.UI.UISymbolButton();
             pnConnect = new Sunny.UI.UIPanel();
-            serialPort1 = new System.IO.Ports.SerialPort(components);
             uiTitlePanel1.SuspendLayout();
             SuspendLayout();
             // 
@@ -114,28 +109,6 @@
             pnConnect.Text = "Mất kết nối";
             pnConnect.TextAlignment = ContentAlignment.MiddleCenter;
             // 
-            // serialPort1
-            // 
-            serialPort1.BaudRate = 9600;
-            serialPort1.DataBits = 8;
-            serialPort1.DiscardNull = false;
-            serialPort1.DtrEnable = false;
-            asciiEncodingSealed1.DecoderFallback = decoderReplacementFallback1;
-            asciiEncodingSealed1.EncoderFallback = encoderReplacementFallback1;
-            serialPort1.Encoding = asciiEncodingSealed1;
-            serialPort1.Handshake = System.IO.Ports.Handshake.None;
-            serialPort1.NewLine = "\n";
-            serialPort1.Parity = System.IO.Ports.Parity.None;
-            serialPort1.ParityReplace = 63;
-            serialPort1.PortName = "COM1";
-            serialPort1.ReadBufferSize = 4096;
-            serialPort1.ReadTimeout = -1;
-            serialPort1.ReceivedBytesThreshold = 1;
-            serialPort1.RtsEnable = false;
-            serialPort1.StopBits = System.IO.Ports.StopBits.One;
-            serialPort1.WriteBufferSize = 2048;
-            serialPort1.WriteTimeout = -1;
-            // 
             // Scaner
             // 
             AutoScaleMode = AutoScaleMode.None;
@@ -157,6 +130,5 @@
         private Sunny.UI.UISymbolButton btnOK;
         private Sunny.UI.UISymbolButton btnCancel;
         private Sunny.UI.UIRichTextBox uiRichTextBox1;
-        private System.IO.Ports.SerialPort serialPort1;
     }
 }

@@ -37,7 +37,7 @@ namespace TApp.Views.Auth
             // 
             uiLabel1.Font = new Font("Tahoma", 24F, FontStyle.Bold, GraphicsUnit.Point, 0);
             uiLabel1.ForeColor = Color.Red;
-            uiLabel1.Location = new Point(141, 150);
+            uiLabel1.Location = new Point(135, 207);
             uiLabel1.Name = "uiLabel1";
             uiLabel1.Size = new Size(632, 60);
             uiLabel1.TabIndex = 0;
@@ -47,10 +47,10 @@ namespace TApp.Views.Auth
             // btnReactivate
             // 
             btnReactivate.Font = new Font("Microsoft YaHei", 14F);
-            btnReactivate.Location = new Point(227, 320);
+            btnReactivate.Location = new Point(263, 351);
             btnReactivate.MinimumSize = new Size(1, 1);
             btnReactivate.Name = "btnReactivate";
-            btnReactivate.Size = new Size(453, 100);
+            btnReactivate.Size = new Size(362, 73);
             btnReactivate.Symbol = 61528;
             btnReactivate.TabIndex = 2;
             btnReactivate.Text = "KÍCH HOẠT LẠI";
@@ -61,7 +61,7 @@ namespace TApp.Views.Auth
             // 
             uiLabel2.Font = new Font("Microsoft YaHei", 14F);
             uiLabel2.ForeColor = Color.Orange;
-            uiLabel2.Location = new Point(204, 234);
+            uiLabel2.Location = new Point(198, 291);
             uiLabel2.Name = "uiLabel2";
             uiLabel2.Size = new Size(500, 40);
             uiLabel2.TabIndex = 1;

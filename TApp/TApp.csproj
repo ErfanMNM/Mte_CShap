@@ -28,13 +28,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\..\..\Downloads\logo (1).png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Google.Apis" Version="1.72.0" />
     <PackageReference Include="Google.Apis.Auth" Version="1.72.0" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.70.0.3819" />
