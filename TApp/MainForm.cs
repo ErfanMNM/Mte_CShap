@@ -183,10 +183,6 @@ namespace TApp
 
             var shutdownNode = headNav.CreateChildNode(headNav.Nodes[0], "TẮT MÁY", 3001);
             headNav.SetNodeSymbol(shutdownNode, 61457);
-
-            
-
-            
         }
 
         private void InitializeConfigs()
