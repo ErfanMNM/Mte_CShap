@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Windows.Forms;
 using TApp.Configs;
 using TApp.Helpers;
 using TApp.Helpers.Masan_Backup;
@@ -33,6 +34,7 @@ namespace TApp.Views.Extention
         private int maxIntervalOPCms = 5000;
         private OmronFinsUdp plc;
         private LogHelper<e_LogType> PLC_IOT_Logs;
+        private string manualUploadFilePath;
         #endregion
 
         #region Constructor & Initialization
@@ -392,6 +394,72 @@ namespace TApp.Views.Extention
             catch (Exception ex)
             {
                 LogConsoleMessage($"[LỖI] Đang có vấn đề dữ liệu, vui lòng đợi nút sáng lên rồi thử lại {ex.Message}");
+            }
+        }
+
+        private void btnSelectManualFile_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (var ofd = new OpenFileDialog())
+                {
+                    ofd.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
+                    ofd.Title = "Chọn file cần upload lên Cloud";
+                    if (ofd.ShowDialog() == DialogResult.OK)
+                    {
+                        manualUploadFilePath = ofd.FileName;
+                        lblManualFilePath.Text = manualUploadFilePath;
+                        LogConsoleMessage($"[THÔNG BÁO] Đã chọn file: {manualUploadFilePath}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogConsoleMessage($"[LỖI] Chọn file upload thất bại: {ex.Message}");
+            }
+        }
+
+        private void btnManualUpload_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(manualUploadFilePath) || !File.Exists(manualUploadFilePath))
+                {
+                    this.ShowInfoDialog("Vui lòng chọn file hợp lệ trước khi upload.");
+                    return;
+                }
+
+                string fileName = Path.GetFileName(manualUploadFilePath);
+                LogConsoleMessage($"[THÔNG BÁO] Bắt đầu upload thủ công file: {fileName}");
+
+                bool shouldUploadCloud = AppConfigs.Current.Cloud_Upload_Enabled;
+                bool shouldBackupLocal = AppConfigs.Current.Local_Backup_Enabled;
+
+                var upload = PerformCloudUpload(shouldUploadCloud, manualUploadFilePath, fileName, 0);
+                bool uploadSuccess = upload.Item1;
+                string uploadMessage = upload.Item2;
+
+                if (uploadSuccess && shouldBackupLocal)
+                {
+                    string backupRoot = @"C:\MASANQR\Backup";
+                    Directory.CreateDirectory(backupRoot);
+                    string backupPath = Path.Combine(backupRoot, fileName);
+                    PerformLocalBackup(manualUploadFilePath, backupPath);
+                }
+
+                if (uploadSuccess)
+                {
+                    this.ShowSuccessDialog("Upload thủ công thành công!");
+                }
+                else
+                {
+                    this.ShowErrorTip($"Upload thủ công thất bại: {uploadMessage}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogConsoleMessage($"[LỖI] Upload thủ công thất bại: {ex.Message}");
+                this.ShowErrorTip($"Upload thủ công thất bại: {ex.Message}");
             }
         }
         #endregion
