@@ -302,166 +302,34 @@ namespace TApp.Helpers
             }
         }
 
-        public static List<BatchProductionSummary> GetProductionByBatch(
-            string statusFilter = "Pass",
+
+        public static long GetHourlyProduction(
+            long timeunix,
             string dbPath = DefaultDbPath)
         {
             EnsureDatabase(dbPath);
-
-            var list = new List<BatchProductionSummary>();
+            long count = 0;
 
             using (var con = new SQLiteConnection($"Data Source={dbPath}"))
             {
                 con.Open();
 
-                string sql = @"
-                SELECT BatchCode, COUNT(*) AS Cnt
-                FROM QRProducts
-                WHERE (@Status IS NULL OR Status = @Status)
-                GROUP BY BatchCode
-                ORDER BY BatchCode;
-            ";
+                string sql = @"SELECT COUNT(*) 
+                   FROM QRProducts 
+                   WHERE TimeUnixActive >= @timeunix;";
 
                 using (var cmd = new SQLiteCommand(sql, con))
                 {
-                    if (string.IsNullOrEmpty(statusFilter))
-                        cmd.Parameters.AddWithValue("@Status", DBNull.Value);
-                    else
-                        cmd.Parameters.AddWithValue("@Status", statusFilter);
+                    cmd.Parameters.AddWithValue("@timeunix", timeunix);
 
-                    using (var rd = cmd.ExecuteReader())
-                    {
-                        while (rd.Read())
-                        {
-                            list.Add(new BatchProductionSummary
-                            {
-                                BatchCode = rd.GetString(0),
-                                Total = rd.GetInt32(1)
-                            });
-                        }
-                    }
+                    count = Convert.ToInt64(cmd.ExecuteScalar());
                 }
             }
 
-            return list;
-        }
+            long speed = count * 4; // quy đổi về sản lượng/giờ (15 phút x4)
 
-        public static List<HourlyProduction> GetHourlyProduction(
-            DateTime day,
-            string batchCode = null,
-            string statusFilter = "Pass",
-            string dbPath = DefaultDbPath)
-        {
-            EnsureDatabase(dbPath);
+            return speed;
 
-            var list = new List<HourlyProduction>();
-            string dayStr = day.ToString("yyyy-MM-dd");
-
-            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
-            {
-                con.Open();
-
-                string sql = @"
-                SELECT CAST(strftime('%H', ProductionDatetime) AS INTEGER) AS Hour,
-                       COUNT(*) AS Cnt
-                FROM QRProducts
-                WHERE date(ProductionDatetime) = date(@Day)
-                  AND (@BatchCode IS NULL OR BatchCode = @BatchCode)
-                  AND (@Status IS NULL OR Status = @Status)
-                GROUP BY Hour
-                ORDER BY Hour;
-            ";
-
-                using (var cmd = new SQLiteCommand(sql, con))
-                {
-                    cmd.Parameters.AddWithValue("@Day", dayStr);
-
-                    if (string.IsNullOrEmpty(batchCode))
-                        cmd.Parameters.AddWithValue("@BatchCode", DBNull.Value);
-                    else
-                        cmd.Parameters.AddWithValue("@BatchCode", batchCode);
-
-                    if (string.IsNullOrEmpty(statusFilter))
-                        cmd.Parameters.AddWithValue("@Status", DBNull.Value);
-                    else
-                        cmd.Parameters.AddWithValue("@Status", statusFilter);
-
-                    using (var rd = cmd.ExecuteReader())
-                    {
-                        while (rd.Read())
-                        {
-                            list.Add(new HourlyProduction
-                            {
-                                Hour = rd.GetInt32(0),
-                                Count = rd.GetInt32(1)
-                            });
-                        }
-                    }
-                }
-            }
-
-            return list;
-        }
-
-        public static List<DailyProduction> GetDailyProduction(
-            DateTime fromDate,
-            DateTime toDate,
-            string batchCode = null,
-            string statusFilter = "Pass",
-            string dbPath = DefaultDbPath)
-        {
-            EnsureDatabase(dbPath);
-
-            var list = new List<DailyProduction>();
-            string fromStr = fromDate.ToString("yyyy-MM-dd");
-            string toStr = toDate.ToString("yyyy-MM-dd");
-
-            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
-            {
-                con.Open();
-
-                string sql = @"
-                SELECT date(ProductionDatetime) AS D,
-                       COUNT(*) AS Cnt
-                FROM QRProducts
-                WHERE date(ProductionDatetime) >= date(@FromDate)
-                  AND date(ProductionDatetime) <= date(@ToDate)
-                  AND (@BatchCode IS NULL OR BatchCode = @BatchCode)
-                  AND (@Status IS NULL OR Status = @Status)
-                GROUP BY D
-                ORDER BY D;
-            ";
-
-                using (var cmd = new SQLiteCommand(sql, con))
-                {
-                    cmd.Parameters.AddWithValue("@FromDate", fromStr);
-                    cmd.Parameters.AddWithValue("@ToDate", toStr);
-
-                    if (string.IsNullOrEmpty(batchCode))
-                        cmd.Parameters.AddWithValue("@BatchCode", DBNull.Value);
-                    else
-                        cmd.Parameters.AddWithValue("@BatchCode", batchCode);
-
-                    if (string.IsNullOrEmpty(statusFilter))
-                        cmd.Parameters.AddWithValue("@Status", DBNull.Value);
-                    else
-                        cmd.Parameters.AddWithValue("@Status", statusFilter);
-
-                    using (var rd = cmd.ExecuteReader())
-                    {
-                        while (rd.Read())
-                        {
-                            list.Add(new DailyProduction
-                            {
-                                Date = rd.GetString(0),
-                                Count = rd.GetInt32(1)
-                            });
-                        }
-                    }
-                }
-            }
-
-            return list;
         }
 
         // ================== DB PHỤ: ActiveUniqueQR (mã active & unique) ==================

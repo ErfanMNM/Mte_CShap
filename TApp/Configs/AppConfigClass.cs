@@ -53,6 +53,7 @@ namespace TApp.Configs
         public int Cloud_Refresh_Interval_Minute { get; set; }
         public bool Cloud_Upload_Enabled { get; set; }
         public bool Local_Backup_Enabled { get; set; }
+        public string? Backup_Folder_Path { get; set; }
 
         public bool Old_Camera_job_Enabled { get; set; }
 
@@ -62,6 +63,21 @@ namespace TApp.Configs
         /// Bypass security checks (chỉ dùng khi debug - KHÔNG BẬT trong production!)
         /// </summary>
         public bool Security_Bypass_Enabled { get; set; }
+
+        /// <summary>
+        /// Chế độ tính tốc độ sản xuất: 0=Database 15min, 1=Time between products
+        /// </summary>
+        public int Production_Speed_Mode { get; set; }
+
+        /// <summary>
+        /// Số sản phẩm lấy mẫu để tính trung bình tốc độ (Mode 1)
+        /// </summary>
+        public int Production_Speed_Sample_Count { get; set; }
+
+        /// <summary>
+        /// Thời gian reset tốc độ về 0 nếu không có sản phẩm mới (giây)
+        /// </summary>
+        public int Production_Speed_Reset_Timeout { get; set; }
 
         public override void SetDefault()
         {
@@ -92,10 +108,14 @@ namespace TApp.Configs
             Cloud_Refresh_Interval_Minute = 60;
             Cloud_Upload_Enabled = true;
             Local_Backup_Enabled = true;
+            Backup_Folder_Path = ""; // Để trống sẽ dùng mặc định C:\MASANQR\Backup
             OPC_UA_Time_Refresh = 5000;
             Old_Camera_job_Enabled = false;
             Batch_Rule_Template = "{AN:6,15}-{N:6}-TOL{LINE}-{AN:1}";
             Security_Bypass_Enabled = false; // Mặc định TẮT - chỉ bật khi debug
+            Production_Speed_Mode = 0; // 0=Database 15min, 1=Time between products
+            Production_Speed_Sample_Count = 10; // Số sản phẩm lấy mẫu tính trung bình
+            Production_Speed_Reset_Timeout = 30; // Thời gian reset về 0 (giây)
         }
     }
 }

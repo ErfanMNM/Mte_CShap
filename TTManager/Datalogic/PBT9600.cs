@@ -1,12 +1,13 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.IO.Ports;
+using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace MTs.Communication
+namespace TTManager.Datalogic
 {
-    public enum SerialClientState
+    public enum ePBT9600State
     {
         Connected,
         Disconnected,
@@ -14,7 +15,7 @@ namespace MTs.Communication
         Error
     }
 
-    public sealed class SerialClientHelper
+    public sealed class PBT9600
     {
         #region Fields
         private SerialPort? _serialPort;
@@ -30,12 +31,12 @@ namespace MTs.Communication
         #endregion
 
         #region Events
-        public delegate void SerialClientEventHandler(SerialClientState state, string data);
+        public delegate void SerialClientEventHandler(ePBT9600State state, string data);
         public event SerialClientEventHandler? SerialClientCallback;
         #endregion
 
         #region Constructors
-        public SerialClientHelper(string portName, int baudRate)
+        public PBT9600(string portName, int baudRate)
         {
             PortName = portName;
             BaudRate = baudRate;
@@ -43,7 +44,7 @@ namespace MTs.Communication
         #endregion
 
         #region Private Methods
-        private void OnSerialClientCallback(SerialClientState state, string data)
+        private void OnSerialClientCallback(ePBT9600State state, string data)
         {
             SerialClientCallback?.Invoke(state, data);
         }
@@ -59,7 +60,7 @@ namespace MTs.Communication
                     byte[] buffer = new byte[bytesToRead];
                     _serialPort.Read(buffer, 0, bytesToRead);
                     string receivedData = Encoding.UTF8.GetString(buffer);
-                    OnSerialClientCallback(SerialClientState.Received, receivedData);
+                    OnSerialClientCallback(ePBT9600State.Received, receivedData);
                 }
             }
             catch (Exception ex)
@@ -67,13 +68,13 @@ namespace MTs.Communication
                 HandleDisconnection($"Error receiving data: {ex.Message}");
             }
         }
-        
+
         private void HandleDisconnection(string reason)
         {
             if (!Connected) return;
 
             CleanupPort();
-            OnSerialClientCallback(SerialClientState.Disconnected, reason);
+            OnSerialClientCallback(ePBT9600State.Disconnected, reason);
         }
 
         private void CleanupPort()
@@ -106,16 +107,16 @@ namespace MTs.Communication
 
                 if (_serialPort.IsOpen)
                 {
-                    OnSerialClientCallback(SerialClientState.Connected, "Connected successfully");
+                    OnSerialClientCallback(ePBT9600State.Connected, "Connected successfully");
                 }
                 else
                 {
-                     OnSerialClientCallback(SerialClientState.Disconnected, "Failed to open port");
+                    OnSerialClientCallback(ePBT9600State.Disconnected, "Failed to open port");
                 }
             }
             catch (Exception ex)
             {
-                OnSerialClientCallback(SerialClientState.Error, $"Connection failed: {ex.Message}");
+                OnSerialClientCallback(ePBT9600State.Error, $"Connection failed: {ex.Message}");
             }
         }
 

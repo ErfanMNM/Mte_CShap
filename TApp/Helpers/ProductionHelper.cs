@@ -46,6 +46,16 @@ namespace TApp.Helpers
 
         public int ProductionPerHour;
 
+        /// <summary>
+        /// Timestamp (ms) của sản phẩm cuối cùng - dùng cho mode tính tốc độ từ khoảng thời gian
+        /// </summary>
+        public long LastProductTimestampMs;
+
+        /// <summary>
+        /// Danh sách timestamp các sản phẩm gần đây để tính trung bình (Mode 1)
+        /// </summary>
+        public List<long> ProductTimestampSamples = new List<long>();
+
         public ProductionData()
         {
             BatchCode = string.Empty;

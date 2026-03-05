@@ -1,4 +1,4 @@
-﻿using MTs.Auditrails;
+﻿using TTManager.Audit;
 using Sunny.UI;
 using System.Windows.Forms;
 using System.Threading.Tasks;
@@ -183,10 +183,6 @@ namespace TApp
 
             var shutdownNode = headNav.CreateChildNode(headNav.Nodes[0], "TẮT MÁY", 3001);
             headNav.SetNodeSymbol(shutdownNode, 61457);
-
-            
-
-            
         }
 
         private void InitializeConfigs()

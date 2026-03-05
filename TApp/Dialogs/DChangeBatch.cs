@@ -1,22 +1,19 @@
-﻿using MTs.Auditrails;
+﻿
+using TTManager.Audit;
 using Sunny.UI;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+
 using System.Data;
-using System.Drawing;
+
 using System.Globalization;
-using System.Linq;
-using System.Text;
+
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+
 using TApp.Configs;
 using TApp.Infrastructure;
-using TApp.Views.Dashboard;
+
 using TTManager.Auth;
 using TTManager.Diaglogs;
-using TTManager.Masan;
+
 
 namespace TApp.Dialogs
 {
@@ -61,6 +58,11 @@ namespace TApp.Dialogs
         private void ipBatch_DoubleClick(object sender, EventArgs e)
         {
             Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng mở hộp thoại nhập số lô sản xuất", "Đổi số lô sản xuất");
+            if (!adminMode)
+            {
+                this.ShowErrorDialog("Chế độ nhập số lô (BatchCode) chỉ dành cho quản trị viên.");
+                return;
+            }
 
             using (Entertext enterText = new Entertext())
             {
@@ -108,7 +110,7 @@ namespace TApp.Dialogs
                 return;
             }
             //kiểm tra trước khi lưu
-            if (!IsValid(ipBatch.Text.Trim(),ruleTemplate, int.Parse(AppConfigs.Current.Line_Name!.Split(' ').Last())))
+            if (!IsValid(ipBatch.Text.Trim(), ruleTemplate, int.Parse(AppConfigs.Current.Line_Name!.Split(' ').Last())))
             {
                 this.ShowErrorDialog("Mã số lô không hợp lệ, vui lòng kiểm tra lại định dạng.");
                 return;
@@ -193,12 +195,14 @@ namespace TApp.Dialogs
                 if (!IsAdmin)
                 {
                     this.ShowErrorDialog("Tài khoản bạn nhập không có quyền thay đổi số lô sản xuất, vui lòng liên hệ quản trị viên hệ thống để được hỗ trợ.");
+                    adminMode = false;
                     Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng '{ipUser.Text}' không có quyền thay đổi số lô sản xuất", "Đổi số lô sản xuất");
                     return;
                 }
 
                 if (!Is2FA)
                 {
+                    adminMode = false;
                     this.ShowErrorDialog("Mã xác thực 2FA không chính xác, vui lòng kiểm tra lại.");
                     Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng nhập '{ipUser.Text}' và nhập mã 2FA không chính xác khi thay đổi số lô sản xuất", "Đổi số lô sản xuất");
                     return;
@@ -206,13 +210,15 @@ namespace TApp.Dialogs
 
                 // Nếu người dùng là quản trị viên và mã 2FA hợp lệ, cho phép thay đổi số lô
 
-                ipBatch.Enabled = true;
-                ipBatch.DropDownStyle = UIDropDownStyle.DropDown;
+                ipBatch.DropDownStyle = UIDropDownStyle.DropDownList;
+                ipBarcode.Enabled = true;
                 ipBatch.FillColor = Color.Yellow;
 
                 ipBarcode.Enabled = true;
                 ipBarcode.FillColor = Color.Yellow;
                 btnedit.Enabled = false;
+
+                adminMode = true;
 
                 Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng đã nhập '{ipUser.Text}' đã xác thực thành công và được phép thay đổi số lô sản xuất", "Đổi số lô sản xuất");
             }
@@ -275,6 +281,29 @@ namespace TApp.Dialogs
                 };
                 enterText.ShowDialog();
             }
+        }
+
+        private void uiSymbolButton1_Click(object sender, EventArgs e)
+        {
+            Logger.WriteLogAsync(CurrentUser.Username, e_LogType.UserAction, $"Người dùng mở hộp thoại quét vã vạch (barcode)", "Đổi số lô sản xuất");
+            if (!adminMode)
+            {
+                this.ShowErrorDialog("Chế độ quét vã vạch (barcode) chỉ dành cho quản trị viên.");
+                return;
+            }
+            // this.ShowErrorDialog("Tính năng quét barcode tạm thời chưa được hỗ trợ.");
+            using (var dialog = new Scaner())
+            {
+                dialog._Title = "Quét barcode thùng";
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    string onlyNumbers = new string(dialog.TextValue.Where(char.IsDigit).ToArray());
+
+                    ipBarcode.Text = onlyNumbers;
+                    //ipCaseBarcode.Text = "1" + onlyNumbers;
+                }
+            }
+
         }
     }
 }

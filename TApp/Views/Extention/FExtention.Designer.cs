@@ -516,7 +516,7 @@
             tabPage3.Location = new Point(0, 40);
             tabPage3.Name = "tabPage3";
             tabPage3.Size = new Size(874, 639);
-            tabPage3.TabIndex = 3;
+            tabPage3.TabIndex = 2;
             tabPage3.Text = "Kiểm tra hệ thống";
             tabPage3.UseVisualStyleBackColor = true;
             // 
@@ -534,7 +534,7 @@
             uiTableLayoutPanel6.RowCount = 3;
             uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Absolute, 54F));
             uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Absolute, 176F));
+            uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Absolute, 218F));
             uiTableLayoutPanel6.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
             uiTableLayoutPanel6.Size = new Size(874, 639);
             uiTableLayoutPanel6.TabIndex = 1;
@@ -558,13 +558,13 @@
             uiTitlePanel4.Controls.Add(uiTableLayoutPanel7);
             uiTitlePanel4.Dock = DockStyle.Fill;
             uiTitlePanel4.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTitlePanel4.Location = new Point(2, 465);
+            uiTitlePanel4.Location = new Point(2, -114);
             uiTitlePanel4.Margin = new Padding(2);
             uiTitlePanel4.MinimumSize = new Size(1, 1);
             uiTitlePanel4.Name = "uiTitlePanel4";
             uiTitlePanel4.Padding = new Padding(1, 35, 1, 1);
             uiTitlePanel4.ShowText = false;
-            uiTitlePanel4.Size = new Size(870, 172);
+            uiTitlePanel4.Size = new Size(196, 172);
             uiTitlePanel4.TabIndex = 1;
             uiTitlePanel4.Text = "Chức Năng";
             uiTitlePanel4.TextAlignment = ContentAlignment.MiddleCenter;
@@ -584,7 +584,7 @@
             uiTableLayoutPanel7.RowCount = 2;
             uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
             uiTableLayoutPanel7.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel7.Size = new Size(868, 136);
+            uiTableLayoutPanel7.Size = new Size(194, 136);
             uiTableLayoutPanel7.TabIndex = 0;
             uiTableLayoutPanel7.TagString = null;
             // 
@@ -599,7 +599,7 @@
             uiTitlePanel5.Name = "uiTitlePanel5";
             uiTitlePanel5.Padding = new Padding(1, 35, 1, 1);
             uiTitlePanel5.ShowText = false;
-            uiTitlePanel5.Size = new Size(870, 405);
+            uiTitlePanel5.Size = new Size(196, 1);
             uiTitlePanel5.TabIndex = 2;
             uiTitlePanel5.Text = "Bảng Thông Báo";
             uiTitlePanel5.TextAlignment = ContentAlignment.MiddleCenter;
@@ -616,7 +616,7 @@
             uiListBox1.Name = "uiListBox1";
             uiListBox1.Padding = new Padding(2);
             uiListBox1.ShowText = false;
-            uiListBox1.Size = new Size(868, 369);
+            uiListBox1.Size = new Size(194, 1);
             uiListBox1.TabIndex = 4;
             uiListBox1.Text = "uiListBox1";
             // 

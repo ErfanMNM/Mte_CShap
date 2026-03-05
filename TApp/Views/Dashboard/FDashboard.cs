@@ -1,5 +1,5 @@
 ﻿using HslCommunication;
-using MTs.Datalogic;
+using HslCommunication.Profinet.Inovance;
 using Sunny.UI;
 using System.Collections.Concurrent;
 using System.ComponentModel;
@@ -10,6 +10,7 @@ using TApp.Infrastructure;
 using TApp.Models;
 using TApp.Utils;
 using static TTManager.PLCHelpers.OmronPLC_Hsl;
+using TTManager.Datalogic;
 
 namespace TApp.Views.Dashboard
 {
@@ -309,6 +310,44 @@ namespace TApp.Views.Dashboard
 
         private void Camera_ProcessData(string data)
         {
+            // Tính tốc độ sản xuất từ thời gian giữa N sản phẩm (Mode 1)
+            if (AppConfigs.Current.Production_Speed_Mode == 1)
+            {
+                long currentTimestampMs = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                var samples = FD_Globals.productionData.ProductTimestampSamples;
+                int sampleCount = AppConfigs.Current.Production_Speed_Sample_Count;
+                if (sampleCount < 2) sampleCount = 2; // Tối thiểu 2 mẫu
+
+                // Thêm timestamp hiện tại vào danh sách
+                samples.Add(currentTimestampMs);
+
+                // Giữ chỉ N mẫu gần nhất
+                while (samples.Count > sampleCount)
+                {
+                    samples.RemoveAt(0);
+                }
+
+                // Cập nhật LastProductTimestampMs
+                FD_Globals.productionData.LastProductTimestampMs = currentTimestampMs;
+
+                // Tính tốc độ nếu đủ ít nhất 2 mẫu
+                if (samples.Count >= 2)
+                {
+                    // Tính thời gian trung bình giữa các sản phẩm
+                    long totalDiffMs = samples[samples.Count - 1] - samples[0];
+                    double avgDiffSeconds = (totalDiffMs / 1000.0) / (samples.Count - 1);
+
+                    if (avgDiffSeconds > 0 && avgDiffSeconds <= 3600)
+                    {
+                        int speedPerHour = (int)(3600.0 / avgDiffSeconds);
+                        FD_Globals.productionData.ProductionPerHour = speedPerHour < 1 ? 0 : speedPerHour;
+                    }
+                    else
+                    {
+                        FD_Globals.productionData.ProductionPerHour = 0;
+                    }
+                }
+            }
             //Tiền xử lý dữ liệu
             data = data.Trim();
             data = data.Replace("\r", "");
@@ -340,6 +379,9 @@ namespace TApp.Views.Dashboard
             }
 
             FD_Globals.ActiveSet.Add(data); // Update RAM
+            
+            
+            
             Send_Result_To_PLC(e_PLC_Result.Pass);
             Send_Result_Content(e_Production_Status.Pass, data);
 
@@ -405,16 +447,25 @@ namespace TApp.Views.Dashboard
                 DisplayErrorToUI("FDE_0006", "Lỗi kiểm tra trạng thái DEACTIVE từ PLC", ex.Message);
             }
         }
-
+        int dem1 = 0;
         private void WK_Dequeue_DoWork(object sender, DoWorkEventArgs e)
         {
             while (!WK_Dequeue.CancellationPending)
             {
+                
                 try
                 {
+                    dem1++;
                     ProcessQueueRecord();
                     ProcessQueueActive();
+
                     UpdateAlarmDisplay();
+                    //cập nhật tốc độ sản xuất
+                    if (dem1 >= 20)
+                    {
+                        dem1 = 0;
+                        UpdateProductionPerHour();
+                    }
                     Thread.Sleep(50);
                 }
                 catch (Exception ex)
@@ -430,7 +481,7 @@ namespace TApp.Views.Dashboard
             while (!WK_Load_Counter.CancellationPending)
             {
                 UpdateCountersFromPLC();
-                UpdateProductionPerHour();
+               // UpdateProductionPerHour();
                 Thread.Sleep(1000);
             }
         }
@@ -532,7 +583,7 @@ namespace TApp.Views.Dashboard
                 // Kiểm tra nếu không có lỗi thì không cần xóa
                 if (FD_Globals.AlarmCount <= 0)
                 {
-                    this.ShowInfoDialog("Không có lỗi FormatError nào để xóa.");
+                    this.ShowInfoDialog("Đã xoá lỗi PLC. Không có lỗi FormatError nào.");
                     btnClearPLC.Enabled = true;
                     btnClearPLC.Text = "Xóa lỗi";
                     return;
@@ -803,18 +854,33 @@ namespace TApp.Views.Dashboard
 
         private void ProcessQueueRecord()
         {
-            if (FD_Globals.QueueRecord.TryDequeue(out QRProductRecord record))
+            try
             {
-                QRDatabaseHelper.AddOrActivateCode(record.QRContent, record.BatchCode, record.UserName, record.Barcode, record.TimeStampActive, record.TimeUnixActive, record.TimeStampActive, record.Status);
-                Render_Production_Result(record);
+                if (FD_Globals.QueueRecord.TryDequeue(out QRProductRecord record))
+                {
+                    QRDatabaseHelper.AddOrActivateCode(record.QRContent, record.BatchCode, record.UserName, record.Barcode, record.TimeStampActive, record.TimeUnixActive, record.TimeStampActive, record.Status);
+                    Render_Production_Result(record);
+                }
             }
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi ghi bản ghi sản xuất QUEUE RECORD: {ex.Message}");
+            }
+            
         }
 
         private void ProcessQueueActive()
         {
-            if (AppConfigs.Current.Data_Mode == "normal" && FD_Globals.QueueActive.TryDequeue(out QRProductRecord otherRecord))
+            try
             {
-                QRDatabaseHelper.AddActiveCodeUnique(otherRecord.QRContent, otherRecord.BatchCode, otherRecord.Barcode, otherRecord.UserName, otherRecord.TimeStampActive, otherRecord.TimeUnixActive);
+                if (AppConfigs.Current.Data_Mode == "normal" && FD_Globals.QueueActive.TryDequeue(out QRProductRecord otherRecord))
+                {
+                    QRDatabaseHelper.AddActiveCodeUnique(otherRecord.QRContent, otherRecord.BatchCode, otherRecord.Barcode, otherRecord.UserName, otherRecord.TimeStampActive, otherRecord.TimeUnixActive);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi ghi bản ghi sản xuất QUEUE ACTIVE: {ex.Message}");
             }
         }
 
@@ -850,8 +916,31 @@ namespace TApp.Views.Dashboard
 
         private void UpdateProductionPerHour()
         {
-            List<HourlyProduction> hourlyPassProduction = QRDatabaseHelper.GetHourlyProduction(DateTime.Now, null);
-            FD_Globals.productionData.ProductionPerHour = hourlyPassProduction.FirstOrDefault(p => p.Hour == DateTime.Now.Hour)?.Count ?? 0;
+            if (AppConfigs.Current.Production_Speed_Mode == 1)
+            {
+                // Mode 1: Kiểm tra nếu sản phẩm cuối cách thời gian hiện tại > timeout thì cho tốc độ = 0
+                int resetTimeout = AppConfigs.Current.Production_Speed_Reset_Timeout;
+                if (resetTimeout <= 0) resetTimeout = 30; // Default 30s
+                
+                long currentMs = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                long lastMs = FD_Globals.productionData.LastProductTimestampMs;
+                
+                if (lastMs > 0)
+                {
+                    double diffSeconds = (currentMs - lastMs) / 1000.0;
+                    if (diffSeconds > resetTimeout) // Nếu quá timeout giây không có sản phẩm mới
+                    {
+                        FD_Globals.productionData.ProductionPerHour = 0;
+                    }
+                }
+            }
+            else
+            {
+                // Mode 0: Tính từ database 15 phút (mode cũ)
+                long timestampMs = DateTimeOffset.Now.AddMinutes(-15).ToUnixTimeMilliseconds();
+                long hourlyPassProduction = QRDatabaseHelper.GetHourlyProduction(timestampMs);
+                FD_Globals.productionData.ProductionPerHour = (int)(hourlyPassProduction);
+            }
         }
 
         private void ProcessChangeBatchDialog(DChangeBatch dialog, string loadErpResult)

@@ -362,3 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /TApp/nul
+/Database/Production/batch_history.db
+/PLC_RECIPEs
