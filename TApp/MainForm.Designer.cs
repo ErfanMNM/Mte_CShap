@@ -70,7 +70,7 @@
             uiTableLayoutPanel1.RowCount = 2;
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 45F));
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel1.Size = new Size(1028, 768);
+            uiTableLayoutPanel1.Size = new Size(1024, 768);
             uiTableLayoutPanel1.TabIndex = 2;
             uiTableLayoutPanel1.TagString = null;
             // 
@@ -87,7 +87,7 @@
             uiTableLayoutPanel2.Name = "uiTableLayoutPanel2";
             uiTableLayoutPanel2.RowCount = 1;
             uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel2.Size = new Size(1028, 723);
+            uiTableLayoutPanel2.Size = new Size(1024, 723);
             uiTableLayoutPanel2.TabIndex = 2;
             uiTableLayoutPanel2.TagString = null;
             // 
@@ -104,7 +104,7 @@
             uiTableLayoutPanel3.RowCount = 2;
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
-            uiTableLayoutPanel3.Size = new Size(878, 723);
+            uiTableLayoutPanel3.Size = new Size(874, 723);
             uiTableLayoutPanel3.TabIndex = 2;
             uiTableLayoutPanel3.TagString = null;
             // 
@@ -121,7 +121,7 @@
             uiPanel4.Name = "uiPanel4";
             uiPanel4.RadiusSides = Sunny.UI.UICornerRadiusSides.None;
             uiPanel4.RectColor = Color.Blue;
-            uiPanel4.Size = new Size(878, 40);
+            uiPanel4.Size = new Size(874, 40);
             uiPanel4.TabIndex = 5;
             uiPanel4.Text = null;
             uiPanel4.TextAlignment = ContentAlignment.MiddleCenter;
@@ -139,7 +139,7 @@
             uiTableLayoutPanel4.Name = "uiTableLayoutPanel4";
             uiTableLayoutPanel4.RowCount = 1;
             uiTableLayoutPanel4.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel4.Size = new Size(878, 40);
+            uiTableLayoutPanel4.Size = new Size(874, 40);
             uiTableLayoutPanel4.TabIndex = 0;
             uiTableLayoutPanel4.TagString = null;
             // 
@@ -148,7 +148,7 @@
             opAppClock.Dock = DockStyle.Fill;
             opAppClock.Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             opAppClock.ForeColor = Color.FromArgb(0, 0, 192);
-            opAppClock.Location = new Point(724, 0);
+            opAppClock.Location = new Point(720, 0);
             opAppClock.Name = "opAppClock";
             opAppClock.Size = new Size(151, 40);
             opAppClock.TabIndex = 0;
@@ -167,7 +167,7 @@
             MainTab.MenuStyle = Sunny.UI.UIMenuStyle.Custom;
             MainTab.Name = "MainTab";
             MainTab.SelectedIndex = 0;
-            MainTab.Size = new Size(874, 679);
+            MainTab.Size = new Size(870, 679);
             MainTab.SizeMode = TabSizeMode.Fixed;
             MainTab.TabBackColor = Color.FromArgb(243, 249, 255);
             MainTab.TabIndex = 1;
@@ -279,7 +279,7 @@
             headNav.SelectedHighColor = Color.White;
             headNav.SelectedHighColorSize = 0;
             headNav.ShowItemsArrow = false;
-            headNav.Size = new Size(1028, 45);
+            headNav.Size = new Size(1024, 45);
             headNav.TabIndex = 3;
             headNav.MenuItemClick += headNav_MenuItemClick;
             // 
@@ -339,9 +339,9 @@
             // 
             AllowShowTitle = false;
             AutoScaleMode = AutoScaleMode.None;
-            ClientSize = new Size(1028, 768);
+            ClientSize = new Size(1024, 768);
             Controls.Add(uiTableLayoutPanel1);
-            MaximumSize = new Size(1028, 768);
+            MaximumSize = new Size(1902, 1080);
             Name = "MainForm";
             Padding = new Padding(0);
             ShowTitle = false;
