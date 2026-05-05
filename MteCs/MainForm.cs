@@ -28,13 +28,13 @@ namespace MteCs
             headNav.Nodes.Add(string.Empty);
 
             headNav.SetNodeSymbol(headNav.Nodes[0], 559585);
-            var logoutNode = headNav.CreateChildNode(headNav.Nodes[0], "Đăng xuất", 3002);
-            headNav.SetNodeSymbol(logoutNode, 559834);
+            //var logoutNode = headNav.CreateChildNode(headNav.Nodes[0], "Đăng xuất", 3002);
+            //headNav.SetNodeSymbol(logoutNode, 559834);
 
             //var DeactiveNode = headNav.CreateChildNode(headNav.Nodes[0], "VÔ HIỆU HÓA", 3003);
             //headNav.SetNodeSymbol(DeactiveNode, 61508);
 
-            var shutdownNode = headNav.CreateChildNode(headNav.Nodes[0], "Đóng ứng dụng", 3001);
+            var shutdownNode = headNav.CreateChildNode(headNav.Nodes[0], "TẮT PHẦN MỀM", 3001);
             headNav.SetNodeSymbol(shutdownNode, 61457);
         }
 
@@ -45,27 +45,18 @@ namespace MteCs
                 case 3001:
                     CloseApplication();
                     break;
-
-                case 3002:
-                    GlobalVarialbles.CurrentUser.Username = string.Empty;
-                    AppState = e_App_State.LOGIN;
-                    break;
-                case 3003:
-                    HandleDeactivateRequest();
-                    break;
             }
         }
 
         private void CloseApplication()
         {
-            // Tắt icon tray trước khi thoát
-            if (trayIcon != null)
-            {
-                trayIcon.Visible = false;
-            }
-
             // Tắt ứng dụng
             Application.Exit();
+        }
+
+        private void NavMenu_MenuItemClick(TreeNode node, NavMenuItem item, int pageIndex)
+        {
+
         }
     }
 }
