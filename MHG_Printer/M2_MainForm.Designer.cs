@@ -28,7 +28,6 @@ namespace MHG_Printer
             Name = "M2_MainForm";
             Text = "M2 - OPC UA Client Test";
             ZoomScaleRect = new Rectangle(15, 15, 800, 450);
-            FormClosing += M2_MainForm_FormClosing;
             ResumeLayout(false);
         }
 
