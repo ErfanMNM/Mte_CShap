@@ -1,0 +1,15 @@
+## Summary
+- Add MHG_Printer/Infrastructure/GlobalVariables.cs with enums (e_LogType, e_AppState, e_AppRenderState)
+- Add MHG_Printer/Views/Login page with ucLogin integration and OnLoginAction event
+- Add MHG_Printer/Views/Dashboard page stub with SetDeactiveState stub method
+- Update M2_MainForm.cs with full navigation, state machine (LOGIN/ACTIVE), background workers
+- Update M2_MainForm.Designer.cs with full UI layout (NavMenu, MainTab, headNav)
+- Add MHG_Printer.csproj references and Mte.sln project reference
+- Fix TApp Login page: add OnLoginSuccess event to notify MainForm on successful login
+- Fix TApp MainForm: subscribe to Login.OnLoginSuccess to transition to ACTIVE state
+
+## Test plan
+- [ ] Build MHG_Printer project successfully
+- [ ] Build TApp project successfully
+- [ ] Verify TApp login page disappears after successful login
+- [ ] Verify MHG_Printer M2_MainForm navigation works correctly
