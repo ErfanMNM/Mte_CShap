@@ -90,6 +90,7 @@
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Setting";
             tabPage1.UseVisualStyleBackColor = true;
+            tabPage1.Resize += tabPage1_Resize;
             // 
             // tabPage2
             // 
@@ -102,13 +103,14 @@
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Người dùng";
             tabPage2.UseVisualStyleBackColor = true;
+            tabPage2.Resize += tabPage2_Resize;
             // 
             // uc_UserManager1
             // 
             uc_UserManager1.CurrentUserName = "";
+            uc_UserManager1.Dock = DockStyle.Right;
             uc_UserManager1.Font = new Font("Microsoft Sans Serif", 12F);
             uc_UserManager1.IS2FAEnabled = false;
-            uc_UserManager1.Location = new Point(424, 3);
             uc_UserManager1.MinimumSize = new Size(1, 1);
             uc_UserManager1.Name = "uc_UserManager1";
             uc_UserManager1.Size = new Size(440, 366);
@@ -119,25 +121,23 @@
             // 
             // uiListBox1
             // 
+            uiListBox1.Dock = DockStyle.Bottom;
             uiListBox1.Font = new Font("Microsoft Sans Serif", 12F);
             uiListBox1.HoverColor = Color.FromArgb(155, 200, 255);
             uiListBox1.ItemSelectForeColor = Color.White;
-            uiListBox1.Location = new Point(4, 369);
-            uiListBox1.Margin = new Padding(4, 5, 4, 5);
             uiListBox1.MinimumSize = new Size(1, 1);
             uiListBox1.Name = "uiListBox1";
             uiListBox1.Padding = new Padding(2);
             uiListBox1.ShowText = false;
-            uiListBox1.Size = new Size(860, 171);
             uiListBox1.TabIndex = 1;
             uiListBox1.Text = "uiListBox1";
             // 
             // uc_UserSetting1
             // 
             uc_UserSetting1.CurrentUserName = null;
+            uc_UserSetting1.Dock = DockStyle.Left;
             uc_UserSetting1.Font = new Font("Microsoft Sans Serif", 12F);
             uc_UserSetting1.IS2FAEnabled = false;
-            uc_UserSetting1.Location = new Point(3, 3);
             uc_UserSetting1.MinimumSize = new Size(1, 1);
             uc_UserSetting1.Name = "uc_UserSetting1";
             uc_UserSetting1.Size = new Size(415, 366);

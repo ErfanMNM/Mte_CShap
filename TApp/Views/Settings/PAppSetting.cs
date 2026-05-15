@@ -24,6 +24,13 @@ namespace TApp.Views.Settings
         #region Fields
         private Dictionary<string, Control> _configControls = new Dictionary<string, Control>();
         private Dictionary<string, PropertyInfo> _configProperties = new Dictionary<string, PropertyInfo>();
+        private List<UIGroupBox> _groupBoxes = new List<UIGroupBox>();
+        private UITableLayoutPanel _outerTable;
+        private const int ColumnGap = 10;
+        private const int RowGap = 10;
+        private const int ItemRowHeight = 38;
+        private const int LabelColumnWidth = 280;
+        private const int ControlColumnMinWidth = 200;
         // Trạng thái load của uc_UserManager1 để nút Reload có thể toggle
         private bool _isUserManagerLoaded = true;
         #endregion
@@ -65,77 +72,161 @@ namespace TApp.Views.Settings
             tabPage1.Controls.Clear();
             _configControls.Clear();
             _configProperties.Clear();
+            _groupBoxes.Clear();
 
             // Group properties by category
-            var categories = GroupPropertiesByCategory(properties);
+            var categories = GroupPropertiesByCategory(properties).ToList();
 
-            int yPos = 20;
-            int groupSpacing = 15;
-
-            foreach (var category in categories)
+            // Outer 2-column TableLayoutPanel
+            var outerTable = new UITableLayoutPanel()
             {
-                // Create category group box
-                var groupBox = new UIGroupBox()
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowOnly,
+                Padding = new Padding(10, 10, 10, 10)
+            };
+            outerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            outerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            outerTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+            tabPage1.Controls.Add(outerTable);
+
+            // Left column: StackPanel-like flow for odd categories
+            var leftPanel = new FlowLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true,
+                Margin = new Padding(0, 0, ColumnGap, 0)
+            };
+
+            // Right column: StackPanel-like flow for even categories
+            var rightPanel = new FlowLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true,
+                Margin = new Padding(0)
+            };
+
+            outerTable.Controls.Add(leftPanel, 0, 0);
+            outerTable.Controls.Add(rightPanel, 1, 0);
+
+            for (int i = 0; i < categories.Count; i++)
+            {
+                var category = categories[i];
+                var targetPanel = (i % 2 == 0) ? leftPanel : rightPanel;
+                CreateGroupBoxForCategory(targetPanel, category);
+            }
+        }
+
+        private void CreateGroupBoxForCategory(FlowLayoutPanel parent, KeyValuePair<string, List<PropertyInfo>> category)
+        {
+            int itemCount = category.Value.Count;
+            int boxHeight = 40 + (itemCount * ItemRowHeight);
+
+            var groupBox = new UIGroupBox()
+            {
+                Text = category.Key,
+                Width = 380,
+                Height = boxHeight,
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                FillColor = Color.FromArgb(255, 255, 255),
+                RectColor = Color.FromArgb(189, 195, 199),
+                Radius = 8,
+                RectSize = 1,
+                AutoSize = false,
+                Margin = new Padding(0, 0, 0, RowGap)
+            };
+            parent.Controls.Add(groupBox);
+            _groupBoxes.Add(groupBox);
+
+            var itemsTable = new UITableLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = itemCount,
+                AutoSize = false,
+                Padding = new Padding(10, 10, 10, 10)
+            };
+            itemsTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, LabelColumnWidth));
+            itemsTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            for (int i = 0; i < itemCount; i++)
+                itemsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, ItemRowHeight));
+
+            groupBox.Controls.Add(itemsTable);
+
+            int row = 0;
+            foreach (var property in category.Value)
+            {
+                _configProperties[property.Name] = property;
+
+                var label = new UILabel()
                 {
-                    Text = category.Key,
-                    Location = new Point(20, yPos),
-                    Size = new Size(740, (category.Value.Count * 50) + 60),
-                    Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                    FillColor = Color.FromArgb(255, 255, 255),
-                    RectColor = Color.FromArgb(189, 195, 199),
-                    Radius = 8,
-                    RectSize = 1
+                    Text = GetDisplayName(property.Name),
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Segoe UI", 10F, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(52, 73, 94),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding = new Padding(8, 0, 0, 0)
                 };
-                tabPage1.Controls.Add(groupBox);
 
-                int itemYPos = 35;
-
-                foreach (var property in category.Value)
+                Control? control = CreateControlForProperty(property);
+                if (control != null)
                 {
-                    _configProperties[property.Name] = property;
-
-                    // Create modern card-like container
-                    var itemPanel = new UIPanel()
+                    // Wrap switch/numpad in a panel to center it while keeping Dock=Fill
+                    if (property.PropertyType == typeof(bool) || property.PropertyType == typeof(int))
                     {
-                        Location = new Point(15, itemYPos),
-                        Size = new Size(700, 40),
-                        FillColor = Color.White,
-                        RectColor = Color.FromArgb(224, 230, 237),
-                        Radius = 12,
-                        RectSize = 1
-                    };
-                    groupBox.Controls.Add(itemPanel);
-
-                    // Create label with icon
-                    var label = new UILabel()
-                    {
-                        Text = GetDisplayName(property.Name),
-                        Location = new Point(15, 8),
-                        Size = new Size(300, 24),
-                        Font = new Font("Segoe UI", 10F, FontStyle.Regular),
-                        ForeColor = Color.FromArgb(52, 73, 94),
-                        TextAlign = ContentAlignment.MiddleLeft
-                    };
-                    itemPanel.Controls.Add(label);
-
-                    // Create control based on property type
-                    Control? control = CreateControlForProperty(property);
-                    if (control != null)
-                    {
-                        control.Location = new Point(480, 5);
+                        var wrapper = new Panel() { Dock = DockStyle.Fill, Padding = new Padding(0) };
+                        control.Dock = DockStyle.None;
                         control.Size = GetControlSize(property.PropertyType);
-                        control.Font = new Font("Tahoma", 10F);
-                        control.Anchor = AnchorStyles.Right | AnchorStyles.Top;
-
-                        itemPanel.Controls.Add(control);
-                        _configControls[property.Name] = control;
+                        control.Location = new Point(
+                            wrapper.Width - control.Width,
+                            (wrapper.Height - control.Height) / 2);
+                        wrapper.Layout += (s, e) =>
+                        {
+                            if (control.Width > 0)
+                                control.Location = new Point(
+                                    wrapper.Width - control.Width,
+                                    (wrapper.Height - control.Height) / 2);
+                        };
+                        wrapper.Controls.Add(control);
+                        _configControls[property.Name] = wrapper;
+                        itemsTable.Controls.Add(wrapper, 1, row);
                     }
-
-                    itemYPos += 45;
+                    else
+                    {
+                        control.Dock = DockStyle.Fill;
+                        _configControls[property.Name] = control;
+                        itemsTable.Controls.Add(control, 1, row);
+                    }
                 }
 
-                yPos += groupBox.Height + groupSpacing;
+                itemsTable.Controls.Add(label, 0, row);
+                row++;
             }
+        }
+
+        private void tabPage1_Resize(object sender, EventArgs e)
+        {
+            // Recalculate group box widths based on current column width
+            if (tabPage1.Width <= 0) return;
+
+            int availableWidth = (tabPage1.Width / 2) - ColumnGap - 20;
+            foreach (var gb in _groupBoxes)
+            {
+                gb.Width = Math.Max(availableWidth, 300);
+            }
+        }
+
+        private void tabPage2_Resize(object sender, EventArgs e)
+        {
+            uc_UserSetting1?.PerformLayout();
+            uc_UserManager1?.PerformLayout();
         }
 
         private Dictionary<string, List<PropertyInfo>> GroupPropertiesByCategory(List<PropertyInfo> properties)
@@ -297,8 +388,8 @@ namespace TApp.Views.Settings
                     var browseBtn = new UIButton()
                     {
                         Text = "📁",
-                        Size = new Size(30, 30),
-                        Location = new Point(170, 0),
+                        Dock = DockStyle.Right,
+                        Width = 36,
                         Font = new Font("Segoe UI", 10F),
                         Radius = 8,
                         FillColor = Color.FromArgb(108, 117, 125),
@@ -316,9 +407,10 @@ namespace TApp.Views.Settings
 
                     var container = new Panel()
                     {
-                        Size = new Size(200, 30)
+                        Dock = DockStyle.Fill,
+                        Padding = new Padding(0)
                     };
-                    textBox.Size = new Size(165, 30);
+                    textBox.Dock = DockStyle.Fill;
                     container.Controls.Add(textBox);
                     container.Controls.Add(browseBtn);
 
@@ -377,13 +469,26 @@ namespace TApp.Views.Settings
             {
                 textBox.Text = stringValue ?? string.Empty;
             }
-            else if (control is Panel panel && value is string stringValue2)
+            else if (control is Panel panel)
             {
+                // Handle wrapper panels for bool/int controls
+                var innerSwitch = panel.Controls.OfType<UISwitch>().FirstOrDefault();
+                if (innerSwitch != null && value is bool boolVal)
+                {
+                    innerSwitch.Active = boolVal;
+                    return;
+                }
+                var innerNumPad = panel.Controls.OfType<UINumPadTextBox>().FirstOrDefault();
+                if (innerNumPad != null && value is int intVal)
+                {
+                    innerNumPad.Text = intVal.ToString();
+                    return;
+                }
                 // Handle path controls with browse button
                 var textBoxInPanel = panel.Controls.OfType<UITextBox>().FirstOrDefault();
-                if (textBoxInPanel != null)
+                if (textBoxInPanel != null && value is string strVal)
                 {
-                    textBoxInPanel.Text = stringValue2 ?? string.Empty;
+                    textBoxInPanel.Text = strVal ?? string.Empty;
                 }
             }
         }
@@ -410,11 +515,25 @@ namespace TApp.Views.Settings
             {
                 return textBox.Text;
             }
-            else if (control is Panel panel && targetType == typeof(string))
+            else if (control is Panel panel)
             {
-                // Handle path controls with browse button
+                // Check for wrapper panels containing UISwitch or UINumPadTextBox
+                var innerSwitch = panel.Controls.OfType<UISwitch>().FirstOrDefault();
+                if (innerSwitch != null && targetType == typeof(bool))
+                    return innerSwitch.Active;
+
+                var innerNumPad = panel.Controls.OfType<UINumPadTextBox>().FirstOrDefault();
+                if (innerNumPad != null && targetType == typeof(int))
+                {
+                    if (int.TryParse(innerNumPad.Text, out int result))
+                        return result;
+                    return 0;
+                }
+
+                // Path controls with browse button
                 var textBoxInPanel = panel.Controls.OfType<UITextBox>().FirstOrDefault();
-                return textBoxInPanel?.Text ?? string.Empty;
+                if (textBoxInPanel != null && targetType == typeof(string))
+                    return textBoxInPanel.Text ?? string.Empty;
             }
 
             return null;
@@ -646,11 +765,10 @@ namespace TApp.Views.Settings
                     uc_UserManager1 = new uc_UserManager
                     {
                         Name = "uc_UserManager1",
+                        Dock = DockStyle.Right,
                         Font = new Font("Microsoft Sans Serif", 12F),
                         IS2FAEnabled = false,
-                        Location = new Point(424, 3),
                         MinimumSize = new Size(1, 1),
-                        Size = new Size(440, 366),
                         Text = "uc_UserManager1",
                         TextAlignment = ContentAlignment.MiddleCenter,
                         CurrentUserName = GlobalVarialbles.CurrentUser.Username
@@ -703,24 +821,29 @@ namespace TApp.Views.Settings
             );
 
             this.uiListBox1.Items.Clear();
-            uc_UserSetting1.CurrentUserName = GlobalVarialbles.CurrentUser.Username; // Thiết lập tên người dùng hiện tại
-            uc_UserSetting1.INIT(); // Khởi tạo thông tin người dùng
+            uc_UserSetting1.CurrentUserName = GlobalVarialbles.CurrentUser.Username;
+            uc_UserSetting1.INIT();
 
             if (GlobalVarialbles.CurrentUser.Role != "Admin")
             {
                 btnDefault.Enabled = false;
                 btnSave.Enabled = false;
-                uc_UserManager1.Enabled = false;
+                if (uc_UserManager1 != null && !uc_UserManager1.IsDisposed)
+                    uc_UserManager1.Enabled = false;
             }
             else
             {
                 btnDefault.Enabled = true;
                 btnSave.Enabled = true;
-                uc_UserManager1.Enabled = true;
+                if (uc_UserManager1 != null && !uc_UserManager1.IsDisposed)
+                    uc_UserManager1.Enabled = true;
             }
 
-            uc_UserManager1.CurrentUserName = GlobalVarialbles.CurrentUser.Username; // Thiết lập tên người dùng hiện tại
-            uc_UserManager1.INIT(); // Khởi tạo thông tin người dùng
+            if (uc_UserManager1 != null && !uc_UserManager1.IsDisposed)
+            {
+                uc_UserManager1.CurrentUserName = GlobalVarialbles.CurrentUser.Username;
+                uc_UserManager1.INIT();
+            }
         }
         #endregion
     }
