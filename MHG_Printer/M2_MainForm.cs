@@ -1,8 +1,4 @@
-using System;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using LibUA;
-using LibUA.Core;
+using MHG_Printer.Utils;
 using Sunny.UI;
 
 namespace MHG_Printer
@@ -13,9 +9,26 @@ namespace MHG_Printer
         public M2_MainForm()
         {
             InitializeComponent();
+            StartClock();
         }
 
-      
+        private void StartClock()
+        {
+            clock.RunWorkerAsync();
+        }
+
+        private void clock_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        {
+            while (!clock.CancellationPending)
+            {
+                this.InvokeIfRequired(() =>
+                {
+                    opAppClock.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK");
+                });
+
+                Thread.Sleep(100);
+            }
+        }
     }
 }
 
