@@ -2,15 +2,8 @@
 {
     partial class Dashboard
     {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -22,37 +15,38 @@
 
         #region Windows Form Designer generated code
 
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
-            uiLabel1 = new Sunny.UI.UILabel();
+            uiTextBox1 = new Sunny.UI.UITextBox();
             SuspendLayout();
             // 
-            // uiLabel1
+            // uiTextBox1
             // 
-            uiLabel1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiLabel1.ForeColor = Color.FromArgb(48, 48, 48);
-            uiLabel1.Location = new Point(324, 187);
-            uiLabel1.Name = "uiLabel1";
-            uiLabel1.Size = new Size(378, 185);
-            uiLabel1.TabIndex = 0;
-            uiLabel1.Text = "Đây là Dashboard";
+            uiTextBox1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiTextBox1.Location = new Point(182, 143);
+            uiTextBox1.Margin = new Padding(4, 5, 4, 5);
+            uiTextBox1.MinimumSize = new Size(1, 16);
+            uiTextBox1.Name = "uiTextBox1";
+            uiTextBox1.Padding = new Padding(5);
+            uiTextBox1.ShowText = false;
+            uiTextBox1.Size = new Size(659, 246);
+            uiTextBox1.TabIndex = 0;
+            uiTextBox1.Text = "uiTextBox1";
+            uiTextBox1.TextAlignment = ContentAlignment.MiddleLeft;
+            uiTextBox1.Watermark = "";
             // 
             // Dashboard
             // 
             AutoScaleMode = AutoScaleMode.None;
-            ClientSize = new Size(1015, 621);
-            Controls.Add(uiLabel1);
+            ClientSize = new Size(874, 679);
+            Controls.Add(uiTextBox1);
             Name = "Dashboard";
-            Text = "Dashboard";
+            Text = "Bảng chính";
             ResumeLayout(false);
         }
 
         #endregion
 
-        private Sunny.UI.UILabel uiLabel1;
+        private Sunny.UI.UITextBox uiTextBox1;
     }
 }

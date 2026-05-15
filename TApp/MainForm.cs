@@ -207,9 +207,15 @@ namespace TApp
             fDashboard.ChangePage += FDashboard_ChangePage;
             fDashboard.DeactiveStateChanged += FDashboard_DeactiveStateChanged;
             fDeactive.OnReactivateRequested += FDeactive_OnReactivateRequested;
+            fLogin.OnLoginSuccess += FLogin_OnLoginSuccess;
 
             // Kiểm tra trạng thái DEACTIVE từ PLC khi khởi động
             CheckDeactiveStateOnStartup();
+        }
+
+        private void FLogin_OnLoginSuccess()
+        {
+            AppState = e_App_State.ACTIVE;
         }
 
         #endregion

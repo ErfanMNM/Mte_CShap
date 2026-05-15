@@ -20,11 +20,12 @@ namespace MHG_Printer
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(M2_MainForm));
             clock = new System.ComponentModel.BackgroundWorker();
+            WK1 = new System.ComponentModel.BackgroundWorker();
             uiPanel2 = new Sunny.UI.UIPanel();
             uiPanel1 = new Sunny.UI.UIPanel();
             uiImageButton1 = new Sunny.UI.UIImageButton();
             headNav = new Sunny.UI.UINavBar();
-            WK1 = new System.ComponentModel.BackgroundWorker();
+            uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
             navTrai = new Sunny.UI.UITableLayoutPanel();
             uiPanel3 = new Sunny.UI.UIPanel();
             NavMenu = new Sunny.UI.UINavMenu();
@@ -37,22 +38,26 @@ namespace MHG_Printer
             MainTab = new Sunny.UI.UITabControl();
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
-            uiTableLayoutPanel3 = new Sunny.UI.UITableLayoutPanel();
             ((System.ComponentModel.ISupportInitialize)uiImageButton1).BeginInit();
             headNav.SuspendLayout();
+            uiTableLayoutPanel3.SuspendLayout();
             navTrai.SuspendLayout();
             uiTableLayoutPanel4.SuspendLayout();
             uiPanel4.SuspendLayout();
             banggiua.SuspendLayout();
             uiTableLayoutPanel2.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
-            uiTableLayoutPanel3.SuspendLayout();
             SuspendLayout();
             // 
             // clock
             // 
             clock.WorkerSupportsCancellation = true;
             clock.DoWork += clock_DoWork;
+            // 
+            // WK1
+            // 
+            WK1.WorkerSupportsCancellation = true;
+            WK1.DoWork += WK1_DoWork;
             // 
             // uiPanel2
             // 
@@ -65,7 +70,7 @@ namespace MHG_Printer
             uiPanel2.MinimumSize = new Size(1, 1);
             uiPanel2.Name = "uiPanel2";
             uiPanel2.RectColor = Color.Transparent;
-            uiPanel2.Size = new Size(787, 35);
+            uiPanel2.Size = new Size(677, 35);
             uiPanel2.TabIndex = 2;
             uiPanel2.Text = "PHẦN MỀM KÍCH HOẠT MÃ QR";
             uiPanel2.TextAlignment = ContentAlignment.MiddleCenter;
@@ -102,9 +107,10 @@ namespace MHG_Printer
             // 
             // headNav
             // 
+            headNav.Anchor = AnchorStyles.Right;
             headNav.BackColor = Color.LightSteelBlue;
             headNav.Controls.Add(uiTableLayoutPanel3);
-            headNav.Dock = DockStyle.Top;
+            headNav.DropDownItemAutoHeight = true;
             headNav.DropMenuFont = new Font("Microsoft Sans Serif", 12F);
             headNav.Font = new Font("Microsoft Sans Serif", 12F);
             headNav.ForeColor = Color.White;
@@ -123,9 +129,26 @@ namespace MHG_Printer
             headNav.TabIndex = 3;
             headNav.MenuItemClick += headNav_MenuItemClick;
             // 
-            // WK1
+            // uiTableLayoutPanel3
             // 
-            WK1.WorkerSupportsCancellation = true;
+            uiTableLayoutPanel3.AutoSize = true;
+            uiTableLayoutPanel3.BackColor = Color.LightSkyBlue;
+            uiTableLayoutPanel3.ColumnCount = 3;
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60F));
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 169F));
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel3.Controls.Add(uiImageButton1, 0, 0);
+            uiTableLayoutPanel3.Controls.Add(uiPanel2, 2, 0);
+            uiTableLayoutPanel3.Controls.Add(uiPanel1, 1, 0);
+            uiTableLayoutPanel3.Dock = DockStyle.Left;
+            uiTableLayoutPanel3.Location = new Point(0, 0);
+            uiTableLayoutPanel3.Margin = new Padding(0);
+            uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
+            uiTableLayoutPanel3.RowCount = 1;
+            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            uiTableLayoutPanel3.Size = new Size(914, 45);
+            uiTableLayoutPanel3.TabIndex = 3;
+            uiTableLayoutPanel3.TagString = null;
             // 
             // navTrai
             // 
@@ -209,6 +232,7 @@ namespace MHG_Printer
             btnHome.TabIndex = 5;
             btnHome.Text = "Về Trang Chủ";
             btnHome.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnHome.Click += btnHome_Click;
             // 
             // opAppClock
             // 
@@ -327,26 +351,6 @@ namespace MHG_Printer
             uiTableLayoutPanel1.TabIndex = 3;
             uiTableLayoutPanel1.TagString = null;
             // 
-            // uiTableLayoutPanel3
-            // 
-            uiTableLayoutPanel3.BackColor = Color.LightSkyBlue;
-            uiTableLayoutPanel3.ColumnCount = 3;
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60F));
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 169F));
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel3.Controls.Add(uiImageButton1, 0, 0);
-            uiTableLayoutPanel3.Controls.Add(uiPanel2, 2, 0);
-            uiTableLayoutPanel3.Controls.Add(uiPanel1, 1, 0);
-            uiTableLayoutPanel3.Dock = DockStyle.Fill;
-            uiTableLayoutPanel3.Location = new Point(0, 0);
-            uiTableLayoutPanel3.Margin = new Padding(0);
-            uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
-            uiTableLayoutPanel3.RowCount = 1;
-            uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel3.Size = new Size(1024, 45);
-            uiTableLayoutPanel3.TabIndex = 3;
-            uiTableLayoutPanel3.TagString = null;
-            // 
             // M2_MainForm
             // 
             AllowShowTitle = false;
@@ -363,13 +367,14 @@ namespace MHG_Printer
             ZoomScaleRect = new Rectangle(15, 15, 800, 450);
             ((System.ComponentModel.ISupportInitialize)uiImageButton1).EndInit();
             headNav.ResumeLayout(false);
+            headNav.PerformLayout();
+            uiTableLayoutPanel3.ResumeLayout(false);
             navTrai.ResumeLayout(false);
             uiTableLayoutPanel4.ResumeLayout(false);
             uiPanel4.ResumeLayout(false);
             banggiua.ResumeLayout(false);
             uiTableLayoutPanel2.ResumeLayout(false);
             uiTableLayoutPanel1.ResumeLayout(false);
-            uiTableLayoutPanel3.ResumeLayout(false);
             ResumeLayout(false);
         }
 
