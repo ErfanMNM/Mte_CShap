@@ -1,10 +1,6 @@
-﻿using Sunny.UI;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Text;
+﻿using MHG_Printer.Infrastructure;
+using MHG_Printer.Utils;
+using Sunny.UI;
 using System.Windows.Forms;
 
 namespace MHG_Printer.Views
@@ -15,5 +11,7 @@ namespace MHG_Printer.Views
         {
             InitializeComponent();
         }
+
+        public bool SetDeactiveState(bool isDeactive) => true;
     }
 }
