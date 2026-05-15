@@ -18,6 +18,7 @@
         private void InitializeComponent()
         {
             uiTextBox1 = new Sunny.UI.UITextBox();
+            backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             SuspendLayout();
             // 
             // uiTextBox1
@@ -35,6 +36,10 @@
             uiTextBox1.TextAlignment = ContentAlignment.MiddleLeft;
             uiTextBox1.Watermark = "";
             // 
+            // backgroundWorker1
+            // 
+            backgroundWorker1.DoWork += backgroundWorker1_DoWork;
+            // 
             // Dashboard
             // 
             AutoScaleMode = AutoScaleMode.None;
@@ -48,5 +53,6 @@
         #endregion
 
         private Sunny.UI.UITextBox uiTextBox1;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }
