@@ -379,9 +379,9 @@ namespace TApp.Views.Dashboard
             }
 
             FD_Globals.ActiveSet.Add(data); // Update RAM
-            
-            
-            
+
+
+
             Send_Result_To_PLC(e_PLC_Result.Pass);
             Send_Result_Content(e_Production_Status.Pass, data);
 
@@ -452,7 +452,7 @@ namespace TApp.Views.Dashboard
         {
             while (!WK_Dequeue.CancellationPending)
             {
-                
+
                 try
                 {
                     dem1++;
@@ -481,7 +481,7 @@ namespace TApp.Views.Dashboard
             while (!WK_Load_Counter.CancellationPending)
             {
                 UpdateCountersFromPLC();
-               // UpdateProductionPerHour();
+                // UpdateProductionPerHour();
                 Thread.Sleep(1000);
             }
         }
@@ -497,7 +497,7 @@ namespace TApp.Views.Dashboard
             using (var dialog = new DChangeBatch())
             {
                 dialog.BatchCode = ipBatchNo.Text.Trim();
-                
+
                 dialog.Barcode = ipBarcode.Text.Trim();
                 dialog.CurrentUser = GlobalVarialbles.CurrentUser;
                 dialog.bt = erP_Google2.LoadExcelToProductListD(AppConfigs.Current.production_list_path);
@@ -866,7 +866,7 @@ namespace TApp.Views.Dashboard
             {
                 throw new Exception($"Lỗi ghi bản ghi sản xuất QUEUE RECORD: {ex.Message}");
             }
-            
+
         }
 
         private void ProcessQueueActive()
@@ -886,7 +886,7 @@ namespace TApp.Views.Dashboard
 
         private void UpdateCountersFromPLC()
         {
-            if(GlobalVarialbles.CurrentAppState == e_AppState.Ready)
+            if (GlobalVarialbles.CurrentAppState == e_AppState.Ready)
             {
                 omronPLC_Hsl1.Ready = 1;
             }
@@ -894,7 +894,7 @@ namespace TApp.Views.Dashboard
             {
                 omronPLC_Hsl1.Ready = 0;
             }
-           // GlobalVarialbles.CurrentAppState
+            // GlobalVarialbles.CurrentAppState
             OperateResult<int[]> result = omronPLC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Total_Count_DM"), 5);
             if (result.IsSuccess)
             {
@@ -921,10 +921,10 @@ namespace TApp.Views.Dashboard
                 // Mode 1: Kiểm tra nếu sản phẩm cuối cách thời gian hiện tại > timeout thì cho tốc độ = 0
                 int resetTimeout = AppConfigs.Current.Production_Speed_Reset_Timeout;
                 if (resetTimeout <= 0) resetTimeout = 30; // Default 30s
-                
+
                 long currentMs = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 long lastMs = FD_Globals.productionData.LastProductTimestampMs;
-                
+
                 if (lastMs > 0)
                 {
                     double diffSeconds = (currentMs - lastMs) / 1000.0;
@@ -1045,7 +1045,11 @@ namespace TApp.Views.Dashboard
         }
         #endregion
 
-        
+
+        private void uiTableLayoutPanel8_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
     }
 
     #region Nested Types

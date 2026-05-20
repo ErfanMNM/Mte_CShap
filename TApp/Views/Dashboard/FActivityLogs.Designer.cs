@@ -60,12 +60,6 @@ namespace TApp.Views.Dashboard
             uiTableLayoutPanel3.SuspendLayout();
             SuspendLayout();
             // 
-            // WK_AutoLog
-            // 
-            //WK_AutoLog.WorkerReportsProgress = true;
-            //WK_AutoLog.WorkerSupportsCancellation = true;
-            //WK_AutoLog.DoWork += WK_AutoLog_DoWork;
-            // 
             // WK_Getlogs
             // 
             WK_Getlogs.WorkerReportsProgress = true;
@@ -84,7 +78,7 @@ namespace TApp.Views.Dashboard
             uiTitlePanel1.Name = "uiTitlePanel1";
             uiTitlePanel1.Padding = new Padding(1, 50, 1, 1);
             uiTitlePanel1.ShowText = false;
-            uiTitlePanel1.Size = new Size(840, 674);
+            uiTitlePanel1.Size = new Size(1748, 991);
             uiTitlePanel1.TabIndex = 0;
             uiTitlePanel1.Text = "NHẬT KÝ HOẠT ĐỘNG NGƯỜI DÙNG";
             uiTitlePanel1.TextAlignment = ContentAlignment.MiddleCenter;
@@ -100,9 +94,9 @@ namespace TApp.Views.Dashboard
             uiTableLayoutPanel1.Location = new Point(1, 50);
             uiTableLayoutPanel1.Name = "uiTableLayoutPanel1";
             uiTableLayoutPanel1.RowCount = 2;
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 80.41734F));
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 19.58266F));
-            uiTableLayoutPanel1.Size = new Size(838, 623);
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 85.42553F));
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 14.5744677F));
+            uiTableLayoutPanel1.Size = new Size(1746, 940);
             uiTableLayoutPanel1.TabIndex = 0;
             uiTableLayoutPanel1.TagString = null;
             // 
@@ -156,7 +150,7 @@ namespace TApp.Views.Dashboard
             opDataG.RowsDefaultCellStyle = dataGridViewCellStyle5;
             opDataG.ScrollMode = Sunny.UI.UIDataGridView.UIDataGridViewScrollMode.Page;
             opDataG.SelectedIndex = -1;
-            opDataG.Size = new Size(832, 495);
+            opDataG.Size = new Size(1740, 797);
             opDataG.StripeOddColor = Color.FromArgb(235, 243, 255);
             opDataG.TabIndex = 0;
             // 
@@ -167,26 +161,26 @@ namespace TApp.Views.Dashboard
             uiTableLayoutPanel2.Controls.Add(uiTableLayoutPanel4, 0, 1);
             uiTableLayoutPanel2.Controls.Add(uiTableLayoutPanel3, 0, 0);
             uiTableLayoutPanel2.Dock = DockStyle.Fill;
-            uiTableLayoutPanel2.Location = new Point(3, 504);
+            uiTableLayoutPanel2.Location = new Point(3, 806);
             uiTableLayoutPanel2.Name = "uiTableLayoutPanel2";
             uiTableLayoutPanel2.RowCount = 2;
-            uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 44.82759F));
-            uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 55.17241F));
-            uiTableLayoutPanel2.Size = new Size(832, 116);
+            uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 37.9888268F));
+            uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 62.0111732F));
+            uiTableLayoutPanel2.Size = new Size(1740, 131);
             uiTableLayoutPanel2.TabIndex = 1;
             uiTableLayoutPanel2.TagString = null;
             // 
             // uiTableLayoutPanel4
             // 
             uiTableLayoutPanel4.ColumnCount = 8;
-            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60F));
-            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60F));
-            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60F));
-            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
+            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 147F));
+            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 139F));
+            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 136F));
+            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 396F));
             uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220F));
-            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 80F));
-            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90F));
+            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 279F));
+            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 131F));
+            uiTableLayoutPanel4.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 113F));
             uiTableLayoutPanel4.Controls.Add(btnGetAll, 7, 0);
             uiTableLayoutPanel4.Controls.Add(ipDateFrom, 3, 0);
             uiTableLayoutPanel4.Controls.Add(btnExportCsv, 1, 0);
@@ -196,11 +190,11 @@ namespace TApp.Views.Dashboard
             uiTableLayoutPanel4.Controls.Add(ipDateTo, 4, 0);
             uiTableLayoutPanel4.Controls.Add(btnRefresh, 2, 0);
             uiTableLayoutPanel4.Dock = DockStyle.Fill;
-            uiTableLayoutPanel4.Location = new Point(3, 55);
+            uiTableLayoutPanel4.Location = new Point(3, 52);
             uiTableLayoutPanel4.Name = "uiTableLayoutPanel4";
             uiTableLayoutPanel4.RowCount = 1;
             uiTableLayoutPanel4.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel4.Size = new Size(826, 58);
+            uiTableLayoutPanel4.Size = new Size(1734, 76);
             uiTableLayoutPanel4.TabIndex = 1;
             uiTableLayoutPanel4.TagString = null;
             // 
@@ -210,12 +204,12 @@ namespace TApp.Views.Dashboard
             btnGetAll.Dock = DockStyle.Fill;
             btnGetAll.FillColor = Color.Aquamarine;
             btnGetAll.Font = new Font("Microsoft Sans Serif", 12F);
-            btnGetAll.Location = new Point(739, 3);
+            btnGetAll.Location = new Point(1624, 3);
             btnGetAll.MinimumSize = new Size(1, 1);
             btnGetAll.Name = "btnGetAll";
             btnGetAll.RectColor = Color.Blue;
             btnGetAll.RectSize = 2;
-            btnGetAll.Size = new Size(84, 52);
+            btnGetAll.Size = new Size(107, 70);
             btnGetAll.Symbol = 559775;
             btnGetAll.SymbolColor = Color.MediumBlue;
             btnGetAll.SymbolSize = 30;
@@ -229,7 +223,7 @@ namespace TApp.Views.Dashboard
             ipDateFrom.Dock = DockStyle.Fill;
             ipDateFrom.FillColor = Color.White;
             ipDateFrom.Font = new Font("Microsoft Sans Serif", 12F);
-            ipDateFrom.Location = new Point(182, 2);
+            ipDateFrom.Location = new Point(424, 2);
             ipDateFrom.Margin = new Padding(2);
             ipDateFrom.MaxLength = 10;
             ipDateFrom.MinimumSize = new Size(63, 0);
@@ -237,7 +231,7 @@ namespace TApp.Views.Dashboard
             ipDateFrom.Padding = new Padding(0, 0, 30, 2);
             ipDateFrom.RectColor = Color.Blue;
             ipDateFrom.RectSize = 2;
-            ipDateFrom.Size = new Size(116, 54);
+            ipDateFrom.Size = new Size(392, 72);
             ipDateFrom.SymbolDropDown = 61555;
             ipDateFrom.SymbolNormal = 61555;
             ipDateFrom.SymbolSize = 24;
@@ -253,13 +247,13 @@ namespace TApp.Views.Dashboard
             btnExportCsv.Dock = DockStyle.Fill;
             btnExportCsv.FillColor = Color.WhiteSmoke;
             btnExportCsv.Font = new Font("Microsoft Sans Serif", 12F);
-            btnExportCsv.Location = new Point(62, 2);
+            btnExportCsv.Location = new Point(149, 2);
             btnExportCsv.Margin = new Padding(2);
             btnExportCsv.MinimumSize = new Size(1, 1);
             btnExportCsv.Name = "btnExportCsv";
             btnExportCsv.RectColor = Color.Blue;
             btnExportCsv.RectSize = 2;
-            btnExportCsv.Size = new Size(56, 54);
+            btnExportCsv.Size = new Size(135, 72);
             btnExportCsv.Symbol = 363197;
             btnExportCsv.SymbolColor = Color.Green;
             btnExportCsv.SymbolSize = 50;
@@ -279,7 +273,7 @@ namespace TApp.Views.Dashboard
             btnExportPDF.Name = "btnExportPDF";
             btnExportPDF.RectColor = Color.Blue;
             btnExportPDF.RectSize = 2;
-            btnExportPDF.Size = new Size(56, 54);
+            btnExportPDF.Size = new Size(143, 72);
             btnExportPDF.Symbol = 261889;
             btnExportPDF.SymbolColor = Color.FromArgb(255, 128, 0);
             btnExportPDF.SymbolSize = 50;
@@ -293,12 +287,12 @@ namespace TApp.Views.Dashboard
             btnGetLogs.Dock = DockStyle.Fill;
             btnGetLogs.FillColor = Color.Aquamarine;
             btnGetLogs.Font = new Font("Microsoft Sans Serif", 12F);
-            btnGetLogs.Location = new Point(659, 3);
+            btnGetLogs.Location = new Point(1493, 3);
             btnGetLogs.MinimumSize = new Size(1, 1);
             btnGetLogs.Name = "btnGetLogs";
             btnGetLogs.RectColor = Color.Blue;
             btnGetLogs.RectSize = 2;
-            btnGetLogs.Size = new Size(74, 52);
+            btnGetLogs.Size = new Size(125, 70);
             btnGetLogs.Symbol = 61473;
             btnGetLogs.SymbolColor = Color.MediumBlue;
             btnGetLogs.SymbolSize = 30;
@@ -315,7 +309,7 @@ namespace TApp.Views.Dashboard
             ipLogType.Font = new Font("Microsoft Sans Serif", 12F);
             ipLogType.ItemHoverColor = Color.FromArgb(155, 200, 255);
             ipLogType.ItemSelectForeColor = Color.FromArgb(235, 243, 255);
-            ipLogType.Location = new Point(438, 2);
+            ipLogType.Location = new Point(1213, 2);
             ipLogType.Margin = new Padding(2);
             ipLogType.MaxDropDownItems = 16;
             ipLogType.MinimumSize = new Size(63, 0);
@@ -323,7 +317,7 @@ namespace TApp.Views.Dashboard
             ipLogType.Padding = new Padding(0, 0, 30, 2);
             ipLogType.RectColor = Color.Blue;
             ipLogType.RectSize = 2;
-            ipLogType.Size = new Size(216, 54);
+            ipLogType.Size = new Size(275, 72);
             ipLogType.SymbolSize = 24;
             ipLogType.TabIndex = 5;
             ipLogType.TextAlignment = ContentAlignment.MiddleLeft;
@@ -335,7 +329,7 @@ namespace TApp.Views.Dashboard
             ipDateTo.Dock = DockStyle.Fill;
             ipDateTo.FillColor = Color.White;
             ipDateTo.Font = new Font("Microsoft Sans Serif", 12F);
-            ipDateTo.Location = new Point(302, 2);
+            ipDateTo.Location = new Point(820, 2);
             ipDateTo.Margin = new Padding(2);
             ipDateTo.MaxLength = 10;
             ipDateTo.MinimumSize = new Size(63, 0);
@@ -343,7 +337,7 @@ namespace TApp.Views.Dashboard
             ipDateTo.Padding = new Padding(0, 0, 30, 2);
             ipDateTo.RectColor = Color.Blue;
             ipDateTo.RectSize = 2;
-            ipDateTo.Size = new Size(132, 54);
+            ipDateTo.Size = new Size(389, 72);
             ipDateTo.SymbolDropDown = 61555;
             ipDateTo.SymbolNormal = 61555;
             ipDateTo.SymbolSize = 24;
@@ -359,13 +353,13 @@ namespace TApp.Views.Dashboard
             btnRefresh.Dock = DockStyle.Fill;
             btnRefresh.FillColor = Color.WhiteSmoke;
             btnRefresh.Font = new Font("Microsoft Sans Serif", 12F);
-            btnRefresh.Location = new Point(122, 2);
+            btnRefresh.Location = new Point(288, 2);
             btnRefresh.Margin = new Padding(2);
             btnRefresh.MinimumSize = new Size(1, 1);
             btnRefresh.Name = "btnRefresh";
             btnRefresh.RectColor = Color.Blue;
             btnRefresh.RectSize = 2;
-            btnRefresh.Size = new Size(56, 54);
+            btnRefresh.Size = new Size(132, 72);
             btnRefresh.Symbol = 61473;
             btnRefresh.SymbolColor = Color.Blue;
             btnRefresh.SymbolSize = 50;
@@ -387,7 +381,7 @@ namespace TApp.Views.Dashboard
             uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
             uiTableLayoutPanel3.RowCount = 1;
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel3.Size = new Size(826, 46);
+            uiTableLayoutPanel3.Size = new Size(1734, 43);
             uiTableLayoutPanel3.TabIndex = 0;
             uiTableLayoutPanel3.TagString = null;
             // 
@@ -401,12 +395,12 @@ namespace TApp.Views.Dashboard
             ipSize.ItemHoverColor = Color.FromArgb(155, 200, 255);
             ipSize.Items.AddRange(new object[] { "10", "20", "50", "100", "500", "1000" });
             ipSize.ItemSelectForeColor = Color.FromArgb(235, 243, 255);
-            ipSize.Location = new Point(605, 5);
+            ipSize.Location = new Point(1513, 5);
             ipSize.Margin = new Padding(4, 5, 4, 5);
             ipSize.MinimumSize = new Size(63, 0);
             ipSize.Name = "ipSize";
             ipSize.Padding = new Padding(0, 0, 30, 2);
-            ipSize.Size = new Size(85, 36);
+            ipSize.Size = new Size(85, 33);
             ipSize.SymbolSize = 24;
             ipSize.TabIndex = 1;
             ipSize.Text = "50";
@@ -427,7 +421,7 @@ namespace TApp.Views.Dashboard
             uiPagination1.PageSize = 50;
             uiPagination1.RectSides = ToolStripStatusLabelBorderSides.None;
             uiPagination1.ShowText = false;
-            uiPagination1.Size = new Size(593, 36);
+            uiPagination1.Size = new Size(1501, 33);
             uiPagination1.TabIndex = 0;
             uiPagination1.Text = "uiPagination1";
             uiPagination1.TextAlignment = ContentAlignment.MiddleCenter;
@@ -438,11 +432,11 @@ namespace TApp.Views.Dashboard
             // 
             opTotalCount.Dock = DockStyle.Fill;
             opTotalCount.Font = new Font("Microsoft Sans Serif", 12F);
-            opTotalCount.Location = new Point(698, 5);
+            opTotalCount.Location = new Point(1606, 5);
             opTotalCount.Margin = new Padding(4, 5, 4, 5);
             opTotalCount.MinimumSize = new Size(1, 1);
             opTotalCount.Name = "opTotalCount";
-            opTotalCount.Size = new Size(124, 36);
+            opTotalCount.Size = new Size(124, 33);
             opTotalCount.TabIndex = 2;
             opTotalCount.Text = "0";
             opTotalCount.TextAlignment = ContentAlignment.MiddleCenter;
@@ -450,12 +444,11 @@ namespace TApp.Views.Dashboard
             // FActivityLogs
             // 
             AutoScaleMode = AutoScaleMode.None;
-            ClientSize = new Size(840, 674);
+            ClientSize = new Size(1748, 991);
             Controls.Add(uiTitlePanel1);
             Name = "FActivityLogs";
             Symbol = 57591;
             Text = "Nhật ký";
-           // Initialize += FActivityLogs_Initialize;
             uiTitlePanel1.ResumeLayout(false);
             uiTableLayoutPanel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)opDataG).EndInit();
