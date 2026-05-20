@@ -287,14 +287,14 @@
             // uiPanel2
             // 
             uiPanel2.FillColor = Color.Transparent;
-            uiPanel2.Font = new Font("Tahoma", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            uiPanel2.Font = new Font("Tahoma", 24F, FontStyle.Bold, GraphicsUnit.Point, 0);
             uiPanel2.ForeColor = Color.MediumBlue;
             uiPanel2.Location = new Point(271, 0);
             uiPanel2.Margin = new Padding(4, 5, 4, 5);
             uiPanel2.MinimumSize = new Size(1, 1);
             uiPanel2.Name = "uiPanel2";
             uiPanel2.RectColor = Color.Transparent;
-            uiPanel2.Size = new Size(599, 66);
+            uiPanel2.Size = new Size(1450, 66);
             uiPanel2.TabIndex = 2;
             uiPanel2.Text = "PHẦN MỀM KÍCH HOẠT MÃ QR";
             uiPanel2.TextAlignment = ContentAlignment.MiddleCenter;
