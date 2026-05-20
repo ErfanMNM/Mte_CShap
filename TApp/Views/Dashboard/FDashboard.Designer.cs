@@ -578,7 +578,7 @@
             tabPage2.Controls.Add(uiListBox1);
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(200, 60);
+            tabPage2.Size = new Size(1118, 674);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Kiểm tra lỗi";
             tabPage2.UseVisualStyleBackColor = true;
@@ -595,7 +595,7 @@
             uiListBox1.Name = "uiListBox1";
             uiListBox1.Padding = new Padding(2);
             uiListBox1.ShowText = false;
-            uiListBox1.Size = new Size(200, 60);
+            uiListBox1.Size = new Size(1118, 674);
             uiListBox1.TabIndex = 0;
             uiListBox1.Text = "uiListBox1";
             // 
