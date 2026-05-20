@@ -18,7 +18,7 @@ using TTManager.Diaglogs;
 
 namespace TApp.Views.Settings
 {
-    
+
 
     public partial class PLCSetting : UIPage
     {
@@ -307,7 +307,10 @@ namespace TApp.Views.Settings
             {
                 CommunicationPipe = new HslCommunication.Core.Pipe.PipeUdpNet(ipCPLCIP.Text, ipCPLPort.Text.ToInt()) { ReceiveTimeOut = 5000 },
                 PlcType = HslCommunication.Profinet.Omron.OmronPlcType.CSCJ,
-                SA1 = 1, GCT = 2, DA1 = 0, SID = 0,
+                SA1 = 1,
+                GCT = 2,
+                DA1 = 0,
+                SID = 0,
                 ByteTransform = { DataFormat = HslCommunication.Core.DataFormat.CDAB, IsStringReverseByteWord = true }
             };
         }
@@ -345,6 +348,16 @@ namespace TApp.Views.Settings
             }
         }
         #endregion
+
+        private void backgroundWorker2_DoWork(object sender, DoWorkEventArgs e)
+        {
+
+        }
+
+        private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        {
+
+        }
     }
 
     #region RecipeManager Class

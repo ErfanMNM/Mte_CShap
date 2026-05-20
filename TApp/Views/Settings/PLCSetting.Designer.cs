@@ -88,14 +88,14 @@
             // 
             // backgroundWorker1
             // 
-           // backgroundWorker1.DoWork += backgroundWorker1_DoWork;
+            backgroundWorker1.DoWork += backgroundWorker1_DoWork;
             // 
             // tabPage3
             // 
             tabPage3.Controls.Add(uiTableLayoutPanel10);
             tabPage3.Location = new Point(0, 40);
             tabPage3.Name = "tabPage3";
-            tabPage3.Size = new Size(840, 612);
+            tabPage3.Size = new Size(200, 60);
             tabPage3.TabIndex = 2;
             tabPage3.Text = "Tùy Chỉnh";
             tabPage3.UseVisualStyleBackColor = true;
@@ -305,7 +305,6 @@
             uiTableLayoutPanel1.Size = new Size(840, 612);
             uiTableLayoutPanel1.TabIndex = 0;
             uiTableLayoutPanel1.TagString = null;
-            //uiTableLayoutPanel1.Paint += uiTableLayoutPanel1_Paint;
             // 
             // uiTitlePanel2
             // 
@@ -738,6 +737,10 @@
             omronplC_Hsl1.PLC_STATUS = TTManager.PLCHelpers.OmronPLC_Hsl.PLCStatus.Disconnect;
             omronplC_Hsl1.Ready = 0;
             omronplC_Hsl1.Time_Update = 300;
+            // 
+            // backgroundWorker2
+            // 
+            backgroundWorker2.DoWork += backgroundWorker2_DoWork;
             // 
             // PLCSetting
             // 
