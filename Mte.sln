@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MHG_Printer", "MHG_Printer\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserTool", "UserTool\UserTool.csproj", "{99A05B07-4C6C-4935-B9D9-08E08E52F644}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TSo", "TSo\TSo.csproj", "{A6D4B9FD-BACE-425D-B419-84D254A9C803}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -127,6 +129,18 @@ Global
 		{99A05B07-4C6C-4935-B9D9-08E08E52F644}.Release|x64.Build.0 = Release|Any CPU
 		{99A05B07-4C6C-4935-B9D9-08E08E52F644}.Release|x86.ActiveCfg = Release|Any CPU
 		{99A05B07-4C6C-4935-B9D9-08E08E52F644}.Release|x86.Build.0 = Release|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Debug|x64.Build.0 = Debug|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Debug|x86.Build.0 = Debug|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Release|x64.ActiveCfg = Release|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Release|x64.Build.0 = Release|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Release|x86.ActiveCfg = Release|Any CPU
+		{A6D4B9FD-BACE-425D-B419-84D254A9C803}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
