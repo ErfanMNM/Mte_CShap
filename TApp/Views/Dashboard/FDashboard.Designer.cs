@@ -56,6 +56,13 @@
             tabPage2 = new TabPage();
             uiListBox1 = new Sunny.UI.UIListBox();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
+            uiTableLayoutPanel12 = new Sunny.UI.UITableLayoutPanel();
+            btnChangeBatch = new Sunny.UI.UISymbolButton();
+            btnScan = new Sunny.UI.UISymbolButton();
+            uiSymbolButton3 = new Sunny.UI.UISymbolButton();
+            btnPLCSetting = new Sunny.UI.UISymbolButton();
+            btnClearPLC = new Sunny.UI.UISymbolButton();
+            btnResetCounterPLC = new Sunny.UI.UISymbolButton();
             uiTitlePanel4 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel11 = new Sunny.UI.UITableLayoutPanel();
             opLineName = new Sunny.UI.UITextBox();
@@ -99,13 +106,6 @@
             erP_Google2 = new TTManager.Masan.ERP_Google(components);
             WK_Dequeue = new System.ComponentModel.BackgroundWorker();
             WK_Load_Counter = new System.ComponentModel.BackgroundWorker();
-            uiTableLayoutPanel12 = new Sunny.UI.UITableLayoutPanel();
-            btnChangeBatch = new Sunny.UI.UISymbolButton();
-            btnScan = new Sunny.UI.UISymbolButton();
-            uiSymbolButton3 = new Sunny.UI.UISymbolButton();
-            btnPLCSetting = new Sunny.UI.UISymbolButton();
-            btnClearPLC = new Sunny.UI.UISymbolButton();
-            btnResetCounterPLC = new Sunny.UI.UISymbolButton();
             MainPanel.SuspendLayout();
             uiTableLayoutPanel15.SuspendLayout();
             uiTitlePanel17.SuspendLayout();
@@ -123,6 +123,7 @@
             tabPage1.SuspendLayout();
             tabPage2.SuspendLayout();
             uiTableLayoutPanel1.SuspendLayout();
+            uiTableLayoutPanel12.SuspendLayout();
             uiTitlePanel4.SuspendLayout();
             uiTableLayoutPanel11.SuspendLayout();
             uiTableLayoutPanel14.SuspendLayout();
@@ -140,7 +141,6 @@
             uiTableLayoutPanel6.SuspendLayout();
             uiTitlePanel8.SuspendLayout();
             uiTableLayoutPanel5.SuspendLayout();
-            uiTableLayoutPanel12.SuspendLayout();
             SuspendLayout();
             // 
             // MainPanel
@@ -578,7 +578,7 @@
             tabPage2.Controls.Add(uiListBox1);
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(1118, 674);
+            tabPage2.Size = new Size(200, 60);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Kiểm tra lỗi";
             tabPage2.UseVisualStyleBackColor = true;
@@ -595,7 +595,7 @@
             uiListBox1.Name = "uiListBox1";
             uiListBox1.Padding = new Padding(2);
             uiListBox1.ShowText = false;
-            uiListBox1.Size = new Size(1118, 674);
+            uiListBox1.Size = new Size(200, 60);
             uiListBox1.TabIndex = 0;
             uiListBox1.Text = "uiListBox1";
             // 
@@ -616,6 +616,118 @@
             uiTableLayoutPanel1.Size = new Size(618, 748);
             uiTableLayoutPanel1.TabIndex = 3;
             uiTableLayoutPanel1.TagString = null;
+            // 
+            // uiTableLayoutPanel12
+            // 
+            uiTableLayoutPanel12.ColumnCount = 3;
+            uiTableLayoutPanel12.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            uiTableLayoutPanel12.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            uiTableLayoutPanel12.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            uiTableLayoutPanel12.Controls.Add(btnChangeBatch, 0, 0);
+            uiTableLayoutPanel12.Controls.Add(btnScan, 1, 0);
+            uiTableLayoutPanel12.Controls.Add(uiSymbolButton3, 2, 0);
+            uiTableLayoutPanel12.Controls.Add(btnPLCSetting, 2, 1);
+            uiTableLayoutPanel12.Controls.Add(btnClearPLC, 1, 1);
+            uiTableLayoutPanel12.Controls.Add(btnResetCounterPLC, 0, 1);
+            uiTableLayoutPanel12.Dock = DockStyle.Fill;
+            uiTableLayoutPanel12.Location = new Point(2, 567);
+            uiTableLayoutPanel12.Margin = new Padding(2);
+            uiTableLayoutPanel12.Name = "uiTableLayoutPanel12";
+            uiTableLayoutPanel12.RowCount = 2;
+            uiTableLayoutPanel12.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel12.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel12.Size = new Size(614, 179);
+            uiTableLayoutPanel12.TabIndex = 7;
+            uiTableLayoutPanel12.TagString = null;
+            // 
+            // btnChangeBatch
+            // 
+            btnChangeBatch.Dock = DockStyle.Fill;
+            btnChangeBatch.FillColor = Color.Teal;
+            btnChangeBatch.Font = new Font("Microsoft Sans Serif", 12F);
+            btnChangeBatch.Location = new Point(2, 2);
+            btnChangeBatch.Margin = new Padding(2);
+            btnChangeBatch.MinimumSize = new Size(1, 1);
+            btnChangeBatch.Name = "btnChangeBatch";
+            btnChangeBatch.Size = new Size(200, 85);
+            btnChangeBatch.Symbol = 559202;
+            btnChangeBatch.TabIndex = 0;
+            btnChangeBatch.Text = "Đổi lô";
+            btnChangeBatch.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            // 
+            // btnScan
+            // 
+            btnScan.Dock = DockStyle.Fill;
+            btnScan.Font = new Font("Microsoft Sans Serif", 12F);
+            btnScan.Location = new Point(206, 2);
+            btnScan.Margin = new Padding(2);
+            btnScan.MinimumSize = new Size(1, 1);
+            btnScan.Name = "btnScan";
+            btnScan.Size = new Size(200, 85);
+            btnScan.Symbol = 563580;
+            btnScan.TabIndex = 0;
+            btnScan.Text = "Quét mã";
+            btnScan.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            // 
+            // uiSymbolButton3
+            // 
+            uiSymbolButton3.Dock = DockStyle.Fill;
+            uiSymbolButton3.FillColor = Color.Green;
+            uiSymbolButton3.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolButton3.Location = new Point(410, 2);
+            uiSymbolButton3.Margin = new Padding(2);
+            uiSymbolButton3.MinimumSize = new Size(1, 1);
+            uiSymbolButton3.Name = "uiSymbolButton3";
+            uiSymbolButton3.Size = new Size(202, 85);
+            uiSymbolButton3.Symbol = 557670;
+            uiSymbolButton3.TabIndex = 0;
+            uiSymbolButton3.Text = "Thêm mã";
+            uiSymbolButton3.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            // 
+            // btnPLCSetting
+            // 
+            btnPLCSetting.Dock = DockStyle.Fill;
+            btnPLCSetting.FillColor = Color.FromArgb(255, 128, 255);
+            btnPLCSetting.Font = new Font("Microsoft Sans Serif", 12F);
+            btnPLCSetting.Location = new Point(410, 91);
+            btnPLCSetting.Margin = new Padding(2);
+            btnPLCSetting.MinimumSize = new Size(1, 1);
+            btnPLCSetting.Name = "btnPLCSetting";
+            btnPLCSetting.Size = new Size(202, 86);
+            btnPLCSetting.Symbol = 61573;
+            btnPLCSetting.TabIndex = 0;
+            btnPLCSetting.Text = "Cài PLC";
+            btnPLCSetting.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            // 
+            // btnClearPLC
+            // 
+            btnClearPLC.Dock = DockStyle.Fill;
+            btnClearPLC.FillColor = Color.FromArgb(192, 192, 0);
+            btnClearPLC.Font = new Font("Microsoft Sans Serif", 12F);
+            btnClearPLC.Location = new Point(206, 91);
+            btnClearPLC.Margin = new Padding(2);
+            btnClearPLC.MinimumSize = new Size(1, 1);
+            btnClearPLC.Name = "btnClearPLC";
+            btnClearPLC.Size = new Size(200, 86);
+            btnClearPLC.Symbol = 561647;
+            btnClearPLC.TabIndex = 0;
+            btnClearPLC.Text = "Xóa lỗi";
+            btnClearPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            // 
+            // btnResetCounterPLC
+            // 
+            btnResetCounterPLC.Dock = DockStyle.Fill;
+            btnResetCounterPLC.FillColor = Color.FromArgb(255, 128, 0);
+            btnResetCounterPLC.Font = new Font("Microsoft Sans Serif", 12F);
+            btnResetCounterPLC.Location = new Point(2, 91);
+            btnResetCounterPLC.Margin = new Padding(2);
+            btnResetCounterPLC.MinimumSize = new Size(1, 1);
+            btnResetCounterPLC.Name = "btnResetCounterPLC";
+            btnResetCounterPLC.Size = new Size(200, 86);
+            btnResetCounterPLC.Symbol = 62067;
+            btnResetCounterPLC.TabIndex = 0;
+            btnResetCounterPLC.Text = "Xóa đếm";
+            btnResetCounterPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
             // uiTitlePanel4
             // 
@@ -1133,7 +1245,6 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(146, 3);
             opPLCLed.Name = "opPLCLed";
-            opPLCLed.On = false;
             opPLCLed.Size = new Size(51, 50);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";
@@ -1252,118 +1363,6 @@
             WK_Load_Counter.WorkerSupportsCancellation = true;
             WK_Load_Counter.DoWork += WK_Load_PLC_DoWork;
             // 
-            // uiTableLayoutPanel12
-            // 
-            uiTableLayoutPanel12.ColumnCount = 3;
-            uiTableLayoutPanel12.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
-            uiTableLayoutPanel12.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
-            uiTableLayoutPanel12.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
-            uiTableLayoutPanel12.Controls.Add(btnChangeBatch, 0, 0);
-            uiTableLayoutPanel12.Controls.Add(btnScan, 1, 0);
-            uiTableLayoutPanel12.Controls.Add(uiSymbolButton3, 2, 0);
-            uiTableLayoutPanel12.Controls.Add(btnPLCSetting, 2, 1);
-            uiTableLayoutPanel12.Controls.Add(btnClearPLC, 1, 1);
-            uiTableLayoutPanel12.Controls.Add(btnResetCounterPLC, 0, 1);
-            uiTableLayoutPanel12.Dock = DockStyle.Fill;
-            uiTableLayoutPanel12.Location = new Point(2, 567);
-            uiTableLayoutPanel12.Margin = new Padding(2);
-            uiTableLayoutPanel12.Name = "uiTableLayoutPanel12";
-            uiTableLayoutPanel12.RowCount = 2;
-            uiTableLayoutPanel12.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel12.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel12.Size = new Size(614, 179);
-            uiTableLayoutPanel12.TabIndex = 7;
-            uiTableLayoutPanel12.TagString = null;
-            // 
-            // btnChangeBatch
-            // 
-            btnChangeBatch.Dock = DockStyle.Fill;
-            btnChangeBatch.FillColor = Color.Teal;
-            btnChangeBatch.Font = new Font("Microsoft Sans Serif", 12F);
-            btnChangeBatch.Location = new Point(2, 2);
-            btnChangeBatch.Margin = new Padding(2);
-            btnChangeBatch.MinimumSize = new Size(1, 1);
-            btnChangeBatch.Name = "btnChangeBatch";
-            btnChangeBatch.Size = new Size(200, 85);
-            btnChangeBatch.Symbol = 559202;
-            btnChangeBatch.TabIndex = 0;
-            btnChangeBatch.Text = "Đổi lô";
-            btnChangeBatch.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            // 
-            // btnScan
-            // 
-            btnScan.Dock = DockStyle.Fill;
-            btnScan.Font = new Font("Microsoft Sans Serif", 12F);
-            btnScan.Location = new Point(206, 2);
-            btnScan.Margin = new Padding(2);
-            btnScan.MinimumSize = new Size(1, 1);
-            btnScan.Name = "btnScan";
-            btnScan.Size = new Size(200, 85);
-            btnScan.Symbol = 563580;
-            btnScan.TabIndex = 0;
-            btnScan.Text = "Quét mã";
-            btnScan.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            // 
-            // uiSymbolButton3
-            // 
-            uiSymbolButton3.Dock = DockStyle.Fill;
-            uiSymbolButton3.FillColor = Color.Green;
-            uiSymbolButton3.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolButton3.Location = new Point(410, 2);
-            uiSymbolButton3.Margin = new Padding(2);
-            uiSymbolButton3.MinimumSize = new Size(1, 1);
-            uiSymbolButton3.Name = "uiSymbolButton3";
-            uiSymbolButton3.Size = new Size(202, 85);
-            uiSymbolButton3.Symbol = 557670;
-            uiSymbolButton3.TabIndex = 0;
-            uiSymbolButton3.Text = "Thêm mã";
-            uiSymbolButton3.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            // 
-            // btnPLCSetting
-            // 
-            btnPLCSetting.Dock = DockStyle.Fill;
-            btnPLCSetting.FillColor = Color.FromArgb(255, 128, 255);
-            btnPLCSetting.Font = new Font("Microsoft Sans Serif", 12F);
-            btnPLCSetting.Location = new Point(410, 91);
-            btnPLCSetting.Margin = new Padding(2);
-            btnPLCSetting.MinimumSize = new Size(1, 1);
-            btnPLCSetting.Name = "btnPLCSetting";
-            btnPLCSetting.Size = new Size(202, 86);
-            btnPLCSetting.Symbol = 61573;
-            btnPLCSetting.TabIndex = 0;
-            btnPLCSetting.Text = "Cài PLC";
-            btnPLCSetting.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            // 
-            // btnClearPLC
-            // 
-            btnClearPLC.Dock = DockStyle.Fill;
-            btnClearPLC.FillColor = Color.FromArgb(192, 192, 0);
-            btnClearPLC.Font = new Font("Microsoft Sans Serif", 12F);
-            btnClearPLC.Location = new Point(206, 91);
-            btnClearPLC.Margin = new Padding(2);
-            btnClearPLC.MinimumSize = new Size(1, 1);
-            btnClearPLC.Name = "btnClearPLC";
-            btnClearPLC.Size = new Size(200, 86);
-            btnClearPLC.Symbol = 561647;
-            btnClearPLC.TabIndex = 0;
-            btnClearPLC.Text = "Xóa lỗi";
-            btnClearPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            // 
-            // btnResetCounterPLC
-            // 
-            btnResetCounterPLC.Dock = DockStyle.Fill;
-            btnResetCounterPLC.FillColor = Color.FromArgb(255, 128, 0);
-            btnResetCounterPLC.Font = new Font("Microsoft Sans Serif", 12F);
-            btnResetCounterPLC.Location = new Point(2, 91);
-            btnResetCounterPLC.Margin = new Padding(2);
-            btnResetCounterPLC.MinimumSize = new Size(1, 1);
-            btnResetCounterPLC.Name = "btnResetCounterPLC";
-            btnResetCounterPLC.Size = new Size(200, 86);
-            btnResetCounterPLC.Symbol = 62067;
-            btnResetCounterPLC.TabIndex = 0;
-            btnResetCounterPLC.Text = "Xóa đếm";
-            btnResetCounterPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            // 
             // FDashboard
             // 
             AutoScaleMode = AutoScaleMode.None;
@@ -1389,6 +1388,7 @@
             tabPage1.ResumeLayout(false);
             tabPage2.ResumeLayout(false);
             uiTableLayoutPanel1.ResumeLayout(false);
+            uiTableLayoutPanel12.ResumeLayout(false);
             uiTitlePanel4.ResumeLayout(false);
             uiTableLayoutPanel11.ResumeLayout(false);
             uiTableLayoutPanel14.ResumeLayout(false);
@@ -1406,7 +1406,6 @@
             uiTableLayoutPanel6.ResumeLayout(false);
             uiTitlePanel8.ResumeLayout(false);
             uiTableLayoutPanel5.ResumeLayout(false);
-            uiTableLayoutPanel12.ResumeLayout(false);
             ResumeLayout(false);
         }
 

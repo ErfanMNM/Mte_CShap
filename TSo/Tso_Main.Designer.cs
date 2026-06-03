@@ -40,7 +40,7 @@
             webView21.Dock = DockStyle.Fill;
             webView21.Location = new Point(0, 0);
             webView21.Name = "webView21";
-            webView21.Size = new Size(1198, 663);
+            webView21.Size = new Size(814, 535);
             webView21.TabIndex = 0;
             webView21.ZoomFactor = 1D;
             // 
@@ -48,10 +48,10 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1198, 663);
+            ClientSize = new Size(814, 535);
             Controls.Add(webView21);
             Name = "Tso_Main";
-            Text = "Form1";
+            Text = "Main";
             ((System.ComponentModel.ISupportInitialize)webView21).EndInit();
             ResumeLayout(false);
         }

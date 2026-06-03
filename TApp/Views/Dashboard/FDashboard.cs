@@ -647,88 +647,88 @@ namespace TApp.Views.Dashboard
         }
         private void btnScan_Click(object sender, EventArgs e) => ChangePage?.Invoke(1003);
         private void btnPLCSetting_Click(object sender, EventArgs e) => ChangePage?.Invoke(1005);
-        private void btnReload_Click(object sender, EventArgs e) => ReadPLCParameters();
-        private void btnUpload_Click(object sender, EventArgs e) => WritePLCParameters();
-        private void btnApply_Click(object sender, EventArgs e)
-        {
-            WritePLCParameters();
-            ReadPLCParameters();
-        }
-        private void ReadPLCParameters()
-        {
-            if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
-            {
-                this.ShowWarningTip("PLC chưa kết nối!");
-                return;
-            }
-            Task.Run(() =>
-            {
-                try
-                {
-                    this.InvokeIfRequired(() => { btnReload.Enabled = false; btnReload.Text = "Đang nạp..."; });
-                    var read = omronPLC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Delay_Camera_DM_C2"), 3);
-                    if (read.IsSuccess)
-                    {
-                        this.InvokeIfRequired(() =>
-                        {
-                            ipDelayTriger.Text = read.Content[0].ToString();
-                            ipDelayRject.Text = read.Content[1].ToString();
-                            ipRejectStreng.Text = read.Content[2].ToString();
-                        });
-                    }
-                    else
-                    {
-                        this.InvokeIfRequired(() => this.ShowErrorDialog("Đọc PLC thất bại: " + read.Message));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    this.InvokeIfRequired(() => this.ShowErrorDialog($"Lỗi khi đọc PLC: {ex.Message}"));
-                }
-                finally
-                {
-                    this.InvokeIfRequired(() => { btnReload.Enabled = true; btnReload.Text = "Nạp PLC"; });
-                }
-            });
-        }
-        private void WritePLCParameters()
-        {
-            if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
-            {
-                this.ShowWarningTip("PLC chưa kết nối!");
-                return;
-            }
-            Task.Run(() =>
-            {
-                try
-                {
-                    this.InvokeIfRequired(() => { btnUpload.Enabled = false; btnUpload.Text = "Đang ghi..."; });
-                    var values = new int[]
-                    {
-                        int.Parse(ipDelayTriger.Text),
-                        int.Parse(ipDelayRject.Text),
-                        int.Parse(ipRejectStreng.Text)
-                    };
-                    var write = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Delay_Camera_DM_C2"), values);
-                    if (write.IsSuccess)
-                    {
-                        this.InvokeIfRequired(() => this.ShowSuccessTip("Ghi PLC thành công!"));
-                    }
-                    else
-                    {
-                        this.InvokeIfRequired(() => this.ShowErrorDialog("Ghi PLC thất bại: " + write.Message));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    this.InvokeIfRequired(() => this.ShowErrorDialog($"Lỗi khi ghi PLC: {ex.Message}"));
-                }
-                finally
-                {
-                    this.InvokeIfRequired(() => { btnUpload.Enabled = true; btnUpload.Text = "Ghi PLC"; });
-                }
-            });
-        }
+        //private void btnReload_Click(object sender, EventArgs e) => ReadPLCParameters();
+        //private void btnUpload_Click(object sender, EventArgs e) => WritePLCParameters();
+        //private void btnApply_Click(object sender, EventArgs e)
+        //{
+        //    WritePLCParameters();
+        //    ReadPLCParameters();
+        //}
+        //private void ReadPLCParameters()
+        //{
+        //    if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
+        //    {
+        //        this.ShowWarningTip("PLC chưa kết nối!");
+        //        return;
+        //    }
+        //    Task.Run(() =>
+        //    {
+        //        try
+        //        {
+        //            this.InvokeIfRequired(() => { btnReload.Enabled = false; btnReload.Text = "Đang nạp..."; });
+        //            var read = omronPLC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Delay_Camera_DM_C2"), 3);
+        //            if (read.IsSuccess)
+        //            {
+        //                this.InvokeIfRequired(() =>
+        //                {
+        //                    ipDelayTriger.Text = read.Content[0].ToString();
+        //                    ipDelayRject.Text = read.Content[1].ToString();
+        //                    ipRejectStreng.Text = read.Content[2].ToString();
+        //                });
+        //            }
+        //            else
+        //            {
+        //                this.InvokeIfRequired(() => this.ShowErrorDialog("Đọc PLC thất bại: " + read.Message));
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            this.InvokeIfRequired(() => this.ShowErrorDialog($"Lỗi khi đọc PLC: {ex.Message}"));
+        //        }
+        //        finally
+        //        {
+        //            this.InvokeIfRequired(() => { btnReload.Enabled = true; btnReload.Text = "Nạp PLC"; });
+        //        }
+        //    });
+        //}
+        //private void WritePLCParameters()
+        //{
+        //    if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
+        //    {
+        //        this.ShowWarningTip("PLC chưa kết nối!");
+        //        return;
+        //    }
+        //    Task.Run(() =>
+        //    {
+        //        try
+        //        {
+        //            this.InvokeIfRequired(() => { btnUpload.Enabled = false; btnUpload.Text = "Đang ghi..."; });
+        //            var values = new int[]
+        //            {
+        //                int.Parse(ipDelayTriger.Text),
+        //                int.Parse(ipDelayRject.Text),
+        //                int.Parse(ipRejectStreng.Text)
+        //            };
+        //            var write = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Delay_Camera_DM_C2"), values);
+        //            if (write.IsSuccess)
+        //            {
+        //                this.InvokeIfRequired(() => this.ShowSuccessTip("Ghi PLC thành công!"));
+        //            }
+        //            else
+        //            {
+        //                this.InvokeIfRequired(() => this.ShowErrorDialog("Ghi PLC thất bại: " + write.Message));
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            this.InvokeIfRequired(() => this.ShowErrorDialog($"Lỗi khi ghi PLC: {ex.Message}"));
+        //        }
+        //        finally
+        //        {
+        //            this.InvokeIfRequired(() => { btnUpload.Enabled = true; btnUpload.Text = "Ghi PLC"; });
+        //        }
+        //    });
+        //}
         private void uiSymbolButton3_Click(object sender, EventArgs e) => ChangePage?.Invoke(1004);
         private void opFail_DoubleClick(object sender, EventArgs e) => this.ShowInfoDialog($"Số quá thời gian: {FD_Globals.productionData.PLC_Counter.Timeout}");
         private void opNoteCameraView_SelectedIndexChanged(object sender, EventArgs e) { /* Designer Required */ }
