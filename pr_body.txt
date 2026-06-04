@@ -1,15 +1,29 @@
 ## Summary
-- Add MHG_Printer/Infrastructure/GlobalVariables.cs with enums (e_LogType, e_AppState, e_AppRenderState)
-- Add MHG_Printer/Views/Login page with ucLogin integration and OnLoginAction event
-- Add MHG_Printer/Views/Dashboard page stub with SetDeactiveState stub method
-- Update M2_MainForm.cs with full navigation, state machine (LOGIN/ACTIVE), background workers
-- Update M2_MainForm.Designer.cs with full UI layout (NavMenu, MainTab, headNav)
-- Add MHG_Printer.csproj references and Mte.sln project reference
-- Fix TApp Login page: add OnLoginSuccess event to notify MainForm on successful login
-- Fix TApp MainForm: subscribe to Login.OnLoginSuccess to transition to ACTIVE state
+
+- Convert TSo from WinForms (WebView2) to .NET 8 Console App backend API server
+- REST API with 24 endpoints + WebSocket for real-time updates
+- Auth: login, 2FA (TOTP), session management with role-based access
+- QR: activate (from camera), manual add, search, deactivate
+- Batch: management, Excel ERP loader, batch history
+- Devices: PLC (Omron FINS/UDP), Camera (TCP socket), Scanner (Serial port)
+- Database: SQLite for QR records, users, batch history
+- Config: INI file pattern (matching TApp)
+- API documentation included for frontend team
+
+## API Base URL
+
+```
+http://localhost:5000/
+```
 
 ## Test plan
-- [ ] Build MHG_Printer project successfully
-- [ ] Build TApp project successfully
-- [ ] Verify TApp login page disappears after successful login
-- [ ] Verify MHG_Printer M2_MainForm navigation works correctly
+
+- [ ] Build: `cd TSo && dotnet build` - 0 errors
+- [ ] Run: `dotnet run` - server starts on port 5000
+- [ ] Login: POST `/api/auth/login` with default `admin / admin123`
+- [ ] Dashboard: GET `/api/dashboard` returns all counters and status
+- [ ] QR activate: POST `/api/qr/activate` with valid QR content
+- [ ] Batch change: POST `/api/batch/change` with batch code and barcode
+- [ ] WebSocket: connect to `ws://localhost:5000/` for real-time updates
+- [ ] PLC connection test (when PLC is available at 127.0.0.1:9600)
+- [ ] Camera listener on port 51236
