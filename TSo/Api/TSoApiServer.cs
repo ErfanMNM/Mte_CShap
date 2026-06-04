@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
@@ -18,11 +19,16 @@ public class TSoApiServer : IDisposable
     private readonly BatchService _batchService;
     private readonly ScannerService _scannerService;
     private readonly Logger _logger;
+
     private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _processCts;
     private Task? _serverTask;
     private Task? _processQueueTask;
-    private CancellationTokenSource? _processCts;
+    private Task? _wsBroadcastTask;
     private bool _disposed;
+
+    private readonly ConcurrentDictionary<Guid, WebSocket> _wsClients = new();
+    private readonly ConcurrentQueue<WsBroadcastEvent> _wsEventQueue = new();
 
     public TSoApiServer(
         AuthService authService,
@@ -43,6 +49,22 @@ public class TSoApiServer : IDisposable
         _logger = logger;
         _listener = new HttpListener();
         _listener.Prefixes.Add(prefix);
+
+        _qrService.OnQRActivated += record =>
+        {
+            Broadcast(new WsBroadcastEvent
+            {
+                type = "qr_activated",
+                data = new QRActivatedEvent
+                {
+                    QRContent = record.QRContent,
+                    Status = record.Status.ToString(),
+                    BatchCode = record.BatchCode,
+                    UserName = record.UserName,
+                    Timestamp = record.TimeStampActive
+                }
+            });
+        };
     }
 
     public void Start()
@@ -55,6 +77,7 @@ public class TSoApiServer : IDisposable
 
         _processCts = new CancellationTokenSource();
         _processQueueTask = Task.Run(() => ProcessQueueLoop(_processCts.Token));
+        _wsBroadcastTask = Task.Run(() => WsBroadcastLoop(_processCts.Token));
     }
 
     private async Task ServerLoop(CancellationToken ct)
@@ -208,39 +231,55 @@ public class TSoApiServer : IDisposable
     {
         try
         {
+            var clientId = Guid.NewGuid();
             var wsCtx = await ctx.AcceptWebSocketAsync(null);
+
+            _wsClients[clientId] = wsCtx.WebSocket;
+            Broadcast(new WsBroadcastEvent { type = "client_count", data = new { count = _wsClients.Count } });
+
+            _logger.Log("System", LogType.Info, $"WebSocket client connected", $"{{'ClientId':'{clientId}'}}", "INFO-WS-01");
+
             var buffer = new byte[4096];
 
-            while (wsCtx.WebSocket.State == System.Net.WebSockets.WebSocketState.Open)
+            while (wsCtx.WebSocket.State == WebSocketState.Open)
             {
-                var result = await wsCtx.WebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
-                if (result.MessageType == System.Net.WebSockets.WebSocketMessageType.Close)
+                try
                 {
-                    await wsCtx.WebSocket.CloseAsync((WebSocketCloseStatus)1000, "", CancellationToken.None);
-                    break;
-                }
+                    var result = await wsCtx.WebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
-                if (result.MessageType == System.Net.WebSockets.WebSocketMessageType.Text)
-                {
-                    var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    try
+                    if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        var msg = JsonConvert.DeserializeObject<WsIncomingMessage>(text);
-                        if (msg != null)
-                        {
-                            var response = ProcessWsMessage(msg);
-                            var responseBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(response));
-                            await wsCtx.WebSocket.SendAsync(
-                                new ArraySegment<byte>(responseBytes),
-                                System.Net.WebSockets.WebSocketMessageType.Text,
-                                true,
-                                CancellationToken.None);
-                        }
+                        await wsCtx.WebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+                        break;
                     }
-                    catch { }
+
+                    if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                        try
+                        {
+                            var msg = JsonConvert.DeserializeObject<WsIncomingMessage>(text);
+                            if (msg != null)
+                            {
+                                var response = ProcessWsMessage(msg);
+                                var responseBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(response));
+                                await wsCtx.WebSocket.SendAsync(
+                                    new ArraySegment<byte>(responseBytes),
+                                    WebSocketMessageType.Text,
+                                    true,
+                                    CancellationToken.None);
+                            }
+                        }
+                        catch { }
+                    }
                 }
+                catch (WebSocketException) { break; }
+                catch (OperationCanceledException) { break; }
             }
+
+            _wsClients.TryRemove(clientId, out _);
+            Broadcast(new WsBroadcastEvent { type = "client_count", data = new { count = _wsClients.Count } });
+            _logger.Log("System", LogType.Info, $"WebSocket client disconnected", $"{{'ClientId':'{clientId}'}}", "INFO-WS-02");
         }
         catch { }
     }
@@ -276,6 +315,64 @@ public class TSoApiServer : IDisposable
             },
             _ => new { type = "error", message = "Unknown message type" }
         };
+    }
+
+    private async Task WsBroadcastLoop(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                while (_wsEventQueue.TryDequeue(out var evt))
+                {
+                    await BroadcastEventAsync(evt);
+                }
+
+                await Task.Delay(50, ct);
+            }
+            catch (OperationCanceledException) { break; }
+            catch { }
+        }
+    }
+
+    private void Broadcast(WsBroadcastEvent evt)
+    {
+        _wsEventQueue.Enqueue(evt);
+    }
+
+    private async Task BroadcastEventAsync(WsBroadcastEvent evt)
+    {
+        if (_wsClients.IsEmpty) return;
+
+        var json = JsonConvert.SerializeObject(evt, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+        var bytes = Encoding.UTF8.GetBytes(json);
+        var segment = new ArraySegment<byte>(bytes);
+
+        var deadClients = new List<Guid>();
+
+        foreach (var (clientId, ws) in _wsClients)
+        {
+            try
+            {
+                if (ws.State == WebSocketState.Open)
+                {
+                    await ws.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+                else
+                {
+                    deadClients.Add(clientId);
+                }
+            }
+            catch
+            {
+                deadClients.Add(clientId);
+            }
+        }
+
+        foreach (var id in deadClients)
+        {
+            _wsClients.TryRemove(id, out _);
+        }
     }
 
     private async Task ProcessQueueLoop(CancellationToken ct)
@@ -351,7 +448,19 @@ public class TSoApiServer : IDisposable
     {
         var req = await ParseBody<LoginRequest>(ctx);
         if (req == null) return ApiResponse.Fail("Invalid request body");
-        return _authService.Login(req);
+
+        var resp = _authService.Login(req);
+
+        if (resp.Success)
+        {
+            Broadcast(new WsBroadcastEvent
+            {
+                type = "system_state",
+                data = new { state = "Ready", isAuthenticated = true }
+            });
+        }
+
+        return resp;
     }
 
     private async Task<object> HandleLogout(HttpListenerContext ctx)
@@ -391,6 +500,13 @@ public class TSoApiServer : IDisposable
         if (req == null) return (ApiResponse.Fail("Invalid body"), 400);
 
         var batch = _batchService.ChangeBatch(req.BatchCode, req.Barcode, session.Username);
+
+        Broadcast(new WsBroadcastEvent
+        {
+            type = "batch_changed",
+            data = batch
+        });
+
         return (ApiResponse<BatchInfo>.Ok(batch, "Batch changed"), 200);
     }
 
@@ -468,6 +584,16 @@ public class TSoApiServer : IDisposable
 
         var reason = ctx.Request.QueryString["reason"] ?? "Manual deactivation";
         var success = _qrService.DeactivateQR(req.QRContent, reason, session.Username);
+
+        if (success)
+        {
+            Broadcast(new WsBroadcastEvent
+            {
+                type = "qr_deactivated",
+                data = new { qrContent = req.QRContent, reason }
+            });
+        }
+
         return (success ? ApiResponse.Ok("Deactivated") : ApiResponse.Fail("Failed to deactivate"), success ? 200 : 400);
     }
 
@@ -515,6 +641,13 @@ public class TSoApiServer : IDisposable
         var success = _plcService.SendRejectResult(1);
         GlobalState.SystemStatus.IsDeactive = true;
         GlobalState.SystemStatus.State = "Deactive";
+
+        Broadcast(new WsBroadcastEvent
+        {
+            type = "system_state",
+            data = new { state = "Deactive", isDeactive = true }
+        });
+
         _logger.Log(session.Username, LogType.UserAction, "System deactivated via API");
         return (success ? ApiResponse.Ok("System deactivated") : ApiResponse.Fail("PLC write failed"), success ? 200 : 500);
     }
@@ -528,6 +661,13 @@ public class TSoApiServer : IDisposable
         var success = _plcService.SendRejectResult(0);
         GlobalState.SystemStatus.IsDeactive = false;
         GlobalState.SystemStatus.State = "Ready";
+
+        Broadcast(new WsBroadcastEvent
+        {
+            type = "system_state",
+            data = new { state = "Ready", isDeactive = false }
+        });
+
         _logger.Log(session.Username, LogType.UserAction, "System reactivated via API");
         return (success ? ApiResponse.Ok("System reactivated") : ApiResponse.Fail("PLC write failed"), success ? 200 : 500);
     }
@@ -647,4 +787,19 @@ public class TSoApiServer : IDisposable
     }
 
     #endregion
+}
+
+public class WsBroadcastEvent
+{
+    public string type { get; set; } = "";
+    public object? data { get; set; }
+}
+
+public class QRActivatedEvent
+{
+    public string QRContent { get; set; } = "";
+    public string Status { get; set; } = "";
+    public string BatchCode { get; set; } = "";
+    public string UserName { get; set; } = "";
+    public string Timestamp { get; set; } = "";
 }

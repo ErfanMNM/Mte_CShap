@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using TSo;
 using TSo.Configs;
 using TSo.Api;
@@ -16,8 +17,9 @@ Console.WriteLine($"Data folder: {AppConfigs.QRDatadbPath}");
 
 GlobalState.Config.Load();
 Console.WriteLine($"Server URL: {GlobalState.Config.Server_Host}");
-Console.WriteLine($"PLC IP: {GlobalState.Config.PLC_IP}:{GlobalState.Config.PLC_Port}");
+Console.WriteLine($"PLC IP: {GlobalState.Config.PLC_IP}:{GlobalState.Config.PLC_Port} (Test: {GlobalState.Config.PLC_Test_Mode})");
 Console.WriteLine($"Camera: {GlobalState.Config.Camera_01_IP}:{GlobalState.Config.Camera_01_Port}");
+Console.WriteLine($"Scanner: {GlobalState.Config.Handheld_COM_Port}");
 Console.WriteLine($"Line: {GlobalState.Config.Line_Name}");
 
 Directory.CreateDirectory(Path.GetDirectoryName(AppConfigs.QRDatadbPath)!);
@@ -59,12 +61,12 @@ scannerService.OnDataReceived += data =>
 {
     if (!GlobalState.SystemStatus.IsDeactive && GlobalState.IsAuthenticated)
     {
-        var result = qrService.ProcessManualAdd(data, GlobalState.CurrentSession?.Username ?? "Scanner");
+        qrService.ProcessManualAdd(data, GlobalState.CurrentSession?.Username ?? "Scanner");
     }
 };
 
 plcService.Connect();
-await cameraService.StartAsync();
+cameraService.Start();
 scannerService.Connect();
 
 batchService.GetCurrentBatch();
@@ -79,6 +81,62 @@ var server = new TSoApiServer(
 
 server.Start();
 Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] API server running at {GlobalState.Config.Server_Host}");
+
+var wkDequeue = new BackgroundWorker();
+wkDequeue.DoWork += (s, e) =>
+{
+    int tick = 0;
+    while (!wkDequeue.CancellationPending)
+    {
+        try
+        {
+            while (GlobalState.QueueRecord.TryDequeue(out var record))
+            {
+                QRDatabaseHelper.AddOrActivateCode(record, AppConfigs.QRDatadbPath);
+            }
+
+            while (GlobalState.QueueActive.TryDequeue(out var activeRecord))
+            {
+                QRDatabaseHelper.AddActiveCodeUnique(activeRecord, AppConfigs.ActiveUniqueDbPath);
+            }
+
+            if (GlobalState.Config.Production_Speed_Mode == 1)
+            {
+                tick++;
+                if (tick >= 20)
+                {
+                    tick = 0;
+                    UpdateProductionPerHour();
+                }
+            }
+        }
+        catch { }
+
+        Thread.Sleep(50);
+    }
+};
+wkDequeue.RunWorkerAsync();
+
 Console.WriteLine("Press Ctrl+C to stop.");
 
 await Task.Delay(Timeout.Infinite);
+
+void UpdateProductionPerHour()
+{
+    if (GlobalState.Config.Production_Speed_Mode != 1) return;
+
+    var resetTimeout = GlobalState.Config.Production_Speed_Reset_Timeout;
+    if (resetTimeout <= 0) resetTimeout = 30;
+
+    long currentMs = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+    long lastMs = GlobalState.LastProductTimestampMs;
+
+    if (lastMs > 0)
+    {
+        double diffSeconds = (currentMs - lastMs) / 1000.0;
+        if (diffSeconds > resetTimeout)
+        {
+            GlobalState.ProductionPerHour = 0;
+        }
+    }
+}

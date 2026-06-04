@@ -1,7 +1,5 @@
-using System.IO.Ports;
-using System.Text;
+using TTManager.Communication;
 using TSo.Configs;
-using TSo.Models;
 
 namespace TSo.Services;
 
@@ -11,8 +9,8 @@ public class ScannerService : IDisposable
 {
     private readonly Logger _logger;
     private readonly AppConfigs _config;
-    private SerialPort? _port;
-    private CancellationTokenSource? _cts;
+    private SerialClientHelper? _scanner;
+
     private ScannerStatus _status = ScannerStatus.Disconnected;
 
     public event Action<ScannerStatus>? OnStatusChanged;
@@ -27,6 +25,44 @@ public class ScannerService : IDisposable
         _config = config;
     }
 
+    private void Scanner_Callback(SerialClientState state, string data)
+    {
+        switch (state)
+        {
+            case SerialClientState.Connected:
+                SetStatus(ScannerStatus.Connected);
+                _logger.Log("System", LogType.DeviceAction, "Scanner connected",
+                    $"{{'Port':'{_config.Handheld_COM_Port}'}}", "INFO-SCAN-01");
+                break;
+
+            case SerialClientState.Disconnected:
+                SetStatus(ScannerStatus.Disconnected);
+                _logger.Log("System", LogType.Warning, "Scanner disconnected", data, "ERR-SCAN-01");
+                break;
+
+            case SerialClientState.Received when !string.IsNullOrWhiteSpace(data):
+                ProcessScannerData(data);
+                break;
+
+            case SerialClientState.Error:
+                SetStatus(ScannerStatus.Error);
+                _logger.Log("System", LogType.Error, "Scanner error", data, "ERR-SCAN-02");
+                break;
+        }
+    }
+
+    private void ProcessScannerData(string rawData)
+    {
+        var lines = rawData.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (string.IsNullOrEmpty(trimmed)) continue;
+            _logger.Log("Scanner", LogType.DeviceAction, $"Scanner data: {trimmed}");
+            OnDataReceived?.Invoke(trimmed);
+        }
+    }
+
     public bool Connect()
     {
         if (string.IsNullOrEmpty(_config.Handheld_COM_Port))
@@ -39,66 +75,28 @@ public class ScannerService : IDisposable
         {
             Disconnect();
 
-            _port = new SerialPort(_config.Handheld_COM_Port, 9600, Parity.None, 8, StopBits.One)
-            {
-                ReadTimeout = 1000,
-                WriteTimeout = 1000,
-                NewLine = "\r"
-            };
+            _scanner = new SerialClientHelper(_config.Handheld_COM_Port, 9600);
+            _scanner.SerialClientCallback += Scanner_Callback;
+            _scanner.Connect();
 
-            _port.DataReceived += Port_DataReceived;
-            _port.Open();
-
-            SetStatus(ScannerStatus.Connected);
-            _logger.Log("System", LogType.DeviceAction, "Scanner connected",
-                $"{{'Port':'{_config.Handheld_COM_Port}'}}", "INFO-SCAN-01");
-            return true;
+            return _scanner.Connected;
         }
         catch (Exception ex)
         {
-            SetStatus(ScannerStatus.Error);
             _logger.Log("System", LogType.Error, "Scanner connection failed",
-                $"{{'Port':'{_config.Handheld_COM_Port}','Error':'{ex.Message}'}}", "ERR-SCAN-01");
+                $"{{'Port':'{_config.Handheld_COM_Port}','Error':'{ex.Message}'}}", "ERR-SCAN-03");
+            SetStatus(ScannerStatus.Error);
             return false;
-        }
-    }
-
-    private void Port_DataReceived(object sender, SerialDataReceivedEventArgs e)
-    {
-        try
-        {
-            var data = _port!.ReadExisting();
-            var lines = data.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (var line in lines)
-            {
-                var trimmed = line.Trim();
-                if (!string.IsNullOrEmpty(trimmed))
-                {
-                    _logger.Log("Scanner", LogType.DeviceAction, $"Scanner data: {trimmed}");
-                    OnDataReceived?.Invoke(trimmed);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.Log("System", LogType.Error, "Scanner read error", ex.Message);
         }
     }
 
     public void Disconnect()
     {
-        if (_port != null)
+        if (_scanner != null)
         {
-            try
-            {
-                _port.DataReceived -= Port_DataReceived;
-                if (_port.IsOpen)
-                    _port.Close();
-                _port.Dispose();
-            }
-            catch { }
-            _port = null;
+            _scanner.SerialClientCallback -= Scanner_Callback;
+            _scanner.Disconnect();
+            _scanner = null;
         }
         SetStatus(ScannerStatus.Disconnected);
     }
@@ -114,6 +112,5 @@ public class ScannerService : IDisposable
     public void Dispose()
     {
         Disconnect();
-        _cts?.Dispose();
     }
 }
