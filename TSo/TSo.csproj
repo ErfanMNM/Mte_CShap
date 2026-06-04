@@ -1,15 +1,34 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>AnyCPU;x64</Platforms>
+    <AssemblyName>TSo</AssemblyName>
+    <RootNamespace>TSo</RootNamespace>
+    <Version>1.0</Version>
+    <AssemblyTitle>TSo QR Activation Server</AssemblyTitle>
+    <Description>Backend API server for TSo QR Activation System</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.48" />
+    <PackageReference Include="HslCommunication" Version="12.5.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
+    <PackageReference Include="ExcelDataReader" Version="3.8.0" />
+    <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.72.0" />
+    <PackageReference Include="Google.Cloud.BigQuery.V2" Version="3.11.0" />
+    <PackageReference Include="Google.Cloud.Storage.V1" Version="4.13.0" />
+    <PackageReference Include="Otp.NET" Version="1.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Configs\App.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
