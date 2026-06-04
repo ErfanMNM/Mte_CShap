@@ -87,7 +87,7 @@ public class AppConfigs
         PLC_Time_Refresh = 1000;
         PLC_Test_Mode = false;
         Camera_01_IP = "127.0.0.1";
-        Camera_01_Port = 51236;
+        Camera_01_Port = 49211;
         Handheld_COM_Port = "COM3";
         Line_Name = "Line 1";
         Data_Mode = "normal";
