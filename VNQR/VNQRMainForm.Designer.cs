@@ -28,7 +28,9 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             listBox1 = new ListBox();
+            omronplC_Hsl1 = new TTManager.PLCHelpers.OmronPLC_Hsl(components);
             SuspendLayout();
             // 
             // listBox1
@@ -39,13 +41,22 @@
             listBox1.Size = new Size(1001, 529);
             listBox1.TabIndex = 0;
             // 
-            // Form1
+            // omronplC_Hsl1
+            // 
+            omronplC_Hsl1.PLC_IP = "127.0.0.1";
+            omronplC_Hsl1.PLC_PORT = 9600;
+            omronplC_Hsl1.PLC_Ready_DM = "D16";
+            omronplC_Hsl1.PLC_STATUS = TTManager.PLCHelpers.OmronPLC_Hsl.PLCStatus.Disconnect;
+            omronplC_Hsl1.Ready = 0;
+            omronplC_Hsl1.Time_Update = 300;
+            // 
+            // VNQRMainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1216, 550);
             Controls.Add(listBox1);
-            Name = "Form1";
+            Name = "VNQRMainForm";
             Text = "Form1";
             ResumeLayout(false);
         }
@@ -53,5 +64,6 @@
         #endregion
 
         private ListBox listBox1;
+        private TTManager.PLCHelpers.OmronPLC_Hsl omronplC_Hsl1;
     }
 }
