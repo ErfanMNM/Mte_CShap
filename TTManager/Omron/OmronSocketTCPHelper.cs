@@ -10,6 +10,7 @@ using TTManager.Datalogic;
 
 namespace TTManager.Omron
 {
+    //sửa 1 chút ở đây
     public enum eOmronCameraState
     {
         Connected,
