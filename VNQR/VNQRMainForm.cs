@@ -12,7 +12,7 @@ namespace VNQR
         #endregion
         public VNQRMainForm()
         {
-            InitializeComponent();
+            InitializeComponent(); 
         }
 
         private void Init()
