@@ -49,6 +49,7 @@
             omronplC_Hsl1.PLC_STATUS = TTManager.PLCHelpers.OmronPLC_Hsl.PLCStatus.Disconnect;
             omronplC_Hsl1.Ready = 0;
             omronplC_Hsl1.Time_Update = 300;
+            omronplC_Hsl1.PLCStatus_OnChange += omronplC_Hsl1_PLCStatus_OnChange;
             // 
             // VNQRMainForm
             // 
