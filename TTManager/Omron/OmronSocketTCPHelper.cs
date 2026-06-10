@@ -29,6 +29,8 @@ namespace TTManager.Omron
         public string? IP { get; set; } = string.Empty;
         public int Port { get; set; }
         public bool Connected { get; private set; } = false;
+
+        public e_CameraModel Model { get; set; }
         #endregion
 
         #region Events
@@ -37,8 +39,9 @@ namespace TTManager.Omron
         #endregion
 
         #region Constructors
-        public OmronCamera(string ip, int port)
+        public OmronCamera( e_CameraModel model, string ip, int port)
         {
+            Model = model;
             IP = ip;
             Port = port;
         }
@@ -204,6 +207,12 @@ namespace TTManager.Omron
                 HandleDisconnection($"Send failed: {ex.Message}");
                 return false;
             }
+        }
+
+        public enum e_CameraModel
+        {
+            V430,
+            VHV5
         }
         #endregion
     }
