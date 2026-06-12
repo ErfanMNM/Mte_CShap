@@ -31,14 +31,16 @@
             components = new System.ComponentModel.Container();
             listBox1 = new ListBox();
             omronplC_Hsl1 = new TTManager.PLCHelpers.OmronPLC_Hsl(components);
+            mainWK = new System.ComponentModel.BackgroundWorker();
+            updateWK = new System.ComponentModel.BackgroundWorker();
             SuspendLayout();
             // 
             // listBox1
             // 
             listBox1.FormattingEnabled = true;
-            listBox1.Location = new Point(203, 12);
+            listBox1.Location = new Point(231, 51);
             listBox1.Name = "listBox1";
-            listBox1.Size = new Size(1001, 529);
+            listBox1.Size = new Size(979, 580);
             listBox1.TabIndex = 0;
             // 
             // omronplC_Hsl1
@@ -51,14 +53,25 @@
             omronplC_Hsl1.Time_Update = 300;
             omronplC_Hsl1.PLCStatus_OnChange += omronplC_Hsl1_PLCStatus_OnChange;
             // 
+            // mainWK
+            // 
+            mainWK.WorkerSupportsCancellation = true;
+            mainWK.DoWork += mainWK_DoWork;
+            // 
+            // updateWK
+            // 
+            updateWK.WorkerSupportsCancellation = true;
+            updateWK.DoWork += updateWK_DoWork;
+            // 
             // VNQRMainForm
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1216, 550);
+            AutoScaleMode = AutoScaleMode.None;
+            ClientSize = new Size(1226, 652);
             Controls.Add(listBox1);
             Name = "VNQRMainForm";
             Text = "Form1";
+            ZoomScaleRect = new Rectangle(15, 15, 1216, 550);
+            Load += VNQRMainForm_Load;
             ResumeLayout(false);
         }
 
@@ -66,5 +79,7 @@
 
         private ListBox listBox1;
         private TTManager.PLCHelpers.OmronPLC_Hsl omronplC_Hsl1;
+        private System.ComponentModel.BackgroundWorker mainWK;
+        private System.ComponentModel.BackgroundWorker updateWK;
     }
 }
