@@ -82,6 +82,7 @@ namespace VNQR
                         //khởi tạo camera
                         MainFormVariable.listbox.Enqueue("Đang khởi động đầu đọc mã...");
                         Thread.Sleep(1000);
+
                         switch (gvr.CameraState)
                         {
                             case eOmronCameraState.Connected:
@@ -94,7 +95,20 @@ namespace VNQR
                                 MainFormVariable.listbox.Enqueue("Không thể kết nối đến camera.");
                                 break;
                         }
+
                         MainFormVariable.listbox.Enqueue("Đang kết nối đến PLC...");
+                        Thread.Sleep(1000);
+                        switch (PLC_Status)
+                        {
+                            case OmronPLC_Hsl.PLCStatus.Connected:
+                                MainFormVariable.listbox.Enqueue("Đã kết nối đến PLC.");
+                                break;
+                            case OmronPLC_Hsl.PLCStatus.Disconnect:
+                                MainFormVariable.listbox.Enqueue("Không thể kết nối đến PLC.");
+                                break;
+                        }
+
+
                         gvr.AppState = e_AppState.Running;
                         break;
                     case e_AppState.Running:
