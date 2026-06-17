@@ -357,7 +357,7 @@ namespace TApp.Views.Dashboard
                 data = data.Replace(";", ""); // Xóa khoảng trắng nếu có
             }
             // Tách riêng trường hợp camera trả về "FAIL" (lỗi đọc)
-            if (string.Equals(data, "FAIL", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(data, "NOREAD", StringComparison.OrdinalIgnoreCase))
             {
                 Send_Result_To_PLC(e_PLC_Result.Fail);
                 Send_Result_Content(e_Production_Status.ReadFail, data);

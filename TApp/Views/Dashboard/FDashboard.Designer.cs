@@ -654,6 +654,7 @@
             btnChangeBatch.TabIndex = 0;
             btnChangeBatch.Text = "Đổi lô";
             btnChangeBatch.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnChangeBatch.Click += btnChangeBatch_Click;
             // 
             // btnScan
             // 
@@ -668,6 +669,7 @@
             btnScan.TabIndex = 0;
             btnScan.Text = "Quét mã";
             btnScan.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnScan.Click += btnScan_Click;
             // 
             // uiSymbolButton3
             // 
@@ -683,6 +685,7 @@
             uiSymbolButton3.TabIndex = 0;
             uiSymbolButton3.Text = "Thêm mã";
             uiSymbolButton3.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            uiSymbolButton3.Click += uiSymbolButton3_Click;
             // 
             // btnPLCSetting
             // 
@@ -698,6 +701,7 @@
             btnPLCSetting.TabIndex = 0;
             btnPLCSetting.Text = "Cài PLC";
             btnPLCSetting.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnPLCSetting.Click += btnPLCSetting_Click;
             // 
             // btnClearPLC
             // 
@@ -713,6 +717,7 @@
             btnClearPLC.TabIndex = 0;
             btnClearPLC.Text = "Xóa lỗi";
             btnClearPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnClearPLC.Click += btnClearPLC_Click;
             // 
             // btnResetCounterPLC
             // 
@@ -728,6 +733,7 @@
             btnResetCounterPLC.TabIndex = 0;
             btnResetCounterPLC.Text = "Xóa đếm";
             btnResetCounterPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnResetCounterPLC.Click += btnResetCounterPLC_Click;
             // 
             // uiTitlePanel4
             // 
@@ -1245,6 +1251,7 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(146, 3);
             opPLCLed.Name = "opPLCLed";
+            opPLCLed.On = false;
             opPLCLed.Size = new Size(51, 50);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";

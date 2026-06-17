@@ -300,8 +300,8 @@
             uiTableLayoutPanel1.Location = new Point(0, 0);
             uiTableLayoutPanel1.Name = "uiTableLayoutPanel1";
             uiTableLayoutPanel1.RowCount = 2;
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 73.36601F));
-            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 26.63399F));
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 82.67974F));
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 17.320261F));
             uiTableLayoutPanel1.Size = new Size(840, 612);
             uiTableLayoutPanel1.TabIndex = 0;
             uiTableLayoutPanel1.TagString = null;
@@ -317,7 +317,7 @@
             uiTitlePanel2.Name = "uiTitlePanel2";
             uiTitlePanel2.Padding = new Padding(1, 35, 1, 1);
             uiTitlePanel2.ShowText = false;
-            uiTitlePanel2.Size = new Size(836, 445);
+            uiTitlePanel2.Size = new Size(836, 502);
             uiTitlePanel2.TabIndex = 3;
             uiTitlePanel2.Text = "ẢNH TỪ CAMERA";
             uiTitlePanel2.TextAlignment = ContentAlignment.MiddleCenter;
@@ -330,24 +330,25 @@
             webView21.Dock = DockStyle.Fill;
             webView21.Location = new Point(1, 35);
             webView21.Name = "webView21";
-            webView21.Size = new Size(834, 409);
+            webView21.Size = new Size(834, 466);
             webView21.TabIndex = 0;
             webView21.ZoomFactor = 1D;
+            webView21.Click += webView21_Click;
             // 
             // uiTableLayoutPanel2
             // 
             uiTableLayoutPanel2.ColumnCount = 2;
-            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55.63549F));
-            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 44.36451F));
+            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 67.3445F));
+            uiTableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32.6555023F));
             uiTableLayoutPanel2.Controls.Add(uiTitlePanel1, 0, 0);
             uiTableLayoutPanel2.Controls.Add(uiTitlePanel3, 1, 0);
             uiTableLayoutPanel2.Dock = DockStyle.Fill;
-            uiTableLayoutPanel2.Location = new Point(2, 451);
+            uiTableLayoutPanel2.Location = new Point(2, 508);
             uiTableLayoutPanel2.Margin = new Padding(2);
             uiTableLayoutPanel2.Name = "uiTableLayoutPanel2";
             uiTableLayoutPanel2.RowCount = 1;
             uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel2.Size = new Size(836, 159);
+            uiTableLayoutPanel2.Size = new Size(836, 102);
             uiTableLayoutPanel2.TabIndex = 4;
             uiTableLayoutPanel2.TagString = null;
             // 
@@ -362,7 +363,7 @@
             uiTitlePanel1.Name = "uiTitlePanel1";
             uiTitlePanel1.Padding = new Padding(1, 35, 1, 1);
             uiTitlePanel1.ShowText = false;
-            uiTitlePanel1.Size = new Size(461, 155);
+            uiTitlePanel1.Size = new Size(559, 98);
             uiTitlePanel1.TabIndex = 4;
             uiTitlePanel1.Text = "THÔNG SỐ PLC";
             uiTitlePanel1.TextAlignment = ContentAlignment.MiddleCenter;
@@ -370,9 +371,9 @@
             // uiTableLayoutPanel3
             // 
             uiTableLayoutPanel3.ColumnCount = 3;
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 37.14286F));
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34.5055F));
-            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28.35165F));
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 23.8779182F));
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40.75404F));
+            uiTableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35.5475769F));
             uiTableLayoutPanel3.Controls.Add(uiPanel1, 0, 0);
             uiTableLayoutPanel3.Controls.Add(uiPanel2, 0, 1);
             uiTableLayoutPanel3.Controls.Add(uiPanel3, 0, 2);
@@ -389,7 +390,7 @@
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 33.33333F));
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 33.33333F));
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 33.33333F));
-            uiTableLayoutPanel3.Size = new Size(459, 119);
+            uiTableLayoutPanel3.Size = new Size(557, 62);
             uiTableLayoutPanel3.TabIndex = 0;
             uiTableLayoutPanel3.TagString = null;
             // 
@@ -401,7 +402,7 @@
             uiPanel1.Margin = new Padding(2);
             uiPanel1.MinimumSize = new Size(1, 1);
             uiPanel1.Name = "uiPanel1";
-            uiPanel1.Size = new Size(166, 35);
+            uiPanel1.Size = new Size(128, 16);
             uiPanel1.TabIndex = 0;
             uiPanel1.Text = "Trễ chụp (Delay Triger)";
             uiPanel1.TextAlignment = ContentAlignment.MiddleCenter;
@@ -410,11 +411,11 @@
             // 
             uiPanel2.Dock = DockStyle.Fill;
             uiPanel2.Font = new Font("Microsoft Sans Serif", 12F);
-            uiPanel2.Location = new Point(2, 41);
+            uiPanel2.Location = new Point(2, 22);
             uiPanel2.Margin = new Padding(2);
             uiPanel2.MinimumSize = new Size(1, 1);
             uiPanel2.Name = "uiPanel2";
-            uiPanel2.Size = new Size(166, 35);
+            uiPanel2.Size = new Size(128, 16);
             uiPanel2.TabIndex = 1;
             uiPanel2.Text = "Trễ loại (Delay Reject)";
             uiPanel2.TextAlignment = ContentAlignment.MiddleCenter;
@@ -423,11 +424,11 @@
             // 
             uiPanel3.Dock = DockStyle.Fill;
             uiPanel3.Font = new Font("Microsoft Sans Serif", 12F);
-            uiPanel3.Location = new Point(2, 80);
+            uiPanel3.Location = new Point(2, 42);
             uiPanel3.Margin = new Padding(2);
             uiPanel3.MinimumSize = new Size(1, 1);
             uiPanel3.Name = "uiPanel3";
-            uiPanel3.Size = new Size(166, 37);
+            uiPanel3.Size = new Size(128, 18);
             uiPanel3.TabIndex = 2;
             uiPanel3.Text = "Độ mạnh bộ đá";
             uiPanel3.TextAlignment = ContentAlignment.MiddleCenter;
@@ -437,14 +438,14 @@
             ipDelayTriger.Dock = DockStyle.Fill;
             ipDelayTriger.FillColor = Color.White;
             ipDelayTriger.Font = new Font("Microsoft Sans Serif", 12F);
-            ipDelayTriger.Location = new Point(172, 2);
+            ipDelayTriger.Location = new Point(134, 2);
             ipDelayTriger.Margin = new Padding(2);
             ipDelayTriger.Minimum = 0D;
             ipDelayTriger.MinimumSize = new Size(63, 0);
             ipDelayTriger.Name = "ipDelayTriger";
             ipDelayTriger.NumPadType = Sunny.UI.NumPadType.Integer;
             ipDelayTriger.Padding = new Padding(0, 0, 30, 2);
-            ipDelayTriger.Size = new Size(154, 35);
+            ipDelayTriger.Size = new Size(222, 16);
             ipDelayTriger.SymbolDropDown = 557532;
             ipDelayTriger.SymbolNormal = 557532;
             ipDelayTriger.SymbolSize = 30;
@@ -457,14 +458,14 @@
             ipDelayReject.Dock = DockStyle.Fill;
             ipDelayReject.FillColor = Color.White;
             ipDelayReject.Font = new Font("Microsoft Sans Serif", 12F);
-            ipDelayReject.Location = new Point(172, 41);
+            ipDelayReject.Location = new Point(134, 22);
             ipDelayReject.Margin = new Padding(2);
             ipDelayReject.Minimum = 0D;
             ipDelayReject.MinimumSize = new Size(63, 0);
             ipDelayReject.Name = "ipDelayReject";
             ipDelayReject.NumPadType = Sunny.UI.NumPadType.Integer;
             ipDelayReject.Padding = new Padding(0, 0, 30, 2);
-            ipDelayReject.Size = new Size(154, 35);
+            ipDelayReject.Size = new Size(222, 16);
             ipDelayReject.SymbolDropDown = 557532;
             ipDelayReject.SymbolNormal = 557532;
             ipDelayReject.SymbolSize = 30;
@@ -477,14 +478,14 @@
             ipRejectStreng.Dock = DockStyle.Fill;
             ipRejectStreng.FillColor = Color.White;
             ipRejectStreng.Font = new Font("Microsoft Sans Serif", 12F);
-            ipRejectStreng.Location = new Point(172, 80);
+            ipRejectStreng.Location = new Point(134, 42);
             ipRejectStreng.Margin = new Padding(2);
             ipRejectStreng.Minimum = 0D;
             ipRejectStreng.MinimumSize = new Size(63, 0);
             ipRejectStreng.Name = "ipRejectStreng";
             ipRejectStreng.NumPadType = Sunny.UI.NumPadType.Integer;
             ipRejectStreng.Padding = new Padding(0, 0, 30, 2);
-            ipRejectStreng.Size = new Size(154, 37);
+            ipRejectStreng.Size = new Size(222, 18);
             ipRejectStreng.SymbolDropDown = 557532;
             ipRejectStreng.SymbolNormal = 557532;
             ipRejectStreng.SymbolSize = 30;
@@ -499,7 +500,7 @@
             opDelayTriger.FillDisableColor = Color.White;
             opDelayTriger.FillReadOnlyColor = Color.White;
             opDelayTriger.Font = new Font("Microsoft Sans Serif", 12F);
-            opDelayTriger.Location = new Point(330, 2);
+            opDelayTriger.Location = new Point(360, 2);
             opDelayTriger.Margin = new Padding(2);
             opDelayTriger.Minimum = 0D;
             opDelayTriger.MinimumSize = new Size(1, 16);
@@ -507,7 +508,7 @@
             opDelayTriger.Padding = new Padding(5);
             opDelayTriger.ReadOnly = true;
             opDelayTriger.ShowText = false;
-            opDelayTriger.Size = new Size(127, 35);
+            opDelayTriger.Size = new Size(195, 16);
             opDelayTriger.TabIndex = 6;
             opDelayTriger.Text = "0";
             opDelayTriger.TextAlignment = ContentAlignment.MiddleLeft;
@@ -520,7 +521,7 @@
             opDelayReject.FillDisableColor = Color.White;
             opDelayReject.FillReadOnlyColor = Color.White;
             opDelayReject.Font = new Font("Microsoft Sans Serif", 12F);
-            opDelayReject.Location = new Point(330, 41);
+            opDelayReject.Location = new Point(360, 22);
             opDelayReject.Margin = new Padding(2);
             opDelayReject.Minimum = 0D;
             opDelayReject.MinimumSize = new Size(1, 16);
@@ -528,7 +529,7 @@
             opDelayReject.Padding = new Padding(5);
             opDelayReject.ReadOnly = true;
             opDelayReject.ShowText = false;
-            opDelayReject.Size = new Size(127, 35);
+            opDelayReject.Size = new Size(195, 16);
             opDelayReject.TabIndex = 7;
             opDelayReject.Text = "0";
             opDelayReject.TextAlignment = ContentAlignment.MiddleLeft;
@@ -541,7 +542,7 @@
             opRejectStreng.FillDisableColor = Color.White;
             opRejectStreng.FillReadOnlyColor = Color.White;
             opRejectStreng.Font = new Font("Microsoft Sans Serif", 12F);
-            opRejectStreng.Location = new Point(330, 80);
+            opRejectStreng.Location = new Point(360, 42);
             opRejectStreng.Margin = new Padding(2);
             opRejectStreng.Minimum = 0D;
             opRejectStreng.MinimumSize = new Size(1, 16);
@@ -549,7 +550,7 @@
             opRejectStreng.Padding = new Padding(5);
             opRejectStreng.ReadOnly = true;
             opRejectStreng.ShowText = false;
-            opRejectStreng.Size = new Size(127, 37);
+            opRejectStreng.Size = new Size(195, 18);
             opRejectStreng.TabIndex = 8;
             opRejectStreng.Text = "0";
             opRejectStreng.TextAlignment = ContentAlignment.MiddleLeft;
@@ -560,13 +561,13 @@
             uiTitlePanel3.Controls.Add(uiTableLayoutPanel22);
             uiTitlePanel3.Dock = DockStyle.Fill;
             uiTitlePanel3.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTitlePanel3.Location = new Point(467, 2);
+            uiTitlePanel3.Location = new Point(565, 2);
             uiTitlePanel3.Margin = new Padding(2);
             uiTitlePanel3.MinimumSize = new Size(1, 1);
             uiTitlePanel3.Name = "uiTitlePanel3";
             uiTitlePanel3.Padding = new Padding(1, 35, 1, 1);
             uiTitlePanel3.ShowText = false;
-            uiTitlePanel3.Size = new Size(367, 155);
+            uiTitlePanel3.Size = new Size(269, 98);
             uiTitlePanel3.TabIndex = 5;
             uiTitlePanel3.Text = "ĐIỀU CHỈNH";
             uiTitlePanel3.TextAlignment = ContentAlignment.MiddleCenter;
@@ -583,7 +584,7 @@
             uiTableLayoutPanel22.RowCount = 2;
             uiTableLayoutPanel22.RowStyles.Add(new RowStyle(SizeType.Percent, 49.04762F));
             uiTableLayoutPanel22.RowStyles.Add(new RowStyle(SizeType.Percent, 50.95238F));
-            uiTableLayoutPanel22.Size = new Size(365, 119);
+            uiTableLayoutPanel22.Size = new Size(267, 62);
             uiTableLayoutPanel22.TabIndex = 1;
             uiTableLayoutPanel22.TagString = null;
             // 
@@ -597,11 +598,11 @@
             uiTableLayoutPanel23.Controls.Add(btnUndo, 1, 0);
             uiTableLayoutPanel23.Controls.Add(btnDelete, 2, 0);
             uiTableLayoutPanel23.Dock = DockStyle.Fill;
-            uiTableLayoutPanel23.Location = new Point(3, 61);
+            uiTableLayoutPanel23.Location = new Point(3, 33);
             uiTableLayoutPanel23.Name = "uiTableLayoutPanel23";
             uiTableLayoutPanel23.RowCount = 1;
             uiTableLayoutPanel23.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel23.Size = new Size(359, 55);
+            uiTableLayoutPanel23.Size = new Size(261, 26);
             uiTableLayoutPanel23.TabIndex = 1;
             uiTableLayoutPanel23.TagString = null;
             // 
@@ -617,7 +618,7 @@
             btnSave.Location = new Point(3, 3);
             btnSave.MinimumSize = new Size(1, 1);
             btnSave.Name = "btnSave";
-            btnSave.Size = new Size(122, 49);
+            btnSave.Size = new Size(87, 20);
             btnSave.Symbol = 361926;
             btnSave.TabIndex = 0;
             btnSave.Text = "Áp dụng";
@@ -629,10 +630,10 @@
             btnUndo.Cursor = Cursors.Hand;
             btnUndo.Dock = DockStyle.Fill;
             btnUndo.Font = new Font("Microsoft Sans Serif", 12F);
-            btnUndo.Location = new Point(131, 3);
+            btnUndo.Location = new Point(96, 3);
             btnUndo.MinimumSize = new Size(1, 1);
             btnUndo.Name = "btnUndo";
-            btnUndo.Size = new Size(104, 49);
+            btnUndo.Size = new Size(74, 20);
             btnUndo.Symbol = 61587;
             btnUndo.TabIndex = 1;
             btnUndo.Text = "Tải lên";
@@ -645,10 +646,10 @@
             btnDelete.Dock = DockStyle.Fill;
             btnDelete.FillColor = Color.FromArgb(255, 128, 128);
             btnDelete.Font = new Font("Microsoft Sans Serif", 12F);
-            btnDelete.Location = new Point(241, 3);
+            btnDelete.Location = new Point(176, 3);
             btnDelete.MinimumSize = new Size(1, 1);
             btnDelete.Name = "btnDelete";
-            btnDelete.Size = new Size(115, 49);
+            btnDelete.Size = new Size(82, 20);
             btnDelete.Symbol = 61460;
             btnDelete.TabIndex = 2;
             btnDelete.Text = "Xóa";
@@ -667,7 +668,7 @@
             uiTableLayoutPanel16.Name = "uiTableLayoutPanel16";
             uiTableLayoutPanel16.RowCount = 1;
             uiTableLayoutPanel16.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel16.Size = new Size(359, 52);
+            uiTableLayoutPanel16.Size = new Size(261, 24);
             uiTableLayoutPanel16.TabIndex = 2;
             uiTableLayoutPanel16.TagString = null;
             // 
@@ -680,10 +681,10 @@
             btnNewRecipe.FillPressColor = Color.Green;
             btnNewRecipe.FillSelectedColor = Color.Green;
             btnNewRecipe.Font = new Font("Microsoft Sans Serif", 12F);
-            btnNewRecipe.Location = new Point(252, 3);
+            btnNewRecipe.Location = new Point(184, 3);
             btnNewRecipe.MinimumSize = new Size(1, 1);
             btnNewRecipe.Name = "btnNewRecipe";
-            btnNewRecipe.Size = new Size(104, 46);
+            btnNewRecipe.Size = new Size(74, 18);
             btnNewRecipe.Symbol = 61543;
             btnNewRecipe.TabIndex = 2;
             btnNewRecipe.Text = "Mới";
@@ -704,7 +705,7 @@
             ipRecipe.MinimumSize = new Size(63, 0);
             ipRecipe.Name = "ipRecipe";
             ipRecipe.Padding = new Padding(0, 0, 30, 2);
-            ipRecipe.Size = new Size(245, 48);
+            ipRecipe.Size = new Size(177, 20);
             ipRecipe.SymbolSize = 24;
             ipRecipe.TabIndex = 1;
             ipRecipe.TextAlignment = ContentAlignment.MiddleLeft;

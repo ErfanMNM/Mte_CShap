@@ -45,7 +45,7 @@ namespace TApp.Helpers
         {
             if (_addressMap.ContainsKey(key))
                 return _addressMap[key];
-            throw new KeyNotFoundException($"Không tìm thấy địa chỉ PLC cho key: {key}");
+             throw new KeyNotFoundException($"Không tìm thấy địa chỉ PLC cho key: {key}");
         }
 
         private static  Dictionary<string, string> LoadFromGoogleSheet(string spreadsheetId, string range)
