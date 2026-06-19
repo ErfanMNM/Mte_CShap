@@ -49,7 +49,7 @@ namespace VNQR
         {
             //nếu app đang ở trạng thái chạy thì mới xử lý dữ liệu từ camera
             if (gvr.AppState != e_AppState.Running) { return; }
-
+            //xử lý dữ liệu từ camera ở đây
 
         }
 
@@ -80,6 +80,8 @@ namespace VNQR
                 {
                     case e_AppState.Idle:
                         //khởi tạo camera
+
+                        //load dữ liệu sản xuất cũ => load từ database lịch sử sản xuất xem PO nào đang được dùng => nếu không có thì bỏ qua bước này
                         gvr.AppState = e_AppState.Running;
                         break;
                     case e_AppState.Running:
@@ -114,7 +116,6 @@ namespace VNQR
             }
             
         }
-
 
     }
 
