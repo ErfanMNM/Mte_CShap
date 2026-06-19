@@ -893,12 +893,13 @@ namespace VNQR.Helpers
         public static class POActivator
         {
             // Ghi 1 record vào Record_Active_<orderNo>.db
-            public static void Record(string orderNo, PORecordData data)
+            public static TResult Record(string orderNo, PORecordData data)
             {
                 try
                 {
                     string dbPath = Config.GetRecordActivePath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"Record_Active '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
@@ -920,21 +921,23 @@ namespace VNQR.Helpers
                             cmd.ExecuteNonQuery();
                         }
                     }
+                    return new TResult(true, $"Ghi record Active '{data.code}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POActivator.Record] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi ghi Record Active: {ex.Message}");
                 }
             }
 
             // Đánh dấu code đã active trong UniqueCodes
-            public static void ActivateCode(string orderNo, string code,
+            public static TResult ActivateCode(string orderNo, string code,
                 string activateDate, string activateUser, string productionDate)
             {
                 try
                 {
                     string dbPath = Config.GetPODBPath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"PO DB '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
@@ -952,23 +955,27 @@ namespace VNQR.Helpers
                             cmd.Parameters.AddWithValue("@ActivateDate", activateDate ?? "");
                             cmd.Parameters.AddWithValue("@ActivateUser", activateUser ?? "");
                             cmd.Parameters.AddWithValue("@ProductionDate", productionDate ?? "");
-                            cmd.ExecuteNonQuery();
+                            int rows = cmd.ExecuteNonQuery();
+                            if (rows == 0)
+                                return new TResult(false, $"Không tìm thấy mã: {code}");
                         }
                     }
+                    return new TResult(true, $"Activate code '{code}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POActivator.ActivateCode] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi activate code: {ex.Message}");
                 }
             }
 
             // Reset code về chưa active (Status=0)
-            public static void DeactivateCode(string orderNo, string code)
+            public static TResult DeactivateCode(string orderNo, string code)
             {
                 try
                 {
                     string dbPath = Config.GetPODBPath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"PO DB '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
@@ -983,13 +990,16 @@ namespace VNQR.Helpers
                         using (var cmd = new SQLiteCommand(sql, con))
                         {
                             cmd.Parameters.AddWithValue("@Code", code);
-                            cmd.ExecuteNonQuery();
+                            int rows = cmd.ExecuteNonQuery();
+                            if (rows == 0)
+                                return new TResult(false, $"Không tìm thấy mã: {code}");
                         }
                     }
+                    return new TResult(true, $"Deactivate code '{code}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POActivator.DeactivateCode] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi deactivate code: {ex.Message}");
                 }
             }
 
@@ -1006,12 +1016,13 @@ namespace VNQR.Helpers
         public static class POPacking
         {
             // Ghi 1 record vào Record_Packing_<orderNo>.db
-            public static void Record(string orderNo, PORecordData data)
+            public static TResult Record(string orderNo, PORecordData data)
             {
                 try
                 {
                     string dbPath = Config.GetRecordPackingPath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"Record_Packing '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
@@ -1033,21 +1044,23 @@ namespace VNQR.Helpers
                             cmd.ExecuteNonQuery();
                         }
                     }
+                    return new TResult(true, $"Ghi record Packing '{data.code}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POPacking.Record] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi ghi Record Packing: {ex.Message}");
                 }
             }
 
             // Đánh dấu code đã đóng gói vào thùng
-            public static void PackCode(string orderNo, string code, string cartonCode,
+            public static TResult PackCode(string orderNo, string code, string cartonCode,
                 string packingDate, string packingUser, string productionDate)
             {
                 try
                 {
                     string dbPath = Config.GetPODBPath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"PO DB '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
@@ -1064,23 +1077,27 @@ namespace VNQR.Helpers
                             cmd.Parameters.AddWithValue("@cartonCode", cartonCode ?? "0");
                             cmd.Parameters.AddWithValue("@PackingDate", packingDate ?? "");
                             cmd.Parameters.AddWithValue("@ProductionDate", productionDate ?? "");
-                            cmd.ExecuteNonQuery();
+                            int rows = cmd.ExecuteNonQuery();
+                            if (rows == 0)
+                                return new TResult(false, $"Không tìm thấy mã: {code}");
                         }
                     }
+                    return new TResult(true, $"Pack code '{code}' vào thùng '{cartonCode}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POPacking.PackCode] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi pack code: {ex.Message}");
                 }
             }
 
             // Gỡ code khỏi thùng (xóa cartonCode)
-            public static void UnpackCode(string orderNo, string code)
+            public static TResult UnpackCode(string orderNo, string code)
             {
                 try
                 {
                     string dbPath = Config.GetPODBPath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"PO DB '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
@@ -1093,13 +1110,16 @@ namespace VNQR.Helpers
                         using (var cmd = new SQLiteCommand(sql, con))
                         {
                             cmd.Parameters.AddWithValue("@Code", code);
-                            cmd.ExecuteNonQuery();
+                            int rows = cmd.ExecuteNonQuery();
+                            if (rows == 0)
+                                return new TResult(false, $"Không tìm thấy mã: {code}");
                         }
                     }
+                    return new TResult(true, $"Unpack code '{code}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POPacking.UnpackCode] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi unpack code: {ex.Message}");
                 }
             }
 
@@ -1130,12 +1150,13 @@ namespace VNQR.Helpers
         #region POCarton
         public static class POCarton
         {
-            public static void Create(string orderNo, POCartonData data)
+            public static TResult Create(string orderNo, POCartonData data)
             {
                 try
                 {
                     string dbPath = Config.GetCartonPath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"Carton DB của PO '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
@@ -1155,19 +1176,21 @@ namespace VNQR.Helpers
                             cmd.ExecuteNonQuery();
                         }
                     }
+                    return new TResult(true, $"Tạo thùng '{data.cartonCode}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POCarton.Create] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi tạo carton: {ex.Message}");
                 }
             }
 
-            public static void Update(string orderNo, POCartonData data)
+            public static TResult Update(string orderNo, POCartonData data)
             {
                 try
                 {
                     string dbPath = Config.GetCartonPath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"Carton DB của PO '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
@@ -1188,37 +1211,44 @@ namespace VNQR.Helpers
                             cmd.Parameters.AddWithValue("@Completed_Datetime", data.completedDatetime ?? "0");
                             cmd.Parameters.AddWithValue("@ActivateUser", data.activateUser ?? "");
                             cmd.Parameters.AddWithValue("@ProductionDate", data.productionDate ?? "0");
-                            cmd.ExecuteNonQuery();
+                            int rows = cmd.ExecuteNonQuery();
+                            if (rows == 0)
+                                return new TResult(false, $"Không tìm thấy carton ID: {data.id}");
                         }
                     }
+                    return new TResult(true, $"Cập nhật carton ID '{data.id}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POCarton.Update] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi cập nhật carton: {ex.Message}");
                 }
             }
 
-            public static void Delete(string orderNo, int cartonId)
+            public static TResult Delete(string orderNo, int cartonId)
             {
                 try
                 {
                     string dbPath = Config.GetCartonPath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"Carton DB của PO '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
                         con.Open();
-                        using (var cmd = new SQLiteCommand(
-                            "DELETE FROM Carton WHERE ID = @ID;", con))
+                        const string sql = "DELETE FROM Carton WHERE ID = @ID;";
+                        using (var cmd = new SQLiteCommand(sql, con))
                         {
                             cmd.Parameters.AddWithValue("@ID", cartonId);
-                            cmd.ExecuteNonQuery();
+                            int rows = cmd.ExecuteNonQuery();
+                            if (rows == 0)
+                                return new TResult(false, $"Không tìm thấy carton ID: {cartonId}");
                         }
                     }
+                    return new TResult(true, $"Xóa carton ID '{cartonId}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POCarton.Delete] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi xóa carton: {ex.Message}");
                 }
             }
 
@@ -1275,12 +1305,13 @@ namespace VNQR.Helpers
                 }
             }
 
-            public static void StartCarton(string orderNo, int cartonId, string activateUser)
+            public static TResult StartCarton(string orderNo, int cartonId, string activateUser)
             {
                 try
                 {
                     string dbPath = Config.GetCartonPath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"Carton DB của PO '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
@@ -1295,22 +1326,26 @@ namespace VNQR.Helpers
                             cmd.Parameters.AddWithValue("@ID", cartonId);
                             cmd.Parameters.AddWithValue("@Start_Datetime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                             cmd.Parameters.AddWithValue("@ActivateUser", activateUser ?? "");
-                            cmd.ExecuteNonQuery();
+                            int rows = cmd.ExecuteNonQuery();
+                            if (rows == 0)
+                                return new TResult(false, $"Không tìm thấy carton ID: {cartonId}");
                         }
                     }
+                    return new TResult(true, $"Start carton ID '{cartonId}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POCarton.StartCarton] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi start carton: {ex.Message}");
                 }
             }
 
-            public static void CompleteCarton(string orderNo, int cartonId, string activateUser)
+            public static TResult CompleteCarton(string orderNo, int cartonId, string activateUser)
             {
                 try
                 {
                     string dbPath = Config.GetCartonPath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"Carton DB của PO '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
@@ -1325,22 +1360,26 @@ namespace VNQR.Helpers
                             cmd.Parameters.AddWithValue("@ID", cartonId);
                             cmd.Parameters.AddWithValue("@Completed_Datetime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                             cmd.Parameters.AddWithValue("@ActivateUser", activateUser ?? "");
-                            cmd.ExecuteNonQuery();
+                            int rows = cmd.ExecuteNonQuery();
+                            if (rows == 0)
+                                return new TResult(false, $"Không tìm thấy carton ID: {cartonId}");
                         }
                     }
+                    return new TResult(true, $"Complete carton ID '{cartonId}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POCarton.CompleteCarton] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi complete carton: {ex.Message}");
                 }
             }
 
-            public static void ResetCarton(string orderNo, int cartonId)
+            public static TResult ResetCarton(string orderNo, int cartonId)
             {
                 try
                 {
                     string dbPath = Config.GetCartonPath(orderNo);
-                    if (!File.Exists(dbPath)) return;
+                    if (!File.Exists(dbPath))
+                        return new TResult(false, $"Carton DB của PO '{orderNo}' không tồn tại.");
 
                     using (var con = new SQLiteConnection($"Data Source={dbPath}"))
                     {
@@ -1354,13 +1393,16 @@ namespace VNQR.Helpers
                         using (var cmd = new SQLiteCommand(sql, con))
                         {
                             cmd.Parameters.AddWithValue("@ID", cartonId);
-                            cmd.ExecuteNonQuery();
+                            int rows = cmd.ExecuteNonQuery();
+                            if (rows == 0)
+                                return new TResult(false, $"Không tìm thấy carton ID: {cartonId}");
                         }
                     }
+                    return new TResult(true, $"Reset carton ID '{cartonId}' thành công.");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[POCarton.ResetCarton] Lỗi: {ex.Message}");
+                    return new TResult(false, $"Lỗi khi reset carton: {ex.Message}");
                 }
             }
 
