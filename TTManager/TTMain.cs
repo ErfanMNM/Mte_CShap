@@ -13,7 +13,7 @@ namespace TTManager
             InitializeComponent();
 
             _scanPollTimer = new System.Windows.Forms.Timer();
-            _scanPollTimer.Interval = 500;
+            _scanPollTimer.Interval = 500; // poll every 500ms
             _scanPollTimer.Tick += PollScanQueue;
             _scanPollTimer.Start();
 
@@ -49,12 +49,15 @@ namespace TTManager
             {
                 var scan = _pdaManager.DequeueScan();
                 if (scan == null) break;
+
                 HandlePdaScan(scan);
             }
         }
 
         private void HandlePdaScan(ScanData scan)
         {
+            // TODO: Xử lý mã Code ở đây
+            // Ví dụ: kiểm tra mã, cập nhật UI, ghi log, v.v.
             System.Diagnostics.Debug.WriteLine(
                 $"[PDA SCAN] PdaName={scan.PdaName} Code={scan.Code} Time={scan.Time:HH:mm:ss}");
         }

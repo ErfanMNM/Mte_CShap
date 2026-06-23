@@ -1,0 +1,2 @@
+rootProject.name = 'MtePDA'
+include ':app'

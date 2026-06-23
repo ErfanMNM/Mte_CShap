@@ -1,6 +1,7 @@
 using Sunny.UI;
 using System.Reflection.Emit;
 using TTManager.Omron;
+using TTManager.PDA;
 using TTManager.PLCHelpers;
 using VNQR.Configs;
 using VNQR.Infrastructure;
@@ -15,7 +16,7 @@ namespace VNQR
         #region Fields
         private OmronCamera? omronCamera;
         private OmronPLC_Hsl.PLCStatus? PLC_Status = OmronPLC_Hsl.PLCStatus.Disconnect;
-
+        private readonly PdaScanManager _pdaManager = new();
         #endregion
         public VNQRMainForm()
         {
@@ -23,6 +24,26 @@ namespace VNQR
             omronCamera = new OmronCamera(OmronCamera.e_CameraModel.V430, AppConfigs.Current.Camera_01_IP, AppConfigs.Current.Camera_01_Port);
             omronCamera.ClientCallback += OmronCamera_ClientCallback;
             omronCamera.Connect();
+            _pdaManager.OnScanReceived += Pda_ScanCallback;
+            _ = StartPdaServerSafely();
+        }
+
+        private async Task StartPdaServerSafely()
+        {
+            try
+            {
+                await _pdaManager.StartAsync();
+                System.Diagnostics.Debug.WriteLine("PDA Server started on port 6969.");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"PDA Server failed: {ex.Message}");
+            }
+        }
+
+        private void Pda_ScanCallback(ScanData data)
+        {
+            MainFormVariable.listbox.Enqueue($"[{data.Time:HH:mm:ss}] PDA: {data.PdaName}, Code: {data.Code}");
         }
 
         private void OmronCamera_ClientCallback(eOmronCameraState state, string data)
@@ -47,13 +68,9 @@ namespace VNQR
 
         private void HandleCameraDataReceived(string data)
         {
-            //nếu app đang ở trạng thái chạy thì mới xử lý dữ liệu từ camera
             if (gvr.AppState != e_AppState.Running) { return; }
-            //xử lý dữ liệu từ camera ở đây
-
         }
 
-        //PLC event handler
         private void omronplC_Hsl1_PLCStatus_OnChange(object sender, OmronPLC_Hsl.PLCStatusEventArgs e)
         {
             PLC_Status = e.Status;
@@ -72,6 +89,14 @@ namespace VNQR
             updateWK.RunWorkerAsync();
         }
 
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            mainWK.CancelAsync();
+            updateWK.CancelAsync();
+            _ = _pdaManager.StopAsync();
+            base.OnFormClosing(e);
+        }
+
         private void mainWK_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
             while (!mainWK.CancellationPending)
@@ -79,9 +104,6 @@ namespace VNQR
                 switch (gvr.AppState)
                 {
                     case e_AppState.Idle:
-                        //khởi tạo camera
-
-                        //load dữ liệu sản xuất cũ => load từ database lịch sử sản xuất xem PO nào đang được dùng => nếu không có thì bỏ qua bước này
                         gvr.AppState = e_AppState.Running;
                         break;
                     case e_AppState.Running:
@@ -93,7 +115,6 @@ namespace VNQR
                 }
                 Thread.Sleep(100);
             }
-
         }
 
         private void updateWK_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
@@ -114,13 +135,10 @@ namespace VNQR
                 }
                 Thread.Sleep(100);
             }
-            
         }
-
     }
 
-
-public static class MainFormVariable
+    public static class MainFormVariable
     {
         public static Queue<string> listbox = new Queue<string>();
     }
