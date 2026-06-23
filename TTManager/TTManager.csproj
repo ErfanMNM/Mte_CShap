@@ -38,6 +38,7 @@
     <Compile Update="Dialogs\Entertext.cs">
       <SubType>Form</SubType>
     </Compile>
+	  <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
 </Project>

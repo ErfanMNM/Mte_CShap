@@ -1,0 +1,11 @@
+## Summary
+- Add PDA API HTTP server on port 6969 (POST /api/scan, GET /api/status)
+- Add PdaScanManager.cs: thread-safe scan queue with events
+- Add API_USAGE.md documentation
+- Add Microsoft.AspNetCore.App framework reference to TTManager.csproj
+
+## Test plan
+- [ ] Build TTManager project successfully
+- [ ] Start TTManager, verify port 6969 is listening
+- [ ] POST /api/scan with JSON body { pdaName, code } returns 200
+- [ ] GET /api/status returns { status: "running" }
