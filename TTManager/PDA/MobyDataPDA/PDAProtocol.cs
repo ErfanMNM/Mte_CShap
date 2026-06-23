@@ -17,9 +17,9 @@ namespace TTManager.PDA.MobyDataPDA
 
             App = builder.Build();
 
-            App.MapPost("/api/scan", (ScanData data) =>
+            App.MapPost("/api/scan", (MobyDataScanData data) =>
             {
-                onBarcode?.Invoke(data.Barcode);
+                onBarcode?.Invoke(data.Code);
 
                 return Results.Ok(new
                 {

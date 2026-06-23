@@ -6,10 +6,8 @@ using System.Threading.Tasks;
 
 namespace TTManager.PDA.MobyDataPDA
 {
-    public class ScanData
+    public class MobyDataScanData
     {
         public string Code { get; set; } = "";
         public DateTime Time { get; set; }
     }
-
-}
