@@ -1,6 +1,7 @@
 using Sunny.UI;
 using System.Reflection.Emit;
 using TTManager.Omron;
+using TTManager.PDA;
 using TTManager.PLCHelpers;
 using VNQR.Configs;
 using VNQR.Infrastructure;
@@ -15,7 +16,7 @@ namespace VNQR
         #region Fields
         private OmronCamera? omronCamera;
         private OmronPLC_Hsl.PLCStatus? PLC_Status = OmronPLC_Hsl.PLCStatus.Disconnect;
-
+        private readonly PdaScanManager _pdaManager = new();
         #endregion
         public VNQRMainForm()
         {
@@ -23,6 +24,26 @@ namespace VNQR
             omronCamera = new OmronCamera(OmronCamera.e_CameraModel.V430, AppConfigs.Current.Camera_01_IP, AppConfigs.Current.Camera_01_Port);
             omronCamera.ClientCallback += OmronCamera_ClientCallback;
             omronCamera.Connect();
+            _pdaManager.OnScanReceived += Pda_ScanCallback;
+            _ = StartPdaServerSafely();
+        }
+
+        private async Task StartPdaServerSafely()
+        {
+            try
+            {
+                await _pdaManager.StartAsync();
+                System.Diagnostics.Debug.WriteLine("PDA Server started on port 6969.");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"PDA Server failed: {ex.Message}");
+            }
+        }
+
+        private void Pda_ScanCallback(ScanData data)
+        {
+            MainFormVariable.listbox.Enqueue($"[{data.Time:HH:mm:ss}] PDA: {data.PdaName}, Code: {data.Code}");
         }
 
         private void OmronCamera_ClientCallback(eOmronCameraState state, string data)
@@ -70,6 +91,14 @@ namespace VNQR
         {
             mainWK.RunWorkerAsync();
             updateWK.RunWorkerAsync();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            mainWK.CancelAsync();
+            updateWK.CancelAsync();
+            _ = _pdaManager.StopAsync();
+            base.OnFormClosing(e);
         }
 
         private void mainWK_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
