@@ -11,3 +11,4 @@ namespace TTManager.PDA.MobyDataPDA
         public string Code { get; set; } = "";
         public DateTime Time { get; set; }
     }
+}

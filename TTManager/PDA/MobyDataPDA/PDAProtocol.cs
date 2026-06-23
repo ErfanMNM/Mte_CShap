@@ -7,27 +7,27 @@ namespace TTManager.PDA.MobyDataPDA
 
     public class ApiServer
     {
-        public static WebApplication? App;
+        //public static WebApplication? App;
 
-        public static async Task StartAsync(Action<string> onBarcode)
-        {
-            var builder = WebApplication.CreateBuilder();
+        //public static async Task StartAsync(Action<string> onBarcode)
+        //{
+        //    var builder = WebApplication.CreateBuilder();
 
-            builder.WebHost.UseUrls("http://0.0.0.0:5000");
+        //    builder.WebHost.UseUrls("http://0.0.0.0:5000");
 
-            App = builder.Build();
+        //    App = builder.Build();
 
-            App.MapPost("/api/scan", (MobyDataScanData data) =>
-            {
-                onBarcode?.Invoke(data.Code);
+        //    App.MapPost("/api/scan", (MobyDataScanData data) =>
+        //    {
+        //        onBarcode?.Invoke(data.Code);
 
-                return Results.Ok(new
-                {
-                    Success = true
-                });
-            });
+        //        return Results.Ok(new
+        //        {
+        //            Success = true
+        //        });
+        //    });
 
-            await App.StartAsync();
-        }
+        //    await App.StartAsync();
+        //}
     }
 }
