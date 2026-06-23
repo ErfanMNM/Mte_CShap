@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
@@ -28,10 +29,10 @@ data class HealthResponse(
 
 interface PdaApiService {
     @POST("/api/scan")
-    suspend fun postScan(@Body request: ScanRequest): ScanResponse
+    suspend fun postScan(@Body request: ScanRequest): Response<ScanResponse>
 
     @GET("/api/health")
-    suspend fun getHealth(): HealthResponse
+    suspend fun getHealth(): Response<HealthResponse>
 }
 
 class ApiClient {

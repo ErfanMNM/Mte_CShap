@@ -4,6 +4,7 @@ plugins {
 }
 
 android {
+    namespace 'com.ttmanager.pda'
     compileSdk 34
 
     defaultConfig {
