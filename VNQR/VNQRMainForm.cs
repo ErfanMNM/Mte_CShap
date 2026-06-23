@@ -103,6 +103,56 @@ namespace VNQR
             {
                 switch (gvr.AppState)
                 {
+                    case e_AppState.Checking:
+                        {
+                            // 1. Nếu chưa có file lịch sử POHistory.db -> tạo mới -> chuyển sang Idle.
+                            var lastPO = VNQR.Helpers.po.POHistoryManager.GetLastPO();
+                            if (lastPO == null)
+                            {
+                                VNQR.Helpers.po.POHistoryManager.EnsureHistoryDB();
+                                MainFormVariable.listbox.Enqueue($"[AppStart] POHistory trống, khởi tạo thành công.");
+                                gvr.AppState = e_AppState.Idle;
+                                break;
+                            }
+
+                            // 2. Lấy PO gần nhất đang chạy dở (Status = 'Running')
+                            var runningPO = VNQR.Helpers.po.POHistoryManager.GetLastRunningPO();
+                            if (runningPO != null && runningPO.Rows.Count > 0)
+                            {
+                                var row = runningPO.Rows[0];
+                                string orderNo = row["PO"]?.ToString() ?? "";
+                                string productionDate = row["ProductionDate"]?.ToString() ?? "";
+                                string userName = row["UserName"]?.ToString() ?? "";
+                                string startTime = row["StartTime"]?.ToString() ?? "";
+
+                                bool poExists = VNQR.Helpers.po.POLoader.Exists(orderNo);
+                                if (poExists)
+                                {
+                                    MainFormVariable.listbox.Enqueue($"[Resume] Phát hiện PO '{orderNo}' đang chạy dở (Start: {startTime}).");
+                                    MainFormVariable.listbox.Enqueue($"[Resume] ProductionDate: {productionDate} | User: {userName}");
+                                    // TODO: Load lại trạng thái PO và tiếp tục
+                                    gvr.AppState = e_AppState.Idle;
+                                }
+                                else
+                                {
+                                    MainFormVariable.listbox.Enqueue($"[Warning] PO '{orderNo}' trong lịch sử không tồn tại trong PO_List. Bỏ qua.");
+                                    gvr.AppState = e_AppState.Idle;
+                                }
+                            }
+                            else
+                            {
+                                var lastPO2 = VNQR.Helpers.po.POHistoryManager.GetLastPO();
+                                if (lastPO2 != null && lastPO2.Rows.Count > 0)
+                                {
+                                    var row = lastPO2.Rows[0];
+                                    string orderNo = row["PO"]?.ToString() ?? "";
+                                    string status = row["Status"]?.ToString() ?? "";
+                                    MainFormVariable.listbox.Enqueue($"[Info] PO gần nhất: '{orderNo}' | Status: {status}");
+                                }
+                                gvr.AppState = e_AppState.Idle;
+                            }
+                            break;
+                        }
                     case e_AppState.Idle:
                         gvr.AppState = e_AppState.Running;
                         break;

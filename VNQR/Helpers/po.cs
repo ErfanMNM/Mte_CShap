@@ -1446,6 +1446,159 @@ namespace VNQR.Helpers
         }
         #endregion
 
+        // ================== PO HISTORY MANAGER ==================
+        #region POHistoryManager
+        // Lưu lịch sử PO đã chạy. Mỗi lần bắt đầu / kết thúc PO đều ghi vào đây.
+        // DB path: <baseDataPath>/POHistory.db
+        // Bảng: ID, PO, ProductionDate, StartTime, EndTime, Status, UserName
+        public static class POHistoryManager
+        {
+            private const string HISTORY_DB_NAME = "POHistory.db";
+
+            public static string GetHistoryDbPath()
+                => Path.Combine(Config.baseDataPath, HISTORY_DB_NAME);
+
+            public static void EnsureHistoryDB()
+            {
+                string folder = Path.GetDirectoryName(GetHistoryDbPath()) ?? Config.baseDataPath;
+                if (!Directory.Exists(folder))
+                    Directory.CreateDirectory(folder);
+
+                const string sql = @"
+                    CREATE TABLE IF NOT EXISTS POHistory (
+                        ID             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        PO             TEXT NOT NULL,
+                        ProductionDate TEXT NOT NULL DEFAULT '',
+                        StartTime      TEXT NOT NULL DEFAULT '',
+                        EndTime        TEXT NOT NULL DEFAULT '',
+                        Status         TEXT NOT NULL DEFAULT '',
+                        UserName       TEXT NOT NULL DEFAULT ''
+                    );
+                    CREATE INDEX IF NOT EXISTS IDX_PH_PO      ON POHistory(PO);
+                    CREATE INDEX IF NOT EXISTS IDX_PH_Status   ON POHistory(Status);
+                    PRAGMA journal_mode=WAL;
+                ";
+                using (var con = new SQLiteConnection($"Data Source={GetHistoryDbPath()}"))
+                {
+                    con.Open();
+                    using (var cmd = new SQLiteCommand(sql, con))
+                        cmd.ExecuteNonQuery();
+                }
+            }
+
+            // Ghi lịch sử bắt đầu PO (StartTime = now, Status = "Running", EndTime = '').
+            public static (bool success, string message) RecordStart(string orderNo, string productionDate, string userName)
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(orderNo))
+                        return (false, "orderNo không được trống.");
+
+                    EnsureHistoryDB();
+                    string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    using (var con = new SQLiteConnection($"Data Source={GetHistoryDbPath()}"))
+                    {
+                        con.Open();
+                        const string sql = @"
+                            INSERT INTO POHistory (PO, ProductionDate, StartTime, EndTime, Status, UserName)
+                            VALUES (@PO, @ProductionDate, @StartTime, @EndTime, @Status, @UserName);";
+                        using (var cmd = new SQLiteCommand(sql, con))
+                        {
+                            cmd.Parameters.AddWithValue("@PO", orderNo);
+                            cmd.Parameters.AddWithValue("@ProductionDate", productionDate ?? "");
+                            cmd.Parameters.AddWithValue("@StartTime", now);
+                            cmd.Parameters.AddWithValue("@EndTime", "");
+                            cmd.Parameters.AddWithValue("@Status", "Running");
+                            cmd.Parameters.AddWithValue("@UserName", userName ?? "");
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                    return (true, $"Đã ghi bắt đầu PO '{orderNo}'.");
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Lỗi khi ghi Start PO: {ex.Message}");
+                }
+            }
+
+            // Ghi lịch sử kết thúc PO (EndTime = now, Status = "Completed").
+            public static (bool success, string message) RecordEnd(string orderNo)
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(orderNo))
+                        return (false, "orderNo không được trống.");
+
+                    EnsureHistoryDB();
+                    string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    using (var con = new SQLiteConnection($"Data Source={GetHistoryDbPath()}"))
+                    {
+                        con.Open();
+                        const string sql = @"
+                            UPDATE POHistory
+                            SET EndTime = @EndTime, Status = @Status
+                            WHERE PO = @PO AND EndTime = '';";
+                        using (var cmd = new SQLiteCommand(sql, con))
+                        {
+                            cmd.Parameters.AddWithValue("@PO", orderNo);
+                            cmd.Parameters.AddWithValue("@EndTime", now);
+                            cmd.Parameters.AddWithValue("@Status", "Completed");
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                    return (true, $"Đã ghi kết thúc PO '{orderNo}'.");
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Lỗi khi ghi End PO: {ex.Message}");
+                }
+            }
+
+            // Lấy PO gần nhất chưa kết thúc (Status = 'Running'). Trả về DataTable hoặc null.
+            public static DataTable? GetLastRunningPO()
+            {
+                try
+                {
+                    EnsureHistoryDB();
+                    using (var con = new SQLiteConnection($"Data Source={GetHistoryDbPath()}"))
+                    {
+                        con.Open();
+                        const string sql = @"
+                            SELECT * FROM POHistory
+                            WHERE EndTime = '' AND Status = 'Running'
+                            ORDER BY ID DESC LIMIT 1;";
+                        var da = new SQLiteDataAdapter(sql, con);
+                        var table = new DataTable();
+                        da.Fill(table);
+                        return table.Rows.Count > 0 ? table : null;
+                    }
+                }
+                catch { return null; }
+            }
+
+            // Lấy PO gần nhất (bất kể trạng thái), dùng để hiển thị thông tin cho user.
+            public static DataTable? GetLastPO()
+            {
+                try
+                {
+                    EnsureHistoryDB();
+                    using (var con = new SQLiteConnection($"Data Source={GetHistoryDbPath()}"))
+                    {
+                        con.Open();
+                        const string sql = "SELECT * FROM POHistory ORDER BY ID DESC LIMIT 1;";
+                        var da = new SQLiteDataAdapter(sql, con);
+                        var table = new DataTable();
+                        da.Fill(table);
+                        return table.Rows.Count > 0 ? table : null;
+                    }
+                }
+                catch { return null; }
+            }
+        }
+        #endregion
+
         // ================== PO UPDATER ==================
         #region POUpdater
         public static class POUpdater

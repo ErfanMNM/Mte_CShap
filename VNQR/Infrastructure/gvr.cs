@@ -14,6 +14,7 @@ namespace VNQR.Infrastructure
 
     public enum e_AppState
     {
+        Checking,
         Idle,
         Running,
         Error,
