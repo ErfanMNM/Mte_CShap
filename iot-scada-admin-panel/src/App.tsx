@@ -31,12 +31,15 @@ import {
   RefreshCw,
   Plug,
   PlugZap,
+  Package,
 } from "lucide-react";
 
 import ReactECharts from "echarts-for-react";
 import Keyboard from "react-simple-keyboard";
 import "react-simple-keyboard/build/css/index.css";
 import { useWebSocket, DeviceStatus, LogEntry } from "./hooks/useWebSocket";
+import POManagerView from "./components/pomanager/POManagerView";
+import DataPoolView from "./components/datapool/DataPoolView";
 
 type KeyboardLayoutType = "default" | "shift" | "numeric";
 
@@ -1070,7 +1073,8 @@ const AdminPanelContent = () => {
   const navigation = [
     { id: "monitor", title: "Giám sát SCADA", icon: LayoutDashboard },
     { id: "devices", title: "Quản lý thiết bị", icon: Cpu },
-    { id: "batches", title: "Lệnh sản xuất", icon: Box },
+    { id: "batches", title: "Lệnh sản xuất", icon: Package },
+    { id: "datapool", title: "Quản lý DataPool", icon: Database },
     { id: "history", title: "Báo cáo sản xuất", icon: BarChart2 },
     { id: "users", title: "Quản lý tài khoản", icon: Users },
     { id: "settings", title: "Cấu hình hệ thống", icon: Settings },
@@ -1174,9 +1178,13 @@ const AdminPanelContent = () => {
           {activeRoute === "monitor" && <ScadaMonitorView />}
           {activeRoute === "history" && <ProductionReportView />}
           {activeRoute === "settings" && <SettingsView />}
+          {activeRoute === "batches" && <POManagerView />}
+          {activeRoute === "datapool" && <DataPoolView />}
           {activeRoute !== "monitor" &&
             activeRoute !== "history" &&
-            activeRoute !== "settings" && (
+            activeRoute !== "settings" &&
+            activeRoute !== "batches" &&
+            activeRoute !== "datapool" && (
               <PlaceholderView
                 title={
                   navigation.find((n) => n.id === activeRoute)?.title ||

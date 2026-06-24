@@ -338,3 +338,536 @@ int activeCount = po.POActivator.GetActiveCount("PO0001");    // số mã đã a
 int packedCount = po.POPacking.GetPackedCount("PO0001");      // số mã đã đóng gói
 int closedCartons = po.POCarton.GetClosedCartonCount("PO0001"); // số thùng đã đóng
 ```
+
+---
+
+## POApiServer — REST API Server
+
+API Server cho phép tạo và quản lý PO từ hệ thống bên ngoài qua HTTP.
+
+### Khởi động Server
+
+```csharp
+// Cách 1: Dùng ILogger
+var logger = serviceProvider.GetRequiredService<ILogger<POApiServer>>();
+var apiServer = new VNQR.Helpers.POApiServer(port: 9999, logger: logger);
+
+// Cách 2: Dùng callback log tùy chỉnh
+var apiServer = new VNQR.Helpers.POApiServer(
+    port: 9999,
+    onLog: (source, message) => Console.WriteLine($"[{source}] {message}")
+);
+
+// Khởi động (chạy bất đồng bộ trên background thread)
+await apiServer.StartAsync();
+
+// Dừng server khi không cần nữa
+await apiServer.StopAsync();
+
+// Hoặc dùng using
+using var apiServer = new VNQR.Helpers.POApiServer(port: 9999);
+await apiServer.StartAsync();
+// ... server chạy ...
+// Dispose tự động gọi StopAsync
+```
+
+### Base URL
+
+```
+http://<server_ip>:9999
+```
+
+---
+
+### 1. Health Check
+
+Kiểm tra trạng thái server.
+
+**Endpoint:** `GET /api/health`
+
+**Response:**
+```json
+{
+    "status": "OK",
+    "timestamp": "2026-01-11T10:30:00",
+    "appState": "Running"
+}
+```
+
+---
+
+### 2. Tạo PO mới
+
+**Endpoint:** `POST /api/po`
+
+**Request Body:**
+```json
+{
+    "orderNo": "PO0001",
+    "site": "SITE_MASAN",
+    "factory": "FACTORY_01",
+    "productionLine": "LINE_1",
+    "productionDate": "2026-01-11",
+    "shift": "A",
+    "orderQty": 100,
+    "lotNumber": "LOT_2026_001",
+    "productCode": "PROD_XYZ",
+    "productName": "Sản phẩm A",
+    "gtin": "A001",
+    "customerOrderNo": "CUST_PO_001",
+    "uom": "PCS",
+    "userName": "API",
+    "autoLoadCodes": true
+}
+```
+
+**Trường bắt buộc:**
+- `orderNo` — Mã PO
+- `orderQty` — Số lượng (phải > 24)
+
+**Trường tùy chọn:**
+- `autoLoadCodes` — Tự động nạp mã từ DataPool (mặc định: true)
+- `gtin` — Dùng để nạp mã từ DataPool khi autoLoadCodes = true
+- Các trường khác có giá trị mặc định
+
+**Response thành công (200):**
+```json
+{
+    "success": true,
+    "message": "PO 'PO0001' created successfully.",
+    "orderNo": "PO0001",
+    "loadedCodesCount": 50
+}
+```
+
+**Response lỗi:**
+```json
+{
+    "success": false,
+    "message": "orderNo is required."
+}
+```
+
+| HTTP Status | Nguyên nhân |
+|-------------|-------------|
+| 400 | Thiếu orderNo hoặc orderQty <= 24 |
+| 409 | PO đã tồn tại |
+| 500 | Lỗi server |
+
+---
+
+### 3. Lấy thông tin PO
+
+**Endpoint:** `GET /api/po/{orderNo}`
+
+**Ví dụ:** `GET /api/po/PO0001`
+
+**Response thành công (200):**
+```json
+{
+    "success": true,
+    "data": {
+        "orderNo": "PO0001",
+        "site": "SITE_MASAN",
+        "factory": "FACTORY_01",
+        "productionLine": "LINE_1",
+        "productionDate": "2026-01-11",
+        "shift": "A",
+        "orderQty": 100,
+        "lotNumber": "LOT_2026_001",
+        "productCode": "PROD_XYZ",
+        "productName": "Sản phẩm A",
+        "gtin": "A001",
+        "customerOrderNo": "CUST_PO_001",
+        "uom": "PCS",
+        "createdTime": "2026-01-11T10:30:00",
+        "modifiedTime": "2026-01-11T10:30:00"
+    }
+}
+```
+
+**Response lỗi (404):**
+```json
+{
+    "success": false,
+    "message": "PO not found."
+}
+```
+
+---
+
+### 4. Lấy danh sách tất cả PO
+
+**Endpoint:** `GET /api/po/list/all`
+
+**Response:**
+```json
+{
+    "success": true,
+    "count": 3,
+    "data": [
+        {
+            "orderNo": "PO0001",
+            "productName": "Sản phẩm A",
+            "orderQty": 100,
+            "productionDate": "2026-01-11",
+            "status": "2026-01-11T10:30:00"
+        },
+        {
+            "orderNo": "PO0002",
+            "productName": "Sản phẩm B",
+            "orderQty": 200,
+            "productionDate": "2026-01-12",
+            "status": "2026-01-12T08:00:00"
+        }
+    ]
+}
+```
+
+---
+
+### Ví dụ: Gọi API từ curl
+
+```bash
+# Health check
+curl http://localhost:9999/api/health
+
+# Tạo PO mới
+curl -X POST http://localhost:9999/api/po \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderNo": "PO_API_001",
+    "site": "SITE_MASAN",
+    "factory": "FACTORY_01",
+    "productionLine": "LINE_1",
+    "productionDate": "2026-01-11",
+    "shift": "A",
+    "orderQty": 100,
+    "lotNumber": "LOT_001",
+    "productCode": "PROD_001",
+    "productName": "Sản phẩm Test",
+    "gtin": "A001",
+    "customerOrderNo": "CUST_001",
+    "uom": "PCS",
+    "autoLoadCodes": true
+  }'
+
+# Lấy thông tin PO
+curl http://localhost:9999/api/po/PO_API_001
+
+# Lấy danh sách PO
+curl http://localhost:9999/api/po/list/all
+```
+
+---
+
+### Ví dụ: Gọi API từ C#
+
+```csharp
+using var httpClient = new HttpClient { BaseAddress = new Uri("http://localhost:9999/") };
+
+// Tạo PO
+var request = new
+{
+    orderNo = "PO_API_001",
+    site = "SITE_MASAN",
+    factory = "FACTORY_01",
+    productionLine = "LINE_1",
+    productionDate = "2026-01-11",
+    shift = "A",
+    orderQty = 100,
+    lotNumber = "LOT_001",
+    productCode = "PROD_001",
+    productName = "Sản phẩm Test",
+    gtin = "A001",
+    customerOrderNo = "CUST_001",
+    uom = "PCS",
+    autoLoadCodes = true
+};
+
+var response = await httpClient.PostAsJsonAsync("/api/po", request);
+var result = await response.Content.ReadFromJsonAsync<VNQR.Helpers.CreatePOResponse>();
+
+if (result.Success)
+    Console.WriteLine($"Created: {result.OrderNo}");
+else
+    Console.WriteLine($"Error: {result.Message}");
+
+---
+
+## DataPool API — REST API cho bể dữ liệu
+
+API Server cho phép quản lý bể dữ liệu (DataPool) từ hệ thống bên ngoài qua HTTP.
+
+**Lưu ý:** DataPool path mặc định: `C:/VNQR/Databases`
+
+---
+
+### 1. Thêm mã thủ công (từng cái 1)
+
+**Endpoint:** `POST /api/datapool/add`
+
+**Request:**
+```json
+{
+    "poolName": "A001",
+    "code": "CODE_123456",
+    "status": 0,
+    "batchID": "",
+    "note": "Manual entry",
+    "userName": "admin"
+}
+```
+
+- `status`: 0 = chưa dùng, 1 = đã dùng (mặc định: 0)
+- Nếu `status = 1` thì `batchID` bắt buộc phải có giá trị
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Nhập mã thủ công thành công.",
+    "count": 1
+}
+```
+
+---
+
+### 2. Thêm mã từ đầu đọc (camera)
+
+**Endpoint:** `POST /api/datapool/add-reader`
+
+**Request:**
+```json
+{
+    "poolName": "A001",
+    "code": "CODE_789",
+    "batchID": "LOT_2026_001",
+    "note": "Scanned by camera"
+}
+```
+
+- Mã chưa tồn tại → thêm mới, Status = 1 (đã dùng)
+- Mã đã tồn tại nhưng chưa dùng → cập nhật Status = 1
+- Mã đã tồn tại và đã dùng → trả lỗi
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Đã thêm mã mới và đánh dấu đã dùng.",
+    "count": 1
+}
+```
+
+---
+
+### 3. Nhập mã từ file CSV
+
+**Endpoint:** `POST /api/datapool/import-file`
+
+**Request:**
+```json
+{
+    "poolName": "A001",
+    "csvPath": "C:/Data/codes.csv",
+    "userName": "admin",
+    "createID": "IMPORT_001",
+    "codeColumn": "Code",
+    "noteColumn": "Description",
+    "note": "Batch import from supplier"
+}
+```
+
+- Tạo file phiếu nhập trong thư mục `Phieu/`
+- Status mặc định = 0 (chưa dùng) cho tất cả mã
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Nhập từ file hoàn tất: 100 thêm mới, 5 bị bỏ qua (trùng mã).",
+    "count": 100
+}
+```
+
+---
+
+### 4. Lấy danh sách tất cả mã trong bể
+
+**Endpoint:** `GET /api/datapool/{poolName}/codes`
+
+**Ví dụ:** `GET /api/datapool/A001/codes`
+
+**Response:**
+```json
+{
+    "success": true,
+    "count": 3,
+    "data": [
+        {
+            "id": 1,
+            "code": "CODE_123456",
+            "status": 0,
+            "batchID": "",
+            "createTime": "2026-01-11 10:00:00",
+            "createID": "User:admin",
+            "note": "Manual entry"
+        },
+        {
+            "id": 2,
+            "code": "CODE_789",
+            "status": 1,
+            "batchID": "LOT_2026_001",
+            "createTime": "2026-01-11 11:00:00",
+            "createID": "Reader",
+            "note": "Scanned by camera"
+        }
+    ]
+}
+```
+
+---
+
+### 5. Lấy thông tin một mã
+
+**Endpoint:** `GET /api/datapool/{poolName}/code/{code}`
+
+**Ví dụ:** `GET /api/datapool/A001/code/CODE_123456`
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "code": "CODE_123456",
+        "status": 0,
+        "batchID": "",
+        "createTime": "2026-01-11 10:00:00",
+        "createID": "User:admin",
+        "note": "Manual entry"
+    }
+}
+```
+
+---
+
+### 6. Cập nhật trạng thái mã
+
+**Endpoint:** `PUT /api/datapool/{poolName}/code/{code}/status`
+
+**Request:**
+```json
+{
+    "status": 1,
+    "batchID": "LOT_2026_002",
+    "note": "Updated"
+}
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Status updated.",
+    "count": 1
+}
+```
+
+---
+
+### 7. Xóa một mã
+
+**Endpoint:** `DELETE /api/datapool/{poolName}/code/{code}`
+
+**Ví dụ:** `DELETE /api/datapool/A001/code/CODE_123456`
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Code deleted.",
+    "count": 1
+}
+```
+
+---
+
+### 8. Liệt kê các bể dữ liệu
+
+**Endpoint:** `GET /api/datapool/pools`
+
+**Response:**
+```json
+{
+    "success": true,
+    "count": 2,
+    "data": [
+        {
+            "name": "A001",
+            "fileName": "A001.vnqrdb",
+            "size": 4096
+        },
+        {
+            "name": "A002",
+            "fileName": "A002.vnqrdb",
+            "size": 8192
+        }
+    ]
+}
+```
+
+---
+
+### Ví dụ: Gọi DataPool API từ curl
+
+```bash
+# Thêm mã thủ công
+curl -X POST http://localhost:9999/api/datapool/add \
+  -H "Content-Type: application/json" \
+  -d '{
+    "poolName": "A001",
+    "code": "CODE_123456",
+    "status": 0,
+    "userName": "admin"
+  }'
+
+# Thêm mã từ camera
+curl -X POST http://localhost:9999/api/datapool/add-reader \
+  -H "Content-Type: application/json" \
+  -d '{
+    "poolName": "A001",
+    "code": "CODE_789",
+    "batchID": "LOT_2026_001"
+  }'
+
+# Nhập mã từ file CSV
+curl -X POST http://localhost:9999/api/datapool/import-file \
+  -H "Content-Type: application/json" \
+  -d '{
+    "poolName": "A001",
+    "csvPath": "C:/Data/codes.csv",
+    "userName": "admin",
+    "createID": "IMPORT_001",
+    "codeColumn": "Code"
+  }'
+
+# Lấy danh sách mã
+curl http://localhost:9999/api/datapool/A001/codes
+
+# Lấy thông tin một mã
+curl http://localhost:9999/api/datapool/A001/code/CODE_123456
+
+# Cập nhật trạng thái mã
+curl -X PUT http://localhost:9999/api/datapool/A001/code/CODE_123456/status \
+  -H "Content-Type: application/json" \
+  -d '{"status": 1, "batchID": "LOT_2026_002"}'
+
+# Xóa mã
+curl -X DELETE http://localhost:9999/api/datapool/A001/code/CODE_123456
+
+# Liệt kê các bể dữ liệu
+curl http://localhost:9999/api/datapool/pools
+```
+```

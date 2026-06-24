@@ -175,7 +175,7 @@ namespace TTManager.Auth
                             {
                                 try
                                 {
-                                    await log.WriteLogAsync("NA", LoginAction.Login, $"Đăng nhập thất bại cho người dùng {username}: Mã OTP không hợp lệ.");
+                                    await log.LogAsync("NA", LoginAction.Login, $"Đăng nhập thất bại cho người dùng {username}: Mã OTP không hợp lệ.");
                                 }
                                 catch (Exception ex)
                                 {
@@ -194,7 +194,7 @@ namespace TTManager.Auth
                     {
                         try
                         {
-                            await log.WriteLogAsync(username, LoginAction.Login, $"Đăng nhập thành công cho người dùng {username}.");
+                            await log.LogAsync(username, LoginAction.Login, $"Đăng nhập thành công cho người dùng {username}.");
                         }
                         catch (Exception ex)
                         {
@@ -202,7 +202,7 @@ namespace TTManager.Auth
                             Console.WriteLine($"Lỗi ghi log: {ex.Message}");
                         }
                     });
-                    //await log.WriteLogAsync(username, LoginAction.Login, $"Đăng nhập thành công cho người dùng {username}.");
+                    //await log.LogAsync(username, LoginAction.Login, $"Đăng nhập thành công cho người dùng {username}.");
 
                     //trả về sự kiện
                     OnLoginAction?.Invoke(this, new LoginActionEventArgs
@@ -225,7 +225,7 @@ namespace TTManager.Auth
                     {
                         try
                         {
-                            await log.WriteLogAsync("NA", LoginAction.Login, $"Đăng nhập thất bại cho người dùng {username}: Tên đăng nhập hoặc mật khẩu không đúng.");
+                            await log.LogAsync("NA", LoginAction.Login, $"Đăng nhập thất bại cho người dùng {username}: Tên đăng nhập hoặc mật khẩu không đúng.");
                         }
                         catch (Exception ex)
                         {
@@ -243,7 +243,7 @@ namespace TTManager.Auth
                 {
                     try
                     {
-                        await log.WriteLogAsync("NA", LoginAction.Login, $"Lỗi khi đăng nhập: {ex.Message}");
+                        await log.LogAsync("NA", LoginAction.Login, $"Lỗi khi đăng nhập: {ex.Message}");
                     }
                     catch (Exception logEx)
                     {
@@ -253,7 +253,7 @@ namespace TTManager.Auth
                 });
 
                 // Ghi log lỗi đăng nhập
-                //await log.WriteLogAsync("NA", LoginAction.Login, $"Lỗi khi đăng nhập: {ex.Message}");
+                //await log.LogAsync("NA", LoginAction.Login, $"Lỗi khi đăng nhập: {ex.Message}");
                 // Trả về sự kiện lỗi
                 OnLoginAction?.Invoke(this, new LoginActionEventArgs
                 {

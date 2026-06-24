@@ -6,6 +6,7 @@ using TTManager.Omron;
 using TTManager.PDA;
 using TTManager.PLCHelpers;
 using VNQR.Configs;
+using VNQR.Helpers;
 using VNQR.Infrastructure;
 using VNQR.Utils;
 using static System.Net.Mime.MediaTypeNames;
@@ -19,6 +20,8 @@ namespace VNQR
         private OmronCamera? omronCamera;
         private OmronPLC_Hsl.PLCStatus? PLC_Status = OmronPLC_Hsl.PLCStatus.Disconnect;
         private readonly PdaScanManager _pdaManager = new();
+        private readonly POApiServer _poApiServer;
+        private readonly int _poApiPort = 9999;
         private readonly WebSocketServerHelper? _wsServer;
         private readonly int _wsPort = 8080;
         #endregion
@@ -35,6 +38,14 @@ namespace VNQR
             omronCamera.Connect();
             _pdaManager.OnScanReceived += Pda_ScanCallback;
             _ = StartPdaServerSafely();
+
+            _poApiServer = new POApiServer(_poApiPort, "0.0.0.0", null, (src, msg) => MainFormVariable.listbox.Enqueue($"[{src}] {msg}"));
+            _ = StartPOApiServerSafely();
+
+            MainTabControl = uiTabControl1;
+            uiNavMenu1.TabControl = uiTabControl1;
+
+            //thêm các page con vào
         }
 
         private void WsServer_Callback(WebSocketServerState state, string data)
@@ -75,11 +86,24 @@ namespace VNQR
             try
             {
                 await _pdaManager.StartAsync();
-                System.Diagnostics.Debug.WriteLine("PDA Server started on port 6969.");
+                MainFormVariable.listbox.Enqueue($"[PDA] Server started on port 6969.");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"PDA Server failed: {ex.Message}");
+                MainFormVariable.listbox.Enqueue($"[PDA] Server failed: {ex.Message}");
+            }
+        }
+
+        private async Task StartPOApiServerSafely()
+        {
+            try
+            {
+                await _poApiServer.StartAsync();
+                MainFormVariable.listbox.Enqueue($"[POAPI] REST API started on port {_poApiPort}.");
+            }
+            catch (Exception ex)
+            {
+                MainFormVariable.listbox.Enqueue($"[POAPI] Server failed: {ex.Message}");
             }
         }
 
@@ -143,6 +167,7 @@ namespace VNQR
             mainWK.CancelAsync();
             updateWK.CancelAsync();
             _ = _pdaManager.StopAsync();
+            _poApiServer.Dispose();
             _wsServer?.Dispose();
             base.OnFormClosing(e);
         }
@@ -151,22 +176,24 @@ namespace VNQR
         {
             while (!mainWK.CancellationPending)
             {
+
                 switch (gvr.AppState)
                 {
+
                     case e_AppState.Checking:
                         {
                             // 1. Nếu chưa có file lịch sử POHistory.db -> tạo mới -> chuyển sang Idle.
-                            var lastPO = VNQR.Helpers.po.POHistoryManager.GetLastPO();
+                            var lastPO = Helpers.po.POHistoryManager.GetLastPO();
                             if (lastPO == null)
                             {
-                                VNQR.Helpers.po.POHistoryManager.EnsureHistoryDB();
+                                Helpers.po.POHistoryManager.EnsureHistoryDB();
                                 MainFormVariable.listbox.Enqueue($"[AppStart] POHistory trống, khởi tạo thành công.");
                                 gvr.AppState = e_AppState.Idle;
                                 break;
                             }
 
                             // 2. Lấy PO gần nhất đang chạy dở (Status = 'Running')
-                            var runningPO = VNQR.Helpers.po.POHistoryManager.GetLastRunningPO();
+                            var runningPO = Helpers.po.POHistoryManager.GetLastRunningPO();
                             if (runningPO != null && runningPO.Rows.Count > 0)
                             {
                                 var row = runningPO.Rows[0];
@@ -175,7 +202,7 @@ namespace VNQR
                                 string userName = row["UserName"]?.ToString() ?? "";
                                 string startTime = row["StartTime"]?.ToString() ?? "";
 
-                                bool poExists = VNQR.Helpers.po.POLoader.Exists(orderNo);
+                                bool poExists = Helpers.po.POLoader.Exists(orderNo);
                                 if (poExists)
                                 {
                                     MainFormVariable.listbox.Enqueue($"[Resume] Phát hiện PO '{orderNo}' đang chạy dở (Start: {startTime}).");
@@ -191,7 +218,7 @@ namespace VNQR
                             }
                             else
                             {
-                                var lastPO2 = VNQR.Helpers.po.POHistoryManager.GetLastPO();
+                                var lastPO2 = Helpers.po.POHistoryManager.GetLastPO();
                                 if (lastPO2 != null && lastPO2.Rows.Count > 0)
                                 {
                                     var row = lastPO2.Rows[0];
@@ -204,7 +231,8 @@ namespace VNQR
                             break;
                         }
                     case e_AppState.Idle:
-                        gvr.AppState = e_AppState.Running;
+                        //
+                        //gvr.AppState = e_AppState.Running;
                         break;
                     case e_AppState.Running:
                         break;
@@ -221,6 +249,13 @@ namespace VNQR
         {
             while (!updateWK.CancellationPending)
             {
+                if (gvr.AppState.ToString() != opAppStatus.Text)
+                {
+                    this.InvokeIfRequired(() =>
+                    {
+                        opAppStatus.Text = gvr.AppState.ToString();
+                    });
+                }
                 if (MainFormVariable.listbox.Count > 0)
                 {
                     string data = MainFormVariable.listbox.Dequeue();
