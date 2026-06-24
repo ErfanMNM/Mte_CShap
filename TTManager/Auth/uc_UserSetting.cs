@@ -71,7 +71,7 @@ namespace TTManager.Auth
                 {
                     try
                     {
-                        await log.WriteLogAsync(CurrentUserName, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Không tìm thấy thông tin người dùng.");
+                        await log.LogAsync(CurrentUserName, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Không tìm thấy thông tin người dùng.");
                     }
                     catch (Exception ex)
                     {
@@ -103,7 +103,7 @@ namespace TTManager.Auth
                         {
                             try
                             {
-                                await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Vui lòng nhập mã OTP 2FA.");
+                                await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Vui lòng nhập mã OTP 2FA.");
                             }
                             catch (Exception ex)
                             {
@@ -111,7 +111,7 @@ namespace TTManager.Auth
                                 Console.WriteLine($"Error logging: {ex.Message}");
                             }
                         });
-                        //await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Vui lòng nhập mã OTP 2FA.");
+                        //await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Vui lòng nhập mã OTP 2FA.");
                         return;
                     }
 
@@ -127,7 +127,7 @@ namespace TTManager.Auth
                         {
                             try
                             {
-                                await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Người dùng nhập sai mã 2FA");
+                                await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Người dùng nhập sai mã 2FA");
                             }
                             catch (Exception ex)
                             {
@@ -157,7 +157,7 @@ namespace TTManager.Auth
                             {
                                 try
                                 {
-                                    await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mã OTP không được để trống.");
+                                    await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mã OTP không được để trống.");
                                 }
                                 catch (Exception ex)
                                 {
@@ -165,7 +165,7 @@ namespace TTManager.Auth
                                     Console.WriteLine($"Error logging: {ex.Message}");
                                 }
                             });
-                            //await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mã OTP không được để trống.");
+                            //await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mã OTP không được để trống.");
                             return;
                         }
                         bool isValid = TwoFAHelper.VerifyOTP(userData.Key2FA, ipOTP.Text, digits: 6);
@@ -183,7 +183,7 @@ namespace TTManager.Auth
                             {
                                 try
                                 {
-                                    await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mã OTP không hợp lệ.");
+                                    await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mã OTP không hợp lệ.");
                                 }
                                 catch (Exception ex)
                                 {
@@ -191,7 +191,7 @@ namespace TTManager.Auth
                                     Console.WriteLine($"Error logging: {ex.Message}");
                                 }
                             });
-                            //await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mã OTP không hợp lệ.");
+                            //await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mã OTP không hợp lệ.");
                             return;
                         }
                     }
@@ -208,7 +208,7 @@ namespace TTManager.Auth
                         {
                             try
                             {
-                                await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu mới và xác nhận mật khẩu mới không được để trống.");
+                                await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu mới và xác nhận mật khẩu mới không được để trống.");
                             }
                             catch (Exception ex)
                             {
@@ -216,7 +216,7 @@ namespace TTManager.Auth
                                 Console.WriteLine($"Error logging: {ex.Message}");
                             }
                         });
-                        // await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu mới và xác nhận mật khẩu mới không được để trống.");
+                        // await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu mới và xác nhận mật khẩu mới không được để trống.");
                         return;
                     }
 
@@ -233,7 +233,7 @@ namespace TTManager.Auth
                         {
                             try
                             {
-                                await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu mới và xác nhận mật khẩu mới không giống nhau.");
+                                await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu mới và xác nhận mật khẩu mới không giống nhau.");
                             }
                             catch (Exception ex)
                             {
@@ -241,7 +241,7 @@ namespace TTManager.Auth
                                     Console.WriteLine($"Error logging: {ex.Message}");
                             }
                         });
-                        //await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu mới và xác nhận mật khẩu mới không giống nhau.");
+                        //await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu mới và xác nhận mật khẩu mới không giống nhau.");
                         return;
                     }
 
@@ -266,7 +266,7 @@ namespace TTManager.Auth
                         {
                             try
                             {
-                                await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thành công.");
+                                await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thành công.");
                             }
                             catch (Exception ex)
                             {
@@ -274,7 +274,7 @@ namespace TTManager.Auth
                                 Console.WriteLine($"Error logging: {ex.Message}");
                             }
                         });
-                        //await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thành công.");
+                        //await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thành công.");
                     }
                     else
                     {
@@ -288,7 +288,7 @@ namespace TTManager.Auth
                         {
                             try
                             {
-                                await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Không thể cập nhật mật khẩu.");
+                                await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Không thể cập nhật mật khẩu.");
                             }
                             catch (Exception ex)
                             {
@@ -296,7 +296,7 @@ namespace TTManager.Auth
                                 Console.WriteLine($"Error logging: {ex.Message}");
                             }
                         });
-                        //await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Không thể cập nhật mật khẩu.");
+                        //await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Không thể cập nhật mật khẩu.");
                     }
 
                     return;
@@ -313,7 +313,7 @@ namespace TTManager.Auth
                     {
                         try
                         {
-                            await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu cũ không đúng.");
+                            await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu cũ không đúng.");
                         }
                         catch (Exception ex)
                         {
@@ -321,7 +321,7 @@ namespace TTManager.Auth
                             Console.WriteLine($"Error logging: {ex.Message}");
                         }
                     });
-                    // await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu cũ không đúng.");
+                    // await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Mật khẩu cũ không đúng.");
                 }
             }
             catch (Exception ex)
@@ -336,7 +336,7 @@ namespace TTManager.Auth
                 {
                     try
                     {
-                        await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, $"Cập nhật thông tin người dùng thất bại: {ex.Message}");
+                        await log.LogAsync(userData.Username, LoginAction.UpdateProfile, $"Cập nhật thông tin người dùng thất bại: {ex.Message}");
                     }
                     catch (Exception logEx)
                     {
@@ -344,7 +344,7 @@ namespace TTManager.Auth
                         Console.WriteLine($"Error logging: {logEx.Message}");   
                     }
                 });
-                //await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, $"Cập nhật thông tin người dùng thất bại: {ex.Message}");
+                //await log.LogAsync(userData.Username, LoginAction.UpdateProfile, $"Cập nhật thông tin người dùng thất bại: {ex.Message}");
             }
             finally
             {
@@ -414,7 +414,7 @@ namespace TTManager.Auth
                         {
                             try
                             {
-                                await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Vui lòng nhập mã OTP 2FA.");
+                                await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Vui lòng nhập mã OTP 2FA.");
                             }
                             catch (Exception ex)
                             {
@@ -436,7 +436,7 @@ namespace TTManager.Auth
                         {
                             try
                             {
-                                await log.WriteLogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Vui lòng nhập mã OTP 2FA đúng.");
+                                await log.LogAsync(userData.Username, LoginAction.UpdateProfile, "Cập nhật thông tin người dùng thất bại: Vui lòng nhập mã OTP 2FA đúng.");
                             }
                             catch (Exception ex)
                             {

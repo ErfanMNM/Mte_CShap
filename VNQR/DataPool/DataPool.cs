@@ -598,4 +598,76 @@ namespace VNQR.DataPool
             }
         }
     }
+
+    // ================== QUERY ==================
+    // Các hàm truy vấn danh sách codes trong một bể.
+    public static class Query
+    {
+        // Lấy toàn bộ codes trong bể (có thể lọc theo status).
+        public static TResult GetAllCodes(string poolName, int? status = null)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(poolName))
+                    return new TResult(false, "Tên bể dữ liệu không được trống.");
+
+                PoolHelper.EnsurePool(poolName);
+
+                using (var con = new SQLiteConnection($"Data Source={PoolHelper.GetPoolPath(poolName)}"))
+                {
+                    con.Open();
+                    string sql = status.HasValue
+                        ? "SELECT * FROM Codes WHERE Status = @Status ORDER BY ID ASC;"
+                        : "SELECT * FROM Codes ORDER BY ID ASC;";
+                    using (var da = new SQLiteDataAdapter(sql, con))
+                    {
+                        if (status.HasValue)
+                            da.SelectCommand.Parameters.AddWithValue("@Status", status.Value);
+                        var table = new DataTable();
+                        da.Fill(table);
+                        return new TResult(true, "Lấy danh sách mã thành công.", table.Rows.Count, table);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new TResult(false, $"Lỗi truy vấn: {ex.Message}");
+            }
+        }
+    }
+
+    // ================== LISTER ==================
+    // Liệt kê các bể dữ liệu hiện có trong thư mục DataPool.
+    public static class Lister
+    {
+        public static TResult ListPools()
+        {
+            try
+            {
+                if (!Directory.Exists(DataPool.dataPath))
+                    return new TResult(true, "Thư mục DataPool chưa tồn tại.", 0, new DataTable());
+
+                var table = new DataTable();
+                table.Columns.Add("name", typeof(string));
+                table.Columns.Add("fileName", typeof(string));
+                table.Columns.Add("size", typeof(long));
+
+                var files = Directory.GetFiles(DataPool.dataPath, "*.vnqrdb");
+                foreach (var file in files)
+                {
+                    var info = new FileInfo(file);
+                    table.Rows.Add(
+                        Path.GetFileNameWithoutExtension(file),
+                        info.Name,
+                        info.Length);
+                }
+
+                return new TResult(true, "Liệt kê bể dữ liệu thành công.", table.Rows.Count, table);
+            }
+            catch (Exception ex)
+            {
+                return new TResult(false, $"Lỗi liệt kê bể: {ex.Message}");
+            }
+        }
+    }
 }

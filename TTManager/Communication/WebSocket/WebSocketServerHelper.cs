@@ -115,6 +115,12 @@ namespace TTManager.Communication.WebSocket
             return $"http://+:{Port}/{path}/";
         }
 
+        private string GetFallbackPrefix()
+        {
+            string path = Path.TrimStart('/');
+            return $"http://localhost:{Port}/{path}/";
+        }
+
         private async Task AcceptClientsAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -361,6 +367,33 @@ namespace TTManager.Communication.WebSocket
 
                 OnWebSocketServerCallback(WebSocketServerState.Listening,
                     $"Server started on port {Port}{Path}");
+            }
+            catch (HttpListenerException ex) when (ex.ErrorCode == 5 || ex.ErrorCode == 1231)
+            {
+                // Access denied - try fallback to localhost
+                try
+                {
+                    _httpListener = new HttpListener();
+                    _httpListener.Prefixes.Add(GetFallbackPrefix());
+                    _httpListener.Start();
+
+                    _listenerCts ??= new CancellationTokenSource();
+                    _serverCts ??= new CancellationTokenSource();
+
+                    CancellationToken linkedToken = CancellationTokenSource
+                        .CreateLinkedTokenSource(_listenerCts.Token, _serverCts.Token).Token;
+
+                    _listenerTask = Task.Run(() => AcceptClientsAsync(linkedToken), linkedToken);
+
+                    OnWebSocketServerCallback(WebSocketServerState.Listening,
+                        $"Server started on localhost:{Port}{Path} (fallback - run 'netsh http add urlacl' for full access)");
+                }
+                catch (Exception fallbackEx)
+                {
+                    OnWebSocketServerCallback(WebSocketServerState.Error,
+                        $"Failed to start server: {fallbackEx.Message}");
+                    throw;
+                }
             }
             catch (Exception ex)
             {

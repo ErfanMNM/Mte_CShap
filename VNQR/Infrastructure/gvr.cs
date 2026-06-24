@@ -9,7 +9,7 @@ namespace VNQR.Infrastructure
     {
         public static string AppName = "VNQR";
         public static eOmronCameraState CameraState = eOmronCameraState.Disconnected;
-        public static e_AppState AppState = e_AppState.Idle;
+        public static e_AppState AppState = e_AppState.Checking;
     }
 
     public enum e_AppState
