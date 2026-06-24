@@ -1,5 +1,7 @@
 using Sunny.UI;
 using System.Reflection.Emit;
+using System.Text.Json;
+using TTManager.Communication.WebSocket;
 using TTManager.Omron;
 using TTManager.PDA;
 using TTManager.PLCHelpers;
@@ -17,15 +19,55 @@ namespace VNQR
         private OmronCamera? omronCamera;
         private OmronPLC_Hsl.PLCStatus? PLC_Status = OmronPLC_Hsl.PLCStatus.Disconnect;
         private readonly PdaScanManager _pdaManager = new();
+        private readonly WebSocketServerHelper? _wsServer;
+        private readonly int _wsPort = 8080;
         #endregion
         public VNQRMainForm()
         {
             InitializeComponent();
+
+            _wsServer = new WebSocketServerHelper(_wsPort, "/ws");
+            _wsServer.WebSocketServerCallback += WsServer_Callback;
+            _wsServer.Start();
+
             omronCamera = new OmronCamera(OmronCamera.e_CameraModel.V430, AppConfigs.Current.Camera_01_IP, AppConfigs.Current.Camera_01_Port);
             omronCamera.ClientCallback += OmronCamera_ClientCallback;
             omronCamera.Connect();
             _pdaManager.OnScanReceived += Pda_ScanCallback;
             _ = StartPdaServerSafely();
+        }
+
+        private void WsServer_Callback(WebSocketServerState state, string data)
+        {
+            MainFormVariable.listbox.Enqueue($"[WS] {state}: {data}");
+        }
+
+        private async Task BroadcastDeviceStatusAsync()
+        {
+            if (_wsServer == null || _wsServer.ClientCount == 0) return;
+
+            var status = new
+            {
+                type = "device_status",
+                timestamp = DateTime.Now,
+                camera = new
+                {
+                    state = gvr.CameraState.ToString(),
+                    ip = AppConfigs.Current.Camera_01_IP
+                },
+                plc = new
+                {
+                    state = PLC_Status?.ToString() ?? "Unknown",
+                    connected = PLC_Status == OmronPLC_Hsl.PLCStatus.Connected
+                },
+                app = new
+                {
+                    state = gvr.AppState.ToString()
+                }
+            };
+
+            string json = JsonSerializer.Serialize(status);
+            await _wsServer.BroadcastAsync(json);
         }
 
         private async Task StartPdaServerSafely()
@@ -48,22 +90,25 @@ namespace VNQR
 
         private void OmronCamera_ClientCallback(eOmronCameraState state, string data)
         {
+            gvr.CameraState = state;
+
             switch (state)
             {
                 case eOmronCameraState.Connected:
-                    gvr.CameraState = state;
+                    MainFormVariable.listbox.Enqueue("[Camera] Đã kết nối");
                     break;
                 case eOmronCameraState.Disconnected:
-                    gvr.CameraState = state;
+                    MainFormVariable.listbox.Enqueue("[Camera] Mất kết nối");
                     break;
                 case eOmronCameraState.Received:
-                    gvr.CameraState = state;
                     HandleCameraDataReceived(data);
                     break;
                 case eOmronCameraState.Reconnecting:
-                    gvr.CameraState = state;
+                    MainFormVariable.listbox.Enqueue("[Camera] Đang kết nối lại...");
                     break;
             }
+
+            _ = BroadcastDeviceStatusAsync();
         }
 
         private void HandleCameraDataReceived(string data)
@@ -77,10 +122,14 @@ namespace VNQR
             switch (e.Status)
             {
                 case OmronPLC_Hsl.PLCStatus.Connected:
+                    MainFormVariable.listbox.Enqueue("[PLC] Đã kết nối");
                     break;
                 case OmronPLC_Hsl.PLCStatus.Disconnect:
+                    MainFormVariable.listbox.Enqueue("[PLC] Mất kết nối");
                     break;
             }
+
+            _ = BroadcastDeviceStatusAsync();
         }
 
         private void VNQRMainForm_Load(object sender, EventArgs e)
@@ -94,6 +143,7 @@ namespace VNQR
             mainWK.CancelAsync();
             updateWK.CancelAsync();
             _ = _pdaManager.StopAsync();
+            _wsServer?.Dispose();
             base.OnFormClosing(e);
         }
 
