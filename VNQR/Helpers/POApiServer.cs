@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TTManager.Audit;
+using VNQR.Infrastructure;
 
 namespace VNQR.Helpers
 {
@@ -146,6 +147,15 @@ namespace VNQR.Helpers
 
         [JsonPropertyName("note")]
         public string Note { get; set; } = "";
+    }
+
+    /// <summary>
+    /// Request body for creating a new pool.
+    /// </summary>
+    public class CreatePoolRequest
+    {
+        [JsonPropertyName("poolName")]
+        public string PoolName { get; set; } = "";
     }
 
     /// <summary>
@@ -368,8 +378,9 @@ namespace VNQR.Helpers
             _app.MapPut("/api/datapool/{poolName}/code/{code}/status", HandleDataPoolUpdateStatus);
             _app.MapDelete("/api/datapool/{poolName}/code/{code}", HandleDataPoolDeleteCode);
             _app.MapGet("/api/datapool/pools", HandleDataPoolListPools);
+            _app.MapPost("/api/datapool/pools", HandleDataPoolCreatePool);
 
-            Log("POApiServer", $"DataPool endpoints: POST /api/datapool/add, POST /api/datapool/add-reader, POST /api/datapool/import-file");
+            Log("POApiServer", $"DataPool endpoints: POST /api/datapool/add, POST /api/datapool/add-reader, POST /api/datapool/import-file, POST /api/datapool/pools");
 
             Log("POApiServer", $"Started on http://{_host}:{_port}");
             Log("POApiServer", $"Endpoints: POST /api/po, GET /api/po/{{orderNo}}, GET /api/po/list/all");
@@ -399,7 +410,7 @@ namespace VNQR.Helpers
             {
                 Status = "OK",
                 Timestamp = DateTime.Now,
-                AppState = VNQR.Infrastructure.gvr.AppState.ToString()
+                AppState = GV.AppState.ToString()
             });
         }
 
@@ -441,71 +452,71 @@ namespace VNQR.Helpers
                 // Map to POInfo
                 var poInfo = new po.POInfo
                 {
-                    orderNo = request.OrderNo.Trim(),
-                    site = request.Site?.Trim() ?? "",
-                    factory = request.Factory?.Trim() ?? "",
-                    productionLine = request.ProductionLine?.Trim() ?? "",
-                    productionDate = request.ProductionDate?.Trim() ?? DateTime.Now.ToString("yyyy-MM-dd"),
-                    shift = request.Shift?.Trim() ?? "",
-                    orderQty = request.OrderQty,
-                    lotNumber = request.LotNumber?.Trim() ?? "",
-                    productCode = request.ProductCode?.Trim() ?? "",
-                    productName = request.ProductName?.Trim() ?? "",
-                    gtin = request.Gtin?.Trim() ?? "",
-                    customerOrderNo = request.CustomerOrderNo?.Trim() ?? "",
-                    uom = request.Uom?.Trim() ?? "PCS"
+                    OrderNo = request.OrderNo.Trim(),
+                    Site = request.Site?.Trim() ?? "",
+                    Factory = request.Factory?.Trim() ?? "",
+                    ProductionLine = request.ProductionLine?.Trim() ?? "",
+                    ProductionDate = request.ProductionDate?.Trim() ?? DateTime.Now.ToString("yyyy-MM-dd"),
+                    Shift = request.Shift?.Trim() ?? "",
+                    OrderQty = request.OrderQty,
+                    LotNumber = request.LotNumber?.Trim() ?? "",
+                    ProductCode = request.ProductCode?.Trim() ?? "",
+                    ProductName = request.ProductName?.Trim() ?? "",
+                    Gtin = request.Gtin?.Trim() ?? "",
+                    CustomerOrderNo = request.CustomerOrderNo?.Trim() ?? "",
+                    Uom = request.Uom?.Trim() ?? "PCS"
                 };
 
                 // Check if PO already exists
-                if (po.POLoader.Exists(poInfo.orderNo))
+                if (po.POLoader.Exists(poInfo.OrderNo))
                 {
                     return Results.Conflict(new CreatePOResponse
                     {
                         Success = false,
-                        Message = $"PO '{poInfo.orderNo}' already exists."
+                        Message = $"PO '{poInfo.OrderNo}' already exists."
                     });
                 }
 
                 // Step 1: Create PO in PO_List
                 var createResult = po.POLoader.Create(poInfo);
-                if (!createResult.success)
+                if (!createResult.IsSuccess)
                 {
                     return Results.Json(new CreatePOResponse
                     {
                         Success = false,
-                        Message = createResult.message
+                        Message = createResult.Message
                     }, statusCode: 400);
                 }
 
-                Log("POApiServer", $"PO '{poInfo.orderNo}' created in PO_List.");
+                Log("POApiServer", $"PO '{poInfo.OrderNo}' created in PO_List.");
 
                 // Step 2: Initialize PO databases (UniqueCodes, Records, Carton)
-                var initResult = po.POCreator.InitPO(poInfo.orderNo);
-                if (!initResult.success)
+                var initResult = po.POCreator.InitPO(poInfo.OrderNo);
+                if (!initResult.IsSuccess)
                 {
-                    Log("POApiServer", $"Warning: Init PO DB failed: {initResult.message}");
+                    Log("POApiServer", $"Warning: Init PO DB failed: {initResult.Message}");
                 }
                 else
                 {
-                    Log("POApiServer", $"PO databases initialized for '{poInfo.orderNo}'.");
+                    Log("POApiServer", $"PO databases initialized for '{poInfo.OrderNo}'.");
                 }
 
                 // Step 3: Record to history (Status = Running)
                 var historyResult = po.POHistoryManager.RecordStart(
-                    poInfo.orderNo,
-                    poInfo.productionDate,
+                    poInfo.OrderNo,
+                    poInfo.ProductionDate,
                     request.UserName ?? "API"
                 );
 
                 // Step 4: Load codes from DataPool if enabled
                 int loadedCodes = 0;
-                if (request.AutoLoadCodes && !string.IsNullOrWhiteSpace(poInfo.gtin))
+                if (request.AutoLoadCodes && !string.IsNullOrWhiteSpace(poInfo.Gtin))
                 {
-                    var loadResult = po.POLoader.LoadCodesFromDataPool(poInfo.orderNo, poInfo.gtin);
+                    var loadResult = po.POLoader.LoadCodesFromDataPool(poInfo.OrderNo, poInfo.Gtin);
                     if (loadResult.success)
                     {
                         loadedCodes = loadResult.loadedCount;
-                        Log("POApiServer", $"Loaded {loadedCodes} codes from DataPool '{poInfo.gtin}'.");
+                        Log("POApiServer", $"Loaded {loadedCodes} codes from DataPool '{poInfo.Gtin}'.");
                     }
                     else
                     {
@@ -513,28 +524,28 @@ namespace VNQR.Helpers
                     }
                 }
 
-                Log("POApiServer", $"PO '{poInfo.orderNo}' created successfully. Loaded {loadedCodes} codes.");
+                Log("POApiServer", $"PO '{poInfo.OrderNo}' created successfully. Loaded {loadedCodes} codes.");
 
                 // Audit log for PO creation
                 var createAuditJson = System.Text.Json.JsonSerializer.Serialize(new
                 {
-                    orderNo = poInfo.orderNo,
-                    gtin = poInfo.gtin,
-                    productCode = poInfo.productCode,
-                    productName = poInfo.productName,
-                    orderQty = poInfo.orderQty,
+                    orderNo = poInfo.OrderNo,
+                    gtin = poInfo.Gtin,
+                    productCode = poInfo.ProductCode,
+                    productName = poInfo.ProductName,
+                    orderQty = poInfo.OrderQty,
                     createdBy = request.UserName ?? "API",
                     loadedCodes
                 });
                 _auditLog?.Log(request.UserName ?? "API", POActions.Create,
-                    $"Created PO: {poInfo.orderNo} (GTIN: {poInfo.gtin}, Qty: {poInfo.orderQty})",
+                    $"Created PO: {poInfo.OrderNo} (GTIN: {poInfo.Gtin}, Qty: {poInfo.OrderQty})",
                     createAuditJson, "PO");
 
                 return Results.Json(new CreatePOResponse
                 {
                     Success = true,
-                    Message = $"PO '{poInfo.orderNo}' created successfully.",
-                    OrderNo = poInfo.orderNo,
+                    Message = $"PO '{poInfo.OrderNo}' created successfully.",
+                    OrderNo = poInfo.OrderNo,
                     LoadedCodesCount = loadedCodes
                 });
             }
@@ -561,7 +572,7 @@ namespace VNQR.Helpers
                 var result = po.POLoader.GetByOrderNo(orderNo);
                 if (!result.issuccess)
                 {
-                    return Results.NotFound(new { success = false, message = result.message });
+                    return Results.NotFound(new { success = false, message = result.Message });
                 }
 
                 var row = result.data.Rows[0];
@@ -601,7 +612,7 @@ namespace VNQR.Helpers
                 var result = po.POLoader.GetAll();
                 if (!result.issuccess)
                 {
-                    return Results.Json(new { success = false, message = result.message, data = Array.Empty<object>() });
+                    return Results.Json(new { success = false, message = result.Message, data = Array.Empty<object>() });
                 }
 
                 var poList = new List<object>();
@@ -729,7 +740,7 @@ namespace VNQR.Helpers
                 // Perform delete
                 var deleteResult = po.POLoader.Delete(orderNo);
 
-                if (deleteResult.success)
+                if (deleteResult.IsSuccess)
                 {
                     // Log successful deletion
                     var auditJson = System.Text.Json.JsonSerializer.Serialize(new
@@ -753,12 +764,12 @@ namespace VNQR.Helpers
                 }
                 else
                 {
-                    _auditLog?.Log(userName, POActions.Delete, $"Failed to delete PO: {orderNo} - {deleteResult.message}",
-                        $"{{\"orderNo\":\"{orderNo}\",\"error\":\"{deleteResult.message}\"}}", "PO");
+                    _auditLog?.Log(userName, POActions.Delete, $"Failed to delete PO: {orderNo} - {deleteResult.Message}",
+                        $"{{\"orderNo\":\"{orderNo}\",\"error\":\"{deleteResult.Message}\"}}", "PO");
                     return Results.Json(new DeletePOResponse
                     {
                         Success = false,
-                        Message = deleteResult.message
+                        Message = deleteResult.Message
                     }, statusCode: 400);
                 }
             }
@@ -923,7 +934,7 @@ namespace VNQR.Helpers
                 return Results.Json(new ApiResponse
                 {
                     Success = result.issuccess,
-                    Message = result.message,
+                    Message = result.Message,
                     Count = result.count
                 }, statusCode: result.issuccess ? 200 : 400);
             }
@@ -959,7 +970,7 @@ namespace VNQR.Helpers
                 return Results.Json(new ApiResponse
                 {
                     Success = result.issuccess,
-                    Message = result.message,
+                    Message = result.Message,
                     Count = result.count
                 }, statusCode: result.issuccess ? 200 : 400);
             }
@@ -997,7 +1008,7 @@ namespace VNQR.Helpers
                 return Results.Json(new ApiResponse
                 {
                     Success = result.issuccess,
-                    Message = result.message,
+                    Message = result.Message,
                     Count = result.count
                 }, statusCode: result.issuccess ? 200 : 400);
             }
@@ -1029,7 +1040,7 @@ namespace VNQR.Helpers
 
                 var result = VNQR.DataPool.Query.GetAllCodes(poolName, status);
                 if (!result.issuccess || result.data == null)
-                    return Results.Json(new ApiResponse { Success = false, Message = result.message }, statusCode: 404);
+                    return Results.Json(new ApiResponse { Success = false, Message = result.Message }, statusCode: 404);
 
                 var codes = new List<object>();
                 foreach (System.Data.DataRow row in result.data.Rows)
@@ -1173,7 +1184,7 @@ namespace VNQR.Helpers
             {
                 var result = VNQR.DataPool.Lister.ListPools();
                 if (!result.issuccess)
-                    return Results.Json(new ApiResponse { Success = false, Message = result.message }, statusCode: 500);
+                    return Results.Json(new ApiResponse { Success = false, Message = result.Message }, statusCode: 500);
 
                 var pools = new List<object>();
                 if (result.data != null)
@@ -1204,6 +1215,26 @@ namespace VNQR.Helpers
             catch (Exception ex)
             {
                 Log("POApiServer", $"Error listing pools: {ex.Message}");
+                return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+            }
+        }
+
+        /// Create a new pool (ensures the pool DB file exists).
+        /// POST /api/datapool/pools
+        private IResult HandleDataPoolCreatePool(HttpContext context)
+        {
+            try
+            {
+                var body = context.Request.ReadFromJsonAsync<CreatePoolRequest>().GetAwaiter().GetResult();
+                if (body == null || string.IsNullOrWhiteSpace(body.PoolName))
+                    return Results.Json(new ApiResponse { Success = false, Message = "poolName is required." }, statusCode: 400);
+
+                VNQR.DataPool.PoolHelper.EnsurePool(body.PoolName);
+                return Results.Json(new ApiResponse { Success = true, Message = $"Pool '{body.PoolName}' created." });
+            }
+            catch (Exception ex)
+            {
+                Log("POApiServer", $"Error creating pool: {ex.Message}");
                 return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
             }
         }

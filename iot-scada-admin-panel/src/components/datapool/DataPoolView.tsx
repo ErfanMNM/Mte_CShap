@@ -6,12 +6,14 @@ import {
   X,
   Check,
   AlertCircle,
-  Package,
   Tag,
-  Clock,
   ChevronDown,
   ChevronRight,
-  Wifi,
+  Plus,
+  Upload,
+  FileText,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import datapoolApi from "../../services/datapoolApi";
 import type { DataPoolInfo, DataPoolCode } from "../../types/datapool";
@@ -23,6 +25,413 @@ interface PoolWithStats extends DataPoolInfo {
   loaded?: boolean;
 }
 
+/* =========================================
+   MODAL COMPONENT
+   ========================================= */
+
+type ModalMode = "create" | "addcode" | "import" | null;
+
+const Modal: React.FC<{
+  mode: ModalMode;
+  onClose: () => void;
+  children: React.ReactNode;
+  title: string;
+}> = ({ mode, onClose, children, title }) => {
+  if (!mode) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h3 className="text-base font-bold text-slate-800">{title}</h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-400 hover:text-slate-600"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6">{children}</div>
+      </div>
+    </div>
+  );
+};
+
+/* =========================================
+   CREATE POOL FORM
+   ========================================= */
+
+const CreatePoolForm: React.FC<{
+  onSuccess: () => void;
+  onClose: () => void;
+}> = ({ onSuccess, onClose }) => {
+  const [poolName, setPoolName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!poolName.trim()) {
+      setError("Tên pool không được trống.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      await datapoolApi.createPool(poolName.trim());
+      setSuccess(`Pool '${poolName.trim()}' đã được tạo thành công!`);
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1000);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || "Đã xảy ra lỗi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+          Tên Pool (GTIN)
+        </label>
+        <input
+          type="text"
+          value={poolName}
+          onChange={(e) => setPoolName(e.target.value)}
+          placeholder="VD: A001, 8934588012345"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+          autoFocus
+        />
+        <p className="text-[11px] text-slate-400 mt-1">
+          Tên pool thường là GTIN của sản phẩm. File .vnqrdb sẽ được tạo trong C:/VNQR/Databases/
+        </p>
+      </div>
+      {error && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          {success}
+        </div>
+      )}
+      <div className="flex justify-end gap-3 pt-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+        >
+          Hủy
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-xl transition-colors"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+          Tạo Pool
+        </button>
+      </div>
+    </form>
+  );
+};
+
+/* =========================================
+   ADD CODE FORM
+   ========================================= */
+
+const AddCodeForm: React.FC<{
+  pools: PoolWithStats[];
+  onSuccess: () => void;
+  onClose: () => void;
+}> = ({ pools, onSuccess, onClose }) => {
+  const [poolName, setPoolName] = useState(pools[0]?.name || "");
+  const [code, setCode] = useState("");
+  const [batchID, setBatchID] = useState("");
+  const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!poolName.trim()) { setError("Chọn pool."); return; }
+    if (!code.trim()) { setError("Mã không được trống."); return; }
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      await datapoolApi.addCode({
+        poolName: poolName.trim(),
+        code: code.trim(),
+        status: 0,
+        batchID: batchID.trim(),
+        note: note.trim(),
+      });
+      setSuccess("Mã đã được thêm thành công!");
+      setCode("");
+      setBatchID("");
+      setNote("");
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1000);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || "Đã xảy ra lỗi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Pool</label>
+        <select
+          value={poolName}
+          onChange={(e) => setPoolName(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all appearance-none"
+        >
+          <option value="">-- Chọn pool --</option>
+          {pools.map((p) => (
+            <option key={p.name} value={p.name}>{p.name}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Mã QR / Code</label>
+        <input
+          type="text"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="VD: QR-0001"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-mono"
+          autoFocus
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Batch ID <span className="font-normal text-slate-400">(tùy chọn)</span></label>
+        <input
+          type="text"
+          value={batchID}
+          onChange={(e) => setBatchID(e.target.value)}
+          placeholder="VD: BATCH-2026-001"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Ghi chú <span className="font-normal text-slate-400">(tùy chọn)</span></label>
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="VD: Nhập tay"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+        />
+      </div>
+      {error && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          {success}
+        </div>
+      )}
+      <div className="flex justify-end gap-3 pt-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+        >
+          Hủy
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-xl transition-colors"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+          Thêm mã
+        </button>
+      </div>
+    </form>
+  );
+};
+
+/* =========================================
+   IMPORT CSV FORM
+   ========================================= */
+
+const ImportCSVForm: React.FC<{
+  pools: PoolWithStats[];
+  onSuccess: () => void;
+  onClose: () => void;
+}> = ({ pools, onSuccess, onClose }) => {
+  const [poolName, setPoolName] = useState(pools[0]?.name || "");
+  const [createID, setCreateID] = useState("");
+  const [csvPath, setCsvPath] = useState("");
+  const [codeColumn, setCodeColumn] = useState("Code");
+  const [noteColumn, setNoteColumn] = useState("");
+  const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!poolName.trim()) { setError("Chọn pool."); return; }
+    if (!createID.trim()) { setError("CreateID không được trống."); return; }
+    if (!csvPath.trim()) { setError("Đường dẫn CSV không được trống."); return; }
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      await datapoolApi.importCSV({
+        poolName: poolName.trim(),
+        csvPath: csvPath.trim(),
+        createID: createID.trim(),
+        userName: "admin",
+        codeColumn: codeColumn.trim() || "Code",
+        noteColumn: noteColumn.trim(),
+        note: note.trim(),
+      });
+      setSuccess("Nhập CSV thành công!");
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1500);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || "Đã xảy ra lỗi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Pool</label>
+        <select
+          value={poolName}
+          onChange={(e) => setPoolName(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all appearance-none"
+        >
+          <option value="">-- Chọn pool --</option>
+          {pools.map((p) => (
+            <option key={p.name} value={p.name}>{p.name}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Create ID</label>
+        <input
+          type="text"
+          value={createID}
+          onChange={(e) => setCreateID(e.target.value)}
+          placeholder="VD: IMPORT-20260625-001"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-mono"
+          autoFocus
+        />
+        <p className="text-[11px] text-slate-400 mt-1">Mã định danh phiên nhập (unique).</p>
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+          Đường dẫn file CSV trên server
+        </label>
+        <input
+          type="text"
+          value={csvPath}
+          onChange={(e) => setCsvPath(e.target.value)}
+          placeholder="VD: C:/Data/qr_codes.csv"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-mono"
+        />
+        <p className="text-[11px] text-slate-400 mt-1">
+          Nhập đường dẫn tuyệt đối đến file CSV trên máy chạy VNQR.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cột Mã</label>
+          <input
+            type="text"
+            value={codeColumn}
+            onChange={(e) => setCodeColumn(e.target.value)}
+            placeholder="Code"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cột Ghi chú <span className="font-normal text-slate-400">(tùy chọn)</span></label>
+          <input
+            type="text"
+            value={noteColumn}
+            onChange={(e) => setNoteColumn(e.target.value)}
+            placeholder="Note"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+          />
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Ghi chú phiên nhập <span className="font-normal text-slate-400">(tùy chọn)</span></label>
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="VD: Nhập từ khách hàng A"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+        />
+      </div>
+      {error && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          {success}
+        </div>
+      )}
+      <div className="flex justify-end gap-3 pt-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+        >
+          Hủy
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-xl transition-colors"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+          Nhập CSV
+        </button>
+      </div>
+    </form>
+  );
+};
+
+/* =========================================
+   MAIN DATAPOOL VIEW
+   ========================================= */
+
 const DataPoolView: React.FC = () => {
   const [pools, setPools] = useState<PoolWithStats[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +440,7 @@ const DataPoolView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedPool, setExpandedPool] = useState<string | null>(null);
   const [poolCodes, setPoolCodes] = useState<Record<string, DataPoolCode[]>>({});
-  const [healthStatus, setHealthStatus] = useState<{ ok: boolean; state?: string } | null>(null);
+  const [modalMode, setModalMode] = useState<ModalMode>(null);
 
   // Load pool list
   const fetchPools = useCallback(async () => {
@@ -39,7 +448,6 @@ const DataPoolView: React.FC = () => {
     setError(null);
     try {
       const poolList = await datapoolApi.listPools();
-      // Initialize with stats = unknown until we fetch each pool
       setPools(poolList.map((p) => ({
         ...p,
         totalCodes: 0,
@@ -69,12 +477,10 @@ const DataPoolView: React.FC = () => {
           : p
       ));
 
-      // Also store the codes if expanded
       if (expandedPool === poolName) {
         setPoolCodes(prev => ({ ...prev, [poolName]: codes }));
       }
     } catch {
-      // Silent fail for stats — pool exists but codes might be unavailable
       setPools(prev => prev.map(p =>
         p.name === poolName ? { ...p, loaded: true } : p
       ));
@@ -111,7 +517,6 @@ const DataPoolView: React.FC = () => {
       try {
         const codes = await datapoolApi.getCodes(poolName);
         setPoolCodes(prev => ({ ...prev, [poolName]: codes }));
-        // Update stats too
         const total = codes.length;
         const used = codes.filter(c => c.status !== 0 && c.status !== 2).length;
         setPools(prev => prev.map(p =>
@@ -150,32 +555,38 @@ const DataPoolView: React.FC = () => {
               Quản lý DataPool
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Theo dõi số mã còn trong kho &amp; quản lý pool
+              Tạo pool, nhập mã và theo dõi kho mã QR
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {healthStatus && (
-            <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold ${
-                healthStatus.ok
-                  ? "bg-green-50 border-green-200 text-green-700"
-                  : "bg-red-50 border-red-200 text-red-700"
-              }`}
-            >
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  healthStatus.ok
-                    ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]"
-                    : "bg-red-500 animate-pulse"
-                }`}
-              />
-              API: {healthStatus.ok ? "Online" : "Offline"}
-            </div>
-          )}
+          <button
+            onClick={() => setModalMode("create")}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-xl border border-purple-200 transition-colors"
+            title="Tạo Pool mới"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Tạo Pool
+          </button>
+          <button
+            onClick={() => setModalMode("addcode")}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-xl border border-purple-200 transition-colors"
+            title="Nhập code đơn lẻ"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Nhập Code
+          </button>
+          <button
+            onClick={() => setModalMode("import")}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-xl border border-purple-200 transition-colors"
+            title="Import CSV"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            Import CSV
+          </button>
           <button
             onClick={fetchPools}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-xl border border-purple-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-700 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
             Làm mới
@@ -251,7 +662,7 @@ const DataPoolView: React.FC = () => {
             <div className="px-5 py-10 text-center text-slate-400">
               <Database className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <span className="text-sm">
-                {searchTerm ? "Không tìm thấy pool phù hợp" : "Chưa có pool nào"}
+                {searchTerm ? "Không tìm thấy pool phù hợp" : "Chưa có pool nào — bấm 'Tạo Pool' để bắt đầu"}
               </span>
             </div>
           ) : (
@@ -387,6 +798,38 @@ const DataPoolView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      <Modal
+        mode={modalMode}
+        onClose={() => setModalMode(null)}
+        title={
+          modalMode === "create" ? "Tạo Pool mới" :
+          modalMode === "addcode" ? "Nhập Code đơn lẻ" :
+          modalMode === "import" ? "Import CSV" : ""
+        }
+      >
+        {modalMode === "create" && (
+          <CreatePoolForm
+            onSuccess={fetchPools}
+            onClose={() => setModalMode(null)}
+          />
+        )}
+        {modalMode === "addcode" && (
+          <AddCodeForm
+            pools={pools}
+            onSuccess={fetchPools}
+            onClose={() => setModalMode(null)}
+          />
+        )}
+        {modalMode === "import" && (
+          <ImportCSVForm
+            pools={pools}
+            onSuccess={fetchPools}
+            onClose={() => setModalMode(null)}
+          />
+        )}
+      </Modal>
     </div>
   );
 };

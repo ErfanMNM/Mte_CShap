@@ -42,6 +42,11 @@ namespace VNQR.DataPool
         public DataTable data { get; set; }
         public int count { get; set; }
 
+        // PascalCase aliases
+        public bool IsSuccess => issuccess;
+        public string Message => message;
+        public int Count => count;
+
         public TResult(bool issuccess, string message, int count = 0, DataTable data = null)
         {
             this.issuccess = issuccess;

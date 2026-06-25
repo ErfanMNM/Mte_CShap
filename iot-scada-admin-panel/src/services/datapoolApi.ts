@@ -18,6 +18,23 @@ const apiClient = axios.create({
   },
 });
 
+export interface ImportCSVRequest {
+  poolName: string;
+  csvPath: string;
+  userName?: string;
+  createID: string;
+  codeColumn?: string;
+  noteColumn?: string;
+  note?: string;
+}
+
+export interface AddFromReaderRequest {
+  poolName: string;
+  code: string;
+  batchID: string;
+  note?: string;
+}
+
 export const datapoolApi = {
   /** List all pools */
   async listPools(): Promise<DataPoolInfo[]> {
@@ -42,6 +59,34 @@ export const datapoolApi = {
   /** Add single code manually */
   async addCode(request: AddCodeRequest): Promise<void> {
     await apiClient.post("/api/datapool/add", request);
+  },
+
+  /** Create a new pool */
+  async createPool(poolName: string): Promise<void> {
+    await apiClient.post("/api/datapool/pools", { poolName });
+  },
+
+  /** Import codes from CSV file */
+  async importCSV(request: ImportCSVRequest): Promise<void> {
+    await apiClient.post("/api/datapool/import-file", {
+      poolName: request.poolName,
+      csvPath: request.csvPath,
+      userName: request.userName || "admin",
+      createID: request.createID,
+      codeColumn: request.codeColumn || "Code",
+      noteColumn: request.noteColumn || "",
+      note: request.note || "",
+    });
+  },
+
+  /** Add code from reader/camera (auto marks as Used) */
+  async addFromReader(request: AddFromReaderRequest): Promise<void> {
+    await apiClient.post("/api/datapool/add-reader", {
+      poolName: request.poolName,
+      code: request.code,
+      batchID: request.batchID,
+      note: request.note || "",
+    });
   },
 };
 

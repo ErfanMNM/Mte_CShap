@@ -4,8 +4,14 @@ export interface DeviceStatus {
   type: "device_status";
   timestamp: string;
   camera: {
-    state: string;
-    ip: string;
+    active: {
+      state: string;
+      ip: string;
+    };
+    package: {
+      state: string;
+      ip: string;
+    };
   };
   plc: {
     state: string;
@@ -14,6 +20,7 @@ export interface DeviceStatus {
   app: {
     state: string;
   };
+  networkStrength?: number;
 }
 
 export interface LogEntry {
@@ -135,27 +142,55 @@ export function useWebSocket({
 
       wsRef.current.onerror = (error) => {
         console.error("WebSocket error:", error);
-        addLog(createLogEntry("Lỗi kết nối WebSocket", "ws", "error"));
+        const err = error as Event & { message?: string; code?: string };
+        addLog(createLogEntry(
+          `Lỗi kết nối WebSocket: ${err?.message || err?.code || "Không rõ lỗi"}`,
+          "ws",
+          "error"
+        ));
       };
 
       wsRef.current.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data) as DeviceStatus;
+          // Strip "[clientId] " prefix from WebSocketServerHelper
+          let raw = event.data as string;
+          const prefixMatch = raw.match(/^\[[\w-]+\]\s+/);
+          if (prefixMatch) {
+            raw = raw.slice(prefixMatch[0].length);
+          }
+
+          const data = JSON.parse(raw) as DeviceStatus;
 
           if (data.type === "device_status") {
             setLastMessage(data);
             onMessage?.(data);
 
-            if (data.camera) {
+            if (data.camera?.active) {
               const cameraState =
-                data.camera.state === "Connected"
+                data.camera.active.state === "Connected"
                   ? "success"
-                  : data.camera.state === "Disconnected"
+                  : data.camera.active.state === "Disconnected"
                     ? "error"
                     : "warning";
               addLog(
                 createLogEntry(
-                  `Camera: ${data.camera.state}`,
+                  `Camera Active: ${data.camera.active.state}`,
+                  "camera",
+                  cameraState
+                )
+              );
+            }
+
+            if (data.camera?.package) {
+              const cameraState =
+                data.camera.package.state === "Connected"
+                  ? "success"
+                  : data.camera.package.state === "Disconnected"
+                    ? "error"
+                    : "warning";
+              addLog(
+                createLogEntry(
+                  `Camera Package: ${data.camera.package.state}`,
                   "camera",
                   cameraState
                 )
@@ -176,20 +211,19 @@ export function useWebSocket({
             }
           }
 
-          if (event.data.includes("Client connected")) {
-            setClientCount((prev) => prev + 1);
-            const match = event.data.match(/Total:\s*(\d+)/);
+          if (raw.includes("Client connected")) {
+            const match = raw.match(/Total:\s*(\d+)/);
             if (match) {
               setClientCount(parseInt(match[1], 10));
             }
           }
 
-          if (event.data.includes("Client removed") || event.data.includes("dead client")) {
+          if (raw.includes("Client removed") || raw.includes("dead client")) {
             setClientCount((prev) => Math.max(0, prev - 1));
           }
         } catch {
-          if (typeof event.data === "string" && !event.data.startsWith("{")) {
-            addLog(createLogEntry(event.data, "ws", "info"));
+          if (typeof raw === "string" && !raw.startsWith("{")) {
+            addLog(createLogEntry(raw, "ws", "info"));
           }
         }
       };

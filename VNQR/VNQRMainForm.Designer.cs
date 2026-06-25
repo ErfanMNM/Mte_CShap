@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             listBox1 = new ListBox();
             mainWK = new System.ComponentModel.BackgroundWorker();
             updateWK = new System.ComponentModel.BackgroundWorker();
@@ -36,10 +37,13 @@
             uiNavMenu1 = new Sunny.UI.UINavMenu();
             uiTabControl1 = new Sunny.UI.UITabControl();
             tabPage1 = new TabPage();
+            uiLabel3 = new Sunny.UI.UILabel();
+            opPLCStatus = new Sunny.UI.UILabel();
             tabPage2 = new TabPage();
             uiTabControl2 = new Sunny.UI.UITabControl();
             tabPage3 = new TabPage();
             tabPage4 = new TabPage();
+            omronplC_Hsl = new TTManager.PLCHelpers.OmronPLC_Hsl(components);
             uiTabControl1.SuspendLayout();
             tabPage1.SuspendLayout();
             tabPage2.SuspendLayout();
@@ -49,9 +53,9 @@
             // listBox1
             // 
             listBox1.FormattingEnabled = true;
-            listBox1.Location = new Point(279, 3);
+            listBox1.Location = new Point(311, 3);
             listBox1.Name = "listBox1";
-            listBox1.Size = new Size(944, 564);
+            listBox1.Size = new Size(912, 564);
             listBox1.TabIndex = 0;
             // 
             // mainWK
@@ -70,7 +74,7 @@
             uiLabel1.ForeColor = Color.FromArgb(48, 48, 48);
             uiLabel1.Location = new Point(3, 9);
             uiLabel1.Name = "uiLabel1";
-            uiLabel1.Size = new Size(128, 23);
+            uiLabel1.Size = new Size(119, 23);
             uiLabel1.TabIndex = 1;
             uiLabel1.Text = "Trạng Thái App";
             // 
@@ -121,7 +125,9 @@
             // 
             // tabPage1
             // 
+            tabPage1.Controls.Add(uiLabel3);
             tabPage1.Controls.Add(uiLabel1);
+            tabPage1.Controls.Add(opPLCStatus);
             tabPage1.Controls.Add(listBox1);
             tabPage1.Controls.Add(opAppStatus);
             tabPage1.Location = new Point(0, 40);
@@ -131,13 +137,33 @@
             tabPage1.Text = "tabPage1";
             tabPage1.UseVisualStyleBackColor = true;
             // 
+            // uiLabel3
+            // 
+            uiLabel3.Font = new Font("Microsoft Sans Serif", 12F);
+            uiLabel3.ForeColor = Color.FromArgb(48, 48, 48);
+            uiLabel3.Location = new Point(3, 32);
+            uiLabel3.Name = "uiLabel3";
+            uiLabel3.Size = new Size(119, 23);
+            uiLabel3.TabIndex = 1;
+            uiLabel3.Text = "Trạng Thái PLC";
+            // 
+            // opPLCStatus
+            // 
+            opPLCStatus.Font = new Font("Microsoft Sans Serif", 12F);
+            opPLCStatus.ForeColor = Color.FromArgb(48, 48, 48);
+            opPLCStatus.Location = new Point(128, 32);
+            opPLCStatus.Name = "opPLCStatus";
+            opPLCStatus.Size = new Size(100, 23);
+            opPLCStatus.TabIndex = 1;
+            opPLCStatus.Text = "uiLabel1";
+            // 
             // tabPage2
             // 
             tabPage2.Controls.Add(uiTabControl2);
             tabPage2.Controls.Add(uiNavMenu1);
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(1226, 577);
+            tabPage2.Size = new Size(200, 60);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "tabPage2";
             tabPage2.UseVisualStyleBackColor = true;
@@ -178,6 +204,16 @@
             tabPage4.Text = "tabPage4";
             tabPage4.UseVisualStyleBackColor = true;
             // 
+            // omronplC_Hsl
+            // 
+            omronplC_Hsl.PLC_IP = "127.0.0.1";
+            omronplC_Hsl.PLC_PORT = 9600;
+            omronplC_Hsl.PLC_Ready_DM = "D16";
+            omronplC_Hsl.PLC_STATUS = TTManager.PLCHelpers.OmronPLC_Hsl.PLCStatus.Disconnect;
+            omronplC_Hsl.Ready = 0;
+            omronplC_Hsl.Time_Update = 300;
+            omronplC_Hsl.PLCStatus_OnChange += omronplC_Hsl_PLCStatus_OnChange;
+            // 
             // VNQRMainForm
             // 
             AutoScaleMode = AutoScaleMode.None;
@@ -197,7 +233,6 @@
         #endregion
 
         private ListBox listBox1;
-        private TTManager.PLCHelpers.OmronPLC_Hsl omronplC_Hsl1;
         private System.ComponentModel.BackgroundWorker mainWK;
         private System.ComponentModel.BackgroundWorker updateWK;
         private Sunny.UI.UILabel uiLabel1;
@@ -209,5 +244,8 @@
         private Sunny.UI.UITabControl uiTabControl2;
         private TabPage tabPage3;
         private TabPage tabPage4;
+        private Sunny.UI.UILabel uiLabel3;
+        private Sunny.UI.UILabel opPLCStatus;
+        private TTManager.PLCHelpers.OmronPLC_Hsl omronplC_Hsl;
     }
 }

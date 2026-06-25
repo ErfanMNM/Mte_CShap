@@ -318,14 +318,55 @@ const StatBox = ({
   );
 };
 
-const StatusIndicator = ({
-  status,
+const NetworkStrengthIndicator = ({ strength }: { strength: number }) => {
+  const getConfig = (level: number) => {
+    if (level >= 4) return { label: "MẠNH", bg: "bg-green-50 border-green-100", dot: "bg-green-500", bars: 5, barColor: "bg-green-500" };
+    if (level >= 3) return { label: "TỐT", bg: "bg-emerald-50 border-emerald-100", dot: "bg-emerald-500", bars: 4, barColor: "bg-emerald-500" };
+    if (level >= 2) return { label: "KHÁ", bg: "bg-amber-50 border-amber-100", dot: "bg-amber-500", bars: 3, barColor: "bg-amber-500" };
+    if (level >= 1) return { label: "YẾU", bg: "bg-orange-50 border-orange-100", dot: "bg-orange-500", bars: 2, barColor: "bg-orange-500" };
+    return { label: "KÉM", bg: "bg-red-50 border-red-100", dot: "bg-red-500", bars: 1, barColor: "bg-red-500" };
+  };
+
+  const config = getConfig(strength);
+
+  return (
+    <div className={`flex items-center justify-between px-2 py-1.5 xl:py-2 2xl:py-2.5 rounded-xl border ${config.bg} transition-colors min-w-0`}>
+      <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
+        <div className="p-1 rounded-md bg-white shadow-sm ring-1 ring-slate-900/5 hidden sm:block shrink-0">
+          <Wifi className="w-3 h-3 xl:w-3.5 xl:h-3.5 text-slate-600" strokeWidth={2.5} />
+        </div>
+        <div className="min-w-0">
+          <span className="text-[9px] xl:text-[10px] 2xl:text-xs font-bold tracking-wide truncate block">TỐC ĐỘ MẠNG</span>
+          <div className="flex items-end gap-[3px] mt-0.5">
+            {[1, 2, 3, 4, 5].map((bar) => (
+              <div
+                key={bar}
+                className={`w-1.5 rounded-sm transition-colors ${
+                  bar <= config.bars ? config.barColor : "bg-slate-200"
+                }`}
+                style={{ height: `${6 + bar * 2}px` }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center shrink-0 pl-1">
+        <div className={`w-1.5 h-1.5 xl:w-2 xl:h-2 rounded-full ${config.dot}`} />
+      </div>
+    </div>
+  );
+};
+
+const DeviceIndicator = ({
   label,
+  subLabel,
   icon: Icon,
+  status,
 }: {
-  status: "ok" | "error" | "offline" | "warning";
   label: string;
+  subLabel?: string;
   icon: React.ElementType;
+  status: "ok" | "error" | "offline" | "warning";
 }) => {
   const styles = {
     ok: "bg-green-50 text-green-700 border-green-100",
@@ -341,26 +382,51 @@ const StatusIndicator = ({
   };
 
   return (
-    <div
-      className={`flex items-center justify-between px-2 py-1.5 xl:py-2 2xl:py-2.5 rounded-xl border ${styles[status]} transition-colors min-w-0`}
-    >
+    <div className={`flex items-center justify-between px-2 py-1.5 xl:py-2 2xl:py-2.5 rounded-xl border ${styles[status]} transition-colors min-w-0`}>
       <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
-        <div
-          className={`p-1 rounded-md bg-white shadow-sm ring-1 ring-slate-900/5 hidden sm:block shrink-0`}
-        >
-          <Icon
-            className="w-3 h-3 xl:w-3.5 xl:h-3.5 text-slate-600"
-            strokeWidth={2.5}
-          />
+        <div className="p-1 rounded-md bg-white shadow-sm ring-1 ring-slate-900/5 hidden sm:block shrink-0">
+          <Icon className="w-3 h-3 xl:w-3.5 xl:h-3.5 text-slate-600" strokeWidth={2.5} />
         </div>
-        <span className="text-[9px] xl:text-[10px] 2xl:text-xs font-bold tracking-wide truncate">
-          {label}
-        </span>
+        <div className="min-w-0">
+          <span className="text-[9px] xl:text-[10px] 2xl:text-xs font-bold tracking-wide truncate block">{label}</span>
+          {subLabel && (
+            <span className="text-[8px] xl:text-[9px] 2xl:text-[10px] font-medium text-slate-500 tracking-wide truncate block">{subLabel}</span>
+          )}
+        </div>
       </div>
       <div className="flex items-center shrink-0 pl-1">
-        <div
-          className={`w-1.5 h-1.5 xl:w-2 xl:h-2 rounded-full ${dotStyles[status]}`}
-        />
+        <div className={`w-1.5 h-1.5 xl:w-2 xl:h-2 rounded-full ${dotStyles[status]}`} />
+      </div>
+    </div>
+  );
+};
+
+const AppStateIndicator = ({ state }: { state: string }) => {
+  const stateConfig: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+    Checking: { label: "CHECKING", bg: "bg-blue-50 border-blue-100", text: "text-blue-700", dot: "bg-blue-500 animate-pulse" },
+    Idle: { label: "IDLE", bg: "bg-slate-50 border-slate-100", text: "text-slate-700", dot: "bg-slate-400" },
+    Running: { label: "RUNNING", bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" },
+    Error: { label: "ERROR", bg: "bg-red-50 border-red-100", text: "text-red-700", dot: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse" },
+    NotUsed: { label: "NOT USED", bg: "bg-slate-50 border-slate-100", text: "text-slate-500", dot: "bg-slate-300" },
+  };
+
+  const config = stateConfig[state] || { label: state, bg: "bg-slate-50 border-slate-100", text: "text-slate-700", dot: "bg-slate-400" };
+
+  return (
+    <div className={`flex items-center justify-between px-2 py-1.5 xl:py-2 2xl:py-2.5 rounded-xl border ${config.bg} transition-colors min-w-0`}>
+      <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
+        <div className="p-1 rounded-md bg-white shadow-sm ring-1 ring-slate-900/5 hidden sm:block shrink-0">
+          <Wifi className="w-3 h-3 xl:w-3.5 xl:h-3.5 text-slate-600" strokeWidth={2.5} />
+        </div>
+        <div className="min-w-0">
+          <span className="text-[9px] xl:text-[10px] 2xl:text-xs font-bold tracking-wide truncate block">HỆ THỐNG</span>
+          <span className={`text-[10px] xl:text-[11px] 2xl:text-xs font-black tracking-wider truncate block ${config.text}`}>
+            {config.label}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center shrink-0 pl-1">
+        <div className={`w-1.5 h-1.5 xl:w-2 xl:h-2 rounded-full ${config.dot}`} />
       </div>
     </div>
   );
@@ -401,7 +467,8 @@ const ScadaMonitorView = () => {
     return "warning";
   };
 
-  const cameraState = d.camera?.state || "Unknown";
+  const cameraActiveState = d.camera?.active?.state || "Unknown";
+  const cameraPackageState = d.camera?.package?.state || "Unknown";
   const plcState = d.plc?.state || "Unknown";
   const appState = d.app?.state || "Unknown";
 
@@ -596,32 +663,27 @@ const ScadaMonitorView = () => {
           <Card className="flex-[1] shadow-sm flex flex-col min-h-0">
             <CardHeader title="TRẠNG THÁI THIẾT BỊ" icon={Server} />
             <div className="p-2 xl:p-3 2xl:p-4 grid grid-cols-3 grid-rows-2 gap-1.5 2xl:gap-2 flex-1 min-h-0">
-              <StatusIndicator
+              <DeviceIndicator
                 icon={Monitor}
-                label="CAMERA"
-                status={mapStatus(cameraState)}
+                label="CAMERA ACTIVE"
+                subLabel={d.camera?.active?.ip || "-"}
+                status={mapStatus(cameraActiveState)}
               />
-              <StatusIndicator
+              <DeviceIndicator
+                icon={Monitor}
+                label="CAMERA PACKAGE"
+                subLabel={d.camera?.package?.ip || "-"}
+                status={mapStatus(cameraPackageState)}
+              />
+              <DeviceIndicator
                 icon={Cpu}
-                label="PLC S7"
+                label="PLC"
+                subLabel="Omron CP2E"
                 status={mapStatus(plcState)}
               />
-              <StatusIndicator
-                icon={QrCode}
-                label="SCANNER"
-                status="offline"
-              />
-              <StatusIndicator
-                icon={Wifi}
-                label="HỆ THỐNG"
-                status={mapStatus(appState)}
-              />
-              <StatusIndicator
-                icon={Database}
-                label="MÁY CHỦ"
-                status={isConnected ? "ok" : "offline"}
-              />
-              <StatusIndicator
+              <AppStateIndicator state={appState} />
+              <NetworkStrengthIndicator strength={d.networkStrength || 0} />
+              <DeviceIndicator
                 icon={Settings}
                 label="VNQR"
                 status={isConnected ? "ok" : "error"}
@@ -1066,7 +1128,10 @@ const PlaceholderView = ({ title }: { title: string }) => (
    ========================================= */
 
 const AdminPanelContent = () => {
-  const [activeRoute, setActiveRoute] = useState("monitor");
+  const [activeRoute, setActiveRoute] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("panel") || "monitor";
+  });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isOpen } = useVirtualKeyboard();
 
@@ -1117,6 +1182,9 @@ const AdminPanelContent = () => {
                 onClick={() => {
                   setActiveRoute(item.id);
                   setMobileMenuOpen(false);
+                  const url = new URL(window.location.href);
+                  url.searchParams.set("panel", item.id);
+                  window.history.pushState({}, "", url.toString());
                 }}
                 className={`flex items-center gap-3.5 px-4 py-3.5 rounded-2xl font-semibold text-sm transition-all duration-200 group ${
                   isActive
