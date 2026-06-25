@@ -12,15 +12,15 @@ namespace VNQR.DataPool
         public static string dataPath = $"C:/VNQR/Databases";//Link mặc định bể chứa dữ liệu
     }
 
-    //một bể dữ liệu là 1 file sqlite, trong đó có 1 bảng dữ liệu chính chứa các cột: ID, Code, Status, BatchID, CreateTime, CreateID, Note ( Code là mã code, Status là trạng thái mã 0 = chưa dùng, 1= đã dùng, BatchID là mã lô sản xuất, CreateTime là thời gian tạo, CreateID là mã của phiếu tạo, Note là ghi chú). Sqlite chạy WAL mode.
+    //một bể dữ liệu là 1 file sqlite, trong đó có 1 bảng dữ liệu chính chứa các cột: ID, Code, Status, orderNo, CreateTime, CreateID, Note ( Code là mã code, Status là trạng thái mã 0 = chưa dùng, 1= đã dùng, orderNo là mã lệnh sản xuất, CreateTime là thời gian tạo, CreateID là mã của phiếu tạo, Note là ghi chú). Sqlite chạy WAL mode.
 
     //<tên bể>.vnqrdb
     //nhập dữ liệu mới vào bể chứa dữ liệu : có các cách nhập liệu sau:
-    //1. Nhập liệu thủ công: người dùng nhập liệu trực tiếp vào bể chứa dữ liệu thông qua giao diện người dùng (cho phép nhập Code, Status, BatchID, CreateID, Note, các cột còn lại sẽ được hệ thống tự động điền vào) => Từng cái 1
-    //2. Nhập liệu tự động từ đầu đọc mã: hệ thống nhập liệu tự động từ đầu đọc mã code của camera, sau đó lưu vào bể chứa dữ liệu. (cho phép nhập Code, BatchID, CreateID, Note, các cột còn lại sẽ được hệ thống tự động điền vào) => tự động đánh dấu là đã dùng với mã chưa từng tồn tại. => nếu gặp mã đã tồn tại mà chưa dùng thì tự động đánh dấu là đã dùng để khỏi phải update á. còn nếu gặp mã đã tồn tại và đã dùng thì trả về lỗi và không lưu vào bể chứa dữ liệu. => Từng cái 1
+    //1. Nhập liệu thủ công: người dùng nhập liệu trực tiếp vào bể chứa dữ liệu thông qua giao diện người dùng (cho phép nhập Code, Status, orderNo, CreateID, Note, các cột còn lại sẽ được hệ thống tự động điền vào) => Từng cái 1
+    //2. Nhập liệu tự động từ đầu đọc mã: hệ thống nhập liệu tự động từ đầu đọc mã code của camera, sau đó lưu vào bể chứa dữ liệu. (cho phép nhập Code, orderNo, CreateID, Note, các cột còn lại sẽ được hệ thống tự động điền vào) => tự động đánh dấu là đã dùng với mã chưa từng tồn tại. => nếu gặp mã đã tồn tại mà chưa dùng thì tự động đánh dấu là đã dùng để khỏi phải update á. còn nếu gặp mã đã tồn tại và đã dùng thì trả về lỗi và không lưu vào bể chứa dữ liệu. => Từng cái 1
     //3. Nhập liệu từ file: người dùng có thể nhập liệu từ file csv vào bể chứa dữ liệu. hàm sẽ nhận địa chỉ file, tên user, cột Code và Note (chỉ cho phép nhập Code và Note, các cột còn lại sẽ được hệ thống tự động điền vào) =>  sẽ tạo một file sqlite có tên  = CreateID chứa thông tin phiên nhập bao gồm CreateID, UserName, CreateTime, Note, ImportMethod, ImportSource, ImportCount.. => Nhập hàng loạt.
 
-    //batchID có thể để trống nếu mã chưa dùng, nhưng nếu mã đã dùng thì batchID phải có giá trị để phân biệt các lô sản xuất khác nhau. CreateID là mã của phiếu tạo, nếu được thêm tay thì ghi là User:<Tên User>, nếu add bằng camera thì ghi Reader, nhưng nếu có phiếu tạo thì CreateID phải có giá trị để phân biệt các phiếu tạo khác nhau. Note là ghi chú, có thể để trống nếu không có ghi chú, nhưng nếu có ghi chú thì Note phải có giá trị để phân biệt các ghi chú khác nhau.
+    //orderNo có thể để trống nếu mã chưa dùng, nhưng nếu mã đã dùng thì orderNo phải có giá trị để phân biệt các lô sản xuất khác nhau. CreateID là mã của phiếu tạo, nếu được thêm tay thì ghi là User:<Tên User>, nếu add bằng camera thì ghi Reader, nhưng nếu có phiếu tạo thì CreateID phải có giá trị để phân biệt các phiếu tạo khác nhau. Note là ghi chú, có thể để trống nếu không có ghi chú, nhưng nếu có ghi chú thì Note phải có giá trị để phân biệt các ghi chú khác nhau.
 
     public enum e_ImportMethod
     {
@@ -89,13 +89,13 @@ namespace VNQR.DataPool
                     ID INTEGER PRIMARY KEY AUTOINCREMENT,
                     Code TEXT NOT NULL UNIQUE,
                     Status INTEGER NOT NULL DEFAULT 0,
-                    BatchID TEXT NOT NULL DEFAULT '',
+                    orderNo TEXT NOT NULL DEFAULT '',
                     CreateTime TEXT NOT NULL,
                     CreateID TEXT NOT NULL,
                     Note TEXT NOT NULL DEFAULT ''
                 );
                 CREATE INDEX IF NOT EXISTS IDX_Codes_Status ON Codes(Status);
-                CREATE INDEX IF NOT EXISTS IDX_Codes_BatchID ON Codes(BatchID);
+                CREATE INDEX IF NOT EXISTS IDX_Codes_orderNo ON Codes(orderNo);
                 CREATE INDEX IF NOT EXISTS IDX_Codes_CreateID ON Codes(CreateID);
                 PRAGMA journal_mode=WAL;
             ";
@@ -147,13 +147,13 @@ namespace VNQR.DataPool
     public static class Import
     {
         // 1. Nhập liệu thủ công (từng cái 1).
-        // Người dùng truyền vào: Code, Status (mặc định 0), BatchID, CreateID (mặc định "User:<userName>"), Note, userName.
+        // Người dùng truyền vào: Code, Status (mặc định 0), orderNo, CreateID (mặc định "User:<userName>"), Note, userName.
         // Hệ thống tự điền: ID, CreateTime.
         public static TResult Manual(
             string poolName,
             string code,
             int? status = null,
-            string batchID = "",
+            string orderNo = "",
             string createID = "",
             string note = "",
             string userName = "")
@@ -177,21 +177,21 @@ namespace VNQR.DataPool
                 if (CodeExists(poolName, code))
                     return new TResult(false, $"Mã '{code}' đã tồn tại trong bể.");
 
-                // Validate: mã đã dùng bắt buộc phải có BatchID.
-                if (finalStatus == (int)e_CodeStatus.Used && string.IsNullOrWhiteSpace(batchID))
-                    return new TResult(false, "Mã đã dùng phải có BatchID.");
+                // Validate: mã đã dùng bắt buộc phải có orderNo.
+                if (finalStatus == (int)e_CodeStatus.Used && string.IsNullOrWhiteSpace(orderNo))
+                    return new TResult(false, "Mã đã dùng phải có orderNo.");
 
                 using (var con = new SQLiteConnection($"Data Source={PoolHelper.GetPoolPath(poolName)}"))
                 {
                     con.Open();
                     const string sql = @"
-                        INSERT INTO Codes (Code, Status, BatchID, CreateTime, CreateID, Note)
-                        VALUES (@Code, @Status, @BatchID, @CreateTime, @CreateID, @Note);";
+                        INSERT INTO Codes (Code, Status, orderNo, CreateTime, CreateID, Note)
+                        VALUES (@Code, @Status, @orderNo, @CreateTime, @CreateID, @Note);";
                     using (var cmd = new SQLiteCommand(sql, con))
                     {
                         cmd.Parameters.AddWithValue("@Code", code.Trim());
                         cmd.Parameters.AddWithValue("@Status", finalStatus);
-                        cmd.Parameters.AddWithValue("@BatchID", batchID ?? "");
+                        cmd.Parameters.AddWithValue("@orderNo", orderNo ?? "");
                         cmd.Parameters.AddWithValue("@CreateTime", createTime);
                         cmd.Parameters.AddWithValue("@CreateID", finalCreateID);
                         cmd.Parameters.AddWithValue("@Note", note ?? "");
@@ -208,7 +208,7 @@ namespace VNQR.DataPool
         }
 
         // 2. Nhập liệu tự động từ đầu đọc mã (từng cái 1).
-        // Người dùng truyền vào: Code, BatchID, CreateID (mặc định "Reader"), Note.
+        // Người dùng truyền vào: Code, orderNo, CreateID (mặc định "Reader"), Note.
         // Quy tắc:
         //  - Mã chưa từng tồn tại -> insert mới, Status = 1 (đã dùng).
         //  - Mã đã tồn tại nhưng Status = 0 (chưa dùng) -> update Status = 1.
@@ -216,7 +216,7 @@ namespace VNQR.DataPool
         public static TResult FromReader(
             string poolName,
             string code,
-            string batchID,
+            string orderNo,
             string createID = "Reader",
             string note = "")
         {
@@ -226,8 +226,8 @@ namespace VNQR.DataPool
                     return new TResult(false, "Tên bể dữ liệu không được trống.");
                 if (string.IsNullOrWhiteSpace(code))
                     return new TResult(false, "Mã code không được trống.");
-                if (string.IsNullOrWhiteSpace(batchID))
-                    return new TResult(false, "Mã từ camera phải có BatchID.");
+                if (string.IsNullOrWhiteSpace(orderNo))
+                    return new TResult(false, "Mã từ camera phải có orderNo.");
 
                 PoolHelper.EnsurePool(poolName);
 
@@ -239,7 +239,7 @@ namespace VNQR.DataPool
                         return new TResult(false, $"Mã '{code}' đã được sử dụng trước đó.");
 
                     // Chưa dùng -> update lên đã dùng.
-                    bool ok = Updater.UpdateStatus(poolName, code, (int)e_CodeStatus.Used, batchID, createID, note);
+                    bool ok = Updater.UpdateStatus(poolName, code, (int)e_CodeStatus.Used, orderNo, createID, note);
                     if (ok) return new TResult(true, "Đã cập nhật mã chưa dùng thành đã dùng.", 1);
                     return new TResult(false, "Không thể cập nhật trạng thái mã.");
                 }
@@ -250,13 +250,13 @@ namespace VNQR.DataPool
                 {
                     con.Open();
                     const string sql = @"
-                        INSERT INTO Codes (Code, Status, BatchID, CreateTime, CreateID, Note)
-                        VALUES (@Code, @Status, @BatchID, @CreateTime, @CreateID, @Note);";
+                        INSERT INTO Codes (Code, Status, orderNo, CreateTime, CreateID, Note)
+                        VALUES (@Code, @Status, @orderNo, @CreateTime, @CreateID, @Note);";
                     using (var cmd = new SQLiteCommand(sql, con))
                     {
                         cmd.Parameters.AddWithValue("@Code", code.Trim());
                         cmd.Parameters.AddWithValue("@Status", (int)e_CodeStatus.Used);
-                        cmd.Parameters.AddWithValue("@BatchID", batchID);
+                        cmd.Parameters.AddWithValue("@orderNo", orderNo);
                         cmd.Parameters.AddWithValue("@CreateTime", createTime);
                         cmd.Parameters.AddWithValue("@CreateID", createID);
                         cmd.Parameters.AddWithValue("@Note", note ?? "");
@@ -275,7 +275,7 @@ namespace VNQR.DataPool
         // 3. Nhập liệu từ file CSV (nhập hàng loạt).
         // Người dùng truyền vào: đường dẫn file csv, tên user, tên cột Code, tên cột Note (có thể bỏ trống),
         // CreateID (mã phiếu), note phiếu.
-        // Hệ thống tự điền cho từng dòng: ID, Status = 0, BatchID = "", CreateTime, CreateID.
+        // Hệ thống tự điền cho từng dòng: ID, Status = 0, orderNo = "", CreateTime, CreateID.
         // Đồng thời tạo file sqlite <CreateID>.vnqrdb trong thư mục Phieu/ chứa thông tin phiên nhập.
         public static TResult FromFile(
             string poolName,
@@ -325,8 +325,8 @@ namespace VNQR.DataPool
                     using (var tx = con.BeginTransaction())
                     {
                         const string insertSql = @"
-                            INSERT OR IGNORE INTO Codes (Code, Status, BatchID, CreateTime, CreateID, Note)
-                            VALUES (@Code, @Status, @BatchID, @CreateTime, @CreateID, @Note);";
+                            INSERT OR IGNORE INTO Codes (Code, Status, orderNo, CreateTime, CreateID, Note)
+                            VALUES (@Code, @Status, @orderNo, @CreateTime, @CreateID, @Note);";
 
                         for (int i = 1; i < lines.Length; i++)
                         {
@@ -343,7 +343,7 @@ namespace VNQR.DataPool
                             {
                                 cmd.Parameters.AddWithValue("@Code", code);
                                 cmd.Parameters.AddWithValue("@Status", (int)e_CodeStatus.Unused);
-                                cmd.Parameters.AddWithValue("@BatchID", "");
+                                cmd.Parameters.AddWithValue("@orderNo", "");
                                 cmd.Parameters.AddWithValue("@CreateTime", createTime);
                                 cmd.Parameters.AddWithValue("@CreateID", createID);
                                 cmd.Parameters.AddWithValue("@Note", rowNote);
@@ -469,13 +469,13 @@ namespace VNQR.DataPool
     // Các hàm cập nhật dữ liệu đã có trong bể.
     public static class Updater
     {
-        // Cập nhật Status + Reason kiểu mới (kèm BatchID / CreateID / Note tùy chọn).
+        // Cập nhật Status + Reason kiểu mới (kèm orderNo / CreateID / Note tùy chọn).
         // Trả về true nếu có dòng bị ảnh hưởng, false nếu không tìm thấy Code.
         public static bool UpdateStatus(
             string poolName,
             string code,
             int newStatus,
-            string batchID = "",
+            string orderNo = "",
             string createID = "",
             string note = "")
         {
@@ -487,14 +487,14 @@ namespace VNQR.DataPool
                 const string sql = @"
                     UPDATE Codes
                     SET Status = @Status,
-                        BatchID = COALESCE(NULLIF(@BatchID, ''), BatchID),
+                        orderNo = COALESCE(NULLIF(@orderNo, ''), orderNo),
                         CreateID = COALESCE(NULLIF(@CreateID, ''), CreateID),
                         Note = COALESCE(NULLIF(@Note, ''), Note)
                     WHERE Code = @Code;";
                 using (var cmd = new SQLiteCommand(sql, con))
                 {
                     cmd.Parameters.AddWithValue("@Status", newStatus);
-                    cmd.Parameters.AddWithValue("@BatchID", batchID ?? "");
+                    cmd.Parameters.AddWithValue("@orderNo", orderNo ?? "");
                     cmd.Parameters.AddWithValue("@CreateID", createID ?? "");
                     cmd.Parameters.AddWithValue("@Note", note ?? "");
                     cmd.Parameters.AddWithValue("@Code", code);
@@ -508,7 +508,7 @@ namespace VNQR.DataPool
             string poolName,
             string code,
             int? status = null,
-            string batchID = null,
+            string orderNo = null,
             string createID = null,
             string note = null)
         {
@@ -526,10 +526,10 @@ namespace VNQR.DataPool
                 sets.Add("Status = @Status");
                 parameters.Add("@Status", status.Value);
             }
-            if (batchID != null)
+            if (orderNo != null)
             {
-                sets.Add("BatchID = @BatchID");
-                parameters.Add("@BatchID", batchID);
+                sets.Add("orderNo = @orderNo");
+                parameters.Add("@orderNo", orderNo);
             }
             if (createID != null)
             {
@@ -559,15 +559,15 @@ namespace VNQR.DataPool
             }
         }
 
-        // Đánh dấu mã đã dùng, kèm BatchID bắt buộc.
-        public static bool MarkUsed(string poolName, string code, string batchID, string createID = "", string note = "")
+        // Đánh dấu mã đã dùng, kèm orderNo bắt buộc.
+        public static bool MarkUsed(string poolName, string code, string orderNo, string createID = "", string note = "")
         {
-            if (string.IsNullOrWhiteSpace(batchID))
+            if (string.IsNullOrWhiteSpace(orderNo))
                 return false;
-            return UpdateStatus(poolName, code, (int)e_CodeStatus.Used, batchID, createID, note);
+            return UpdateStatus(poolName, code, (int)e_CodeStatus.Used, orderNo, createID, note);
         }
 
-        // Đánh dấu mã chưa dùng lại (reset). BatchID sẽ bị xóa về rỗng nếu truyền "".
+        // Đánh dấu mã chưa dùng lại (reset). orderNo sẽ bị xóa về rỗng nếu truyền "".
         public static bool MarkUnused(string poolName, string code)
         {
             PoolHelper.EnsurePool(poolName);
@@ -577,7 +577,7 @@ namespace VNQR.DataPool
                 const string sql = @"
                     UPDATE Codes
                     SET Status = 0,
-                        BatchID = ''
+                        orderNo = ''
                     WHERE Code = @Code;";
                 using (var cmd = new SQLiteCommand(sql, con))
                 {
