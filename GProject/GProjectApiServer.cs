@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 using GProject.DataPoolHelper;
+using GProject.Auth;
+using Serilog;
 
 namespace GProject;
 
@@ -40,8 +42,39 @@ public class GProjectApiServer : IDisposable
             });
 
         _app = builder.Build();
+
+        // Global exception handler middleware
+        _app.UseExceptionHandler(errorApp =>
+        {
+            errorApp.Run(async context =>
+            {
+                var ex = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+                Log.Error(ex, "Unhandled exception in request {Path} {Method}", context.Request.Path, context.Request.Method);
+                context.Response.StatusCode = 500;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync("{\"success\":false,\"message\":\"Internal server error\"}");
+            });
+        });
+
+        // Auth middleware
+        _app.Use(async (context, next) =>
+        {
+            await AuthMiddleware.InvokeAsync(context, next);
+        });
+
         _app.UseCors();
 
+        // Auth endpoints
+        _app.MapPost("/api/auth/login", HandleLogin);
+        _app.MapPost("/api/auth/logout", HandleLogout);
+        _app.MapGet("/api/auth/me", HandleGetCurrentUser);
+        _app.MapGet("/api/auth/history", HandleGetLoginHistory);
+        _app.MapGet("/api/auth/users", HandleGetUsers);
+        _app.MapPost("/api/auth/users", HandleCreateUser);
+        _app.MapPut("/api/auth/users/{id}", HandleUpdateUser);
+        _app.MapDelete("/api/auth/users/{id}", HandleDeleteUser);
+
+        // DataPool endpoints
         _app.MapGet("/api/health", HandleHealth);
         _app.MapGet("/api/datapool/pools", HandleListPools);
         _app.MapGet("/api/datapool/pools/stats", HandleGetPoolsStats);
@@ -56,8 +89,8 @@ public class GProjectApiServer : IDisposable
         _app.MapPut("/api/datapool/{poolName}/code/{code}/status", HandleUpdateStatus);
         _app.MapDelete("/api/datapool/{poolName}/code/{code}", HandleDeleteCode);
 
-        Log("GProjectApiServer", $"DataPool endpoints registered");
-        Log("GProjectApiServer", $"Started on http://{_host}:{_port}");
+        LogInfo("GProjectApiServer", $"DataPool endpoints registered");
+        LogInfo("GProjectApiServer", $"Started on http://{_host}:{_port}");
 
         await _app.StartAsync();
     }
@@ -66,13 +99,190 @@ public class GProjectApiServer : IDisposable
     {
         if (_app != null)
         {
-            Log("GProjectApiServer", "Stopping...");
+            LogInfo("GProjectApiServer", "Stopping...");
             await _app.StopAsync();
             _app = null;
         }
     }
 
-    #region Handlers
+
+    #region Auth Handlers
+    private IResult HandleLogin(HttpContext context)
+    {
+        try
+        {
+            var request = context.Request.ReadFromJsonAsync<LoginRequest>().GetAwaiter().GetResult();
+            if (request == null || string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+                return Results.Json(new { success = false, message = "Username and password are required." }, statusCode: 400);
+
+            var ipAddress = context.Connection.RemoteIpAddress?.ToString();
+            var userAgent = context.Request.Headers.UserAgent.ToString();
+            var (user, sessionId) = AuthService.Login(request.Username, request.Password, ipAddress, userAgent);
+
+            if (user == null || sessionId == null)
+                return Results.Json(new { success = false, message = "Invalid username or password." }, statusCode: 401);
+
+            // Set session cookie
+            context.Response.Cookies.Append(AuthMiddleware.SessionCookieName, sessionId, new CookieOptions
+            {
+                HttpOnly = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddHours(8)
+            });
+
+            return Results.Json(new
+            {
+                success = true,
+                user = new { id = user.Id, username = user.Username, displayName = user.DisplayName, role = user.Role }
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("Auth", $"Login error: {ex.Message}", ex);
+            return Results.Json(new { success = false, message = "Login failed." }, statusCode: 500);
+        }
+    }
+
+    private IResult HandleLogout(HttpContext context)
+    {
+        var currentUser = AuthMiddleware.GetCurrentUser(context);
+        if (currentUser != null)
+        {
+            AuthService.Logout(currentUser.SessionId);
+        }
+
+        context.Response.Cookies.Delete(AuthMiddleware.SessionCookieName);
+        return Results.Json(new { success = true, message = "Logged out." });
+    }
+
+    private IResult HandleGetCurrentUser(HttpContext context)
+    {
+        var currentUser = AuthMiddleware.GetCurrentUser(context);
+        if (currentUser == null)
+            return AuthHelper.Unauthorized("Not authenticated.");
+
+        return Results.Json(new
+        {
+            success = true,
+            user = new
+            {
+                sessionId = currentUser.SessionId,
+                userId = currentUser.UserId,
+                username = currentUser.Username,
+                role = currentUser.Role,
+                expiresAt = currentUser.ExpiresAt.ToString("o")
+            }
+        });
+    }
+
+    private IResult HandleGetLoginHistory(HttpContext context)
+    {
+        var currentUser = AuthMiddleware.GetCurrentUser(context);
+        if (currentUser == null)
+            return AuthHelper.Unauthorized();
+
+        // Only SAdmin and Administrator can view history
+        if (!AuthHelper.HasPermission(currentUser.Role, "view_history"))
+            return AuthHelper.Forbidden("Not allowed.");
+
+        var limit = 100;
+        var history = AuthService.GetLoginHistory(limit);
+        return Results.Json(new { success = true, count = history.Count, data = history });
+    }
+
+    private IResult HandleGetUsers(HttpContext context)
+    {
+        var currentUser = AuthMiddleware.GetCurrentUser(context);
+        if (currentUser == null)
+            return AuthHelper.Unauthorized();
+
+        if (!AuthHelper.HasPermission(currentUser.Role, "manage_users"))
+            return AuthHelper.Forbidden("Not allowed.");
+
+        var users = AuthService.GetAllUsers();
+        return Results.Json(new { success = true, count = users.Count, data = users });
+    }
+
+    private IResult HandleCreateUser(HttpContext context)
+    {
+        var currentUser = AuthMiddleware.GetCurrentUser(context);
+        if (currentUser == null)
+            return AuthHelper.Unauthorized();
+
+        if (!AuthHelper.HasPermission(currentUser.Role, "manage_users"))
+            return AuthHelper.Forbidden("Not allowed.");
+
+        try
+        {
+            var request = context.Request.ReadFromJsonAsync<CreateUserRequest>().GetAwaiter().GetResult();
+            if (request == null || string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(request.Role))
+                return Results.Json(new { success = false, message = "Username, password, and role are required." }, statusCode: 400);
+
+            var validRoles = new[] { "SAdmin", "Administrator", "Operator", "Viewer" };
+            if (!validRoles.Contains(request.Role))
+                return Results.Json(new { success = false, message = "Invalid role." }, statusCode: 400);
+
+            var success = AuthService.CreateUser(request.Username, request.Password, request.DisplayName ?? request.Username, request.Role, currentUser.Username);
+            return Results.Json(new { success, message = success ? "User created." : "Failed to create user." });
+        }
+        catch (Exception ex)
+        {
+            LogError("Auth", $"Create user error: {ex.Message}", ex);
+            return Results.Json(new { success = false, message = "Failed to create user." }, statusCode: 500);
+        }
+    }
+
+    private IResult HandleUpdateUser(HttpContext context, string id)
+    {
+        var currentUser = AuthMiddleware.GetCurrentUser(context);
+        if (currentUser == null)
+            return AuthHelper.Unauthorized();
+
+        if (!AuthHelper.HasPermission(currentUser.Role, "manage_users"))
+            return AuthHelper.Forbidden("Not allowed.");
+
+        try
+        {
+            var request = context.Request.ReadFromJsonAsync<UpdateUserRequest>().GetAwaiter().GetResult();
+            if (request == null)
+                return Results.Json(new { success = false, message = "Invalid request." }, statusCode: 400);
+
+            if (request.Role != null)
+            {
+                var validRoles = new[] { "SAdmin", "Administrator", "Operator", "Viewer" };
+                if (!validRoles.Contains(request.Role))
+                    return Results.Json(new { success = false, message = "Invalid role." }, statusCode: 400);
+            }
+
+            var success = AuthService.UpdateUser(id, request.Password, request.DisplayName, request.Role, request.IsActive);
+            return Results.Json(new { success, message = success ? "User updated." : "Failed to update user." });
+        }
+        catch (Exception ex)
+        {
+            LogError("Auth", $"Update user error: {ex.Message}", ex);
+            return Results.Json(new { success = false, message = "Failed to update user." }, statusCode: 500);
+        }
+    }
+
+    private IResult HandleDeleteUser(HttpContext context, string id)
+    {
+        var currentUser = AuthMiddleware.GetCurrentUser(context);
+        if (currentUser == null)
+            return AuthHelper.Unauthorized();
+
+        if (!AuthHelper.HasPermission(currentUser.Role, "manage_users"))
+            return AuthHelper.Forbidden("Not allowed.");
+
+        // Cannot delete yourself
+        if (currentUser.UserId == id)
+            return Results.Json(new { success = false, message = "Cannot delete yourself." }, statusCode: 400);
+
+        var success = AuthService.DeleteUser(id);
+        return Results.Json(new { success, message = success ? "User deleted." : "Failed to delete user." });
+    }
+    #endregion
+
+    #region DataPool Handlers
     private IResult HandleHealth(HttpContext context)
     {
         return Results.Json(new HealthResponse { Status = "OK", Timestamp = DateTime.Now });
@@ -100,7 +310,7 @@ public class GProjectApiServer : IDisposable
         }
         catch (Exception ex)
         {
-            Log("GProjectApiServer", $"Error listing pools: {ex.Message}");
+            LogError("GProjectApiServer", $"Error listing pools: {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
@@ -158,7 +368,7 @@ public class GProjectApiServer : IDisposable
         }
         catch (Exception ex)
         {
-            Log("GProjectApiServer", $"Error getting pool stats: {ex.Message}");
+            LogError("GProjectApiServer", $"Error getting pool stats: {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
@@ -176,6 +386,7 @@ public class GProjectApiServer : IDisposable
         }
         catch (Exception ex)
         {
+            LogError("GProjectApiServer", $"Error creating pool: {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
@@ -216,6 +427,7 @@ public class GProjectApiServer : IDisposable
         }
         catch (Exception ex)
         {
+            LogError("GProjectApiServer", $"Error getting codes from pool '{poolName}': {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
@@ -259,6 +471,7 @@ public class GProjectApiServer : IDisposable
         }
         catch (Exception ex)
         {
+            LogError("GProjectApiServer", $"Error searching codes in pool '{poolName}': {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
@@ -291,70 +504,82 @@ public class GProjectApiServer : IDisposable
         }
         catch (Exception ex)
         {
+            LogError("GProjectApiServer", $"Error getting code '{code}' from pool '{poolName}': {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
 
     private IResult HandleAddCode(HttpContext context)
     {
+        string? poolName = null;
         try
         {
             var request = context.Request.ReadFromJsonAsync<AddCodeManualRequest>().GetAwaiter().GetResult();
             if (request == null || string.IsNullOrWhiteSpace(request.PoolName) || string.IsNullOrWhiteSpace(request.Code))
                 return Results.Json(new ApiResponse { Success = false, Message = "poolName and code are required." }, statusCode: 400);
 
+            poolName = request.PoolName;
             var result = DataPoolStatic.Import_Manual(request.PoolName, request.Code, request.Status, request.BatchID ?? "", "", request.Note ?? "", request.UserName ?? "API");
             return Results.Json(new ApiResponse { Success = result.IsSuccess, Message = result.Message, Count = result.Count }, statusCode: result.IsSuccess ? 200 : 400);
         }
         catch (Exception ex)
         {
+            LogError("GProjectApiServer", $"Error adding code to pool '{poolName}': {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
 
     private IResult HandleAddFromReader(HttpContext context)
     {
+        string? poolName = null;
         try
         {
             var request = context.Request.ReadFromJsonAsync<AddCodeReaderRequest>().GetAwaiter().GetResult();
             if (request == null || string.IsNullOrWhiteSpace(request.PoolName) || string.IsNullOrWhiteSpace(request.Code) || string.IsNullOrWhiteSpace(request.BatchID))
                 return Results.Json(new ApiResponse { Success = false, Message = "poolName, code, and batchID are required." }, statusCode: 400);
 
+            poolName = request.PoolName;
             var result = DataPoolStatic.Import_FromReader(request.PoolName, request.Code, request.BatchID, "Reader", request.Note ?? "");
             return Results.Json(new ApiResponse { Success = result.IsSuccess, Message = result.Message, Count = result.Count }, statusCode: result.IsSuccess ? 200 : 400);
         }
         catch (Exception ex)
         {
+            LogError("GProjectApiServer", $"Error adding code from reader to pool '{poolName}': {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
 
     private IResult HandleImportFromFile(HttpContext context)
     {
+        string? poolName = null;
         try
         {
             var request = context.Request.ReadFromJsonAsync<ImportCodesFromFileRequest>().GetAwaiter().GetResult();
             if (request == null || string.IsNullOrWhiteSpace(request.PoolName) || string.IsNullOrWhiteSpace(request.CsvPath) || string.IsNullOrWhiteSpace(request.CreateID))
                 return Results.Json(new ApiResponse { Success = false, Message = "poolName, csvPath, and createID are required." }, statusCode: 400);
 
+            poolName = request.PoolName;
             var result = DataPoolStatic.Import_FromFile(request.PoolName, request.CsvPath, request.UserName ?? "API", request.CreateID, request.CodeColumn ?? "Code", request.NoteColumn ?? "", request.Note ?? "");
             return Results.Json(new ApiResponse { Success = result.IsSuccess, Message = result.Message, Count = result.Count }, statusCode: result.IsSuccess ? 200 : 400);
         }
         catch (Exception ex)
         {
+            LogError("GProjectApiServer", $"Error importing from file to pool '{poolName}': {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
 
     private IResult HandleImportFromContent(HttpContext context)
     {
+        string? poolName = null;
         try
         {
             var request = context.Request.ReadFromJsonAsync<ImportCodesFromContentRequest>().GetAwaiter().GetResult();
             if (request == null || string.IsNullOrWhiteSpace(request.PoolName) || string.IsNullOrWhiteSpace(request.CsvContent) || string.IsNullOrWhiteSpace(request.CreateID))
-                return Results.Json(new ApiResponse { Success = false, Message = "poolName, csvContent, and createID are required." }, statusCode: 400);
+                return Results.Json(new ApiResponse { Success = false, Message = "poolName, csvContent, and createid are required." }, statusCode: 400);
 
-            Log("GProjectApiServer", $"Importing {request.CsvContent.Split('\n').Length - 1} codes to pool '{request.PoolName}'");
+            poolName = request.PoolName;
+            LogInfo("GProjectApiServer", $"Importing {request.CsvContent.Split('\n').Length - 1} codes to pool '{request.PoolName}'");
 
             // Parse CSV content and insert
             var result = DataPoolStatic.Import_FromContent(request.PoolName, request.CsvContent, request.UserName ?? "API", request.CreateID, request.Note ?? "");
@@ -362,7 +587,7 @@ public class GProjectApiServer : IDisposable
         }
         catch (Exception ex)
         {
-            Log("GProjectApiServer", $"Error importing content: {ex.Message}");
+            LogError("GProjectApiServer", $"Error importing from content to pool '{poolName}': {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
@@ -395,6 +620,7 @@ public class GProjectApiServer : IDisposable
         }
         catch (Exception ex)
         {
+            LogError("GProjectApiServer", $"Error updating status for code '{code}' in pool '{poolName}': {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
@@ -412,21 +638,27 @@ public class GProjectApiServer : IDisposable
         }
         catch (Exception ex)
         {
+            LogError("GProjectApiServer", $"Error deleting code '{code}' from pool '{poolName}': {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }
     #endregion
 
-    private void Log(string source, string message)
+    private void LogInfo(string source, string message)
     {
-        var logLine = $"[{DateTime.Now:HH:mm:ss}] [{source}] {message}";
-        if (_onLog != null) _onLog(source, message);
-        else Console.WriteLine(logLine);
+        Log.Information("[{Source}] {Message}", source, message);
+    }
+
+    private void LogError(string source, string message, Exception? ex = null)
+    {
+        if (ex != null)
+            Log.Error(ex, "[{Source}] {Message}", source, message);
+        else
+            Log.Error("[{Source}] {Message}", source, message);
     }
 
     public void Dispose() => StopAsync().GetAwaiter().GetResult();
 
-    #region DTOs
     private class HealthResponse
     {
         [JsonPropertyName("status")] public string Status { get; set; } = "OK";
@@ -440,6 +672,25 @@ public class GProjectApiServer : IDisposable
         [JsonPropertyName("count")] public int Count { get; set; }
     }
 
+    private class LoginRequest
+    {
+        [JsonPropertyName("username")] public string Username { get; set; } = "";
+        [JsonPropertyName("password")] public string Password { get; set; } = "";
+    }
+    private class CreateUserRequest
+    {
+        [JsonPropertyName("username")] public string Username { get; set; } = "";
+        [JsonPropertyName("password")] public string Password { get; set; } = "";
+        [JsonPropertyName("displayName")] public string? DisplayName { get; set; }
+        [JsonPropertyName("role")] public string Role { get; set; } = "";
+    }
+    private class UpdateUserRequest
+    {
+        [JsonPropertyName("password")] public string? Password { get; set; }
+        [JsonPropertyName("displayName")] public string? DisplayName { get; set; }
+        [JsonPropertyName("role")] public string? Role { get; set; }
+        [JsonPropertyName("isActive")] public bool? IsActive { get; set; }
+    }
     private class CreatePoolRequest { [JsonPropertyName("poolName")] public string PoolName { get; set; } = ""; }
     private class AddCodeManualRequest
     {
@@ -475,5 +726,4 @@ public class GProjectApiServer : IDisposable
         [JsonPropertyName("createID")] public string CreateID { get; set; } = "";
         [JsonPropertyName("note")] public string? Note { get; set; }
     }
-    #endregion
 }

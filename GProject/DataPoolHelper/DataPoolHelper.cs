@@ -4,6 +4,7 @@ using System.Data;
 using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Text;
+using Serilog;
 
 namespace GProject.DataPoolHelper;
 
@@ -142,6 +143,7 @@ public static class DataPoolStatic
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "DataPoolHelper: Lỗi khi nhập mã thủ công");
             return Result.Fail($"Lỗi khi nhập mã thủ công: {ex.Message}");
         }
     }
@@ -195,6 +197,7 @@ public static class DataPoolStatic
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "DataPoolHelper: Lỗi khi nhập mã từ camera");
             return Result.Fail($"Lỗi khi nhập mã từ camera: {ex.Message}");
         }
     }
@@ -292,6 +295,7 @@ public static class DataPoolStatic
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "DataPoolHelper: Lỗi khi nhập từ file");
             return Result.Fail($"Lỗi khi nhập từ file: {ex.Message}");
         }
     }
@@ -389,6 +393,7 @@ public static class DataPoolStatic
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "DataPoolHelper: Lỗi khi nhập từ content");
             return Result.Fail($"Lỗi khi nhập từ content: {ex.Message}");
         }
     }
@@ -426,6 +431,7 @@ public static class DataPoolStatic
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "DataPoolHelper: Lỗi truy vấn GetByCode");
             return Result.Fail($"Lỗi truy vấn: {ex.Message}");
         }
     }
@@ -457,6 +463,7 @@ public static class DataPoolStatic
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "DataPoolHelper: Lỗi truy vấn GetAll");
             return Result.Fail($"Lỗi truy vấn: {ex.Message}");
         }
     }
@@ -488,6 +495,7 @@ public static class DataPoolStatic
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "DataPoolHelper: Lỗi tìm kiếm SearchCodes");
             return Result.Fail($"Lỗi tìm kiếm: {ex.Message}");
         }
     }
@@ -549,6 +557,7 @@ public static class DataPoolStatic
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "DataPoolHelper: Lỗi khi xóa mã");
             return Result.Fail($"Lỗi khi xóa mã: {ex.Message}");
         }
     }
@@ -579,6 +588,7 @@ public static class DataPoolStatic
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "DataPoolHelper: Lỗi liệt kê pools");
             return Result.Fail($"Lỗi liệt kê pools: {ex.Message}");
         }
     }
