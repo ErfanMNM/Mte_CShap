@@ -4,6 +4,9 @@ export interface DataPoolInfo {
   name: string;
   fileName: string;
   size: number;
+  totalCodes?: number;
+  availableCodes?: number;
+  usedCodes?: number;
 }
 
 export interface DataPoolCode {

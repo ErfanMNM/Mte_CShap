@@ -1,9 +1,0 @@
-feat(pda): add PDA API server on port 6969
-
-Add a minimal REST API server to TTManager that receives scan data
-from PDA clients. Exposes POST /api/scan and GET /api/status.
-
-- PDAProtocol.cs: full HTTP server with JSON routing
-- PdaScanManager.cs: thread-safe scan queue + events
-- API_USAGE.md: API documentation
-- TTManager.csproj: add Microsoft.AspNetCore.App framework reference

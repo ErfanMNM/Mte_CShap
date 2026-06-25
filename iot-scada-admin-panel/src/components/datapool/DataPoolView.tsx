@@ -276,14 +276,20 @@ const AddCodeForm: React.FC<{
    IMPORT CSV FORM
    ========================================= */
 
+interface ParsedCSV {
+  headers: string[];
+  rows: string[][];
+  totalRows: number;
+}
+
 const ImportCSVForm: React.FC<{
   pools: PoolWithStats[];
   onSuccess: () => void;
   onClose: () => void;
 }> = ({ pools, onSuccess, onClose }) => {
   const [poolName, setPoolName] = useState(pools[0]?.name || "");
-  const [createID, setCreateID] = useState("");
-  const [csvPath, setCsvPath] = useState("");
+  const [createID, setCreateID] = useState(`IMPORT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-001`);
+  const [parsedCSV, setParsedCSV] = useState<ParsedCSV | null>(null);
   const [codeColumn, setCodeColumn] = useState("Code");
   const [noteColumn, setNoteColumn] = useState("");
   const [note, setNote] = useState("");
@@ -291,25 +297,113 @@ const ImportCSVForm: React.FC<{
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const parseCSV = (text: string): ParsedCSV => {
+    const lines = text.split(/\r?\n/).filter(line => line.trim());
+    if (lines.length < 2) {
+      throw new Error("File CSV phải có ít nhất 1 header và 1 dòng dữ liệu.");
+    }
+    const headers = splitCSVLine(lines[0]);
+    const rows = lines.slice(1).map(line => splitCSVLine(line));
+    return { headers, rows, totalRows: rows.length };
+  };
+
+  const splitCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const parsed = parseCSV(text);
+        setParsedCSV(parsed);
+
+        // Auto-detect Code column
+        const codeIdx = parsed.headers.findIndex(h =>
+          h.toLowerCase().includes("code") ||
+          h.toLowerCase().includes("gtin") ||
+          h.toLowerCase().includes("qr")
+        );
+        if (codeIdx >= 0) setCodeColumn(parsed.headers[codeIdx]);
+
+        // Auto-detect Note column
+        const noteIdx = parsed.headers.findIndex(h =>
+          h.toLowerCase().includes("note") ||
+          h.toLowerCase().includes("ghi chú") ||
+          h.toLowerCase().includes("desc")
+        );
+        if (noteIdx >= 0) setNoteColumn(parsed.headers[noteIdx]);
+
+        setError("");
+      } catch (err: any) {
+        setError(err.message || "Lỗi khi đọc file CSV.");
+        setParsedCSV(null);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!poolName.trim()) { setError("Chọn pool."); return; }
     if (!createID.trim()) { setError("CreateID không được trống."); return; }
-    if (!csvPath.trim()) { setError("Đường dẫn CSV không được trống."); return; }
+    if (!parsedCSV) { setError("Vui lòng chọn file CSV."); return; }
+    if (!codeColumn.trim()) { setError("Chọn cột mã."); return; }
+
     setLoading(true);
     setError("");
     setSuccess("");
     try {
-      await datapoolApi.importCSV({
+      // Build CSV content from parsed data
+      const headerRow = [codeColumn, noteColumn].filter(Boolean).join(",");
+      const dataRows = parsedCSV.rows
+        .map(row => {
+          const codeIdx = parsedCSV.headers.indexOf(codeColumn);
+          const noteIdx = noteColumn ? parsedCSV.headers.indexOf(noteColumn) : -1;
+          const code = codeIdx >= 0 ? row[codeIdx] || "" : "";
+          const noteVal = noteIdx >= 0 ? row[noteIdx] || "" : "";
+          if (!code.trim()) return null;
+          return `"${code.trim()}"${noteColumn ? `,"${noteVal.trim()}"` : ""}`;
+        })
+        .filter(Boolean)
+        .join("\n");
+
+      const csvContent = headerRow + "\n" + dataRows;
+
+      // Send to backend via FormData (or we can update backend to accept JSON with CSV content)
+      await datapoolApi.importCSVFromContent({
         poolName: poolName.trim(),
-        csvPath: csvPath.trim(),
+        csvContent,
         createID: createID.trim(),
         userName: "admin",
-        codeColumn: codeColumn.trim() || "Code",
-        noteColumn: noteColumn.trim(),
         note: note.trim(),
       });
-      setSuccess("Nhập CSV thành công!");
+
+      setSuccess(`Nhập ${parsedCSV.totalRows} mã thành công!`);
       setTimeout(() => {
         onSuccess();
         onClose();
@@ -344,47 +438,96 @@ const ImportCSVForm: React.FC<{
           onChange={(e) => setCreateID(e.target.value)}
           placeholder="VD: IMPORT-20260625-001"
           className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-mono"
-          autoFocus
         />
         <p className="text-[11px] text-slate-400 mt-1">Mã định danh phiên nhập (unique).</p>
       </div>
+
+      {/* File Upload */}
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-          Đường dẫn file CSV trên server
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">File CSV</label>
+        <label className="flex items-center justify-center gap-2 w-full px-4 py-4 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 transition-all">
+          <Upload className="w-5 h-5 text-slate-400" />
+          <span className="text-sm text-slate-600">
+            {parsedCSV ? `Đã chọn: ${parsedCSV.totalRows} dòng` : "Nhấn để chọn file CSV"}
+          </span>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
         </label>
-        <input
-          type="text"
-          value={csvPath}
-          onChange={(e) => setCsvPath(e.target.value)}
-          placeholder="VD: C:/Data/qr_codes.csv"
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-mono"
-        />
-        <p className="text-[11px] text-slate-400 mt-1">
-          Nhập đường dẫn tuyệt đối đến file CSV trên máy chạy VNQR.
-        </p>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cột Mã</label>
-          <input
-            type="text"
-            value={codeColumn}
-            onChange={(e) => setCodeColumn(e.target.value)}
-            placeholder="Code"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
-          />
+
+      {/* Column Selection */}
+      {parsedCSV && (
+        <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+          <div className="text-xs font-semibold text-slate-600 mb-2">
+            Xem trước ({parsedCSV.totalRows} dòng)
+          </div>
+          {/* Preview table */}
+          <div className="overflow-x-auto max-h-32 rounded-lg border border-slate-200">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-100 sticky top-0">
+                <tr>
+                  {parsedCSV.headers.map((h, i) => (
+                    <th key={i} className="px-2 py-1.5 text-left font-semibold text-slate-600 whitespace-nowrap border-b border-slate-200">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {parsedCSV.rows.slice(0, 3).map((row, ri) => (
+                  <tr key={ri} className="hover:bg-white">
+                    {row.map((cell, ci) => (
+                      <td key={ci} className="px-2 py-1 text-slate-500 whitespace-nowrap border-b border-slate-100 last:border-0">
+                        {cell || "—"}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {parsedCSV.totalRows > 3 && (
+            <div className="text-[10px] text-slate-400 mt-1 text-center">
+              ... và {parsedCSV.totalRows - 3} dòng khác
+            </div>
+          )}
+
+          {/* Column selectors */}
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Cột Mã <span className="text-red-500">*</span></label>
+              <select
+                value={codeColumn}
+                onChange={(e) => setCodeColumn(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 outline-none focus:ring-1 focus:ring-purple-500"
+              >
+                <option value="">-- Chọn cột --</option>
+                {parsedCSV.headers.map((h) => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Cột Ghi chú</label>
+              <select
+                value={noteColumn}
+                onChange={(e) => setNoteColumn(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 outline-none focus:ring-1 focus:ring-purple-500"
+              >
+                <option value="">-- Không chọn --</option>
+                {parsedCSV.headers.map((h) => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cột Ghi chú <span className="font-normal text-slate-400">(tùy chọn)</span></label>
-          <input
-            type="text"
-            value={noteColumn}
-            onChange={(e) => setNoteColumn(e.target.value)}
-            placeholder="Note"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
-          />
-        </div>
-      </div>
+      )}
+
       <div>
         <label className="block text-sm font-semibold text-slate-700 mb-1.5">Ghi chú phiên nhập <span className="font-normal text-slate-400">(tùy chọn)</span></label>
         <input
@@ -417,7 +560,7 @@ const ImportCSVForm: React.FC<{
         </button>
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !parsedCSV}
           className="flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-xl transition-colors"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -440,20 +583,22 @@ const DataPoolView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedPool, setExpandedPool] = useState<string | null>(null);
   const [poolCodes, setPoolCodes] = useState<Record<string, DataPoolCode[]>>({});
+  const [poolSearchTerms, setPoolSearchTerms] = useState<Record<string, string>>({});
+  const [poolSearchResults, setPoolSearchResults] = useState<Record<string, boolean>>({});
   const [modalMode, setModalMode] = useState<ModalMode>(null);
 
-  // Load pool list
+  // Load pool list with stats
   const fetchPools = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const poolList = await datapoolApi.listPools();
+      const poolList = await datapoolApi.getPoolsWithStats();
       setPools(poolList.map((p) => ({
         ...p,
-        totalCodes: 0,
-        availableCodes: 0,
-        usedCodes: 0,
-        loaded: false,
+        totalCodes: p.totalCodes ?? 0,
+        availableCodes: p.availableCodes ?? 0,
+        usedCodes: p.usedCodes ?? 0,
+        loaded: true,
       })));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load pools");
@@ -462,48 +607,10 @@ const DataPoolView: React.FC = () => {
     }
   }, []);
 
-  // Load codes for a specific pool to compute stats
-  const loadPoolStats = useCallback(async (poolName: string) => {
-    setIsLoadingPool(poolName);
-    try {
-      const codes = await datapoolApi.getCodes(poolName);
-      const total = codes.length;
-      const used = codes.filter(c => c.status !== 0 && c.status !== 2).length;
-      const available = total - used;
-
-      setPools(prev => prev.map(p =>
-        p.name === poolName
-          ? { ...p, totalCodes: total, availableCodes: available, usedCodes: used, loaded: true }
-          : p
-      ));
-
-      if (expandedPool === poolName) {
-        setPoolCodes(prev => ({ ...prev, [poolName]: codes }));
-      }
-    } catch {
-      setPools(prev => prev.map(p =>
-        p.name === poolName ? { ...p, loaded: true } : p
-      ));
-    } finally {
-      setIsLoadingPool(null);
-    }
-  }, [expandedPool]);
-
   // Initial load
   useEffect(() => {
     fetchPools();
   }, [fetchPools]);
-
-  // Load stats for all pools once pool list is loaded
-  useEffect(() => {
-    if (pools.length > 0) {
-      pools.forEach(pool => {
-        if (!pool.loaded) {
-          loadPoolStats(pool.name);
-        }
-      });
-    }
-  }, [pools.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Toggle expand pool to show codes
   const toggleExpand = async (poolName: string) => {
@@ -512,21 +619,22 @@ const DataPoolView: React.FC = () => {
       return;
     }
     setExpandedPool(poolName);
-    if (!poolCodes[poolName]) {
-      setIsLoadingPool(poolName);
-      try {
-        const codes = await datapoolApi.getCodes(poolName);
-        setPoolCodes(prev => ({ ...prev, [poolName]: codes }));
-        const total = codes.length;
-        const used = codes.filter(c => c.status !== 0 && c.status !== 2).length;
-        setPools(prev => prev.map(p =>
-          p.name === poolName ? { ...p, totalCodes: total, availableCodes: total - used, usedCodes: used, loaded: true } : p
-        ));
-      } catch {
-        setPoolCodes(prev => ({ ...prev, [poolName]: [] }));
-      } finally {
-        setIsLoadingPool(null);
-      }
+    setPoolSearchTerms(prev => ({ ...prev, [poolName]: "" }));
+    setPoolSearchResults(prev => ({ ...prev, [poolName]: false }));
+  };
+
+  // Search codes in pool via API
+  const searchPoolCodes = async (poolName: string, keyword: string) => {
+    if (!keyword.trim()) return;
+    setIsLoadingPool(poolName);
+    setPoolSearchResults(prev => ({ ...prev, [poolName]: true }));
+    try {
+      const codes = await datapoolApi.searchCodes(poolName, keyword);
+      setPoolCodes(prev => ({ ...prev, [poolName]: codes }));
+    } catch {
+      setPoolCodes(prev => ({ ...prev, [poolName]: [] }));
+    } finally {
+      setIsLoadingPool(null);
     }
   };
 
@@ -604,10 +712,10 @@ const DataPoolView: React.FC = () => {
 
       {/* Summary Stats */}
       {pools.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 shrink-0">
+        <div className="grid grid-cols-4 gap-3 shrink-0">
           <div className="bg-white rounded-2xl border border-slate-200/60 p-3 text-center">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Tổng Pool</div>
-            <div className="text-2xl font-black text-slate-800">{pools.length}</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Số Pool</div>
+            <div className="text-2xl font-black text-purple-600">{pools.length}</div>
           </div>
           <div className="bg-white rounded-2xl border border-slate-200/60 p-3 text-center">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Tổng Mã</div>
@@ -616,9 +724,15 @@ const DataPoolView: React.FC = () => {
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-slate-200/60 p-3 text-center">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Còn Trống</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Sẵn Sàng</div>
             <div className="text-2xl font-black text-green-600">
               {pools.reduce((sum, p) => sum + p.availableCodes, 0).toLocaleString()}
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-3 text-center">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Đã Dùng</div>
+            <div className="text-2xl font-black text-blue-600">
+              {pools.reduce((sum, p) => sum + p.usedCodes, 0).toLocaleString()}
             </div>
           </div>
         </div>
@@ -737,15 +851,54 @@ const DataPoolView: React.FC = () => {
                 {/* Expanded: Code List */}
                 {expandedPool === pool.name && (
                   <div className="bg-slate-50/50 border-t border-slate-100 px-4 xl:px-6 py-3">
+                    {/* Search codes */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 px-3 py-1.5 flex-1">
+                        <Search className="w-3.5 h-3.5 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Tìm kiếm mã (Enter để tìm)..."
+                          className="flex-1 bg-transparent outline-none text-xs text-slate-700 placeholder:text-slate-400"
+                          value={poolSearchTerms[pool.name] || ""}
+                          onChange={(e) => setPoolSearchTerms(prev => ({ ...prev, [pool.name]: e.target.value }))}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              searchPoolCodes(pool.name, poolSearchTerms[pool.name] || "");
+                            }
+                          }}
+                        />
+                        {poolSearchTerms[pool.name] && (
+                          <button
+                            onClick={() => {
+                              setPoolSearchTerms(prev => ({ ...prev, [pool.name]: "" }));
+                              setPoolCodes(prev => ({ ...prev, [pool.name]: [] }));
+                              setPoolSearchResults(prev => ({ ...prev, [pool.name]: false }));
+                            }}
+                            className="p-0.5 hover:bg-slate-100 rounded"
+                          >
+                            <X className="w-3 h-3 text-slate-400" />
+                          </button>
+                        )}
+                      </div>
+                      {poolSearchTerms[pool.name] && (
+                        <button
+                          onClick={() => searchPoolCodes(pool.name, poolSearchTerms[pool.name] || "")}
+                          className="px-3 py-1.5 bg-purple-600 text-white text-xs font-semibold rounded-xl hover:bg-purple-700 transition-colors"
+                        >
+                          Tìm
+                        </button>
+                      )}
+                    </div>
+
                     {isLoadingPool === pool.name ? (
                       <div className="text-center text-slate-400 py-4">
                         <RefreshCw className="w-5 h-5 mx-auto animate-spin" />
                       </div>
-                    ) : poolCodes[pool.name] && poolCodes[pool.name].length > 0 ? (
-                      <div>
+                    ) : poolSearchResults[pool.name] === true && poolCodes[pool.name] ? (
+                      <>
                         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-2">
                           <Tag className="w-3 h-3" />
-                          Danh sách mã ({poolCodes[pool.name].length})
+                          Kết quả tìm kiếm: {poolCodes[pool.name].length} mã
                         </div>
                         <div className="bg-white rounded-xl border border-slate-200/80 overflow-hidden">
                           <table className="w-full text-xs">
@@ -758,7 +911,7 @@ const DataPoolView: React.FC = () => {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                              {poolCodes[pool.name].slice(0, 100).map((code) => (
+                              {poolCodes[pool.name].map((code) => (
                                 <tr key={code.code} className="hover:bg-slate-50/50">
                                   <td className="px-3 py-2 font-mono font-semibold text-slate-700">{code.code}</td>
                                   <td className="px-3 py-2 text-center">
@@ -779,16 +932,16 @@ const DataPoolView: React.FC = () => {
                               ))}
                             </tbody>
                           </table>
-                          {poolCodes[pool.name].length > 100 && (
-                            <div className="px-3 py-2 text-center text-[10px] text-slate-400 bg-slate-50 border-t border-slate-100">
-                              Hiển thị 100 / {poolCodes[pool.name].length} mã
+                          {poolCodes[pool.name].length === 0 && (
+                            <div className="px-3 py-4 text-center text-xs text-slate-400">
+                              Không tìm thấy mã nào chứa "{poolSearchTerms[pool.name]}"
                             </div>
                           )}
                         </div>
-                      </div>
+                      </>
                     ) : (
                       <div className="text-center text-slate-400 py-4 text-sm">
-                        Pool trống — chưa có mã nào
+                        Nhập từ khóa và bấm "Tìm" để tìm mã trong pool
                       </div>
                     )}
                   </div>
