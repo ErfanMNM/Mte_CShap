@@ -40,6 +40,7 @@ import "react-simple-keyboard/build/css/index.css";
 import { useWebSocket, DeviceStatus, LogEntry } from "./hooks/useWebSocket";
 import POManagerView from "./components/pomanager/POManagerView";
 import DataPoolView from "./components/datapool/DataPoolView";
+import ProductionView from "./components/production/ProductionView";
 
 type KeyboardLayoutType = "default" | "shift" | "numeric";
 
@@ -1137,6 +1138,7 @@ const AdminPanelContent = () => {
 
   const navigation = [
     { id: "monitor", title: "Giám sát SCADA", icon: LayoutDashboard },
+    { id: "production", title: "Điều khiển SX", icon: Factory },
     { id: "devices", title: "Quản lý thiết bị", icon: Cpu },
     { id: "batches", title: "Lệnh sản xuất", icon: Package },
     { id: "datapool", title: "Quản lý DataPool", icon: Database },
@@ -1244,11 +1246,14 @@ const AdminPanelContent = () => {
           className={`flex-1 overflow-hidden p-4 lg:p-6 2xl:p-8 bg-[#F6F8FA] transition-all duration-300 ${isOpen ? "pb-[380px] md:pb-[420px]" : ""}`}
         >
           {activeRoute === "monitor" && <ScadaMonitorView />}
+          {activeRoute === "production" && <ProductionView />}
           {activeRoute === "history" && <ProductionReportView />}
           {activeRoute === "settings" && <SettingsView />}
           {activeRoute === "batches" && <POManagerView />}
           {activeRoute === "datapool" && <DataPoolView />}
+          {activeRoute === "production" && <ProductionView />}
           {activeRoute !== "monitor" &&
+            activeRoute !== "production" &&
             activeRoute !== "history" &&
             activeRoute !== "settings" &&
             activeRoute !== "batches" &&

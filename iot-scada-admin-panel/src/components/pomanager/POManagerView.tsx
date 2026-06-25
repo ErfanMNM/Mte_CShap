@@ -167,7 +167,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
       setPoolCodes(codes);
     } catch (err) {
       setPoolCodes([]);
-      setPoolCodesError(err instanceof Error ? err.message : "Không thể tải mã từ pool");
+      setPoolCodesError(err instanceof Error ? err.message : "Cannot load codes from pool");
     } finally {
       setIsLoadingPoolCodes(false);
     }
@@ -182,7 +182,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
       const result = await poApi.canDeletePO(po.orderNo);
       setDeleteCheck({ canDelete: result.canDelete, reason: result.reason });
     } catch {
-      setDeleteCheck({ canDelete: false, reason: "Không thể kiểm tra trạng thái PO" });
+      setDeleteCheck({ canDelete: false, reason: "Cannot check PO status" });
     } finally {
       setIsCheckingDelete(false);
     }
@@ -196,15 +196,15 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
     try {
       const result = await poApi.deletePO(deleteTarget.orderNo, "Admin");
       if (result.success) {
-        setSuccess(`Đã xóa PO "${deleteTarget.orderNo}" thành công.`);
+        setSuccess(`Deleted PO "${deleteTarget.orderNo}" successfully.`);
         setDeleteTarget(null);
         await fetchPOList();
       } else {
-        setError(result.message || "Xóa PO thất bại.");
+        setError(result.message || "Failed to delete PO.");
         setDeleteCheck({ canDelete: false, reason: result.reason });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xóa PO thất bại.");
+      setError(err instanceof Error ? err.message : "Failed to delete PO.");
     } finally {
       setIsDeleting(false);
     }
@@ -213,14 +213,14 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     if (!formData.orderNo.trim()) {
-      errors.orderNo = "Mã PO là bắt buộc";
-    }
-    if (!formData.orderQty || formData.orderQty <= 24) {
-      errors.orderQty = "Số lượng phải lớn hơn 24";
-    }
-    if (!formData.productionDate) {
-      errors.productionDate = "Ngày sản xuất là bắt buộc";
-    }
+      errors.orderNo = "Order No. is required";
+      }
+      if (!formData.orderQty || formData.orderQty <= 24) {
+        errors.orderQty = "Order Qty must be greater than 24";
+      }
+      if (!formData.productionDate) {
+        errors.productionDate = "Production Date is required";
+      }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -236,9 +236,9 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
       const result = await poApi.createPO(formData);
       if (result.success) {
         setSuccess(
-          `Tạo PO "${result.orderNo}" thành công${
+          `Created PO "${result.orderNo}" successfully${
             result.loadedCodesCount
-              ? ` - Đã nạp ${result.loadedCodesCount} mã`
+              ? ` - Loaded ${result.loadedCodesCount} codes`
               : ""
           }`,
         );
@@ -246,10 +246,10 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
         setActiveTab("list");
         await fetchPOList();
       } else {
-        setError(result.message || "Tạo PO thất bại");
+        setError(result.message || "Failed to create PO");
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Tạo PO thất bại";
+      const msg = err instanceof Error ? err.message : "Failed to create PO";
       setError(msg);
     } finally {
       setIsSaving(false);
@@ -294,10 +294,10 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
           </div>
           <div>
             <h1 className="text-xl 2xl:text-2xl font-bold text-slate-800 tracking-tight">
-              Quản lý Lệnh sản xuất (PO)
+              Production Order Manager
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Tạo và theo dõi các lệnh sản xuất từ POApiServer
+              Create and monitor production orders from POApiServer
             </p>
           </div>
         </div>
@@ -330,7 +330,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
             <RefreshCw
               className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`}
             />
-            Làm mới
+            Refresh
           </button>
         </div>
       </div>
@@ -373,7 +373,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 <AlertTriangle className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-800">Xóa PO</h3>
+                <h3 className="text-base font-bold text-slate-800">Delete PO</h3>
                 <p className="text-xs text-slate-500 font-medium">{deleteTarget.orderNo}</p>
               </div>
               <button
@@ -388,7 +388,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               {isCheckingDelete ? (
                 <div className="flex items-center gap-3 text-slate-600">
                   <RefreshCw className="w-5 h-5 animate-spin" />
-                  <span className="text-sm font-medium">Đang kiểm tra trạng thái PO...</span>
+                  <span className="text-sm font-medium">Checking PO status...</span>
                 </div>
               ) : deleteCheck ? (
                 <div className="space-y-3">
@@ -400,7 +400,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                     <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-semibold">
-                        {deleteCheck.canDelete ? "Có thể xóa" : "Không thể xóa"}
+                        {deleteCheck.canDelete ? "Can be deleted" : "Cannot be deleted"}
                       </p>
                       <p className="text-xs mt-0.5 opacity-80">{deleteCheck.reason}</p>
                     </div>
@@ -408,7 +408,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
 
                   {!deleteCheck.canDelete && (
                     <p className="text-xs text-slate-500 text-center">
-                      PO đã chạy mã không thể xóa. Vui lòng đóng và thử lại.
+                      This PO has used codes and cannot be deleted. Please close and retry.
                     </p>
                   )}
                 </div>
@@ -420,7 +420,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 onClick={() => { setDeleteTarget(null); setDeleteCheck(null); }}
                 className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
               >
-                Hủy
+                Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
@@ -434,12 +434,12 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 {isDeleting ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Đang xóa...
+                    Deleting...
                   </>
                 ) : (
                   <>
                     <Trash2 className="w-4 h-4" />
-                    Xóa PO
+                    Delete PO
                   </>
                 )}
               </button>
@@ -458,7 +458,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               : "text-slate-600 hover:text-slate-900"
           }`}
         >
-          <List className="w-4 h-4" /> Danh sách PO
+          <List className="w-4 h-4" /> PO List
         </button>
         <button
           onClick={() => {
@@ -472,7 +472,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               : "text-slate-600 hover:text-slate-900"
           }`}
         >
-          <Plus className="w-4 h-4" /> Tạo PO mới
+          <Plus className="w-4 h-4" /> New PO
         </button>
         {selectedPO && (
           <button
@@ -483,7 +483,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <FileText className="w-4 h-4" /> Chi tiết
+            <FileText className="w-4 h-4" /> Detail
           </button>
         )}
       </div>
@@ -498,7 +498,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm kiếm theo mã PO hoặc tên sản phẩm..."
+              placeholder="Search by order no. or product name..."
               className="flex-1 bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-400"
             />
             {searchTerm && (
@@ -515,7 +515,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
           <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
             <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5 flex items-center justify-between">
               <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                <Package className="w-4 h-4 text-blue-600" /> Danh sách PO
+                <Package className="w-4 h-4 text-blue-600" /> PO List
                 <span className="ml-2 text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                   {filteredList.length}
                 </span>
@@ -526,22 +526,22 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 <thead className="text-[10px] uppercase text-slate-400 bg-white sticky top-0 border-b border-slate-100 z-10 backdrop-blur">
                   <tr>
                     <th className="px-5 py-3 font-bold tracking-wider">
-                      Mã PO
+                      Order No.
                     </th>
                     <th className="px-5 py-3 font-bold tracking-wider">
-                      Tên sản phẩm
+                      Product Name
                     </th>
                     <th className="px-5 py-3 font-bold tracking-wider">
-                      Số lượng
+                      Order Qty
                     </th>
                     <th className="px-5 py-3 font-bold tracking-wider">
-                      Ngày SX
+                      Production Date
                     </th>
                     <th className="px-5 py-3 font-bold tracking-wider">
-                      Trạng thái
+                      Status
                     </th>
                     <th className="px-5 py-3 font-bold tracking-wider text-right">
-                      Hành động
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -553,7 +553,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                         className="px-5 py-10 text-center text-slate-400"
                       >
                         <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
-                        Đang tải dữ liệu...
+                        Loading data...
                       </td>
                     </tr>
                   ) : filteredList.length === 0 ? (
@@ -563,8 +563,8 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                         className="px-5 py-10 text-center text-slate-400"
                       >
                         {searchTerm
-                          ? "Không tìm thấy PO phù hợp"
-                          : "Chưa có PO nào. Tạo PO mới để bắt đầu."}
+                          ? "No matching POs found"
+                          : "No POs yet. Create a new PO to get started."}
                       </td>
                     </tr>
                   ) : (
@@ -589,7 +589,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide bg-blue-100 text-blue-700">
                             {po.status
                               ? new Date(po.status).toLocaleDateString("vi-VN")
-                              : "Mới"}
+                              : "New"}
                           </span>
                         </td>
                         <td className="px-5 py-3 text-right">
@@ -598,12 +598,12 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                               onClick={() => fetchPODetail(po.orderNo)}
                               className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             >
-                              <FileText className="w-3.5 h-3.5" /> Chi tiết
+                              <FileText className="w-3.5 h-3.5" /> Detail
                             </button>
                             <button
                               onClick={() => handleDeleteClick(po)}
                               className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Xóa PO"
+                              title="Delete PO"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -626,26 +626,26 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
         >
           <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5 flex items-center justify-between">
             <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-blue-600" /> Tạo PO mới
+              <Plus className="w-4 h-4 text-blue-600" /> Create New PO
             </h2>
             <button
               type="button"
               onClick={() => setActiveTab("list")}
               className="text-xs font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-1"
             >
-              <ArrowLeft className="w-3.5 h-3.5" /> Quay lại
+              <ArrowLeft className="w-3.5 h-3.5" /> Back
             </button>
           </div>
 
           <div className="p-4 xl:p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             <FormField
-              label="Mã PO *"
+              label="Order No. *"
               name="orderNo"
               value={formData.orderNo}
               onChange={handleFormChange}
               error={formErrors.orderNo}
               icon={Hash}
-              placeholder="VD: PO0001"
+              placeholder="e.g. PO0001"
             />
             <FormField
               label="GTIN"
@@ -653,10 +653,10 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               value={formData.gtin || ""}
               onChange={handleFormChange}
               icon={Tag}
-              placeholder="VD: A001"
+              placeholder="e.g. A001"
             />
             <FormField
-              label="Số lượng *"
+              label="Order Qty *"
               name="orderQty"
               type="number"
               value={formData.orderQty}
@@ -665,7 +665,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               icon={Layers}
             />
             <FormField
-              label="Ngày sản xuất *"
+              label="Production Date *"
               name="productionDate"
               type="date"
               value={formData.productionDate || ""}
@@ -674,43 +674,43 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               icon={Calendar}
             />
             <SelectField
-              label="Ca"
+              label="Shift"
               name="shift"
               value={formData.shift || "A"}
               onChange={handleFormChange}
               options={[
-                { value: "A", label: "Ca A" },
-                { value: "B", label: "Ca B" },
-                { value: "C", label: "Ca C" },
+                { value: "A", label: "Shift A" },
+                { value: "B", label: "Shift B" },
+                { value: "C", label: "Shift C" },
               ]}
             />
             <SelectField
-              label="Đơn vị (UOM)"
+              label="UOM"
               name="uom"
               value={formData.uom || "PCS"}
               onChange={handleFormChange}
               options={[
-                { value: "PCS", label: "PCS (Cái)" },
-                { value: "BOX", label: "BOX (Hộp)" },
-                { value: "SET", label: "SET (Bộ)" },
+                { value: "PCS", label: "PCS" },
+                { value: "BOX", label: "BOX" },
+                { value: "SET", label: "SET" },
               ]}
             />
             <FormField
-              label="Tên sản phẩm"
+              label="Product Name"
               name="productName"
               value={formData.productName || ""}
               onChange={handleFormChange}
               icon={Package}
             />
             <FormField
-              label="Mã sản phẩm"
+              label="Product Code"
               name="productCode"
               value={formData.productCode || ""}
               onChange={handleFormChange}
               icon={Tag}
             />
             <FormField
-              label="Số Lot"
+              label="Lot Number"
               name="lotNumber"
               value={formData.lotNumber || ""}
               onChange={handleFormChange}
@@ -724,28 +724,28 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               icon={Building2}
             />
             <FormField
-              label="Nhà máy"
+              label="Factory"
               name="factory"
               value={formData.factory || ""}
               onChange={handleFormChange}
               icon={Factory}
             />
             <FormField
-              label="Chuyền sản xuất"
+              label="Production Line"
               name="productionLine"
               value={formData.productionLine || ""}
               onChange={handleFormChange}
               icon={Layers}
             />
             <FormField
-              label="Mã đơn hàng KH"
+              label="Customer Order No."
               name="customerOrderNo"
               value={formData.customerOrderNo || ""}
               onChange={handleFormChange}
               icon={Hash}
             />
             <FormField
-              label="Người tạo"
+              label="Created By"
               name="userName"
               value={formData.userName || ""}
               onChange={handleFormChange}
@@ -766,7 +766,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 }
                 className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
-              Tự động nạp mã từ DataPool
+              Auto-load codes from DataPool
             </label>
             <div className="flex items-center gap-2">
               <button
@@ -774,7 +774,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 onClick={() => setActiveTab("list")}
                 className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
               >
-                Hủy
+                Cancel
               </button>
               <button
                 type="submit"
@@ -786,7 +786,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 ) : (
                   <Plus className="w-4 h-4" />
                 )}
-                {isSaving ? "Đang tạo..." : "Tạo PO"}
+                {isSaving ? "Creating..." : "Create PO"}
               </button>
             </div>
           </div>
@@ -800,7 +800,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               onClick={() => setActiveTab("list")}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
             >
-              <ArrowLeft className="w-3.5 h-3.5" /> Quay lại danh sách
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to List
             </button>
           </div>
 
@@ -809,56 +809,56 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
             <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
               <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
                 <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-blue-600" /> Thông tin PO:{" "}
+                  <FileText className="w-4 h-4 text-blue-600" /> PO Detail:{" "}
                   <span className="font-mono text-blue-700">
                     {selectedPO.orderNo}
                   </span>
                 </h2>
               </div>
               <div className="p-4 xl:p-6 grid grid-cols-1 md:grid-cols-2 gap-x-6">
-                <DetailRow label="Mã PO" value={selectedPO.orderNo} mono />
-                <DetailRow label="Số lượng" value={selectedPO.orderQty} />
+                <DetailRow label="Order No." value={selectedPO.orderNo} mono />
+                <DetailRow label="Order Qty" value={selectedPO.orderQty} />
                 <DetailRow label="GTIN" value={selectedPO.gtin} />
                 <DetailRow
-                  label="Tên sản phẩm"
+                  label="Product Name"
                   value={selectedPO.productName}
                 />
                 <DetailRow
-                  label="Mã sản phẩm"
+                  label="Product Code"
                   value={selectedPO.productCode}
                 />
-                <DetailRow label="Số Lot" value={selectedPO.lotNumber} />
+                <DetailRow label="Lot Number" value={selectedPO.lotNumber} />
                 <DetailRow
                   label="Site"
                   value={selectedPO.site}
                   icon={Building2}
                 />
                 <DetailRow
-                  label="Nhà máy"
+                  label="Factory"
                   value={selectedPO.factory}
                   icon={Factory}
                 />
                 <DetailRow
-                  label="Chuyền SX"
+                  label="Production Line"
                   value={selectedPO.productionLine}
                 />
-                <DetailRow label="Ca" value={selectedPO.shift} />
+                <DetailRow label="Shift" value={selectedPO.shift} />
                 <DetailRow
-                  label="Ngày sản xuất"
+                  label="Production Date"
                   value={selectedPO.productionDate}
                   icon={Calendar}
                 />
                 <DetailRow
-                  label="Mã ĐH khách hàng"
+                  label="Customer Order No."
                   value={selectedPO.customerOrderNo}
                 />
-                <DetailRow label="Đơn vị" value={selectedPO.uom} />
+                <DetailRow label="UOM" value={selectedPO.uom} />
                 <DetailRow
-                  label="Ngày tạo"
+                  label="Created Time"
                   value={formatDate(selectedPO.createdTime)}
                 />
                 <DetailRow
-                  label="Cập nhật"
+                  label="Modified Time"
                   value={formatDate(selectedPO.modifiedTime)}
                 />
               </div>
@@ -868,13 +868,13 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
             <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
               <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
                 <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-blue-600" /> Tổng quan
+                  <Layers className="w-4 h-4 text-blue-600" /> Overview
                 </h2>
               </div>
               <div className="p-4 xl:p-6 flex flex-col gap-3">
                 <div className="rounded-2xl border border-blue-200/60 bg-blue-50/50 p-4 text-center">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 opacity-70 mb-1">
-                    Số lượng đặt
+                    Order Qty
                   </div>
                   <div className="text-3xl font-black text-blue-800 tracking-tight">
                     {selectedPO.orderQty?.toLocaleString() || "—"}
@@ -882,17 +882,17 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 </div>
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                    Trạng thái
+                    Status
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" />
                     <span className="text-sm font-bold text-slate-700">
-                      PO đang hoạt động
+                      Active
                     </span>
                   </div>
                 </div>
                 <div className="text-xs text-slate-500 text-center pt-2 border-t border-slate-100">
-                  Theo dõi mã và thùng carton trong hệ thống POApiServer
+                  Track codes and cartons in POApiServer
                 </div>
               </div>
             </div>
@@ -911,14 +911,14 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                   className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                 >
                   <RefreshCw className={`w-3 h-3 ${isLoadingPoolCodes ? "animate-spin" : ""}`} />
-                  Làm mới
+                  Refresh
                 </button>
               </div>
               <div className="p-4 xl:p-6">
                 {isLoadingPoolCodes ? (
                   <div className="text-center text-slate-400 py-6">
                     <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
-                    <span className="text-sm">Đang tải mã từ pool...</span>
+                    <span className="text-sm">Loading codes...</span>
                   </div>
                 ) : poolCodesError ? (
                   <div className="flex items-center gap-2 text-red-600 text-sm">
@@ -928,26 +928,26 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 ) : poolCodes.length === 0 ? (
                   <div className="text-center text-slate-400 py-6">
                     <Database className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    <span className="text-sm">Chưa có mã nào trong pool này</span>
+                    <span className="text-sm">No codes in this pool</span>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
                     {/* Pool stats summary */}
                     <div className="grid grid-cols-3 gap-3">
                       <div className="rounded-xl border border-green-200/60 bg-green-50/50 p-3 text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-green-600 mb-1">Sẵn sàng</div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-green-600 mb-1">Available</div>
                         <div className="text-2xl font-black text-green-700">
                           {poolCodes.filter(c => c.status === 0).length.toLocaleString()}
                         </div>
                       </div>
                       <div className="rounded-xl border border-slate-200/60 bg-slate-50/50 p-3 text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Đã dùng</div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Used</div>
                         <div className="text-2xl font-black text-slate-600">
                           {poolCodes.filter(c => c.status !== 0).length.toLocaleString()}
                         </div>
                       </div>
                       <div className="rounded-xl border border-slate-200/60 bg-slate-50/50 p-3 text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Tổng</div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Total</div>
                         <div className="text-2xl font-black text-slate-700">
                           {poolCodes.length.toLocaleString()}
                         </div>
@@ -958,10 +958,10 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="text-[10px] uppercase text-slate-400 bg-slate-100 border-b border-slate-200">
-                            <th className="px-3 py-2 font-bold text-left">Mã</th>
-                            <th className="px-3 py-2 font-bold text-center">Trạng thái</th>
+                            <th className="px-3 py-2 font-bold text-left">Code</th>
+                            <th className="px-3 py-2 font-bold text-center">Status</th>
                             <th className="px-3 py-2 font-bold text-left">Batch</th>
-                            <th className="px-3 py-2 font-bold text-left">Ghi chú</th>
+                            <th className="px-3 py-2 font-bold text-left">Note</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -975,9 +975,9 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                                   code.status === 2 ? "bg-slate-100 text-slate-500" :
                                   "bg-red-100 text-red-700"
                                 }`}>
-                                  {code.status === 0 ? "Sẵn sàng" :
-                                   code.status === 1 ? "Đang dùng" :
-                                   code.status === 2 ? "Đã xóa" : "Lỗi"}
+                                  {code.status === 0 ? "Available" :
+                                   code.status === 1 ? "Used" :
+                                   code.status === 2 ? "Deleted" : "Error"}
                                 </span>
                               </td>
                               <td className="px-3 py-2 text-slate-500">{code.batchID || "—"}</td>
@@ -988,7 +988,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                       </table>
                       {poolCodes.length > 50 && (
                         <div className="px-3 py-2 text-center text-[10px] text-slate-400 bg-slate-100 border-t border-slate-200">
-                          Hiển thị 50 / {poolCodes.length} mã
+                          Showing 50 / {poolCodes.length} codes
                         </div>
                       )}
                     </div>

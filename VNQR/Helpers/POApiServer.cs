@@ -281,6 +281,92 @@ namespace VNQR.Helpers
         public string? JsonParams { get; set; }
     }
 
+    // ================== PRODUCTION REQUEST/RESPONSE ==================
+
+    /// <summary>
+    /// Request body for starting production.
+    /// </summary>
+    public class StartProductionRequest
+    {
+        [JsonPropertyName("orderNo")]
+        public string OrderNo { get; set; } = "";
+
+        [JsonPropertyName("userName")]
+        public string UserName { get; set; } = "Frontend";
+    }
+
+    /// <summary>
+    /// Response for production control operations.
+    /// </summary>
+    public class ProductionControlResponse
+    {
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        [JsonPropertyName("message")]
+        public string Message { get; set; } = "";
+    }
+
+    /// <summary>
+    /// Response for production status query.
+    /// </summary>
+    public class ProductionStatusResponse
+    {
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        [JsonPropertyName("message")]
+        public string Message { get; set; } = "";
+
+        [JsonPropertyName("state")]
+        public string State { get; set; } = "";
+
+        [JsonPropertyName("hasPO")]
+        public bool HasPO { get; set; }
+
+        [JsonPropertyName("orderNo")]
+        public string? OrderNo { get; set; }
+
+        [JsonPropertyName("productName")]
+        public string? ProductName { get; set; }
+
+        [JsonPropertyName("orderQty")]
+        public int OrderQty { get; set; }
+
+        [JsonPropertyName("totalCount")]
+        public int TotalCount { get; set; }
+
+        [JsonPropertyName("passCount")]
+        public int PassCount { get; set; }
+
+        [JsonPropertyName("failCount")]
+        public int FailCount { get; set; }
+
+        [JsonPropertyName("duplicateCount")]
+        public int DuplicateCount { get; set; }
+
+        [JsonPropertyName("cartonCount")]
+        public int CartonCount { get; set; }
+
+        [JsonPropertyName("cartonClosedCount")]
+        public int CartonClosedCount { get; set; }
+
+        [JsonPropertyName("currentCartonId")]
+        public int CurrentCartonId { get; set; }
+
+        [JsonPropertyName("currentCartonCode")]
+        public string CurrentCartonCode { get; set; } = "";
+
+        [JsonPropertyName("itemsInCarton")]
+        public int ItemsInCarton { get; set; }
+
+        [JsonPropertyName("cartonCapacity")]
+        public int CartonCapacity { get; set; }
+
+        [JsonPropertyName("progressPercent")]
+        public double ProgressPercent { get; set; }
+    }
+
     /// <summary>
     /// REST API Server cho phép tạo PO từ bên ngoài.
     /// Chạy trên background thread, không ảnh hưởng luồng chính.
@@ -360,6 +446,12 @@ namespace VNQR.Helpers
             // Health check
             _app.MapGet("/api/health", HandleHealth);
 
+            // Production endpoints
+            _app.MapPost("/api/production/start", HandleProductionStart);
+            _app.MapPost("/api/production/stop", HandleProductionStop);
+            _app.MapPost("/api/production/reset", HandleProductionReset);
+            _app.MapGet("/api/production/status", HandleProductionStatus);
+
             // PO endpoints
             _app.MapPost("/api/po", HandleCreatePO);
             _app.MapGet("/api/po/{orderNo}", HandleGetPO);
@@ -381,6 +473,8 @@ namespace VNQR.Helpers
             _app.MapPost("/api/datapool/pools", HandleDataPoolCreatePool);
 
             Log("POApiServer", $"DataPool endpoints: POST /api/datapool/add, POST /api/datapool/add-reader, POST /api/datapool/import-file, POST /api/datapool/pools");
+
+            Log("POApiServer", $"Production endpoints: POST /api/production/start, POST /api/production/stop, POST /api/production/reset, GET /api/production/status");
 
             Log("POApiServer", $"Started on http://{_host}:{_port}");
             Log("POApiServer", $"Endpoints: POST /api/po, GET /api/po/{{orderNo}}, GET /api/po/list/all");
@@ -902,6 +996,171 @@ namespace VNQR.Helpers
             catch (Exception ex)
             {
                 return Results.Json(new AuditLogResponse { Success = false, Message = ex.Message }, statusCode: 500);
+            }
+        }
+
+        // ================== PRODUCTION HANDLERS ==================
+
+        /// <summary>
+        /// Start production with selected PO.
+        /// POST /api/production/start
+        /// </summary>
+        private async Task<IResult> HandleProductionStart(HttpContext context)
+        {
+            try
+            {
+                var request = await context.Request.ReadFromJsonAsync<StartProductionRequest>();
+                if (request == null || string.IsNullOrWhiteSpace(request.OrderNo))
+                {
+                    return Results.BadRequest(new ProductionControlResponse
+                    {
+                        Success = false,
+                        Message = "orderNo is required."
+                    });
+                }
+
+                Log("POApiServer", $"Starting production for PO: {request.OrderNo}");
+
+                var result = await VNQR.ProductionManager.SelectAndInitializePO(
+                    request.OrderNo,
+                    request.UserName ?? "Frontend"
+                );
+
+                if (result.success)
+                {
+                    _auditLog?.Log(request.UserName ?? "Frontend", POActions.StartProduction,
+                        $"Started production: {request.OrderNo}",
+                        $"{{\"orderNo\":\"{request.OrderNo}\"}}", "Production");
+
+                    return Results.Json(new ProductionControlResponse
+                    {
+                        Success = true,
+                        Message = result.message
+                    });
+                }
+
+                return Results.Json(new ProductionControlResponse
+                {
+                    Success = false,
+                    Message = result.message
+                }, statusCode: 400);
+            }
+            catch (Exception ex)
+            {
+                Log("POApiServer", $"Error starting production: {ex.Message}");
+                return Results.Json(new ProductionControlResponse
+                {
+                    Success = false,
+                    Message = $"Server error: {ex.Message}"
+                }, statusCode: 500);
+            }
+        }
+
+        /// <summary>
+        /// Stop production (pause).
+        /// POST /api/production/stop
+        /// </summary>
+        private IResult HandleProductionStop(HttpContext context)
+        {
+            try
+            {
+                var userName = context.Request.Headers["X-User-Name"].FirstOrDefault() ?? "Frontend";
+
+                Log("POApiServer", "Stopping production...");
+                VNQR.ProductionManager.StopProduction();
+
+                _auditLog?.Log(userName, POActions.StopProduction,
+                    "Stopped production",
+                    $"{{\"orderNo\":\"{VNQR.Infrastructure.GV.OrderNo}\"}}", "Production");
+
+                return Results.Json(new ProductionControlResponse
+                {
+                    Success = true,
+                    Message = "Production stopped."
+                });
+            }
+            catch (Exception ex)
+            {
+                Log("POApiServer", $"Error stopping production: {ex.Message}");
+                return Results.Json(new ProductionControlResponse
+                {
+                    Success = false,
+                    Message = $"Server error: {ex.Message}"
+                }, statusCode: 500);
+            }
+        }
+
+        /// <summary>
+        /// Reset production (clear PO).
+        /// POST /api/production/reset
+        /// </summary>
+        private IResult HandleProductionReset(HttpContext context)
+        {
+            try
+            {
+                var userName = context.Request.Headers["X-User-Name"].FirstOrDefault() ?? "Frontend";
+
+                Log("POApiServer", "Resetting production...");
+                VNQR.ProductionManager.ResetPO();
+
+                _auditLog?.Log(userName, POActions.StopProduction,
+                    "Reset production",
+                    $"{{\"orderNo\":\"{VNQR.Infrastructure.GV.OrderNo}\"}}", "Production");
+
+                return Results.Json(new ProductionControlResponse
+                {
+                    Success = true,
+                    Message = "Production reset."
+                });
+            }
+            catch (Exception ex)
+            {
+                Log("POApiServer", $"Error resetting production: {ex.Message}");
+                return Results.Json(new ProductionControlResponse
+                {
+                    Success = false,
+                    Message = $"Server error: {ex.Message}"
+                }, statusCode: 500);
+            }
+        }
+
+        /// <summary>
+        /// Get current production status.
+        /// GET /api/production/status
+        /// </summary>
+        private IResult HandleProductionStatus(HttpContext context)
+        {
+            try
+            {
+                return Results.Json(new ProductionStatusResponse
+                {
+                    Success = true,
+                    State = VNQR.Infrastructure.GV.AppState.ToString(),
+                    HasPO = VNQR.Infrastructure.GV.HasPO,
+                    OrderNo = VNQR.Infrastructure.GV.OrderNo,
+                    ProductName = VNQR.Infrastructure.GV.ProductName,
+                    OrderQty = VNQR.Infrastructure.GV.OrderQty,
+                    TotalCount = VNQR.Infrastructure.GV.TotalCount,
+                    PassCount = VNQR.Infrastructure.GV.PassCount,
+                    FailCount = VNQR.Infrastructure.GV.FailCount,
+                    DuplicateCount = VNQR.Infrastructure.GV.DuplicateCount,
+                    CartonCount = VNQR.Infrastructure.GV.CartonCount,
+                    CartonClosedCount = VNQR.Infrastructure.GV.CartonClosedCount,
+                    CurrentCartonId = VNQR.Infrastructure.GV.CurrentCartonId,
+                    CurrentCartonCode = VNQR.Infrastructure.GV.CurrentCartonCode,
+                    ItemsInCarton = VNQR.Infrastructure.GV.ItemsInCurrentCarton,
+                    CartonCapacity = VNQR.Infrastructure.GV.CartonCapacity,
+                    ProgressPercent = VNQR.Infrastructure.GV.ProgressPercent
+                });
+            }
+            catch (Exception ex)
+            {
+                Log("POApiServer", $"Error getting production status: {ex.Message}");
+                return Results.Json(new ProductionStatusResponse
+                {
+                    Success = false,
+                    Message = ex.Message
+                }, statusCode: 500);
             }
         }
 

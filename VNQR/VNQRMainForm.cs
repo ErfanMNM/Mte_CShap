@@ -1,5 +1,6 @@
 using Sunny.UI;
 using System;
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,13 +38,12 @@ namespace VNQR
 
             _wsServer = new WebSocketServerHelper(_wsPort, "/ws");
             _wsServer.WebSocketServerCallback += WsServer_Callback;
-            _wsServer.Start();
-
             _wsServer.WebSocketServerCallback += (state, data) =>
             {
                 if (state == WebSocketServerState.Listening || state == WebSocketServerState.Connected)
                     _ = BroadcastDeviceStatusAsync();
             };
+            _wsServer.Start();
 
             AppConfigs.Current.SetDefault();
 
@@ -57,6 +57,7 @@ namespace VNQR
 
             omronplC_Hsl.PLC_IP = "127.0.0.1";
             omronplC_Hsl.PLC_PORT = 9600;
+            omronplC_Hsl.PLCStatus_OnChange += omronplC_Hsl_PLCStatus_OnChange;
             omronplC_Hsl.InitPLC();
 
             _pdaManager.OnScanReceived += Pda_ScanCallback;
@@ -292,7 +293,6 @@ namespace VNQR
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            Environment.Exit(0);
             mainWK.CancelAsync();
             updateWK.CancelAsync();
             _productionCTS?.Cancel();
@@ -301,6 +301,11 @@ namespace VNQR
             ProductionInfo.Unload();
             _poApiServer.Dispose();
             _wsServer?.Dispose();
+
+            // Unsubscribe events
+            omronplC_Hsl.PLCStatus_OnChange -= omronplC_Hsl_PLCStatus_OnChange;
+
+            Environment.Exit(0);
             base.OnFormClosing(e);
         }
 
@@ -365,9 +370,8 @@ namespace VNQR
                 this.InvokeIfRequired(() => UpdateUI());
 
                 // Process log queue
-                if (MainFormVariable.listbox.Count > 0)
+                while (MainFormVariable.listbox.TryDequeue(out string? data))
                 {
-                    string data = MainFormVariable.listbox.Dequeue();
                     this.InvokeIfRequired(() =>
                     {
                         listBox1.Items.Insert(0, data);
@@ -399,73 +403,11 @@ namespace VNQR
             // Controls like opTotal, opPass, opFail, opDuplicate, opCarton are defined in Designer
         }
 
-        #region Button Event Handlers
 
-        private void BtnSelectPO_Click(object sender, EventArgs e)
-        {
-            var form = new SelectPOForm();
-            if (form.ShowDialog() == DialogResult.OK)
-            {
-                MainFormVariable.listbox.Enqueue($"[User] Da chon PO: {form.SelectedOrderNo}");
-
-                // Start production with selected PO
-                _ = StartProductionAsync(form.SelectedOrderNo, GV.CurrentUser);
-            }
-        }
-
-        private async Task StartProductionAsync(string orderNo, string userName)
-        {
-            MainFormVariable.listbox.Enqueue("[System] Dang khoi tao PO...");
-
-            var result = await ProductionManager.SelectAndInitializePO(orderNo, userName);
-
-            if (result.success)
-            {
-                MainFormVariable.listbox.Enqueue("[System] Khoi tao thanh cong!");
-                UpdateProductionUI();
-                UpdateCounterDisplay();
-            }
-            else
-            {
-                MainFormVariable.listbox.Enqueue($"[System] Loi: {result.message}");
-                UIMessageBox.ShowWarning(result.message);
-            }
-        }
-
-        private void BtnStart_Click(object sender, EventArgs e)
-        {
-            if (!GV.HasPO)
-            {
-                UIMessageBox.ShowWarning("Vui long chon PO truoc!");
-                BtnSelectPO_Click(sender, e);
-                return;
-            }
-
-            ProductionManager.StartProduction();
-            MainFormVariable.listbox.Enqueue("[User] Nhan nut START");
-        }
-
-        private void BtnStop_Click(object sender, EventArgs e)
-        {
-            ProductionManager.StopProduction();
-            MainFormVariable.listbox.Enqueue("[User] Nhan nut STOP");
-        }
-
-        private void BtnReset_Click(object sender, EventArgs e)
-        {
-            var confirm = UIMessageBox.ShowAsk("Ban co chac muon reset PO nay?");
-            if (confirm)
-            {
-                ProductionManager.ResetPO();
-                MainFormVariable.listbox.Enqueue("[User] Nhan nut RESET");
-            }
-        }
-
-        #endregion
     }
 
     public static class MainFormVariable
     {
-        public static Queue<string> listbox = new Queue<string>();
+        public static ConcurrentQueue<string> listbox = new ConcurrentQueue<string>();
     }
 }
