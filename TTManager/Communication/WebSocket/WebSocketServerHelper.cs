@@ -131,9 +131,7 @@ namespace TTManager.Communication.WebSocket
 
                     if (context.Request.IsWebSocketRequest)
                     {
-                        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                        cts.CancelAfter(TimeSpan.FromSeconds(30));
-                        _ = HandleWebSocketAsync(context, cts.Token);
+                        _ = HandleWebSocketAsync(context, cancellationToken);
                     }
                     else
                     {
