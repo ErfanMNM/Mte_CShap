@@ -32,6 +32,7 @@ import {
   Plug,
   PlugZap,
   Package,
+  LogOut,
 } from "lucide-react";
 
 import ReactECharts from "echarts-for-react";
@@ -41,6 +42,8 @@ import { useWebSocket, DeviceStatus, LogEntry } from "./hooks/useWebSocket";
 import POManagerView from "./components/pomanager/POManagerView";
 import DataPoolView from "./components/datapool/DataPoolView";
 import ProductionView from "./components/production/ProductionView";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { LoginScreen } from "./components/LoginScreen";
 
 type KeyboardLayoutType = "default" | "shift" | "numeric";
 
@@ -1128,7 +1131,7 @@ const PlaceholderView = ({ title }: { title: string }) => (
    MAIN ADMIN LAYOUT
    ========================================= */
 
-const AdminPanelContent = () => {
+const AdminPanelContent = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
   const [activeRoute, setActiveRoute] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("panel") || "monitor";
@@ -1207,16 +1210,23 @@ const AdminPanelContent = () => {
         <div className="p-4 border-t border-slate-100 shrink-0">
           <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
             <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm shrink-0">
-              AD
+              {user?.username?.substring(0, 2).toUpperCase() || "AD"}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-800 truncate">
-                Adminstrator
+                {user?.displayName || user?.username || "User"}
               </p>
               <p className="text-xs font-medium text-slate-500 truncate">
-                admin@factory.local
+                {user?.role || "Guest"}
               </p>
             </div>
+            <button
+              onClick={onLogout}
+              className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </aside>
@@ -1283,8 +1293,31 @@ const AdminPanelContent = () => {
 
 export default function AdminPanel() {
   return (
-    <KeyboardProvider>
-      <AdminPanelContent />
-    </KeyboardProvider>
+    <AuthProvider>
+      <KeyboardProvider>
+        <AdminPanelWithAuth />
+      </KeyboardProvider>
+    </AuthProvider>
   );
 }
+
+const AdminPanelWithAuth = () => {
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#F6F8FA]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
+  return <AdminPanelContent user={user} onLogout={logout} />;
+};

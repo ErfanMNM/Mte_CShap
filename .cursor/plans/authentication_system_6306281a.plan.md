@@ -16,19 +16,19 @@ todos:
     status: completed
   - id: auth-init
     content: Update Program.cs init AuthDb
-    status: in_progress
+    status: completed
   - id: fe-auth-context
     content: Tạo AuthContext + LoginScreen (React)
-    status: pending
+    status: completed
   - id: fe-auth-api
     content: Tạo authApi.ts service (React)
-    status: pending
+    status: completed
   - id: fe-app-auth
     content: Update App.tsx với auth flow
-    status: pending
+    status: completed
   - id: build-test
     content: Build + test
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Microsoft.Data.Sqlite;
 using Serilog;
 
@@ -9,6 +10,10 @@ public class User
 {
     public string Id { get; set; } = "";
     public string Username { get; set; } = "";
+    
+    [JsonIgnore]
+    public string PasswordHash { get; set; } = "";
+    
     public string DisplayName { get; set; } = "";
     public string Role { get; set; } = "";
     public bool IsActive { get; set; }
