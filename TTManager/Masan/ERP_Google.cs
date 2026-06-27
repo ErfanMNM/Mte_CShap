@@ -115,10 +115,10 @@ namespace TTManager.Masan
                     foreach (var row in results)
                     {
                         //check cấu trúc ở đây
-                        if (checkERP(row["BATCH_NO"].ToString()))
-                        {
+                        //if (checkERP(row["BATCH_NO"].ToString()))
+                        //{
                             cbbBatchNO.Items.Add(row["BATCH_NO"].ToString());
-                        }
+                       // }
                     }
 
                     if (cbbBatchNO.Items.Count < 1)

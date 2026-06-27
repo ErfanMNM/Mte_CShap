@@ -375,7 +375,7 @@ namespace TApp.Views.Extention
                 GoogleCredential credential = GoogleCredential.FromFile(AppConfigs.Current.credentialERPPath);
                 StorageClient storage = StorageClient.Create(credential);
                 fileStream = File.OpenRead(filePath);
-                string objectPath = $"QRCode/{csvFileName}";
+                string objectPath = $"QRCode/{csvFileName}";//choox nay
                 var uploadedObject = storage.UploadObject("masan-image", objectPath, null, fileStream);
                 fileStream.Close();
                 fileStream.Dispose();
