@@ -1132,6 +1132,27 @@ namespace TApp.Views.Dashboard
         {
 
         }
+
+        private void ipBypassActive_ValueChanged(object sender, bool value)
+        {
+            if (GlobalVarialbles.CurrentUser.Role != "Admin")
+            {
+                this.ShowWarningDialog("Chỉ Admin mới có quyền thay đổi trạng thái Bypass Active!");
+                ipBypassActive.Active = !FD_Globals.BypassActive; // revert
+                return;
+            }
+            else
+            {
+                FD_Globals.BypassActive = value;
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Thay đổi trạng thái Bypass Active", $"{{'BypassActive':{FD_Globals.BypassActive}}}", "UA-FDASH-BYPASS-ACTIVE");
+                this.ShowSuccessDialog($"Trạng thái Bypass Active đã được thay đổi thành: {FD_Globals.BypassActive}");
+            }
+        }
+
+        private void ipByPassActiveDate_ValueChanged(object sender, DateTime value)
+        {
+            FD_Globals.BypassActiveDate = value.ToString("yyyy-MM-dd");
+        }
     }
 
     #region Nested Types
@@ -1158,6 +1179,8 @@ namespace TApp.Views.Dashboard
 
     public static class FD_Globals
     {
+        public static string BypassActiveDate { get; set; } = DateTime.Now.ToString("yyyy-MM-dd");
+        public static bool BypassActive { get; set; } = false;
         public static CameraStatus CameraStatus { get; set; } = CameraStatus.Disconnected;
         public static ProductionData productionData { get; set; } = new ProductionData();
         public static int AlarmCount { get; set; } = 0;

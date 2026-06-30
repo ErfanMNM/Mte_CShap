@@ -228,21 +228,48 @@ namespace TApp.Views.Extention
 
                     //trong trường hợp rework sẽ ghi đè ngày kích hoạt = thời gian của người dùng chỉnh
 
-                    for (int i = 0; i < dataToBackup.Rows.Count; i++)
+                    string replaceDate = "";
+
+                    if(FD_Globals.BypassActive)
                     {
-                        // Note: ActiveUniqueQR table không có cột Note, để trống hoặc có thể dùng Status
-                        string noteValue = dataToBackup.Rows[i]["Status"]?.ToString() ?? "";
-                        _data.Rows.Add(
-                            dataToBackup.Rows[i]["ID"], 
-                            dataToBackup.Rows[i]["BatchCode"], 
-                            dataToBackup.Rows[i]["QRContent"].ToString().Replace("\r\n", "").Replace("\r", ""), 
-                            dataToBackup.Rows[i]["UserName"], 
-                            dataToBackup.Rows[i]["Status"], 
-                            noteValue, // Sửa: không dùng UserName cho Note
-                            dataToBackup.Rows[i]["TimeStampActive"], 
-                            dataToBackup.Rows[i]["TimeUnixActive"], 
-                            dataToBackup.Rows[i]["BatchCode"]);
+                        replaceDate = FD_Globals.BypassActiveDate + " " + DateTime.Now.ToString("HH:mm:ss.fff");
+
+                        for (int i = 0; i < dataToBackup.Rows.Count; i++)
+                        {
+                            // Note: ActiveUniqueQR table không có cột Note, để trống hoặc có thể dùng Status
+                            string noteValue = dataToBackup.Rows[i]["Status"]?.ToString() ?? "";
+                            _data.Rows.Add(
+                                dataToBackup.Rows[i]["ID"],
+                                dataToBackup.Rows[i]["BatchCode"],
+                                dataToBackup.Rows[i]["QRContent"].ToString().Replace("\r\n", "").Replace("\r", ""),
+                                dataToBackup.Rows[i]["UserName"],
+                                dataToBackup.Rows[i]["Status"],
+                                noteValue, // Sửa: không dùng UserName cho Note
+                                replaceDate,
+                                replaceDate,
+                                dataToBackup.Rows[i]["BatchCode"]);
+                        }
                     }
+                    else
+                    {
+                        for (int i = 0; i < dataToBackup.Rows.Count; i++)
+                        {
+                            // Note: ActiveUniqueQR table không có cột Note, để trống hoặc có thể dùng Status
+                            string noteValue = dataToBackup.Rows[i]["Status"]?.ToString() ?? "";
+                            _data.Rows.Add(
+                                dataToBackup.Rows[i]["ID"],
+                                dataToBackup.Rows[i]["BatchCode"],
+                                dataToBackup.Rows[i]["QRContent"].ToString().Replace("\r\n", "").Replace("\r", ""),
+                                dataToBackup.Rows[i]["UserName"],
+                                dataToBackup.Rows[i]["Status"],
+                                noteValue, // Sửa: không dùng UserName cho Note
+                                dataToBackup.Rows[i]["TimeStampActive"],
+                                dataToBackup.Rows[i]["TimeUnixActive"],
+                                dataToBackup.Rows[i]["BatchCode"]);
+                        }
+                    }
+
+                    
 
                     ExportResult exportResult = CsvHelper.ExportDataTableToCsv(_data, csvTempPath);
 

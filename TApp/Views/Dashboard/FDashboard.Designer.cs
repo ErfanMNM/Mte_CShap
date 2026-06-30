@@ -65,6 +65,7 @@
             btnResetCounterPLC = new Sunny.UI.UISymbolButton();
             uiTitlePanel4 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel11 = new Sunny.UI.UITableLayoutPanel();
+            uiPanel1 = new Sunny.UI.UIPanel();
             opLineName = new Sunny.UI.UITextBox();
             uiPanel12 = new Sunny.UI.UIPanel();
             uiTableLayoutPanel14 = new Sunny.UI.UITableLayoutPanel();
@@ -75,6 +76,9 @@
             opSCount = new Sunny.UI.UITextBox();
             uiTableLayoutPanel13 = new Sunny.UI.UITableLayoutPanel();
             ipBarcode = new Sunny.UI.UITextBox();
+            uiTableLayoutPanel8 = new Sunny.UI.UITableLayoutPanel();
+            ipByPassActiveDate = new Sunny.UI.UIDatePicker();
+            ipBypassActive = new Sunny.UI.UISwitch();
             uiTitlePanel1 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel4 = new Sunny.UI.UITableLayoutPanel();
             uiTitlePanel13 = new Sunny.UI.UITitlePanel();
@@ -128,6 +132,7 @@
             uiTableLayoutPanel11.SuspendLayout();
             uiTableLayoutPanel14.SuspendLayout();
             uiTableLayoutPanel13.SuspendLayout();
+            uiTableLayoutPanel8.SuspendLayout();
             uiTitlePanel1.SuspendLayout();
             uiTableLayoutPanel4.SuspendLayout();
             uiTitlePanel13.SuspendLayout();
@@ -654,6 +659,7 @@
             btnChangeBatch.TabIndex = 0;
             btnChangeBatch.Text = "Đổi lô";
             btnChangeBatch.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnChangeBatch.Click += btnChangeBatch_Click;
             // 
             // btnScan
             // 
@@ -668,6 +674,7 @@
             btnScan.TabIndex = 0;
             btnScan.Text = "Quét mã";
             btnScan.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnScan.Click += btnScan_Click;
             // 
             // uiSymbolButton3
             // 
@@ -683,6 +690,7 @@
             uiSymbolButton3.TabIndex = 0;
             uiSymbolButton3.Text = "Thêm mã";
             uiSymbolButton3.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            uiSymbolButton3.Click += uiSymbolButton3_Click;
             // 
             // btnPLCSetting
             // 
@@ -698,6 +706,7 @@
             btnPLCSetting.TabIndex = 0;
             btnPLCSetting.Text = "Cài PLC";
             btnPLCSetting.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnPLCSetting.Click += btnPLCSetting_Click;
             // 
             // btnClearPLC
             // 
@@ -713,6 +722,7 @@
             btnClearPLC.TabIndex = 0;
             btnClearPLC.Text = "Xóa lỗi";
             btnClearPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnClearPLC.Click += btnClearPLC_Click;
             // 
             // btnResetCounterPLC
             // 
@@ -728,6 +738,7 @@
             btnResetCounterPLC.TabIndex = 0;
             btnResetCounterPLC.Text = "Xóa đếm";
             btnResetCounterPLC.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnResetCounterPLC.Click += btnResetCounterPLC_Click;
             // 
             // uiTitlePanel4
             // 
@@ -751,6 +762,7 @@
             uiTableLayoutPanel11.ColumnCount = 2;
             uiTableLayoutPanel11.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32.69231F));
             uiTableLayoutPanel11.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 67.30769F));
+            uiTableLayoutPanel11.Controls.Add(uiPanel1, 0, 4);
             uiTableLayoutPanel11.Controls.Add(opLineName, 1, 3);
             uiTableLayoutPanel11.Controls.Add(uiPanel12, 0, 3);
             uiTableLayoutPanel11.Controls.Add(uiTableLayoutPanel14, 1, 0);
@@ -759,31 +771,46 @@
             uiTableLayoutPanel11.Controls.Add(uiPanel10, 0, 2);
             uiTableLayoutPanel11.Controls.Add(opSCount, 1, 2);
             uiTableLayoutPanel11.Controls.Add(uiTableLayoutPanel13, 1, 1);
+            uiTableLayoutPanel11.Controls.Add(uiTableLayoutPanel8, 1, 4);
             uiTableLayoutPanel11.Dock = DockStyle.Fill;
             uiTableLayoutPanel11.Location = new Point(1, 35);
             uiTableLayoutPanel11.Margin = new Padding(2);
             uiTableLayoutPanel11.Name = "uiTableLayoutPanel11";
-            uiTableLayoutPanel11.RowCount = 4;
-            uiTableLayoutPanel11.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
-            uiTableLayoutPanel11.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
-            uiTableLayoutPanel11.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
-            uiTableLayoutPanel11.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
+            uiTableLayoutPanel11.RowCount = 5;
+            uiTableLayoutPanel11.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
+            uiTableLayoutPanel11.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
+            uiTableLayoutPanel11.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
+            uiTableLayoutPanel11.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
+            uiTableLayoutPanel11.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
             uiTableLayoutPanel11.Size = new Size(612, 307);
             uiTableLayoutPanel11.TabIndex = 0;
             uiTableLayoutPanel11.TagString = null;
+            // 
+            // uiPanel1
+            // 
+            uiPanel1.Dock = DockStyle.Fill;
+            uiPanel1.Font = new Font("Microsoft Sans Serif", 12F);
+            uiPanel1.Location = new Point(2, 246);
+            uiPanel1.Margin = new Padding(2);
+            uiPanel1.MinimumSize = new Size(1, 1);
+            uiPanel1.Name = "uiPanel1";
+            uiPanel1.Size = new Size(196, 59);
+            uiPanel1.TabIndex = 8;
+            uiPanel1.Text = "Bỏ Kích Hoạt Thật";
+            uiPanel1.TextAlignment = ContentAlignment.MiddleCenter;
             // 
             // opLineName
             // 
             opLineName.Dock = DockStyle.Fill;
             opLineName.Font = new Font("Microsoft Sans Serif", 12F);
-            opLineName.Location = new Point(202, 230);
+            opLineName.Location = new Point(202, 185);
             opLineName.Margin = new Padding(2);
             opLineName.MinimumSize = new Size(1, 16);
             opLineName.Name = "opLineName";
             opLineName.Padding = new Padding(5);
             opLineName.ReadOnly = true;
             opLineName.ShowText = false;
-            opLineName.Size = new Size(408, 75);
+            opLineName.Size = new Size(408, 57);
             opLineName.TabIndex = 7;
             opLineName.Text = "Line 3";
             opLineName.TextAlignment = ContentAlignment.MiddleLeft;
@@ -793,11 +820,11 @@
             // 
             uiPanel12.Dock = DockStyle.Fill;
             uiPanel12.Font = new Font("Microsoft Sans Serif", 12F);
-            uiPanel12.Location = new Point(2, 230);
+            uiPanel12.Location = new Point(2, 185);
             uiPanel12.Margin = new Padding(2);
             uiPanel12.MinimumSize = new Size(1, 1);
             uiPanel12.Name = "uiPanel12";
-            uiPanel12.Size = new Size(196, 75);
+            uiPanel12.Size = new Size(196, 57);
             uiPanel12.TabIndex = 6;
             uiPanel12.Text = "Tên chuyền";
             uiPanel12.TextAlignment = ContentAlignment.MiddleCenter;
@@ -813,7 +840,7 @@
             uiTableLayoutPanel14.Name = "uiTableLayoutPanel14";
             uiTableLayoutPanel14.RowCount = 1;
             uiTableLayoutPanel14.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel14.Size = new Size(411, 76);
+            uiTableLayoutPanel14.Size = new Size(411, 61);
             uiTableLayoutPanel14.TabIndex = 5;
             uiTableLayoutPanel14.TagString = null;
             // 
@@ -832,7 +859,7 @@
             ipBatchNo.MinimumSize = new Size(63, 0);
             ipBatchNo.Name = "ipBatchNo";
             ipBatchNo.Padding = new Padding(0, 0, 30, 2);
-            ipBatchNo.Size = new Size(407, 72);
+            ipBatchNo.Size = new Size(407, 57);
             ipBatchNo.SymbolSize = 24;
             ipBatchNo.TabIndex = 3;
             ipBatchNo.Text = "03OT00363-111125-TOL1-2";
@@ -848,7 +875,7 @@
             uiPanel8.Margin = new Padding(2);
             uiPanel8.MinimumSize = new Size(1, 1);
             uiPanel8.Name = "uiPanel8";
-            uiPanel8.Size = new Size(196, 72);
+            uiPanel8.Size = new Size(196, 57);
             uiPanel8.TabIndex = 0;
             uiPanel8.Text = "BATCH NO";
             uiPanel8.TextAlignment = ContentAlignment.MiddleCenter;
@@ -857,11 +884,11 @@
             // 
             uiPanel9.Dock = DockStyle.Fill;
             uiPanel9.Font = new Font("Microsoft Sans Serif", 12F);
-            uiPanel9.Location = new Point(2, 78);
+            uiPanel9.Location = new Point(2, 63);
             uiPanel9.Margin = new Padding(2);
             uiPanel9.MinimumSize = new Size(1, 1);
             uiPanel9.Name = "uiPanel9";
-            uiPanel9.Size = new Size(196, 72);
+            uiPanel9.Size = new Size(196, 57);
             uiPanel9.TabIndex = 0;
             uiPanel9.Text = "BARCODE";
             uiPanel9.TextAlignment = ContentAlignment.MiddleCenter;
@@ -870,11 +897,11 @@
             // 
             uiPanel10.Dock = DockStyle.Fill;
             uiPanel10.Font = new Font("Microsoft Sans Serif", 12F);
-            uiPanel10.Location = new Point(2, 154);
+            uiPanel10.Location = new Point(2, 124);
             uiPanel10.Margin = new Padding(2);
             uiPanel10.MinimumSize = new Size(1, 1);
             uiPanel10.Name = "uiPanel10";
-            uiPanel10.Size = new Size(196, 72);
+            uiPanel10.Size = new Size(196, 57);
             uiPanel10.TabIndex = 0;
             uiPanel10.Text = "Sản lượng";
             uiPanel10.TextAlignment = ContentAlignment.MiddleCenter;
@@ -883,14 +910,14 @@
             // 
             opSCount.Dock = DockStyle.Fill;
             opSCount.Font = new Font("Microsoft Sans Serif", 12F);
-            opSCount.Location = new Point(202, 154);
+            opSCount.Location = new Point(202, 124);
             opSCount.Margin = new Padding(2);
             opSCount.MinimumSize = new Size(1, 16);
             opSCount.Name = "opSCount";
             opSCount.Padding = new Padding(5);
             opSCount.ReadOnly = true;
             opSCount.ShowText = false;
-            opSCount.Size = new Size(408, 72);
+            opSCount.Size = new Size(408, 57);
             opSCount.TabIndex = 3;
             opSCount.Text = "1234567 - 1243534 -1111";
             opSCount.TextAlignment = ContentAlignment.MiddleLeft;
@@ -902,12 +929,12 @@
             uiTableLayoutPanel13.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             uiTableLayoutPanel13.Controls.Add(ipBarcode, 0, 0);
             uiTableLayoutPanel13.Dock = DockStyle.Fill;
-            uiTableLayoutPanel13.Location = new Point(201, 76);
+            uiTableLayoutPanel13.Location = new Point(201, 61);
             uiTableLayoutPanel13.Margin = new Padding(1, 0, 0, 0);
             uiTableLayoutPanel13.Name = "uiTableLayoutPanel13";
             uiTableLayoutPanel13.RowCount = 1;
             uiTableLayoutPanel13.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel13.Size = new Size(411, 76);
+            uiTableLayoutPanel13.Size = new Size(411, 61);
             uiTableLayoutPanel13.TabIndex = 4;
             uiTableLayoutPanel13.TagString = null;
             // 
@@ -925,11 +952,65 @@
             ipBarcode.Padding = new Padding(5);
             ipBarcode.ReadOnly = true;
             ipBarcode.ShowText = false;
-            ipBarcode.Size = new Size(411, 76);
+            ipBarcode.Size = new Size(411, 61);
             ipBarcode.TabIndex = 0;
             ipBarcode.Text = "0123456789";
             ipBarcode.TextAlignment = ContentAlignment.MiddleLeft;
             ipBarcode.Watermark = "";
+            // 
+            // uiTableLayoutPanel8
+            // 
+            uiTableLayoutPanel8.ColumnCount = 2;
+            uiTableLayoutPanel8.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 66.5024643F));
+            uiTableLayoutPanel8.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.4975357F));
+            uiTableLayoutPanel8.Controls.Add(ipByPassActiveDate, 0, 0);
+            uiTableLayoutPanel8.Controls.Add(ipBypassActive, 1, 0);
+            uiTableLayoutPanel8.Dock = DockStyle.Fill;
+            uiTableLayoutPanel8.Location = new Point(203, 247);
+            uiTableLayoutPanel8.Name = "uiTableLayoutPanel8";
+            uiTableLayoutPanel8.RowCount = 1;
+            uiTableLayoutPanel8.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel8.Size = new Size(406, 57);
+            uiTableLayoutPanel8.TabIndex = 9;
+            uiTableLayoutPanel8.TagString = null;
+            // 
+            // ipByPassActiveDate
+            // 
+            ipByPassActiveDate.DateCultureInfo = new System.Globalization.CultureInfo("");
+            ipByPassActiveDate.Dock = DockStyle.Fill;
+            ipByPassActiveDate.FillColor = Color.White;
+            ipByPassActiveDate.Font = new Font("Microsoft Sans Serif", 12F);
+            ipByPassActiveDate.Location = new Point(2, 2);
+            ipByPassActiveDate.Margin = new Padding(2);
+            ipByPassActiveDate.MaxLength = 10;
+            ipByPassActiveDate.MinimumSize = new Size(63, 0);
+            ipByPassActiveDate.Name = "ipByPassActiveDate";
+            ipByPassActiveDate.Padding = new Padding(0, 0, 30, 2);
+            ipByPassActiveDate.Size = new Size(266, 53);
+            ipByPassActiveDate.SymbolDropDown = 61555;
+            ipByPassActiveDate.SymbolNormal = 61555;
+            ipByPassActiveDate.SymbolSize = 24;
+            ipByPassActiveDate.TabIndex = 0;
+            ipByPassActiveDate.Text = "2026-06-30";
+            ipByPassActiveDate.TextAlignment = ContentAlignment.MiddleLeft;
+            ipByPassActiveDate.Value = new DateTime(2026, 6, 30, 13, 22, 55, 0);
+            ipByPassActiveDate.Watermark = "";
+            ipByPassActiveDate.ValueChanged += ipByPassActiveDate_ValueChanged;
+            // 
+            // ipBypassActive
+            // 
+            ipBypassActive.ActiveColor = Color.Red;
+            ipBypassActive.ActiveText = "ĐANG BẬT";
+            ipBypassActive.Dock = DockStyle.Fill;
+            ipBypassActive.Font = new Font("Microsoft Sans Serif", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            ipBypassActive.InActiveText = "ĐANG TẮT";
+            ipBypassActive.Location = new Point(273, 3);
+            ipBypassActive.MinimumSize = new Size(1, 1);
+            ipBypassActive.Name = "ipBypassActive";
+            ipBypassActive.Size = new Size(130, 51);
+            ipBypassActive.TabIndex = 1;
+            ipBypassActive.Text = "uiSwitch1";
+            ipBypassActive.ValueChanged += ipBypassActive_ValueChanged;
             // 
             // uiTitlePanel1
             // 
@@ -1393,6 +1474,7 @@
             uiTableLayoutPanel11.ResumeLayout(false);
             uiTableLayoutPanel14.ResumeLayout(false);
             uiTableLayoutPanel13.ResumeLayout(false);
+            uiTableLayoutPanel8.ResumeLayout(false);
             uiTitlePanel1.ResumeLayout(false);
             uiTableLayoutPanel4.ResumeLayout(false);
             uiTitlePanel13.ResumeLayout(false);
@@ -1489,5 +1571,9 @@
         private Sunny.UI.UISymbolButton btnPLCSetting;
         private Sunny.UI.UISymbolButton btnClearPLC;
         private Sunny.UI.UISymbolButton btnResetCounterPLC;
+        private Sunny.UI.UIPanel uiPanel1;
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel8;
+        private Sunny.UI.UIDatePicker ipByPassActiveDate;
+        private Sunny.UI.UISwitch ipBypassActive;
     }
 }
