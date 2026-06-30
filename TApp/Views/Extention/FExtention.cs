@@ -225,6 +225,9 @@ namespace TApp.Views.Extention
                     _data.Columns.Add("Timeunix", typeof(string));
                     _data.Columns.Add("ProductName", typeof(string));
 
+
+                    //trong trường hợp rework sẽ ghi đè ngày kích hoạt = thời gian của người dùng chỉnh
+
                     for (int i = 0; i < dataToBackup.Rows.Count; i++)
                     {
                         // Note: ActiveUniqueQR table không có cột Note, để trống hoặc có thể dùng Status
