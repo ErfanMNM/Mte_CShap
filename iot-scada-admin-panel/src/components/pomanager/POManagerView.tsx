@@ -20,13 +20,24 @@ import {
   Database,
   Trash2,
   AlertTriangle,
+  Play,
+  Box,
+  Code,
+  CheckCircle,
+  PackageCheck,
+  Clock,
 } from "lucide-react";
 import poApi from "../../services/poApi";
-import datapoolApi from "../../services/datapoolApi";
-import type { POInfo, POListItem, CreatePORequest } from "../../types/po";
-import type { DataPoolCode } from "../../types/datapool";
+import type {
+  POInfo,
+  POListItem,
+  CreatePORequest,
+  POCode,
+  POCarton,
+} from "../../types/po";
 
 type TabKey = "list" | "create" | "detail";
+type DetailTabKey = "info" | "codes" | "cartons";
 
 interface POManagerViewProps {
   onNavigate?: (route: string) => void;
@@ -46,12 +57,14 @@ const initialCreateForm: CreatePORequest = {
   gtin: "",
   customerOrderNo: "",
   uom: "PCS",
-  userName: "Admin",
+  userName: "Frontend",
   autoLoadCodes: true,
+  cartonCapacity: 24,
 };
 
 const POManagerView: React.FC<POManagerViewProps> = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("list");
+  const [detailTab, setDetailTab] = useState<DetailTabKey>("info");
   const [poList, setPoList] = useState<POListItem[]>([]);
   const [filteredList, setFilteredList] = useState<POListItem[]>([]);
   const [selectedPO, setSelectedPO] = useState<POInfo | null>(null);
@@ -67,10 +80,14 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
     state?: string;
   } | null>(null);
 
-  // DataPool codes for PO detail
-  const [poolCodes, setPoolCodes] = useState<DataPoolCode[]>([]);
-  const [isLoadingPoolCodes, setIsLoadingPoolCodes] = useState(false);
-  const [poolCodesError, setPoolCodesError] = useState<string | null>(null);
+  // Codes for PO detail
+  const [poCodes, setPoCodes] = useState<POCode[]>([]);
+  const [isLoadingCodes, setIsLoadingCodes] = useState(false);
+  const [codesFilter, setCodesFilter] = useState<"all" | "unused" | "active" | "packed">("all");
+
+  // Cartons for PO detail
+  const [poCartons, setPoCartons] = useState<POCarton[]>([]);
+  const [isLoadingCartons, setIsLoadingCartons] = useState(false);
 
   // Delete PO state
   const [deleteTarget, setDeleteTarget] = useState<POListItem | null>(null);
@@ -133,7 +150,8 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
       poList.filter(
         (po) =>
           po.orderNo.toLowerCase().includes(term) ||
-          (po.productName || "").toLowerCase().includes(term),
+          (po.productName || "").toLowerCase().includes(term) ||
+          (po.gtin || "").toLowerCase().includes(term),
       ),
     );
   }, [searchTerm, poList]);
@@ -145,12 +163,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
       const data = await poApi.getPO(orderNo);
       setSelectedPO(data);
       setActiveTab("detail");
-      // Load pool codes if PO has gtin
-      if (data.gtin) {
-        await loadPOCodes(data.gtin);
-      } else {
-        setPoolCodes([]);
-      }
+      setDetailTab("info");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load PO detail";
       setError(msg);
@@ -159,17 +172,35 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
     }
   };
 
-  const loadPOCodes = async (gtin: string) => {
-    setIsLoadingPoolCodes(true);
-    setPoolCodesError(null);
+  const fetchPOCodes = async (orderNo: string) => {
+    setIsLoadingCodes(true);
     try {
-      const codes = await datapoolApi.getCodes(gtin);
-      setPoolCodes(codes);
+      const codes = await poApi.getCodes(orderNo);
+      setPoCodes(codes);
     } catch (err) {
-      setPoolCodes([]);
-      setPoolCodesError(err instanceof Error ? err.message : "Cannot load codes from pool");
+      setPoCodes([]);
     } finally {
-      setIsLoadingPoolCodes(false);
+      setIsLoadingCodes(false);
+    }
+  };
+
+  const fetchPOCartons = async (orderNo: string) => {
+    setIsLoadingCartons(true);
+    try {
+      const cartons = await poApi.getCartons(orderNo);
+      setPoCartons(cartons);
+    } catch (err) {
+      setPoCartons([]);
+    } finally {
+      setIsLoadingCartons(false);
+    }
+  };
+
+  const handleDetailTabChange = (tab: DetailTabKey) => {
+    setDetailTab(tab);
+    if (selectedPO) {
+      if (tab === "codes") fetchPOCodes(selectedPO.orderNo);
+      if (tab === "cartons") fetchPOCartons(selectedPO.orderNo);
     }
   };
 
@@ -194,7 +225,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
     setError(null);
     setSuccess(null);
     try {
-      const result = await poApi.deletePO(deleteTarget.orderNo, "Admin");
+      const result = await poApi.deletePO(deleteTarget.orderNo, "Frontend");
       if (result.success) {
         setSuccess(`Deleted PO "${deleteTarget.orderNo}" successfully.`);
         setDeleteTarget(null);
@@ -214,13 +245,13 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
     const errors: Record<string, string> = {};
     if (!formData.orderNo.trim()) {
       errors.orderNo = "Order No. is required";
-      }
-      if (!formData.orderQty || formData.orderQty <= 24) {
-        errors.orderQty = "Order Qty must be greater than 24";
-      }
-      if (!formData.productionDate) {
-        errors.productionDate = "Production Date is required";
-      }
+    }
+    if (!formData.orderQty || formData.orderQty <= 24) {
+      errors.orderQty = "Order Qty must be greater than 24";
+    }
+    if (!formData.productionDate) {
+      errors.productionDate = "Production Date is required";
+    }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -240,7 +271,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
             result.loadedCodesCount
               ? ` - Loaded ${result.loadedCodesCount} codes`
               : ""
-          }`,
+          }${result.createdCartonsCount ? ` - ${result.createdCartonsCount} cartons` : ""}.`,
         );
         setFormData({ ...initialCreateForm });
         setActiveTab("list");
@@ -273,12 +304,37 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
   };
 
   const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "—";
+    if (!dateStr || dateStr === "0") return "—";
     try {
       return new Date(dateStr).toLocaleString("vi-VN");
     } catch {
       return dateStr;
     }
+  };
+
+  const getFilteredCodes = () => {
+    switch (codesFilter) {
+      case "unused":
+        return poCodes.filter(c => c.status === 0);
+      case "active":
+        return poCodes.filter(c => c.status === 1);
+      case "packed":
+        return poCodes.filter(c => c.cartonCode && c.cartonCode !== "0");
+      default:
+        return poCodes;
+    }
+  };
+
+  const getCodeStatusLabel = (code: POCode) => {
+    if (code.cartonCode && code.cartonCode !== "0") return { label: "Packed", class: "bg-purple-100 text-purple-700" };
+    if (code.status === 1) return { label: "Active", class: "bg-blue-100 text-blue-700" };
+    return { label: "Unused", class: "bg-green-100 text-green-700" };
+  };
+
+  const getCartonStatusLabel = (carton: POCarton) => {
+    if (carton.completedDatetime && carton.completedDatetime !== "0") return { label: "Closed", class: "bg-slate-100 text-slate-700" };
+    if (carton.startDatetime && carton.startDatetime !== "0") return { label: "Open", class: "bg-amber-100 text-amber-700" };
+    return { label: "Empty", class: "bg-slate-50 text-slate-400" };
   };
 
   // ─────────────────────────────────────────────────────────────
@@ -297,7 +353,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               Production Order Manager
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Create and monitor production orders from POApiServer
+              Create and manage production orders
             </p>
           </div>
         </div>
@@ -408,7 +464,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
 
                   {!deleteCheck.canDelete && (
                     <p className="text-xs text-slate-500 text-center">
-                      This PO has used codes and cannot be deleted. Please close and retry.
+                      This PO has used codes and cannot be deleted.
                     </p>
                   )}
                 </div>
@@ -488,7 +544,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
         )}
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content: LIST */}
       {activeTab === "list" && (
         <div className="flex flex-col gap-4 animate-in fade-in duration-300">
           {/* Search */}
@@ -498,7 +554,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by order no. or product name..."
+              placeholder="Search by order no., product name, or GTIN..."
               className="flex-1 bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-400"
             />
             {searchTerm && (
@@ -525,43 +581,25 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               <table className="w-full text-sm text-left">
                 <thead className="text-[10px] uppercase text-slate-400 bg-white sticky top-0 border-b border-slate-100 z-10 backdrop-blur">
                   <tr>
-                    <th className="px-5 py-3 font-bold tracking-wider">
-                      Order No.
-                    </th>
-                    <th className="px-5 py-3 font-bold tracking-wider">
-                      Product Name
-                    </th>
-                    <th className="px-5 py-3 font-bold tracking-wider">
-                      Order Qty
-                    </th>
-                    <th className="px-5 py-3 font-bold tracking-wider">
-                      Production Date
-                    </th>
-                    <th className="px-5 py-3 font-bold tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-5 py-3 font-bold tracking-wider text-right">
-                      Actions
-                    </th>
+                    <th className="px-5 py-3 font-bold tracking-wider">Order No.</th>
+                    <th className="px-5 py-3 font-bold tracking-wider">Product Name</th>
+                    <th className="px-5 py-3 font-bold tracking-wider">Order Qty</th>
+                    <th className="px-5 py-3 font-bold tracking-wider">GTIN</th>
+                    <th className="px-5 py-3 font-bold tracking-wider">Production Date</th>
+                    <th className="px-5 py-3 font-bold tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100/80">
                   {isLoading ? (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="px-5 py-10 text-center text-slate-400"
-                      >
+                      <td colSpan={6} className="px-5 py-10 text-center text-slate-400">
                         <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
                         Loading data...
                       </td>
                     </tr>
                   ) : filteredList.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="px-5 py-10 text-center text-slate-400"
-                      >
+                      <td colSpan={6} className="px-5 py-10 text-center text-slate-400">
                         {searchTerm
                           ? "No matching POs found"
                           : "No POs yet. Create a new PO to get started."}
@@ -569,10 +607,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                     </tr>
                   ) : (
                     filteredList.map((po) => (
-                      <tr
-                        key={po.orderNo}
-                        className="hover:bg-slate-50/50 transition-colors"
-                      >
+                      <tr key={po.orderNo} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-5 py-3 font-mono text-xs font-bold text-slate-800">
                           {po.orderNo}
                         </td>
@@ -582,15 +617,11 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                         <td className="px-5 py-3 font-semibold text-slate-700">
                           {po.orderQty?.toLocaleString() || "—"}
                         </td>
+                        <td className="px-5 py-3 font-mono text-xs text-slate-500">
+                          {po.gtin || "—"}
+                        </td>
                         <td className="px-5 py-3 font-mono text-xs text-slate-600">
                           {po.productionDate || "—"}
-                        </td>
-                        <td className="px-5 py-3">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide bg-blue-100 text-blue-700">
-                            {po.status
-                              ? new Date(po.status).toLocaleDateString("vi-VN")
-                              : "New"}
-                          </span>
                         </td>
                         <td className="px-5 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -619,6 +650,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
         </div>
       )}
 
+      {/* Tab Content: CREATE */}
       {activeTab === "create" && (
         <form
           onSubmit={handleCreatePO}
@@ -638,119 +670,21 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
           </div>
 
           <div className="p-4 xl:p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            <FormField
-              label="Order No. *"
-              name="orderNo"
-              value={formData.orderNo}
-              onChange={handleFormChange}
-              error={formErrors.orderNo}
-              icon={Hash}
-              placeholder="e.g. PO0001"
-            />
-            <FormField
-              label="GTIN"
-              name="gtin"
-              value={formData.gtin || ""}
-              onChange={handleFormChange}
-              icon={Tag}
-              placeholder="e.g. A001"
-            />
-            <FormField
-              label="Order Qty *"
-              name="orderQty"
-              type="number"
-              value={formData.orderQty}
-              onChange={handleFormChange}
-              error={formErrors.orderQty}
-              icon={Layers}
-            />
-            <FormField
-              label="Production Date *"
-              name="productionDate"
-              type="date"
-              value={formData.productionDate || ""}
-              onChange={handleFormChange}
-              error={formErrors.productionDate}
-              icon={Calendar}
-            />
-            <SelectField
-              label="Shift"
-              name="shift"
-              value={formData.shift || "A"}
-              onChange={handleFormChange}
-              options={[
-                { value: "A", label: "Shift A" },
-                { value: "B", label: "Shift B" },
-                { value: "C", label: "Shift C" },
-              ]}
-            />
-            <SelectField
-              label="UOM"
-              name="uom"
-              value={formData.uom || "PCS"}
-              onChange={handleFormChange}
-              options={[
-                { value: "PCS", label: "PCS" },
-                { value: "BOX", label: "BOX" },
-                { value: "SET", label: "SET" },
-              ]}
-            />
-            <FormField
-              label="Product Name"
-              name="productName"
-              value={formData.productName || ""}
-              onChange={handleFormChange}
-              icon={Package}
-            />
-            <FormField
-              label="Product Code"
-              name="productCode"
-              value={formData.productCode || ""}
-              onChange={handleFormChange}
-              icon={Tag}
-            />
-            <FormField
-              label="Lot Number"
-              name="lotNumber"
-              value={formData.lotNumber || ""}
-              onChange={handleFormChange}
-              icon={Hash}
-            />
-            <FormField
-              label="Site"
-              name="site"
-              value={formData.site || ""}
-              onChange={handleFormChange}
-              icon={Building2}
-            />
-            <FormField
-              label="Factory"
-              name="factory"
-              value={formData.factory || ""}
-              onChange={handleFormChange}
-              icon={Factory}
-            />
-            <FormField
-              label="Production Line"
-              name="productionLine"
-              value={formData.productionLine || ""}
-              onChange={handleFormChange}
-              icon={Layers}
-            />
-            <FormField
-              label="Customer Order No."
-              name="customerOrderNo"
-              value={formData.customerOrderNo || ""}
-              onChange={handleFormChange}
-              icon={Hash}
-            />
-            <FormField
-              label="Created By"
-              name="userName"
-              value={formData.userName || ""}
-              onChange={handleFormChange}
-              icon={User}
-            />
+            <FormField label="Order No. *" name="orderNo" value={formData.orderNo} onChange={handleFormChange} error={formErrors.orderNo} icon={Hash} placeholder="e.g. PO0001" />
+            <FormField label="GTIN" name="gtin" value={formData.gtin || ""} onChange={handleFormChange} icon={Tag} placeholder="e.g. A001" />
+            <FormField label="Order Qty *" name="orderQty" type="number" value={formData.orderQty} onChange={handleFormChange} error={formErrors.orderQty} icon={Layers} />
+            <FormField label="Carton Capacity" name="cartonCapacity" type="number" value={formData.cartonCapacity || 24} onChange={handleFormChange} icon={Box} />
+            <FormField label="Production Date *" name="productionDate" type="date" value={formData.productionDate || ""} onChange={handleFormChange} error={formErrors.productionDate} icon={Calendar} />
+            <SelectField label="Shift" name="shift" value={formData.shift || "A"} onChange={handleFormChange} options={[{ value: "A", label: "Shift A" }, { value: "B", label: "Shift B" }, { value: "C", label: "Shift C" }]} />
+            <FormField label="Product Name" name="productName" value={formData.productName || ""} onChange={handleFormChange} icon={Package} />
+            <FormField label="Product Code" name="productCode" value={formData.productCode || ""} onChange={handleFormChange} icon={Tag} />
+            <FormField label="Lot Number" name="lotNumber" value={formData.lotNumber || ""} onChange={handleFormChange} icon={Hash} />
+            <FormField label="Site" name="site" value={formData.site || ""} onChange={handleFormChange} icon={Building2} />
+            <FormField label="Factory" name="factory" value={formData.factory || ""} onChange={handleFormChange} icon={Factory} />
+            <FormField label="Production Line" name="productionLine" value={formData.productionLine || ""} onChange={handleFormChange} icon={Layers} />
+            <FormField label="Customer Order No." name="customerOrderNo" value={formData.customerOrderNo || ""} onChange={handleFormChange} icon={Hash} />
+            <SelectField label="UOM" name="uom" value={formData.uom || "PCS"} onChange={handleFormChange} options={[{ value: "PCS", label: "PCS" }, { value: "BOX", label: "BOX" }, { value: "SET", label: "SET" }]} />
+            <FormField label="Created By" name="userName" value={formData.userName || ""} onChange={handleFormChange} icon={User} />
           </div>
 
           <div className="bg-slate-50/80 border-t border-slate-100 px-4 xl:px-6 py-3.5 flex items-center justify-between">
@@ -759,10 +693,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 type="checkbox"
                 checked={formData.autoLoadCodes ?? true}
                 onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    autoLoadCodes: e.target.checked,
-                  }))
+                  setFormData((prev) => ({ ...prev, autoLoadCodes: e.target.checked }))
                 }
                 className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
@@ -781,11 +712,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 disabled={isSaving}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSaving ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Plus className="w-4 h-4" />
-                )}
+                {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 {isSaving ? "Creating..." : "Create PO"}
               </button>
             </div>
@@ -793,206 +720,225 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
         </form>
       )}
 
+      {/* Tab Content: DETAIL */}
       {activeTab === "detail" && selectedPO && (
         <div className="flex flex-col gap-4 animate-in fade-in duration-300">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setActiveTab("list")}
+              onClick={() => { setActiveTab("list"); setSelectedPO(null); }}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back to List
             </button>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-            {/* Basic Info */}
-            <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
-              <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
-                <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-blue-600" /> PO Detail:{" "}
-                  <span className="font-mono text-blue-700">
-                    {selectedPO.orderNo}
-                  </span>
-                </h2>
-              </div>
-              <div className="p-4 xl:p-6 grid grid-cols-1 md:grid-cols-2 gap-x-6">
-                <DetailRow label="Order No." value={selectedPO.orderNo} mono />
-                <DetailRow label="Order Qty" value={selectedPO.orderQty} />
-                <DetailRow label="GTIN" value={selectedPO.gtin} />
-                <DetailRow
-                  label="Product Name"
-                  value={selectedPO.productName}
-                />
-                <DetailRow
-                  label="Product Code"
-                  value={selectedPO.productCode}
-                />
-                <DetailRow label="Lot Number" value={selectedPO.lotNumber} />
-                <DetailRow
-                  label="Site"
-                  value={selectedPO.site}
-                  icon={Building2}
-                />
-                <DetailRow
-                  label="Factory"
-                  value={selectedPO.factory}
-                  icon={Factory}
-                />
-                <DetailRow
-                  label="Production Line"
-                  value={selectedPO.productionLine}
-                />
-                <DetailRow label="Shift" value={selectedPO.shift} />
-                <DetailRow
-                  label="Production Date"
-                  value={selectedPO.productionDate}
-                  icon={Calendar}
-                />
-                <DetailRow
-                  label="Customer Order No."
-                  value={selectedPO.customerOrderNo}
-                />
-                <DetailRow label="UOM" value={selectedPO.uom} />
-                <DetailRow
-                  label="Created Time"
-                  value={formatDate(selectedPO.createdTime)}
-                />
-                <DetailRow
-                  label="Modified Time"
-                  value={formatDate(selectedPO.modifiedTime)}
-                />
-              </div>
-            </div>
-
-            {/* Stats card */}
-            <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
-              <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
-                <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-blue-600" /> Overview
-                </h2>
-              </div>
-              <div className="p-4 xl:p-6 flex flex-col gap-3">
-                <div className="rounded-2xl border border-blue-200/60 bg-blue-50/50 p-4 text-center">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 opacity-70 mb-1">
-                    Order Qty
-                  </div>
-                  <div className="text-3xl font-black text-blue-800 tracking-tight">
-                    {selectedPO.orderQty?.toLocaleString() || "—"}
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                    Status
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" />
-                    <span className="text-sm font-bold text-slate-700">
-                      Active
-                    </span>
-                  </div>
-                </div>
-                <div className="text-xs text-slate-500 text-center pt-2 border-t border-slate-100">
-                  Track codes and cartons in POApiServer
-                </div>
-              </div>
-            </div>
+          {/* Detail Tabs */}
+          <div className="flex items-center gap-1.5 bg-slate-100/60 p-1.5 rounded-2xl shrink-0 w-fit">
+            <button onClick={() => setDetailTab("info")} className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all ${detailTab === "info" ? "bg-white text-blue-700 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
+              <FileText className="w-4 h-4" /> Info
+            </button>
+            <button onClick={() => handleDetailTabChange("codes")} className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all ${detailTab === "codes" ? "bg-white text-blue-700 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
+              <Code className="w-4 h-4" /> Codes ({poCodes.length})
+            </button>
+            <button onClick={() => handleDetailTabChange("cartons")} className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all ${detailTab === "cartons" ? "bg-white text-blue-700 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
+              <Box className="w-4 h-4" /> Cartons ({poCartons.length})
+            </button>
           </div>
 
-          {/* DataPool Section */}
-          {selectedPO.gtin && (
+          {/* INFO TAB */}
+          {detailTab === "info" && (
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+              {/* Basic Info */}
+              <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+                <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
+                  <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-blue-600" /> PO Detail:{" "}
+                    <span className="font-mono text-blue-700">{selectedPO.orderNo}</span>
+                  </h2>
+                </div>
+                <div className="p-4 xl:p-6 grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                  <DetailRow label="Order No." value={selectedPO.orderNo} mono />
+                  <DetailRow label="Order Qty" value={selectedPO.orderQty?.toLocaleString()} />
+                  <DetailRow label="GTIN" value={selectedPO.gtin} mono />
+                  <DetailRow label="Product Name" value={selectedPO.productName} />
+                  <DetailRow label="Product Code" value={selectedPO.productCode} />
+                  <DetailRow label="Lot Number" value={selectedPO.lotNumber} />
+                  <DetailRow label="Site" value={selectedPO.site} icon={Building2} />
+                  <DetailRow label="Factory" value={selectedPO.factory} icon={Factory} />
+                  <DetailRow label="Production Line" value={selectedPO.productionLine} />
+                  <DetailRow label="Shift" value={selectedPO.shift} />
+                  <DetailRow label="Production Date" value={selectedPO.productionDate} icon={Calendar} />
+                  <DetailRow label="Customer Order No." value={selectedPO.customerOrderNo} />
+                  <DetailRow label="UOM" value={selectedPO.uom} />
+                  <DetailRow label="Created Time" value={formatDate(selectedPO.createdTime)} />
+                  <DetailRow label="Modified Time" value={formatDate(selectedPO.modifiedTime)} />
+                </div>
+              </div>
+
+              {/* Stats card */}
+              <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+                <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
+                  <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-blue-600" /> Overview
+                  </h2>
+                </div>
+                <div className="p-4 xl:p-6 flex flex-col gap-3">
+                  <div className="rounded-2xl border border-blue-200/60 bg-blue-50/50 p-4 text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 opacity-70 mb-1">Order Qty</div>
+                    <div className="text-3xl font-black text-blue-800 tracking-tight">{selectedPO.orderQty?.toLocaleString() || "—"}</div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-green-200/60 bg-green-50/50 p-3 text-center">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-green-600 mb-1">Active</div>
+                      <div className="text-2xl font-black text-green-700">{selectedPO.stats?.activeCodes?.toLocaleString() || 0}</div>
+                    </div>
+                    <div className="rounded-xl border border-purple-200/60 bg-purple-50/50 p-3 text-center">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-purple-600 mb-1">Packed</div>
+                      <div className="text-2xl font-black text-purple-700">{selectedPO.stats?.packedCodes?.toLocaleString() || 0}</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-3 text-center">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Cartons</div>
+                      <div className="text-2xl font-black text-slate-700">{selectedPO.stats?.cartonCount || 0}</div>
+                    </div>
+                    <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-3 text-center">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Closed</div>
+                      <div className="text-2xl font-black text-slate-700">{selectedPO.stats?.closedCartons || 0}</div>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Progress</div>
+                    <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(selectedPO.stats?.progressPercent || 0, 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-center mt-2">
+                      <span className="text-lg font-black text-blue-700">{selectedPO.stats?.progressPercent?.toFixed(1) || 0}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CODES TAB */}
+          {detailTab === "codes" && (
             <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
               <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5 flex items-center justify-between">
                 <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                  <Database className="w-4 h-4 text-purple-600" /> DataPool:{" "}
-                  <span className="font-mono text-purple-700">{selectedPO.gtin}</span>
+                  <Code className="w-4 h-4 text-blue-600" /> Codes in PO
                 </h2>
-                <button
-                  onClick={() => selectedPO.gtin && loadPOCodes(selectedPO.gtin)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                >
-                  <RefreshCw className={`w-3 h-3 ${isLoadingPoolCodes ? "animate-spin" : ""}`} />
-                  Refresh
-                </button>
+                <div className="flex items-center gap-2">
+                  <div className="flex bg-slate-100 rounded-lg p-1">
+                    {(["all", "unused", "active", "packed"] as const).map((filter) => (
+                      <button key={filter} onClick={() => setCodesFilter(filter)}
+                        className={`px-3 py-1 text-[10px] font-bold rounded-md transition-colors ${codesFilter === filter ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                        {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => selectedPO && fetchPOCodes(selectedPO.orderNo)} className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                    <RefreshCw className={`w-3 h-3 ${isLoadingCodes ? "animate-spin" : ""}`} /> Refresh
+                  </button>
+                </div>
               </div>
-              <div className="p-4 xl:p-6">
-                {isLoadingPoolCodes ? (
-                  <div className="text-center text-slate-400 py-6">
+              <div className="overflow-auto max-h-[calc(100vh-380px)]">
+                {isLoadingCodes ? (
+                  <div className="text-center text-slate-400 py-10">
                     <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
                     <span className="text-sm">Loading codes...</span>
                   </div>
-                ) : poolCodesError ? (
-                  <div className="flex items-center gap-2 text-red-600 text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    {poolCodesError}
-                  </div>
-                ) : poolCodes.length === 0 ? (
-                  <div className="text-center text-slate-400 py-6">
-                    <Database className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    <span className="text-sm">No codes in this pool</span>
+                ) : getFilteredCodes().length === 0 ? (
+                  <div className="text-center text-slate-400 py-10">
+                    <Code className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <span className="text-sm">No codes found</span>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-3">
-                    {/* Pool stats summary */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="rounded-xl border border-green-200/60 bg-green-50/50 p-3 text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-green-600 mb-1">Available</div>
-                        <div className="text-2xl font-black text-green-700">
-                          {poolCodes.filter(c => c.status === 0).length.toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="rounded-xl border border-slate-200/60 bg-slate-50/50 p-3 text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Used</div>
-                        <div className="text-2xl font-black text-slate-600">
-                          {poolCodes.filter(c => c.status !== 0).length.toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="rounded-xl border border-slate-200/60 bg-slate-50/50 p-3 text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Total</div>
-                        <div className="text-2xl font-black text-slate-700">
-                          {poolCodes.length.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                    {/* Code list */}
-                    <div className="bg-slate-50/50 rounded-xl border border-slate-200/80 overflow-hidden">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="text-[10px] uppercase text-slate-400 bg-slate-100 border-b border-slate-200">
-                            <th className="px-3 py-2 font-bold text-left">Code</th>
-                            <th className="px-3 py-2 font-bold text-center">Status</th>
-                            <th className="px-3 py-2 font-bold text-left">Batch</th>
-                            <th className="px-3 py-2 font-bold text-left">Note</th>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-[10px] uppercase text-slate-400 bg-slate-50 border-b border-slate-100">
+                        <th className="px-4 py-3 font-bold text-left">Code</th>
+                        <th className="px-4 py-3 font-bold text-center">Status</th>
+                        <th className="px-4 py-3 font-bold text-left">Carton</th>
+                        <th className="px-4 py-3 font-bold text-left">Activate Date</th>
+                        <th className="px-4 py-3 font-bold text-left">Activate User</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {getFilteredCodes().map((code) => {
+                        const statusInfo = getCodeStatusLabel(code);
+                        return (
+                          <tr key={code.id} className="hover:bg-slate-50/50">
+                            <td className="px-4 py-2.5 font-mono font-semibold text-slate-700">{code.code}</td>
+                            <td className="px-4 py-2.5 text-center">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusInfo.class}`}>{statusInfo.label}</span>
+                            </td>
+                            <td className="px-4 py-2.5 font-mono text-slate-600">{code.cartonCode && code.cartonCode !== "0" ? code.cartonCode : "—"}</td>
+                            <td className="px-4 py-2.5 text-slate-500">{formatDate(code.activateDate)}</td>
+                            <td className="px-4 py-2.5 text-slate-500">{code.activateUser || "—"}</td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {poolCodes.slice(0, 50).map((code) => (
-                            <tr key={code.code} className="hover:bg-white/50">
-                              <td className="px-3 py-2 font-mono font-semibold text-slate-700 text-[11px]">{code.code}</td>
-                              <td className="px-3 py-2 text-center">
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  code.status === 0 ? "bg-green-100 text-green-700" :
-                                  code.status === 1 ? "bg-blue-100 text-blue-700" :
-                                  code.status === 2 ? "bg-slate-100 text-slate-500" :
-                                  "bg-red-100 text-red-700"
-                                }`}>
-                                  {code.status === 0 ? "Available" :
-                                   code.status === 1 ? "Used" :
-                                   code.status === 2 ? "Deleted" : "Error"}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2 text-slate-500">{code.batchID || "—"}</td>
-                              <td className="px-3 py-2 text-slate-500 truncate max-w-[180px]">{code.note || "—"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {poolCodes.length > 50 && (
-                        <div className="px-3 py-2 text-center text-[10px] text-slate-400 bg-slate-100 border-t border-slate-200">
-                          Showing 50 / {poolCodes.length} codes
-                        </div>
-                      )}
-                    </div>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* CARTONS TAB */}
+          {detailTab === "cartons" && (
+            <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5 flex items-center justify-between">
+                <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
+                  <Box className="w-4 h-4 text-blue-600" /> Cartons in PO
+                </h2>
+                <button onClick={() => selectedPO && fetchPOCartons(selectedPO.orderNo)} className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                  <RefreshCw className={`w-3 h-3 ${isLoadingCartons ? "animate-spin" : ""}`} /> Refresh
+                </button>
+              </div>
+              <div className="overflow-auto max-h-[calc(100vh-380px)]">
+                {isLoadingCartons ? (
+                  <div className="text-center text-slate-400 py-10">
+                    <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
+                    <span className="text-sm">Loading cartons...</span>
                   </div>
+                ) : poCartons.length === 0 ? (
+                  <div className="text-center text-slate-400 py-10">
+                    <Box className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <span className="text-sm">No cartons found</span>
+                  </div>
+                ) : (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-[10px] uppercase text-slate-400 bg-slate-50 border-b border-slate-100">
+                        <th className="px-4 py-3 font-bold text-center">ID</th>
+                        <th className="px-4 py-3 font-bold text-center">Status</th>
+                        <th className="px-4 py-3 font-bold text-left">Start Time</th>
+                        <th className="px-4 py-3 font-bold text-left">Completed Time</th>
+                        <th className="px-4 py-3 font-bold text-left">User</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {poCartons.map((carton) => {
+                        const statusInfo = getCartonStatusLabel(carton);
+                        return (
+                          <tr key={carton.id} className="hover:bg-slate-50/50">
+                            <td className="px-4 py-2.5 text-center font-bold text-slate-700">{carton.id}</td>
+                            <td className="px-4 py-2.5 text-center">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusInfo.class}`}>{statusInfo.label}</span>
+                            </td>
+                            <td className="px-4 py-2.5 text-slate-500">{formatDate(carton.startDatetime)}</td>
+                            <td className="px-4 py-2.5 text-slate-500">{formatDate(carton.completedDatetime)}</td>
+                            <td className="px-4 py-2.5 text-slate-500">{carton.activateUser || "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 )}
               </div>
             </div>
@@ -1018,42 +964,17 @@ interface FormFieldProps {
   placeholder?: string;
 }
 
-const FormField: React.FC<FormFieldProps> = ({
-  label,
-  name,
-  value,
-  onChange,
-  error,
-  icon: Icon,
-  type = "text",
-  placeholder,
-}) => (
+const FormField: React.FC<FormFieldProps> = ({ label, name, value, onChange, error, icon: Icon, type = "text", placeholder }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
-      {label}
-    </label>
+    <label className="text-xs font-bold uppercase tracking-wider text-slate-600">{label}</label>
     <div className="relative">
-      {Icon && (
-        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-      )}
+      {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />}
       <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className={`w-full bg-slate-50 border ${
-          error ? "border-red-300" : "border-slate-200"
-        } text-slate-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 ${
-          Icon ? "pl-10" : ""
-        } outline-none transition-colors`}
+        type={type} name={name} value={value} onChange={onChange} placeholder={placeholder}
+        className={`w-full bg-slate-50 border ${error ? "border-red-300" : "border-slate-200"} text-slate-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 ${Icon ? "pl-10" : ""} outline-none transition-colors`}
       />
     </div>
-    {error && (
-      <span className="text-xs font-semibold text-red-600 flex items-center gap-1">
-        <AlertCircle className="w-3 h-3" /> {error}
-      </span>
-    )}
+    {error && <span className="text-xs font-semibold text-red-600 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {error}</span>}
   </div>
 );
 
@@ -1065,28 +986,14 @@ interface SelectFieldProps {
   options: { value: string; label: string }[];
 }
 
-const SelectField: React.FC<SelectFieldProps> = ({
-  label,
-  name,
-  value,
-  onChange,
-  options,
-}) => (
+const SelectField: React.FC<SelectFieldProps> = ({ label, name, value, onChange, options }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
-      {label}
-    </label>
+    <label className="text-xs font-bold uppercase tracking-wider text-slate-600">{label}</label>
     <select
-      name={name}
-      value={value}
-      onChange={onChange}
+      name={name} value={value} onChange={onChange}
       className="bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-colors"
     >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
+      {options.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
     </select>
   </div>
 );
@@ -1101,14 +1008,9 @@ interface DetailRowProps {
 const DetailRow: React.FC<DetailRowProps> = ({ label, value, mono, icon: Icon }) => (
   <div className="flex items-start justify-between py-2.5 border-b border-slate-100 last:border-0 gap-3">
     <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 shrink-0">
-      {Icon && <Icon className="w-3.5 h-3.5" />}
-      {label}
+      {Icon && <Icon className="w-3.5 h-3.5" />} {label}
     </span>
-    <span
-      className={`text-sm font-semibold text-slate-800 text-right break-words ${
-        mono ? "font-mono" : ""
-      }`}
-    >
+    <span className={`text-sm font-semibold text-slate-800 text-right break-words ${mono ? "font-mono" : ""}`}>
       {value || "—"}
     </span>
   </div>

@@ -16,6 +16,15 @@ export interface POInfo {
   uom?: string;
   createdTime?: string;
   modifiedTime?: string;
+  stats?: POStats;
+}
+
+export interface POStats {
+  activeCodes: number;
+  packedCodes: number;
+  cartonCount: number;
+  closedCartons: number;
+  progressPercent: number;
 }
 
 export interface POListItem {
@@ -23,7 +32,9 @@ export interface POListItem {
   productName?: string;
   orderQty: number;
   productionDate?: string;
+  gtin?: string;
   status?: string;
+  createdTime?: string;
 }
 
 export interface CreatePORequest {
@@ -42,6 +53,7 @@ export interface CreatePORequest {
   uom?: string;
   userName?: string;
   autoLoadCodes?: boolean;
+  cartonCapacity?: number;
 }
 
 export interface CreatePOResponse {
@@ -49,6 +61,7 @@ export interface CreatePOResponse {
   message: string;
   orderNo?: string;
   loadedCodesCount?: number;
+  createdCartonsCount?: number;
 }
 
 export interface PODetailResponse {
@@ -66,8 +79,65 @@ export interface POListResponse {
 
 export interface HealthResponse {
   status: string;
-  timestamp: string;
-  appState: string;
+  timestamp?: string;
+  appState?: string;
+}
+
+export interface POCode {
+  id: number;
+  code: string;
+  status: number;
+  cartonCode?: string;
+  activateDate?: string;
+  activateUser?: string;
+  packingDate?: string;
+}
+
+export interface POCodeListResponse {
+  success: boolean;
+  count?: number;
+  data?: POCode[];
+  message?: string;
+}
+
+export interface POCarton {
+  id: number;
+  cartonCode?: string;
+  startDatetime?: string;
+  completedDatetime?: string;
+  activateUser?: string;
+  productionDate?: string;
+  status?: string;
+  codeCount?: number;
+}
+
+export interface POCartonListResponse {
+  success: boolean;
+  count?: number;
+  data?: POCarton[];
+  message?: string;
+}
+
+export interface ProductionStatusResponse {
+  success: boolean;
+  message?: string;
+  state?: string;
+  hasPO?: boolean;
+  orderNo?: string;
+  productName?: string;
+  orderQty?: number;
+  totalCodes?: number;
+  activeCodes?: number;
+  packedCodes?: number;
+  cartonCount?: number;
+  closedCartonCount?: number;
+  progressPercent?: number;
+}
+
+export interface ApiResponse {
+  success: boolean;
+  message: string;
+  count?: number;
 }
 
 export interface APIResponse<T> {

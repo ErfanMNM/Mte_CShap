@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using GProject.DataPoolHelper;
+using GProject.ProductionOrderHelpers;
 using GProject.Auth;
 using Serilog;
 
@@ -89,7 +90,31 @@ public class GProjectApiServer : IDisposable
         _app.MapPut("/api/datapool/{poolName}/code/{code}/status", HandleUpdateStatus);
         _app.MapDelete("/api/datapool/{poolName}/code/{code}", HandleDeleteCode);
 
-        LogInfo("GProjectApiServer", $"DataPool endpoints registered");
+        // PO endpoints
+        _app.MapPost("/api/po", async (HttpContext context) => await POApiServer.HandleCreatePO(context));
+        _app.MapGet("/api/po/list", (_) => POApiServer.HandleGetAllPO());
+        _app.MapGet("/api/po/{orderNo}", (string orderNo) => POApiServer.HandleGetPO(orderNo));
+        _app.MapGet("/api/po/{orderNo}/can-delete", (string orderNo) => POApiServer.HandleCanDeletePO(orderNo));
+        _app.MapDelete("/api/po/{orderNo}", (string orderNo) => POApiServer.HandleDeletePO(orderNo));
+        _app.MapGet("/api/po/{orderNo}/codes", (string orderNo, int? status, string? cartonCode, int limit = 100) 
+            => POApiServer.HandleGetCodes(orderNo, status, cartonCode, limit));
+        _app.MapPost("/api/po/{orderNo}/activate", async (HttpContext context, string orderNo) 
+            => await POApiServer.HandleActivateCode(context, orderNo));
+        _app.MapPost("/api/po/{orderNo}/pack", async (HttpContext context, string orderNo) 
+            => await POApiServer.HandlePackCode(context, orderNo));
+        _app.MapGet("/api/po/{orderNo}/cartons", (string orderNo) => POApiServer.HandleGetCartons(orderNo));
+        _app.MapPost("/api/po/{orderNo}/cartons/start", async (HttpContext context, string orderNo) 
+            => await POApiServer.HandleStartCarton(context, orderNo));
+        _app.MapPost("/api/po/{orderNo}/cartons/complete", async (HttpContext context, string orderNo) 
+            => await POApiServer.HandleCompleteCarton(context, orderNo));
+
+        // Production status
+        _app.MapGet("/api/production/status", (_) => POApiServer.HandleGetProductionStatus());
+
+        // Initialize PO database
+        POApiServer.Initialize();
+
+        LogInfo("GProjectApiServer", $"PO endpoints registered");
         LogInfo("GProjectApiServer", $"Started on http://{_host}:{_port}");
 
         await _app.StartAsync();
