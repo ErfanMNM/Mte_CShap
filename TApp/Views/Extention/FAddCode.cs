@@ -34,7 +34,7 @@ namespace TApp.Views.Extention
         #region Initialization
         private void FAddCode_Initialize(object sender, EventArgs e)
         {
-            GlobalVarialbles.Logger?.WriteLogAsync(
+            GlobalVarialbles.Logger?.LogAsync(
                 GlobalVarialbles.CurrentUser.Username,
                 e_LogType.UserAction,
                 "Mở trang thêm mã thủ công",
@@ -293,7 +293,7 @@ namespace TApp.Views.Extention
                     ipQRContent.Text = string.Empty;
                     ipQRContent.Focus();
 
-                    GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.Logger?.LogAsync(
                         GlobalVarialbles.CurrentUser.Username,
                         e_LogType.UserAction,
                         "Thêm mã kích hoạt thủ công",
@@ -315,7 +315,7 @@ namespace TApp.Views.Extention
                 UpdateStatus("Lỗi xử lý!", Color.Red, 61453);
                 AddConsoleLog($"[LỖI] Không thể thêm mã: {ex.Message}", Color.Red);
 
-                GlobalVarialbles.Logger?.WriteLogAsync(
+                GlobalVarialbles.Logger?.LogAsync(
                     GlobalVarialbles.CurrentUser.Username,
                     e_LogType.Error,
                     "Lỗi thêm mã kích hoạt thủ công",

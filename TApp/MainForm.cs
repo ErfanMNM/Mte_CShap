@@ -82,7 +82,7 @@ namespace TApp
                 InitializeLogger();
 
                 // Tạo log ghi nhận mở ứng dụng
-                GlobalVarialbles.Logger?.WriteLogAsync("System", e_LogType.System, "Mở ứng dụng");
+                GlobalVarialbles.Logger?.LogAsync("System", e_LogType.System, "Mở ứng dụng");
 
                 InitializeUIStyles();
                 InitializeNavigation();
@@ -238,7 +238,7 @@ namespace TApp
                 {
                     ACTIVE_State = false;
                     AppState = e_App_State.DEACTIVE;
-                    GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.Logger?.LogAsync(
                         GlobalVarialbles.CurrentUser.Username,
                         e_LogType.System,
                         "Hệ thống bị vô hiệu hóa từ PLC",
@@ -253,7 +253,7 @@ namespace TApp
                     {
                         AppState = e_App_State.ACTIVE;
                     }
-                    GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.Logger?.LogAsync(
                         GlobalVarialbles.CurrentUser.Username,
                         e_LogType.System,
                         "Hệ thống được kích hoạt lại từ PLC",
@@ -281,7 +281,7 @@ namespace TApp
                     {
                         ACTIVE_State = false;
                         AppState = e_App_State.DEACTIVE;
-                        GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.Logger?.LogAsync(
                             "System",
                             e_LogType.System,
                             "Phát hiện hệ thống đang ở chế độ VÔ HIỆU HÓA khi khởi động",
@@ -620,7 +620,7 @@ namespace TApp
             // Hỏi xác nhận đơn giản (không cần mật khẩu nếu người dùng bấm HỦY)
             if (!this.ShowAskDialog("Bạn có chắc chắn muốn VÔ HIỆU HÓA hệ thống?"))
             {
-                GlobalVarialbles.Logger?.WriteLogAsync(
+                GlobalVarialbles.Logger?.LogAsync(
                     GlobalVarialbles.CurrentUser.Username,
                     e_LogType.UserAction,
                     "Người dùng hủy yêu cầu vô hiệu hóa hệ thống",
@@ -639,7 +639,7 @@ namespace TApp
 
                 if (enterPassword.ShowDialog() != DialogResult.OK)
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.Logger?.LogAsync(
                         GlobalVarialbles.CurrentUser.Username,
                         e_LogType.UserAction,
                         "Người dùng hủy nhập mật khẩu khi vô hiệu hóa hệ thống",
@@ -652,7 +652,7 @@ namespace TApp
                 string password = enterPassword.TextValue;
                 if (!UserHelper.ValidateCredentials(GlobalVarialbles.CurrentUser.Username, password, _userDbPath))
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.Logger?.LogAsync(
                         GlobalVarialbles.CurrentUser.Username,
                         e_LogType.Error,
                         "Xác thực mật khẩu vô hiệu hóa hệ thống thất bại",
@@ -664,7 +664,7 @@ namespace TApp
                 }
             }
 
-            GlobalVarialbles.Logger?.WriteLogAsync(
+            GlobalVarialbles.Logger?.LogAsync(
                 GlobalVarialbles.CurrentUser.Username,
                 e_LogType.UserAction,
                 "Người dùng yêu cầu vô hiệu hóa hệ thống",
@@ -682,7 +682,7 @@ namespace TApp
                         ACTIVE_State = false;
                         AppState = e_App_State.DEACTIVE;
 
-                        GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.Logger?.LogAsync(
                             GlobalVarialbles.CurrentUser.Username,
                             e_LogType.UserAction,
                             "Vô hiệu hóa hệ thống thành công",
@@ -694,7 +694,7 @@ namespace TApp
                     }
                     else
                     {
-                        GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.Logger?.LogAsync(
                             GlobalVarialbles.CurrentUser.Username,
                             e_LogType.Error,
                             "Lỗi khi vô hiệu hóa hệ thống - không thể gửi lệnh xuống PLC",
@@ -722,7 +722,7 @@ namespace TApp
 
                 if (enterPassword.ShowDialog() != DialogResult.OK)
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.Logger?.LogAsync(
                         GlobalVarialbles.CurrentUser.Username,
                         e_LogType.UserAction,
                         "Người dùng hủy yêu cầu kích hoạt lại hệ thống",
@@ -737,7 +737,7 @@ namespace TApp
                 // Kiểm tra mật khẩu
                 if (!UserHelper.ValidateCredentials(GlobalVarialbles.CurrentUser.Username, password, _userDbPath))
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.Logger?.LogAsync(
                         GlobalVarialbles.CurrentUser.Username,
                         e_LogType.Error,
                         "Xác thực mật khẩu kích hoạt lại hệ thống thất bại",
@@ -760,7 +760,7 @@ namespace TApp
 
                     if (enter2FA.ShowDialog() != DialogResult.OK)
                     {
-                        GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.Logger?.LogAsync(
                             GlobalVarialbles.CurrentUser.Username,
                             e_LogType.UserAction,
                             "Người dùng hủy nhập mã 2FA khi kích hoạt lại hệ thống",
@@ -773,7 +773,7 @@ namespace TApp
                     string code2FA = enter2FA.TextValue.Trim();
                     if (!UserHelper.Validate2FA(GlobalVarialbles.CurrentUser.Username, code2FA, _userDbPath, 3))
                     {
-                        GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.Logger?.LogAsync(
                             GlobalVarialbles.CurrentUser.Username,
                             e_LogType.Error,
                             "Xác thực 2FA kích hoạt lại hệ thống thất bại",
@@ -787,7 +787,7 @@ namespace TApp
             }
 
             // Đã xác thực: gửi lệnh xuống PLC
-            GlobalVarialbles.Logger?.WriteLogAsync(
+            GlobalVarialbles.Logger?.LogAsync(
                 GlobalVarialbles.CurrentUser.Username,
                 e_LogType.UserAction,
                 "Người dùng yêu cầu kích hoạt lại hệ thống",
@@ -813,7 +813,7 @@ namespace TApp
                             AppState = e_App_State.LOGIN;
                         }
 
-                        GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.Logger?.LogAsync(
                             GlobalVarialbles.CurrentUser.Username,
                             e_LogType.UserAction,
                             "Kích hoạt lại hệ thống thành công",
@@ -825,7 +825,7 @@ namespace TApp
                     }
                     else
                     {
-                        GlobalVarialbles.Logger?.WriteLogAsync(
+                        GlobalVarialbles.Logger?.LogAsync(
                             GlobalVarialbles.CurrentUser.Username,
                             e_LogType.Error,
                             "Lỗi khi kích hoạt lại hệ thống - không thể gửi lệnh xuống PLC",

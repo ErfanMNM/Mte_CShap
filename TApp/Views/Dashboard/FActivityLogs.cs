@@ -24,7 +24,7 @@ namespace TApp.Views.Dashboard
         public override void Init()
         {
             base.Init();
-            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Mở trang xem nhật ký hoạt động", "", "UA-ACTLOG-01");
+            GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Mở trang xem nhật ký hoạt động", "", "UA-ACTLOG-01");
 
             SetupLogTypeComboBox();
             ipDateFrom.Value = DateTime.Now.AddDays(-7);
@@ -124,7 +124,7 @@ namespace TApp.Views.Dashboard
             if (e.Result is Exception ex)
             {
                 this.ShowErrorTip($"Lỗi khi lấy nhật ký: {ex.Message}");
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi lấy nhật ký hoạt động", ex.Message, "ERR-ACTLOG-01");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi lấy nhật ký hoạt động", ex.Message, "ERR-ACTLOG-01");
                 return;
             }
 
@@ -162,13 +162,13 @@ namespace TApp.Views.Dashboard
                 PageSize = _pageSize
             };
 
-            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Lấy nhật ký hoạt động", $"{{'LogType':'{criteria.LogType}','DateFrom':'{criteria.DateFrom:yyyy-MM-dd}','DateTo':'{criteria.DateTo:yyyy-MM-dd}'}}", "UA-ACTLOG-02");
+            GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Lấy nhật ký hoạt động", $"{{'LogType':'{criteria.LogType}','DateFrom':'{criteria.DateFrom:yyyy-MM-dd}','DateTo':'{criteria.DateTo:yyyy-MM-dd}'}}", "UA-ACTLOG-02");
             WK_Getlogs.RunWorkerAsync(criteria);
         }
 
         private List<LogEntry<e_LogType>> FetchAndFilterLogs(DateTime from, DateTime to, string logTypeString)
         {
-            var allLogs = GlobalVarialbles.Logger.GetLogsByTime(from, to);
+            var allLogs = GlobalVarialbles.Logger.QueryByTime(from, to);
             if (logTypeString == "Tất cả" || !Enum.TryParse(logTypeString, out e_LogType logType))
             {
                 return allLogs;
@@ -216,7 +216,7 @@ namespace TApp.Views.Dashboard
                 var exportResult = exportFunc(opDataG.DataSource as DataTable, savePath);
                 if (exportResult.IsSucces)
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, $"Xuất báo cáo {exportType} thành công", $"{{'FilePath':'{exportResult.FilePath}'}}", successLogCode);
+                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, $"Xuất báo cáo {exportType} thành công", $"{{'FilePath':'{exportResult.FilePath}'}}", successLogCode);
                     this.ShowSuccessTip($"Xuất báo cáo thành công! {exportResult.FilePath}");
                 }
                 else
@@ -226,7 +226,7 @@ namespace TApp.Views.Dashboard
             }
             catch (Exception ex)
             {
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, $"Lỗi xuất báo cáo {exportType}", ex.Message, errorLogCode);
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, $"Lỗi xuất báo cáo {exportType}", ex.Message, errorLogCode);
                 this.ShowErrorTip($"Lỗi xuất báo cáo: {ex.Message}");
             }
         }

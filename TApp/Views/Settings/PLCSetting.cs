@@ -85,7 +85,7 @@ namespace TApp.Views.Settings
         {
             IsPageOpen = true;
             webView21.Source = new Uri($"http://{AppConfigs.Current.Camera_01_IP}/monitor");
-            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Mở trang cài đặt PLC", "", "UA-PLCSETTING-01");
+            GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Mở trang cài đặt PLC", "", "UA-PLCSETTING-01");
         }
 
         private void PLCSetting_Finalize(object sender, EventArgs e)
@@ -258,7 +258,7 @@ namespace TApp.Views.Settings
             if (e.Result is Exception ex)
             {
                 this.ShowErrorDialog($"Lỗi khi cập nhật: {ex.Message}");
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi cập nhật PLC", ex.Message, "ERR-PLCSETTING-02");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi cập nhật PLC", ex.Message, "ERR-PLCSETTING-02");
                 return;
             }
 
@@ -269,13 +269,13 @@ namespace TApp.Views.Settings
             if (operateResult.IsSuccess)
             {
                 this.ShowSuccessDialog("Cập nhật thành công!");
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Lưu cài đặt PLC thành công",
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Lưu cài đặt PLC thành công",
                     $"{{'DelayCamera':'{savedParams.DelayCamera}','DelayReject':'{savedParams.DelayReject}','RejectStreng':'{savedParams.RejectStreng}'}}", "UA-PLCSETTING-02");
             }
             else
             {
                 this.ShowErrorDialog($"Lỗi khi ghi vào PLC: {operateResult.Message}");
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi lưu cài đặt PLC", operateResult.Message, "ERR-PLCSETTING-01");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi lưu cài đặt PLC", operateResult.Message, "ERR-PLCSETTING-01");
             }
         }
         #endregion
