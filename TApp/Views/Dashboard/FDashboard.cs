@@ -1135,9 +1135,9 @@ namespace TApp.Views.Dashboard
 
         private void ipBypassActive_ValueChanged(object sender, bool value)
         {
-            if (GlobalVarialbles.CurrentUser.Role != "Admin")
+            if (GlobalVarialbles.CurrentUser.Role != "QAQC")
             {
-                this.ShowWarningDialog("Chỉ Admin mới có quyền thay đổi trạng thái Bypass Active!");
+                this.ShowWarningDialog("Chỉ QA/QC mới có quyền thay đổi trạng thái Bypass Active!");
                 ipBypassActive.Active = !FD_Globals.BypassActive; // revert
                 return;
             }
