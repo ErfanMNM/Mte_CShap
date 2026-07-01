@@ -169,12 +169,12 @@ export function LoginScreen() {
           fontSize: "12px",
           color: "#666",
         }}>
-          <strong>Demo Accounts:</strong>
-          <div style={{ marginTop: "8px" }}>
-            <div>sadmin / SAdmin@123 (Super Admin)</div>
-            <div>admin / Admin@123 (Administrator)</div>
-            <div>operator / Operator@123 (Operator)</div>
-            <div>viewer / Viewer@123 (Viewer)</div>
+          <strong>Quick Login (Demo Accounts):</strong>
+          <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
+            <button type="button" onClick={() => { setUsername("sadmin"); setPassword("SAdmin@123"); }} style={{ padding: "8px 12px", fontSize: "12px", cursor: "pointer", border: "1px solid #4a90d9", borderRadius: "6px", background: "#e8f4fd", color: "#4a90d9" }}>sadmin / SAdmin@123</button>
+            <button type="button" onClick={() => { setUsername("admin"); setPassword("Admin@123"); }} style={{ padding: "8px 12px", fontSize: "12px", cursor: "pointer", border: "1px solid #4a90d9", borderRadius: "6px", background: "#e8f4fd", color: "#4a90d9" }}>admin / Admin@123</button>
+            <button type="button" onClick={() => { setUsername("operator"); setPassword("Operator@123"); }} style={{ padding: "8px 12px", fontSize: "12px", cursor: "pointer", border: "1px solid #4a90d9", borderRadius: "6px", background: "#e8f4fd", color: "#4a90d9" }}>operator / Operator@123</button>
+            <button type="button" onClick={() => { setUsername("viewer"); setPassword("Viewer@123"); }} style={{ padding: "8px 12px", fontSize: "12px", cursor: "pointer", border: "1px solid #4a90d9", borderRadius: "6px", background: "#e8f4fd", color: "#4a90d9" }}>viewer / Viewer@123</button>
           </div>
         </div>
       </div>
