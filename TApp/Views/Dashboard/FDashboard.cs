@@ -1138,11 +1138,12 @@ namespace TApp.Views.Dashboard
             if (GlobalVarialbles.CurrentUser.Role != "QAQC")
             {
                 this.ShowWarningDialog("Chỉ QA/QC mới có quyền thay đổi trạng thái Bypass Active!");
-                ipBypassActive.Active = !FD_Globals.BypassActive; // revert
+                ipBypassActive.Active = FD_Globals.BypassActive; // revert
                 return;
             }
             else
             {
+
                 FD_Globals.BypassActive = value;
                 GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Thay đổi trạng thái Bypass Active", $"{{'BypassActive':{FD_Globals.BypassActive}}}", "UA-FDASH-BYPASS-ACTIVE");
                 this.ShowSuccessDialog($"Trạng thái Bypass Active đã được thay đổi thành: {FD_Globals.BypassActive}");
