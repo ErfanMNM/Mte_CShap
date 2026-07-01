@@ -177,7 +177,7 @@ namespace TTManager.Auth
                         return;
                     }
 
-                    string issuer = "MSI-CZ :" + userData.Username;
+                    string issuer = "MSI :" + userData.Username;
                     string otpauth = TwoFAHelper.GenerateQrCodeUri(userData.Key2FA, userData.Username, issuer);
 
                     using (var dlg = new QrCodeDialog(otpauth, $"QR 2FA cho {userData.Username}"))

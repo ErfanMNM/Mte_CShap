@@ -571,6 +571,10 @@ namespace TApp
                         opUser.Text = $"[Vận Hành] {GlobalVarialbles.CurrentUser.Username}";
                         opUser.ForeColor = Color.Green;
                         break;
+                    case "QAQC":
+                        opUser.Text = $"[QA/QC] {GlobalVarialbles.CurrentUser.Username}";
+                        opUser.ForeColor = Color.Pink;
+                        break;
 
                     default:
                         opUser.Text = "Không xác định";

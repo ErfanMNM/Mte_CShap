@@ -67,7 +67,7 @@
             uiTitlePanel1.Name = "uiTitlePanel1";
             uiTitlePanel1.Padding = new Padding(1, 35, 1, 1);
             uiTitlePanel1.ShowText = false;
-            uiTitlePanel1.Size = new Size(385, 244);
+            uiTitlePanel1.Size = new Size(499, 366);
             uiTitlePanel1.TabIndex = 0;
             uiTitlePanel1.Text = "Quản Lý Tài Khoản";
             uiTitlePanel1.TextAlignment = ContentAlignment.MiddleCenter;
@@ -119,7 +119,7 @@
             dataGridViewCellStyle5.Font = new Font("Microsoft Sans Serif", 12F);
             uiDataGridView1.RowsDefaultCellStyle = dataGridViewCellStyle5;
             uiDataGridView1.SelectedIndex = -1;
-            uiDataGridView1.Size = new Size(383, 208);
+            uiDataGridView1.Size = new Size(497, 330);
             uiDataGridView1.StripeOddColor = Color.FromArgb(235, 243, 255);
             uiDataGridView1.TabIndex = 0;
             uiDataGridView1.CellClick += uiDataGridView1_CellClick;
@@ -138,7 +138,7 @@
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 81.0996552F));
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 18.9003429F));
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 56F));
-            uiTableLayoutPanel1.Size = new Size(389, 362);
+            uiTableLayoutPanel1.Size = new Size(503, 513);
             uiTableLayoutPanel1.TabIndex = 1;
             uiTableLayoutPanel1.TagString = null;
             // 
@@ -147,13 +147,13 @@
             uiPanel1.Controls.Add(uiTableLayoutPanel2);
             uiPanel1.Dock = DockStyle.Fill;
             uiPanel1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiPanel1.Location = new Point(2, 307);
+            uiPanel1.Location = new Point(2, 458);
             uiPanel1.Margin = new Padding(2);
             uiPanel1.MinimumSize = new Size(1, 1);
             uiPanel1.Name = "uiPanel1";
             uiPanel1.RectColor = Color.DodgerBlue;
             uiPanel1.RectSize = 2;
-            uiPanel1.Size = new Size(385, 53);
+            uiPanel1.Size = new Size(499, 53);
             uiPanel1.TabIndex = 1;
             uiPanel1.Text = null;
             uiPanel1.TextAlignment = ContentAlignment.MiddleCenter;
@@ -178,7 +178,7 @@
             uiTableLayoutPanel2.Name = "uiTableLayoutPanel2";
             uiTableLayoutPanel2.RowCount = 1;
             uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel2.Size = new Size(385, 53);
+            uiTableLayoutPanel2.Size = new Size(499, 53);
             uiTableLayoutPanel2.TabIndex = 3;
             uiTableLayoutPanel2.TagString = null;
             // 
@@ -188,14 +188,14 @@
             btnLoad.Dock = DockStyle.Fill;
             btnLoad.FillColor = Color.WhiteSmoke;
             btnLoad.Font = new Font("Microsoft Sans Serif", 12F);
-            btnLoad.Location = new Point(321, 2);
+            btnLoad.Location = new Point(416, 2);
             btnLoad.Margin = new Padding(2);
             btnLoad.MinimumSize = new Size(1, 1);
             btnLoad.Name = "btnLoad";
             btnLoad.Radius = 10;
             btnLoad.RectColor = Color.Blue;
             btnLoad.RectSize = 2;
-            btnLoad.Size = new Size(62, 49);
+            btnLoad.Size = new Size(81, 49);
             btnLoad.Symbol = 61473;
             btnLoad.SymbolColor = Color.FromArgb(0, 192, 192);
             btnLoad.SymbolSize = 25;
@@ -209,14 +209,14 @@
             btnAddUser.Dock = DockStyle.Fill;
             btnAddUser.FillColor = Color.WhiteSmoke;
             btnAddUser.Font = new Font("Microsoft Sans Serif", 12F);
-            btnAddUser.Location = new Point(258, 2);
+            btnAddUser.Location = new Point(334, 2);
             btnAddUser.Margin = new Padding(2);
             btnAddUser.MinimumSize = new Size(1, 1);
             btnAddUser.Name = "btnAddUser";
             btnAddUser.Radius = 10;
             btnAddUser.RectColor = Color.Blue;
             btnAddUser.RectSize = 2;
-            btnAddUser.Size = new Size(59, 49);
+            btnAddUser.Size = new Size(78, 49);
             btnAddUser.Symbol = 62004;
             btnAddUser.SymbolColor = Color.FromArgb(0, 192, 0);
             btnAddUser.SymbolSize = 25;
@@ -237,7 +237,7 @@
             btnExportCsv.Radius = 10;
             btnExportCsv.RectColor = Color.Blue;
             btnExportCsv.RectSize = 2;
-            btnExportCsv.Size = new Size(47, 49);
+            btnExportCsv.Size = new Size(62, 49);
             btnExportCsv.Symbol = 363197;
             btnExportCsv.SymbolColor = Color.Green;
             btnExportCsv.SymbolSize = 25;
@@ -249,12 +249,12 @@
             // 
             uiSymbolButton1.Dock = DockStyle.Fill;
             uiSymbolButton1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiSymbolButton1.Location = new Point(53, 0);
+            uiSymbolButton1.Location = new Point(68, 0);
             uiSymbolButton1.Margin = new Padding(2, 0, 2, 0);
             uiSymbolButton1.MinimumSize = new Size(1, 1);
             uiSymbolButton1.Name = "uiSymbolButton1";
             uiSymbolButton1.Radius = 10;
-            uiSymbolButton1.Size = new Size(91, 53);
+            uiSymbolButton1.Size = new Size(119, 53);
             uiSymbolButton1.Symbol = 57454;
             uiSymbolButton1.TabIndex = 17;
             uiSymbolButton1.Text = "Mã OTP";
@@ -265,12 +265,12 @@
             ipTwoFA.Dock = DockStyle.Fill;
             ipTwoFA.FillColor = Color.White;
             ipTwoFA.Font = new Font("Microsoft Sans Serif", 12F);
-            ipTwoFA.Location = new Point(148, 2);
+            ipTwoFA.Location = new Point(191, 2);
             ipTwoFA.Margin = new Padding(2);
             ipTwoFA.MinimumSize = new Size(63, 0);
             ipTwoFA.Name = "ipTwoFA";
             ipTwoFA.Padding = new Padding(0, 0, 30, 2);
-            ipTwoFA.Size = new Size(106, 49);
+            ipTwoFA.Size = new Size(139, 49);
             ipTwoFA.SymbolSize = 24;
             ipTwoFA.TabIndex = 18;
             ipTwoFA.Text = "2222";
@@ -282,11 +282,11 @@
             uiPanel2.Controls.Add(uiTableLayoutPanel3);
             uiPanel2.Dock = DockStyle.Fill;
             uiPanel2.Font = new Font("Microsoft Sans Serif", 12F);
-            uiPanel2.Location = new Point(4, 253);
+            uiPanel2.Location = new Point(4, 375);
             uiPanel2.Margin = new Padding(4, 5, 4, 5);
             uiPanel2.MinimumSize = new Size(1, 1);
             uiPanel2.Name = "uiPanel2";
-            uiPanel2.Size = new Size(381, 47);
+            uiPanel2.Size = new Size(495, 76);
             uiPanel2.TabIndex = 2;
             uiPanel2.Text = null;
             uiPanel2.TextAlignment = ContentAlignment.MiddleCenter;
@@ -305,7 +305,7 @@
             uiTableLayoutPanel3.Name = "uiTableLayoutPanel3";
             uiTableLayoutPanel3.RowCount = 1;
             uiTableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            uiTableLayoutPanel3.Size = new Size(381, 47);
+            uiTableLayoutPanel3.Size = new Size(495, 76);
             uiTableLayoutPanel3.TabIndex = 0;
             uiTableLayoutPanel3.TagString = null;
             // 
@@ -313,14 +313,14 @@
             // 
             ipPassword.Dock = DockStyle.Fill;
             ipPassword.Font = new Font("Microsoft Sans Serif", 12F);
-            ipPassword.Location = new Point(112, 2);
+            ipPassword.Location = new Point(144, 2);
             ipPassword.Margin = new Padding(2);
             ipPassword.MinimumSize = new Size(1, 16);
             ipPassword.Name = "ipPassword";
             ipPassword.Padding = new Padding(5);
             ipPassword.PasswordChar = '*';
             ipPassword.ShowText = false;
-            ipPassword.Size = new Size(267, 43);
+            ipPassword.Size = new Size(349, 72);
             ipPassword.TabIndex = 0;
             ipPassword.Text = "uiTextBox1";
             ipPassword.TextAlignment = ContentAlignment.MiddleLeft;
@@ -334,7 +334,7 @@
             uiSymbolLabel1.Location = new Point(3, 3);
             uiSymbolLabel1.MinimumSize = new Size(1, 1);
             uiSymbolLabel1.Name = "uiSymbolLabel1";
-            uiSymbolLabel1.Size = new Size(104, 41);
+            uiSymbolLabel1.Size = new Size(136, 70);
             uiSymbolLabel1.TabIndex = 1;
             uiSymbolLabel1.Text = "Mật khẩu";
             // 
@@ -343,7 +343,7 @@
             AutoScaleMode = AutoScaleMode.None;
             Controls.Add(uiTableLayoutPanel1);
             Name = "uc_UserManager";
-            Size = new Size(389, 362);
+            Size = new Size(503, 513);
             uiTitlePanel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)uiDataGridView1).EndInit();
             uiTableLayoutPanel1.ResumeLayout(false);
