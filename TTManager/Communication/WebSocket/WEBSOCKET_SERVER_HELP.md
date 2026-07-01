@@ -24,7 +24,13 @@ Hoac cau hinh port va path ngay khi tao:
 var server = new WebSocketServerHelper(9000, "/machine");
 ```
 
- Cau hinh thuoc tinh:
+Co the cau hinh buffer size (mac dinh 4096 bytes):
+
+```csharp
+var server = new WebSocketServerHelper(9000, "/machine", 8192);
+```
+
+Cau hinh thuoc tinh:
 
 ```csharp
 server.Port = 9000;
@@ -33,10 +39,13 @@ server.Path = "/machine";
 
 ## 2. Bat callback
 
+**Quan trong:** Callback tu dong chay tren dung thread cua caller (UI thread neu dang o WinForms).
+
 ```csharp
 server.WebSocketServerCallback += (state, data) =>
 {
-    Console.WriteLine($"{state}: {data}");
+    // Khong can Invoke/BeginInvoke nua vi da tu dong post ve UI thread
+    listBox1.Items.Insert(0, $"{DateTime.Now:HH:mm:ss} [{state}] {data}");
 };
 ```
 
@@ -57,6 +66,8 @@ server.Start();
 Sau khi goi `Start()`, server se lang nghe tai `http://localhost:{Port}/{Path}/`.
 
 Neu server dang chay, `Start()` se tu dong goi `Stop()` roi bat lai.
+
+**Luu y:** `Start()` se throw exception neu that bai (vi du: port bi chiem).
 
 ## 4. Tat server (Stop)
 
@@ -82,6 +93,7 @@ server.WebSocketServerCallback += (state, data) =>
     if (state == WebSocketServerState.Received)
     {
         // data = "[3f14b2c1-...] Hello from client"
+        // Tu dong ve UI thread, khong can Invoke
     }
 };
 ```
@@ -127,41 +139,64 @@ So luong client:
 int count = server.ClientCount;
 ```
 
-Ngat ket noi mot client cu the:
+Ngat ket noi mot client cu the (async):
+
+```csharp
+await server.DisconnectClientAsync(clientId);
+```
+
+Hoac sync version:
 
 ```csharp
 server.DisconnectClient(clientId);
 ```
 
-## 9. Vi du WinForms
+## 9. Vi du WinForms day du
 
 ```csharp
-private WebSocketServerHelper? _server;
+using TTManager.Communication.WebSocket;
 
-private void Form_Load(object sender, EventArgs e)
+public partial class MainForm : Form
 {
-    _server = new WebSocketServerHelper(8080, "/ws");
-    _server.WebSocketServerCallback += (state, data) =>
+    private WebSocketServerHelper? _server;
+
+    public MainForm()
     {
-        BeginInvoke(() =>
+        InitializeComponent();
+    }
+
+    private void Form_Load(object sender, EventArgs e)
+    {
+        try
         {
-            txtLog.AppendText($"{DateTime.Now:HH:mm:ss} [{state}] {data}{Environment.NewLine}");
-        });
-    };
-    _server.Start();
-    lblStatus.Text = "Server running";
-}
+            _server = new WebSocketServerHelper(8080, "/ws");
+            _server.WebSocketServerCallback += Server_WebSocketServerCallback;
+            _server.Start();
+            lblStatus.Text = "Server running";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to start server: {ex.Message}");
+        }
+    }
 
-private async void btnBroadcast_Click(object sender, EventArgs e)
-{
-    if (_server == null) return;
-    await _server.BroadcastAsync(txtMessage.Text);
-    txtMessage.Clear();
-}
+    private void Server_WebSocketServerCallback(WebSocketServerState state, string data)
+    {
+        // Tu dong chay tren UI thread - khong can Invoke!
+        listBox1.Items.Insert(0, $"{DateTime.Now:HH:mm:ss} [{state}] {data}");
+    }
 
-private void Form_FormClosing(object sender, FormClosingEventArgs e)
-{
-    _server?.Dispose();
+    private async void btnBroadcast_Click(object sender, EventArgs e)
+    {
+        if (_server == null) return;
+        await _server.BroadcastAsync(txtMessage.Text);
+        txtMessage.Clear();
+    }
+
+    private void Form_FormClosing(object sender, FormClosingEventArgs e)
+    {
+        _server?.Dispose();
+    }
 }
 ```
 
@@ -220,3 +255,14 @@ Disconnected: Removed 1 dead client(s) | Active: 0
 - Can nhanh, latency thap (WebSocket khong co HTTP overhead).
 - Client la trinh duyet web, mobile app, hoac IoT device.
 - Neu chi can request-response don gian, dung `RestApiClientHelper` van la uu tien.
+
+## 11. Thread Safety
+
+Thư viện đã được cải tiến với:
+
+- **Callback thread-safe**: Tự động post về UI thread nếu có SynchronizationContext.
+- **Client management thread-safe**: Sử dụng `ConcurrentDictionary`.
+- **Dispose-safe**: Kiểm tra `_disposed` trước khi thực hiện.
+- **Graceful shutdown**: Đóng socket đúng cách trước khi dispose.
+- **Timeout cho close**: Tránh deadlock khi đóng socket.
+- **Nullable reference**: Hỗ trợ đầy đủ nullable reference types.

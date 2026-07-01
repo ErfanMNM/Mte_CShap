@@ -225,21 +225,51 @@ namespace TApp.Views.Extention
                     _data.Columns.Add("Timeunix", typeof(string));
                     _data.Columns.Add("ProductName", typeof(string));
 
-                    for (int i = 0; i < dataToBackup.Rows.Count; i++)
+
+                    //trong trường hợp rework sẽ ghi đè ngày kích hoạt = thời gian của người dùng chỉnh
+
+                    string replaceDate = "";
+
+                    if(FD_Globals.BypassActive)
                     {
-                        // Note: ActiveUniqueQR table không có cột Note, để trống hoặc có thể dùng Status
-                        string noteValue = dataToBackup.Rows[i]["Status"]?.ToString() ?? "";
-                        _data.Rows.Add(
-                            dataToBackup.Rows[i]["ID"], 
-                            dataToBackup.Rows[i]["BatchCode"], 
-                            dataToBackup.Rows[i]["QRContent"].ToString().Replace("\r\n", "").Replace("\r", ""), 
-                            dataToBackup.Rows[i]["UserName"], 
-                            dataToBackup.Rows[i]["Status"], 
-                            noteValue, // Sửa: không dùng UserName cho Note
-                            dataToBackup.Rows[i]["TimeStampActive"], 
-                            dataToBackup.Rows[i]["TimeUnixActive"], 
-                            dataToBackup.Rows[i]["BatchCode"]);
+                        replaceDate = FD_Globals.BypassActiveDate + " " + DateTime.Now.ToString("HH:mm:ss.fff");
+
+                        for (int i = 0; i < dataToBackup.Rows.Count; i++)
+                        {
+                            // Note: ActiveUniqueQR table không có cột Note, để trống hoặc có thể dùng Status
+                            string noteValue = dataToBackup.Rows[i]["Status"]?.ToString() ?? "";
+                            _data.Rows.Add(
+                                dataToBackup.Rows[i]["ID"],
+                                dataToBackup.Rows[i]["BatchCode"],
+                                dataToBackup.Rows[i]["QRContent"].ToString().Replace("\r\n", "").Replace("\r", ""),
+                                dataToBackup.Rows[i]["UserName"],
+                                dataToBackup.Rows[i]["Status"],
+                                noteValue, // Sửa: không dùng UserName cho Note
+                                replaceDate,
+                                replaceDate,
+                                dataToBackup.Rows[i]["BatchCode"]);
+                        }
                     }
+                    else
+                    {
+                        for (int i = 0; i < dataToBackup.Rows.Count; i++)
+                        {
+                            // Note: ActiveUniqueQR table không có cột Note, để trống hoặc có thể dùng Status
+                            string noteValue = dataToBackup.Rows[i]["Status"]?.ToString() ?? "";
+                            _data.Rows.Add(
+                                dataToBackup.Rows[i]["ID"],
+                                dataToBackup.Rows[i]["BatchCode"],
+                                dataToBackup.Rows[i]["QRContent"].ToString().Replace("\r\n", "").Replace("\r", ""),
+                                dataToBackup.Rows[i]["UserName"],
+                                dataToBackup.Rows[i]["Status"],
+                                noteValue, // Sửa: không dùng UserName cho Note
+                                dataToBackup.Rows[i]["TimeStampActive"],
+                                dataToBackup.Rows[i]["TimeUnixActive"],
+                                dataToBackup.Rows[i]["BatchCode"]);
+                        }
+                    }
+
+                    
 
                     ExportResult exportResult = CsvHelper.ExportDataTableToCsv(_data, csvTempPath);
 
@@ -668,7 +698,7 @@ namespace TApp.Views.Extention
                     if (currentBatchCode == newBatchCode)
                     {
                         needWriteBatchCode = false;
-                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, $"Batch Code trùng với PLC, bỏ qua gửi: {newBatchCode}");
+                        PLC_IOT_Logs.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, $"Batch Code trùng với PLC, bỏ qua gửi: {newBatchCode}");
                     }
                 }
                 
@@ -677,11 +707,11 @@ namespace TApp.Views.Extention
                     OperateResult wbatchcode = plc.Write(batchCodeAddr, newBatchCode, Encoding.ASCII);
                     if (wbatchcode.IsSuccess)
                     {
-                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Batch Thành công");
+                        PLC_IOT_Logs.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Batch Thành công");
                     }
                     else
                     {
-                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Batch Thất bại :" + wbatchcode.Message);
+                        PLC_IOT_Logs.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Batch Thất bại :" + wbatchcode.Message);
                     }
                 }
 
@@ -697,7 +727,7 @@ namespace TApp.Views.Extention
                     if (currentBarcode == newBarcode)
                     {
                         needWriteBarcode = false;
-                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, $"Barcode trùng với PLC, bỏ qua gửi: {newBarcode}");
+                        PLC_IOT_Logs.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, $"Barcode trùng với PLC, bỏ qua gửi: {newBarcode}");
                     }
                 }
                 
@@ -706,11 +736,11 @@ namespace TApp.Views.Extention
                     OperateResult wbarcode = plc.Write(barcodeAddr, newBarcode, Encoding.ASCII);
                     if (wbarcode.IsSuccess)
                     {
-                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Barcode Thành công");
+                        PLC_IOT_Logs.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Gửi dữ liệu Barcode Thành công");
                     }
                     else
                     {
-                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode Thất bại :" + wbarcode.Message, "", "FDE_0009");
+                        PLC_IOT_Logs.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode Thất bại :" + wbarcode.Message, "", "FDE_0009");
                     }
                 }
 
@@ -730,7 +760,7 @@ namespace TApp.Views.Extention
                     OperateResult wBarcodeFormatError = plc.Write(formatFailAddr, newAlarmCount);
                     if (!wBarcodeFormatError.IsSuccess)
                     {
-                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode FormatError thất bại :" + wBarcodeFormatError.Message, "", "FDE_0010");
+                        PLC_IOT_Logs.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu Barcode FormatError thất bại :" + wBarcodeFormatError.Message, "", "FDE_0010");
                     }
                 }
 
@@ -750,7 +780,7 @@ namespace TApp.Views.Extention
                     OperateResult wSystemStatus = plc.Write(systemStatusAddr, newSystemStatus);
                     if (!wSystemStatus.IsSuccess)
                     {
-                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu trạng thái hệ thống thất bại :" + wSystemStatus.Message, "", "FDE_0011");
+                        PLC_IOT_Logs.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu trạng thái hệ thống thất bại :" + wSystemStatus.Message, "", "FDE_0011");
                     }
                 }
 
@@ -770,7 +800,7 @@ namespace TApp.Views.Extention
                     OperateResult wAllFail = plc.Write(allFailAddr, newAllFail);
                     if (!wAllFail.IsSuccess)
                     {
-                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu số đếm lỗi thất bại :" + wAllFail.Message, "", "FDE_0011");
+                        PLC_IOT_Logs.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu số đếm lỗi thất bại :" + wAllFail.Message, "", "FDE_0011");
                     }
                 }
 
@@ -790,7 +820,7 @@ namespace TApp.Views.Extention
                     OperateResult wPS = plc.Write(productionSpeedAddr, newProductionSpeed);
                     if (!wPS.IsSuccess)
                     {
-                        PLC_IOT_Logs.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu tốc độ thất bại :" + wPS.Message, "", "FDE_0011");
+                        PLC_IOT_Logs.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Gửi dữ liệu tốc độ thất bại :" + wPS.Message, "", "FDE_0011");
                     }
                 }
 

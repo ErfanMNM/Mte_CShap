@@ -66,7 +66,7 @@ namespace TApp.Views.Dashboard
             {
                 if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync("System", e_LogType.Warning, "PLC chưa kết nối, không thể kiểm tra trạng thái DEACTIVE", "", "WARN-FDASH-DEACTIVE-01");
+                    GlobalVarialbles.Logger?.LogAsync("System", e_LogType.Warning, "PLC chưa kết nối, không thể kiểm tra trạng thái DEACTIVE", "", "WARN-FDASH-DEACTIVE-01");
                     return false;
                 }
 
@@ -79,14 +79,14 @@ namespace TApp.Views.Dashboard
                 }
                 else
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync("System", e_LogType.Error, "Lỗi đọc PLC_Deactive_DM khi khởi động", readResult.ToMessageShowString(), "ERR-FDASH-DEACTIVE-01");
+                    GlobalVarialbles.Logger?.LogAsync("System", e_LogType.Error, "Lỗi đọc PLC_Deactive_DM khi khởi động", readResult.ToMessageShowString(), "ERR-FDASH-DEACTIVE-01");
                     DisplayErrorToUI("FDE_0001", "Lỗi đọc PLC_Deactive_DM khi khởi động", readResult.ToMessageShowString());
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                GlobalVarialbles.Logger?.WriteLogAsync("System", e_LogType.Error, "Lỗi kiểm tra trạng thái DEACTIVE khi khởi động", ex.Message, "ERR-FDASH-DEACTIVE-02");
+                GlobalVarialbles.Logger?.LogAsync("System", e_LogType.Error, "Lỗi kiểm tra trạng thái DEACTIVE khi khởi động", ex.Message, "ERR-FDASH-DEACTIVE-02");
                 DisplayErrorToUI("FDE_0002", "Lỗi kiểm tra trạng thái DEACTIVE khi khởi động", ex.Message);
                 return false;
             }
@@ -101,7 +101,7 @@ namespace TApp.Views.Dashboard
             {
                 if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "PLC chưa kết nối, không thể gửi lệnh DEACTIVE", "", "ERR-FDASH-DEACTIVE-03");
+                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "PLC chưa kết nối, không thể gửi lệnh DEACTIVE", "", "ERR-FDASH-DEACTIVE-03");
                     DisplayErrorToUI("FDE_0003", "PLC chưa kết nối, không thể gửi lệnh DEACTIVE");
                     return false;
                 }
@@ -121,13 +121,13 @@ namespace TApp.Views.Dashboard
                     }
                 }
 
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi gửi lệnh DEACTIVE xuống PLC", writeResult.ToMessageShowString(), "ERR-FDASH-DEACTIVE-04");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi gửi lệnh DEACTIVE xuống PLC", writeResult.ToMessageShowString(), "ERR-FDASH-DEACTIVE-04");
                 DisplayErrorToUI("FDE_0004", "Lỗi gửi lệnh DEACTIVE xuống PLC", writeResult.ToMessageShowString());
                 return false;
             }
             catch (Exception ex)
             {
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi gửi lệnh DEACTIVE", ex.Message, "ERR-FDASH-DEACTIVE-05");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi gửi lệnh DEACTIVE", ex.Message, "ERR-FDASH-DEACTIVE-05");
                 DisplayErrorToUI("FDE_0005", "Lỗi gửi lệnh DEACTIVE", ex.Message);
                 return false;
             }
@@ -248,12 +248,12 @@ namespace TApp.Views.Dashboard
                 _datalogicCamera_C1 = new DatalogicCamera(AppConfigs.Current.Camera_01_IP, AppConfigs.Current.Camera_01_Port);
                 _datalogicCamera_C1.ClientCallback += DatalogicCameraC1_ClientCallback;
                 _datalogicCamera_C1.Connect();
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Khởi tạo camera thành công", $"{{'IP':'{AppConfigs.Current.Camera_01_IP}','Port':'{AppConfigs.Current.Camera_01_Port}'}}", "INFO-FDASH-01");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Khởi tạo camera thành công", $"{{'IP':'{AppConfigs.Current.Camera_01_IP}','Port':'{AppConfigs.Current.Camera_01_Port}'}}", "INFO-FDASH-01");
             }
             catch (Exception ex)
             {
                 this.ShowErrorDialog($"Lỗi khởi tạo camera: {ex.Message}");
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi khởi tạo camera", ex.Message, "ERR-FDASH-01");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi khởi tạo camera", ex.Message, "ERR-FDASH-01");
             }
         }
 
@@ -305,7 +305,7 @@ namespace TApp.Views.Dashboard
             string message = e.Status == PLCStatus.Connected ? "PLC kết nối thành công" : "PLC mất kết nối";
             string code = e.Status == PLCStatus.Connected ? "INFO-FDASH-03" : "ERR-FDASH-03";
             e_LogType logType = e.Status == PLCStatus.Connected ? e_LogType.Info : e_LogType.Error;
-            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, logType, message, "", code);
+            GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, logType, message, "", code);
         }
 
         private void Camera_ProcessData(string data)
@@ -443,7 +443,7 @@ namespace TApp.Views.Dashboard
             catch (Exception ex)
             {
                 // Log lỗi nhưng không làm gián đoạn luồng chính
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Debug, "Lỗi kiểm tra trạng thái DEACTIVE từ PLC", ex.Message, "ERR-FDASH-DEACTIVE-06");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Debug, "Lỗi kiểm tra trạng thái DEACTIVE từ PLC", ex.Message, "ERR-FDASH-DEACTIVE-06");
                 DisplayErrorToUI("FDE_0006", "Lỗi kiểm tra trạng thái DEACTIVE từ PLC", ex.Message);
             }
         }
@@ -470,7 +470,7 @@ namespace TApp.Views.Dashboard
                 }
                 catch (Exception ex)
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Debug, "Lỗi ghi bản ghi sản xuất", ex.Message, "ERR-F-02");
+                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Debug, "Lỗi ghi bản ghi sản xuất", ex.Message, "ERR-F-02");
                     DisplayErrorToUI("FDE_0007", "Lỗi ghi bản ghi sản xuất", ex.Message);
                 }
             }
@@ -492,7 +492,7 @@ namespace TApp.Views.Dashboard
         {
             btnChangeBatch.Enabled = false;
             btnChangeBatch.Text = "Đang tải...";
-            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Nhấn đổi lô sản xuất", $"{{'BatchCode':'{ipBatchNo.Text.Trim()}','Barcode':'{ipBarcode.Text.Trim()}'}}", "UA-F-03");
+            GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Nhấn đổi lô sản xuất", $"{{'BatchCode':'{ipBatchNo.Text.Trim()}','Barcode':'{ipBarcode.Text.Trim()}'}}", "UA-F-03");
 
             using (var dialog = new DChangeBatch())
             {
@@ -511,7 +511,7 @@ namespace TApp.Views.Dashboard
 
         private void btnABatch_Click(object sender, EventArgs e)
         {
-            GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng nhấn nút chỉnh sửa lô", "", "UA-F-01");
+            GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng nhấn nút chỉnh sửa lô", "", "UA-F-01");
             try
             {
                 if (!_batchChangeMode) HandleEnterBatchChangeMode();
@@ -521,7 +521,7 @@ namespace TApp.Views.Dashboard
             catch (Exception ex)
             {
                 ResetBatchChangeMode();
-                GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERP-F-02");
+                GlobalVarialbles.Logger.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERP-F-02");
                 this.ShowErrorDialog($"Lỗi đổi lô, bạn có thể liên hệ NCC máy theo số 0876 00 01 00: {ex.Message}");
             }
         }
@@ -535,12 +535,12 @@ namespace TApp.Views.Dashboard
                 OperateResult rs = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Reset_Counter_DM"), (short)1);
                 if (rs.IsSuccess)
                 {
-                    GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng xóa số đếm", $"Xóa thành công: {logDetail}", "FD-UA-1");
+                    GlobalVarialbles.Logger.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng xóa số đếm", $"Xóa thành công: {logDetail}", "FD-UA-1");
                     this.ShowSuccessTip("Gửi lệnh reset counter PLC thành công!");
                 }
                 else
                 {
-                    GlobalVarialbles.Logger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng xóa số đếm", "Xóa Thất Bại Phía PLC", "FD-UA-1");
+                    GlobalVarialbles.Logger.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng xóa số đếm", "Xóa Thất Bại Phía PLC", "FD-UA-1");
                     this.ShowErrorDialog("Gửi lệnh reset counter PLC thất bại!");
                 }
                 Thread.Sleep(1000);
@@ -566,7 +566,7 @@ namespace TApp.Views.Dashboard
                 OperateResult clearRs = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Clear_DM"), (short)1);
                 if (!clearRs.IsSuccess)
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync(
+                    GlobalVarialbles.Logger?.LogAsync(
                         GlobalVarialbles.CurrentUser?.Username ?? "System",
                         e_LogType.Error,
                         "Gửi lệnh Clear PLC thất bại",
@@ -610,7 +610,7 @@ namespace TApp.Views.Dashboard
 
                 // Ghi log vào hệ thống
                 string logDetail = $"{{\"ClearedCount\":{clearedCount},\"BatchCode\":\"{batchCode}\",\"Barcode\":\"{barcode}\",\"ClearTime\":\"{clearTime:yyyy-MM-dd HH:mm:ss}\"}}";
-                GlobalVarialbles.Logger?.WriteLogAsync(
+                GlobalVarialbles.Logger?.LogAsync(
                     username,
                     e_LogType.UserAction,
                     $"Xóa lỗi FormatError",
@@ -632,7 +632,7 @@ namespace TApp.Views.Dashboard
             }
             catch (Exception ex)
             {
-                GlobalVarialbles.Logger?.WriteLogAsync(
+                GlobalVarialbles.Logger?.LogAsync(
                     GlobalVarialbles.CurrentUser?.Username ?? "System",
                     e_LogType.Error,
                     "Lỗi khi xóa FormatError",
@@ -825,7 +825,7 @@ namespace TApp.Views.Dashboard
             if (FD_Globals.CameraStatus != cameraStatus)
             {
                 FD_Globals.CameraStatus = cameraStatus;
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, logType, logMessage, "", logCode);
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, logType, logMessage, "", logCode);
             }
         }
 
@@ -834,7 +834,7 @@ namespace TApp.Views.Dashboard
             // Kiểm tra nếu hệ thống đang ở chế độ DEACTIVE thì không xử lý
             if (_lastDeactiveState)
             {
-                GlobalVarialbles.Logger?.WriteLogAsync(
+                GlobalVarialbles.Logger?.LogAsync(
                     GlobalVarialbles.CurrentUser.Username,
                     e_LogType.Warning,
                     "Bỏ qua dữ liệu camera - hệ thống đang ở chế độ VÔ HIỆU HÓA",
@@ -896,7 +896,7 @@ namespace TApp.Views.Dashboard
             else
             {
                 this.ShowErrorDialog("Tải xuống ERP thất bại, HÃY CHỤP LẠI THÔNG BÁO NÀY. Vui lòng nhấn vào mục Kiểm tra-> chọn mục B09 -> Nhấn bắt đầu và đợi một lát. Nếu A01 báo thành công nhưng hiện trống, vui lòng kiểm tra Tên line, Tên nhà máy, Tên xưởng đã đúng chưa? Nếu đã đúng hãy liên hệ người quản lý ERP hoặc IT nhà máy");
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", $"{{'Thông tin lỗi':'{rs}'}}", "ERP-F-01");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", $"{{'Thông tin lỗi':'{rs}'}}", "ERP-F-01");
                 ResetBatchChangeMode();
             }
         }
@@ -915,12 +915,12 @@ namespace TApp.Views.Dashboard
                 BatchHistoryHelper.AddHistory(dbPath, FD_Globals.productionData.BatchCode, FD_Globals.productionData.Barcode, GlobalVarialbles.CurrentUser.Username, DateTime.Now);
 
                 this.ShowSuccessTip("Đổi lô thành công!");
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'Lô mới':'{FD_Globals.productionData.BatchCode}','Barcode mới':'{FD_Globals.productionData.Barcode}'}}", "UA-F-02");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'Lô mới':'{FD_Globals.productionData.BatchCode}','Barcode mới':'{FD_Globals.productionData.Barcode}'}}", "UA-F-02");
             }
             catch (Exception ex)
             {
                 this.ShowErrorTip($"Lỗi đổi lô: {ex.Message}");
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERR-F-01");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERR-F-01");
             }
         }
 
@@ -987,7 +987,7 @@ namespace TApp.Views.Dashboard
             }
             else
             {
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đọc số liệu PLC", result.ToMessageShowString(), "PLC-F-01");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đọc số liệu PLC", result.ToMessageShowString(), "PLC-F-01");
                 FD_Globals.productionData.PLC_Counter.Total = -1;
                 FD_Globals.productionData.PLC_Counter.ReadFail = -1;
                 FD_Globals.productionData.PLC_Counter.Pass = -1;
@@ -1040,11 +1040,11 @@ namespace TApp.Views.Dashboard
                     FD_Globals.productionData.Barcode = dialog.Barcode;
                     BatchHistoryHelper.AddHistory("Database/Production/batch_history.db", FD_Globals.productionData.BatchCode, FD_Globals.productionData.Barcode, GlobalVarialbles.CurrentUser.Username, DateTime.Now);
                     this.ShowSuccessTip("Đổi lô thành công!");
-                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
+                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
                 }
                 else
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Hủy đổi lô sản xuất", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
+                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Hủy đổi lô sản xuất", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
                 }
             }
             else
@@ -1059,14 +1059,14 @@ namespace TApp.Views.Dashboard
                     FD_Globals.productionData.Barcode = dialog.Barcode;
                     BatchHistoryHelper.AddHistory("Database/Production/batch_history.db", FD_Globals.productionData.BatchCode, FD_Globals.productionData.Barcode, GlobalVarialbles.CurrentUser.Username, DateTime.Now);
                     this.ShowSuccessTip("Đổi lô thành công!");
-                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
+                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
                 }
                 else
                 {
-                    GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Hủy đổi lô sản xuất", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
+                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Hủy đổi lô sản xuất", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
                 }
 
-                GlobalVarialbles.Logger?.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", $"{{'Thông tin lỗi':'{loadErpResult}'}}", "ERP-F-01");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", $"{{'Thông tin lỗi':'{loadErpResult}'}}", "ERP-F-01");
             }
         }
 
@@ -1132,6 +1132,27 @@ namespace TApp.Views.Dashboard
         {
 
         }
+
+        private void ipBypassActive_ValueChanged(object sender, bool value)
+        {
+            if (GlobalVarialbles.CurrentUser.Role != "Admin")
+            {
+                this.ShowWarningDialog("Chỉ Admin mới có quyền thay đổi trạng thái Bypass Active!");
+                ipBypassActive.Active = !FD_Globals.BypassActive; // revert
+                return;
+            }
+            else
+            {
+                FD_Globals.BypassActive = value;
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Thay đổi trạng thái Bypass Active", $"{{'BypassActive':{FD_Globals.BypassActive}}}", "UA-FDASH-BYPASS-ACTIVE");
+                this.ShowSuccessDialog($"Trạng thái Bypass Active đã được thay đổi thành: {FD_Globals.BypassActive}");
+            }
+        }
+
+        private void ipByPassActiveDate_ValueChanged(object sender, DateTime value)
+        {
+            FD_Globals.BypassActiveDate = value.ToString("yyyy-MM-dd");
+        }
     }
 
     #region Nested Types
@@ -1158,6 +1179,8 @@ namespace TApp.Views.Dashboard
 
     public static class FD_Globals
     {
+        public static string BypassActiveDate { get; set; } = DateTime.Now.ToString("yyyy-MM-dd");
+        public static bool BypassActive { get; set; } = false;
         public static CameraStatus CameraStatus { get; set; } = CameraStatus.Disconnected;
         public static ProductionData productionData { get; set; } = new ProductionData();
         public static int AlarmCount { get; set; } = 0;

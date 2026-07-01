@@ -1,5 +1,8 @@
+#nullable enable
+
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
@@ -25,8 +28,11 @@ namespace TTManager.Communication.WebSocket
         private CancellationTokenSource? _listenerCts;
         private CancellationTokenSource? _serverCts;
         private readonly ConcurrentDictionary<Guid, ClientConnection> _clients = new();
+        private readonly object _callbackLock = new();
+        private readonly SynchronizationContext? _syncContext;
         private bool _disposed;
         private Task? _listenerTask;
+        private readonly int _receiveBufferSize;
         #endregion
 
         #region Properties
@@ -42,27 +48,77 @@ namespace TTManager.Communication.WebSocket
         #endregion
 
         #region Constructors
-        public WebSocketServerHelper()
+        public WebSocketServerHelper() : this(4096)
         {
         }
 
-        public WebSocketServerHelper(int port, string path = "/ws")
+        public WebSocketServerHelper(int receiveBufferSize)
+        {
+            _receiveBufferSize = receiveBufferSize > 0 ? receiveBufferSize : 4096;
+            _syncContext = SynchronizationContext.Current;
+        }
+
+        public WebSocketServerHelper(int port, string path = "/ws") : this(port, path, 4096)
+        {
+        }
+
+        public WebSocketServerHelper(int port, string path, int receiveBufferSize)
         {
             Port = port;
             Path = path;
+            _receiveBufferSize = receiveBufferSize > 0 ? receiveBufferSize : 4096;
+            _syncContext = SynchronizationContext.Current;
         }
         #endregion
 
         #region Private Methods
         private void OnWebSocketServerCallback(WebSocketServerState state, string data)
         {
-            WebSocketServerCallback?.Invoke(state, data);
+            var handler = WebSocketServerCallback;
+            if (handler == null) return;
+
+            var callback = new WebSocketServerEventHandler(handler);
+            try
+            {
+                if (_syncContext != null)
+                {
+                    lock (_callbackLock)
+                    {
+                        _syncContext.Post(_ =>
+                        {
+                            try
+                            {
+                                callback.Invoke(state, data);
+                            }
+                            catch
+                            {
+                            }
+                        }, null);
+                    }
+                }
+                else
+                {
+                    lock (_callbackLock)
+                    {
+                        callback.Invoke(state, data);
+                    }
+                }
+            }
+            catch
+            {
+            }
         }
 
         private string GetPrefix()
         {
             string path = Path.TrimStart('/');
             return $"http://+:{Port}/{path}/";
+        }
+
+        private string GetFallbackPrefix()
+        {
+            string path = Path.TrimStart('/');
+            return $"http://localhost:{Port}/{path}/";
         }
 
         private async Task AcceptClientsAsync(CancellationToken cancellationToken)
@@ -75,7 +131,7 @@ namespace TTManager.Communication.WebSocket
 
                     if (context.Request.IsWebSocketRequest)
                     {
-                        _ = Task.Run(() => HandleWebSocketAsync(context, cancellationToken), cancellationToken);
+                        _ = HandleWebSocketAsync(context, cancellationToken);
                     }
                     else
                     {
@@ -102,6 +158,7 @@ namespace TTManager.Communication.WebSocket
         {
             Guid clientId = Guid.NewGuid();
             ClientConnection? connection = null;
+            bool addedToClients = false;
 
             try
             {
@@ -109,12 +166,15 @@ namespace TTManager.Communication.WebSocket
                 System.Net.WebSockets.WebSocket webSocket = wsContext.WebSocket;
 
                 connection = new ClientConnection(clientId, webSocket);
-                _clients.TryAdd(clientId, connection);
+                if (_clients.TryAdd(clientId, connection))
+                {
+                    addedToClients = true;
+                }
 
                 OnWebSocketServerCallback(WebSocketServerState.Connected,
                     $"Client connected: {clientId} | Total: {_clients.Count}");
 
-                byte[] buffer = new byte[4096];
+                byte[] buffer = new byte[_receiveBufferSize];
 
                 while (webSocket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
                 {
@@ -125,6 +185,8 @@ namespace TTManager.Communication.WebSocket
 
                         if (result.MessageType == WebSocketMessageType.Close)
                         {
+                            OnWebSocketServerCallback(WebSocketServerState.Disconnected,
+                                $"[{clientId}] Client initiated close");
                             break;
                         }
 
@@ -152,12 +214,27 @@ namespace TTManager.Communication.WebSocket
                     }
                     catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
                     {
+                        OnWebSocketServerCallback(WebSocketServerState.Disconnected,
+                            $"[{clientId}] Connection closed prematurely");
+                        break;
+                    }
+                    catch (WebSocketException ex)
+                    {
+                        OnWebSocketServerCallback(WebSocketServerState.Error,
+                            $"[{clientId}] WebSocket error: {ex.Message}");
                         break;
                     }
                 }
 
-                await CloseClientAsync(webSocket, WebSocketCloseStatus.NormalClosure,
-                    $"[{clientId}] Client disconnected");
+                if (webSocket.State == WebSocketState.Open)
+                {
+                    await CloseClientGracefullyAsync(webSocket, WebSocketCloseStatus.NormalClosure, "Client disconnected");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                OnWebSocketServerCallback(WebSocketServerState.Disconnected,
+                    $"[{clientId}] Connection cancelled");
             }
             catch (Exception ex)
             {
@@ -166,20 +243,36 @@ namespace TTManager.Communication.WebSocket
             }
             finally
             {
-                if (connection != null)
+                if (addedToClients && connection != null)
                 {
                     _clients.TryRemove(clientId, out _);
+                    OnWebSocketServerCallback(WebSocketServerState.Disconnected,
+                        $"[{clientId}] Client removed | Active: {_clients.Count}");
                 }
             }
         }
 
-        private async Task CloseClientAsync(System.Net.WebSockets.WebSocket webSocket, WebSocketCloseStatus status, string reason)
+        private async Task CloseClientGracefullyAsync(System.Net.WebSockets.WebSocket webSocket, WebSocketCloseStatus status, string reason)
         {
-            if (webSocket.State == WebSocketState.Open)
+            try
+            {
+                if (webSocket.State == WebSocketState.Open)
+                {
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                    await webSocket.CloseAsync(status, reason, cts.Token);
+                }
+            }
+            catch
+            {
+            }
+            finally
             {
                 try
                 {
-                    await webSocket.CloseAsync(status, reason, CancellationToken.None);
+                    if (webSocket.State != WebSocketState.Closed)
+                    {
+                        webSocket.Dispose();
+                    }
                 }
                 catch
                 {
@@ -195,8 +288,16 @@ namespace TTManager.Communication.WebSocket
                 {
                     if (kvp.Value.Socket.State == WebSocketState.Open)
                     {
-                        kvp.Value.Socket.Dispose();
+                        try
+                        {
+                            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                            kvp.Value.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Server shutdown", cts.Token).Wait(cts.Token);
+                        }
+                        catch
+                        {
+                        }
                     }
+                    kvp.Value.Socket.Dispose();
                 }
                 catch
                 {
@@ -218,10 +319,17 @@ namespace TTManager.Communication.WebSocket
                 _httpListener = null;
             }
 
-            _listenerCts?.Cancel();
-            _serverCts?.Cancel();
-            _listenerCts?.Dispose();
-            _serverCts?.Dispose();
+            try
+            {
+                _listenerCts?.Cancel();
+                _serverCts?.Cancel();
+                _listenerCts?.Dispose();
+                _serverCts?.Dispose();
+            }
+            catch
+            {
+            }
+
             _listenerCts = null;
             _serverCts = null;
             _listenerTask = null;
@@ -231,6 +339,11 @@ namespace TTManager.Communication.WebSocket
         #region Public Methods
         public void Start()
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(WebSocketServerHelper));
+            }
+
             if (Listening)
             {
                 Stop();
@@ -253,10 +366,38 @@ namespace TTManager.Communication.WebSocket
                 OnWebSocketServerCallback(WebSocketServerState.Listening,
                     $"Server started on port {Port}{Path}");
             }
+            catch (HttpListenerException ex) when (ex.ErrorCode == 5 || ex.ErrorCode == 1231)
+            {
+                // Access denied - try fallback to localhost
+                try
+                {
+                    _httpListener = new HttpListener();
+                    _httpListener.Prefixes.Add(GetFallbackPrefix());
+                    _httpListener.Start();
+
+                    _listenerCts ??= new CancellationTokenSource();
+                    _serverCts ??= new CancellationTokenSource();
+
+                    CancellationToken linkedToken = CancellationTokenSource
+                        .CreateLinkedTokenSource(_listenerCts.Token, _serverCts.Token).Token;
+
+                    _listenerTask = Task.Run(() => AcceptClientsAsync(linkedToken), linkedToken);
+
+                    OnWebSocketServerCallback(WebSocketServerState.Listening,
+                        $"Server started on localhost:{Port}{Path} (fallback - run 'netsh http add urlacl' for full access)");
+                }
+                catch (Exception fallbackEx)
+                {
+                    OnWebSocketServerCallback(WebSocketServerState.Error,
+                        $"Failed to start server: {fallbackEx.Message}");
+                    throw;
+                }
+            }
             catch (Exception ex)
             {
                 OnWebSocketServerCallback(WebSocketServerState.Error,
                     $"Failed to start server: {ex.Message}");
+                throw;
             }
         }
 
@@ -312,6 +453,11 @@ namespace TTManager.Communication.WebSocket
                 return;
             }
 
+            if (_disposed)
+            {
+                return;
+            }
+
             byte[] dataBytes = Encoding.UTF8.GetBytes(data);
             var deadClients = new List<Guid>();
 
@@ -354,6 +500,11 @@ namespace TTManager.Communication.WebSocket
                 return;
             }
 
+            if (_disposed)
+            {
+                return;
+            }
+
             var deadClients = new List<Guid>();
 
             foreach (var kvp in _clients)
@@ -382,17 +533,23 @@ namespace TTManager.Communication.WebSocket
             }
         }
 
+        public async Task DisconnectClientAsync(Guid clientId)
+        {
+            if (_clients.TryGetValue(clientId, out ClientConnection? connection))
+            {
+                await CloseClientGracefullyAsync(connection.Socket, WebSocketCloseStatus.NormalClosure, "Disconnected by server");
+                _clients.TryRemove(clientId, out _);
+
+                OnWebSocketServerCallback(WebSocketServerState.Disconnected,
+                    $"Client {clientId} disconnected | Active: {_clients.Count}");
+            }
+        }
+
         public void DisconnectClient(Guid clientId)
         {
             if (_clients.TryGetValue(clientId, out ClientConnection? connection))
             {
-                try
-                {
-                    connection.Socket.Dispose();
-                }
-                catch
-                {
-                }
+                _ = Task.Run(() => CloseClientGracefullyAsync(connection.Socket, WebSocketCloseStatus.NormalClosure, "Disconnected by server"));
                 _clients.TryRemove(clientId, out _);
 
                 OnWebSocketServerCallback(WebSocketServerState.Disconnected,
@@ -402,15 +559,21 @@ namespace TTManager.Communication.WebSocket
 
         public IReadOnlyCollection<Guid> GetConnectedClients()
         {
-            return _clients.Keys.ToList().AsReadOnly();
+            return _clients.Keys.ToArray();
         }
 
         public void Dispose()
         {
             if (_disposed) return;
+            _disposed = true;
 
             CleanupServer();
-            _disposed = true;
+
+            lock (_callbackLock)
+            {
+                WebSocketServerCallback = null;
+            }
+
             OnWebSocketServerCallback(WebSocketServerState.Disconnected, "WebSocket server disposed");
         }
         #endregion

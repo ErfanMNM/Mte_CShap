@@ -41,7 +41,7 @@ namespace TApp.Views.Auth
             this.ShowSuccessTip("Đăng nhập thành công, vui lòng chờ trong giây lát");
             GlobalVarialbles.CurrentUser = ucLogin1.CurrentUser;
 
-            GlobalVarialbles.Logger?.WriteLogAsync(
+            GlobalVarialbles.Logger?.LogAsync(
                 GlobalVarialbles.CurrentUser.Username,
                 e_LogType.UserAction,
                 "Đăng nhập thành công",
@@ -56,7 +56,7 @@ namespace TApp.Views.Auth
         {
             this.ShowErrorTip($"{e.Message}");
 
-            GlobalVarialbles.Logger?.WriteLogAsync(
+            GlobalVarialbles.Logger?.LogAsync(
                 "Anonymous",
                 e_LogType.Error,
                 "Đăng nhập thất bại",

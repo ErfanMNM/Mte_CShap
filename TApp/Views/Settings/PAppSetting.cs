@@ -648,7 +648,7 @@ namespace TApp.Views.Settings
                     catch (Exception ex)
                     {
                         this.ShowErrorTip($"Lỗi cập nhật {propertyName}: {ex.Message}");
-                        PSLogger?.WriteLogAsync(
+                        PSLogger?.LogAsync(
                             GlobalVarialbles.CurrentUser.Username,
                             e_LogType.Error,
                             "Lỗi cập nhật cài đặt",
@@ -663,7 +663,7 @@ namespace TApp.Views.Settings
                 config.Save();
 
                 // Ghi log lưu cài đặt thành công
-                PSLogger?.WriteLogAsync(
+                PSLogger?.LogAsync(
                     GlobalVarialbles.CurrentUser.Username,
                     e_LogType.UserAction,
                     "Lưu cài đặt ứng dụng thành công",
@@ -676,7 +676,7 @@ namespace TApp.Views.Settings
             catch (Exception ex)
             {
                 this.ShowErrorTip($"Lỗi lưu cài đặt: {ex.Message}");
-                PSLogger?.WriteLogAsync(
+                PSLogger?.LogAsync(
                     GlobalVarialbles.CurrentUser.Username,
                     e_LogType.Error,
                     "Lỗi lưu cài đặt ứng dụng",
@@ -697,7 +697,7 @@ namespace TApp.Views.Settings
                     LoadCurrentConfig();
 
                     // Ghi log khôi phục mặc định
-                    PSLogger?.WriteLogAsync(
+                    PSLogger?.LogAsync(
                         GlobalVarialbles.CurrentUser.Username,
                         e_LogType.UserAction,
                         "Khôi phục cài đặt mặc định",
@@ -710,7 +710,7 @@ namespace TApp.Views.Settings
                 catch (Exception ex)
                 {
                     this.ShowErrorTip($"Lỗi khôi phục cài đặt: {ex.Message}");
-                    PSLogger?.WriteLogAsync(
+                    PSLogger?.LogAsync(
                         GlobalVarialbles.CurrentUser.Username,
                         e_LogType.Error,
                         "Lỗi khôi phục cài đặt mặc định",
@@ -722,7 +722,7 @@ namespace TApp.Views.Settings
             else
             {
                 // Ghi log người dùng hủy khôi phục
-                PSLogger?.WriteLogAsync(
+                PSLogger?.LogAsync(
                     GlobalVarialbles.CurrentUser.Username,
                     e_LogType.UserAction,
                     "Hủy khôi phục cài đặt mặc định",
@@ -803,7 +803,7 @@ namespace TApp.Views.Settings
 
         private void uc_UserManager1_OnAction(object sender, LoginActionEventArgs e)
         {
-            PSLogger.WriteLogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Sự kiện : " + e.Message, "", "UM01");
+            PSLogger.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Sự kiện : " + e.Message, "", "UM01");
             uiListBox1.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {e.Message}");
         }
         #endregion
@@ -812,7 +812,7 @@ namespace TApp.Views.Settings
         private void PAppSetting_Initialize(object sender, EventArgs e)
         {
             // Ghi log mở trang cài đặt
-            PSLogger?.WriteLogAsync(
+            PSLogger?.LogAsync(
                 GlobalVarialbles.CurrentUser.Username,
                 e_LogType.UserAction,
                 "Mở trang cài đặt ứng dụng",
