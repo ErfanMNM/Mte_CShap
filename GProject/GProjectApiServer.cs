@@ -92,7 +92,7 @@ public class GProjectApiServer : IDisposable
         _app.MapDelete("/api/datapool/{poolName}/code/{code}", HandleDeleteCode);
 
         // PO endpoints
-        _app.MapPost("/api/po", async (HttpContext context) => await POApiServer.HandleCreatePO(context));
+        _app.MapPost("/api/po", (Func<HttpContext, Task<IResult>>)POApiServer.HandleCreatePO);
         _app.MapGet("/api/po/list", POApiServer.HandleGetAllPO);
         _app.MapGet("/api/po/{orderNo}", (string orderNo) => POApiServer.HandleGetPO(orderNo));
         _app.MapGet("/api/po/{orderNo}/can-delete", (string orderNo) => POApiServer.HandleCanDeletePO(orderNo));
@@ -110,7 +110,7 @@ public class GProjectApiServer : IDisposable
             => await POApiServer.HandleCompleteCarton(context, orderNo));
 
         // Production status
-        _app.MapGet("/api/production/status", (_) => POApiServer.HandleGetProductionStatus());
+        _app.MapGet("/api/production/status", POApiServer.HandleGetProductionStatus);
 
         // Initialize PO database
         POApiServer.Initialize();
