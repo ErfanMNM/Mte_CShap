@@ -93,7 +93,7 @@ public class GProjectApiServer : IDisposable
 
         // PO endpoints
         _app.MapPost("/api/po", async (HttpContext context) => await POApiServer.HandleCreatePO(context));
-        _app.MapGet("/api/po/list", (_) => POApiServer.HandleGetAllPO());
+        _app.MapGet("/api/po/list", POApiServer.HandleGetAllPO);
         _app.MapGet("/api/po/{orderNo}", (string orderNo) => POApiServer.HandleGetPO(orderNo));
         _app.MapGet("/api/po/{orderNo}/can-delete", (string orderNo) => POApiServer.HandleCanDeletePO(orderNo));
         _app.MapDelete("/api/po/{orderNo}", (string orderNo) => POApiServer.HandleDeletePO(orderNo));
