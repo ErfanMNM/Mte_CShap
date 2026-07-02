@@ -98,6 +98,33 @@ namespace GProject.ProductionOrderHelpers
         [JsonPropertyName("activateUser")] public string ActivateUser { get; set; } = "";
     }
 
+    public class EnsureReadyRequest
+    {
+        [JsonPropertyName("autoLoadCodes")] public bool AutoLoadCodes { get; set; } = true;
+        [JsonPropertyName("cartonCapacity")] public int CartonCapacity { get; set; } = 24;
+    }
+
+    public class PODatabaseStatusResponse
+    {
+        [JsonPropertyName("success")] public bool Success { get; set; }
+        [JsonPropertyName("orderNo")] public string OrderNo { get; set; } = "";
+        [JsonPropertyName("isFullyInitialized")] public bool IsFullyInitialized { get; set; }
+        [JsonPropertyName("files")] public List<DBFileStatus> Files { get; set; } = new();
+        [JsonPropertyName("totalCodes")] public int TotalCodes { get; set; }
+        [JsonPropertyName("loadedCodes")] public int LoadedCodes { get; set; }
+        [JsonPropertyName("requiredCartons")] public int RequiredCartons { get; set; }
+        [JsonPropertyName("createdCartons")] public int CreatedCartons { get; set; }
+        [JsonPropertyName("message")] public string Message { get; set; } = "";
+    }
+
+    public class EnsureReadyResponse
+    {
+        [JsonPropertyName("success")] public bool Success { get; set; }
+        [JsonPropertyName("message")] public string Message { get; set; } = "";
+        [JsonPropertyName("codesLoaded")] public int CodesLoaded { get; set; }
+        [JsonPropertyName("cartonsCreated")] public int CartonsCreated { get; set; }
+    }
+
     #endregion
 
     /// <summary>
@@ -355,26 +382,111 @@ namespace GProject.ProductionOrderHelpers
             }
         }
 
+        public static Task<IResult> HandleCheckPOStatus(string orderNo)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(orderNo))
+                    return Task.FromResult(Results.BadRequest(new PODatabaseStatusResponse { Success = false, Message = "orderNo is required." }));
+
+                if (!GProduction.POLoader.Exists(orderNo))
+                    return Task.FromResult(Results.NotFound(new PODatabaseStatusResponse { Success = false, Message = $"PO '{orderNo}' not found." }));
+
+                // Lấy thông tin PO để biết orderQty
+                var poResult = GProduction.POLoader.GetByOrderNo(orderNo);
+                int orderQty = 0;
+                string gtin = "";
+                if (poResult.IsSuccess && poResult.Data != null && poResult.Data.Rows.Count > 0)
+                {
+                    orderQty = Convert.ToInt32(poResult.Data.Rows[0]["orderQty"]);
+                    gtin = poResult.Data.Rows[0]["gtin"]?.ToString() ?? "";
+                }
+
+                var status = GProduction.POCreator.CheckPODatabaseStatus(orderNo, orderQty);
+
+                return Task.FromResult(Results.Json(new PODatabaseStatusResponse
+                {
+                    Success = true,
+                    OrderNo = status.OrderNo,
+                    IsFullyInitialized = status.IsFullyInitialized,
+                    Files = status.Files,
+                    TotalCodes = status.TotalCodes,
+                    LoadedCodes = status.LoadedCodes,
+                    RequiredCartons = status.RequiredCartons,
+                    CreatedCartons = status.CreatedCartons,
+                    Message = status.Message
+                }));
+            }
+            catch (Exception ex)
+            {
+                LogError("POApiServer", $"Error checking PO status '{orderNo}': {ex.Message}", ex);
+                return Task.FromResult(Results.Json(new PODatabaseStatusResponse { Success = false, Message = ex.Message }, statusCode: 500));
+            }
+        }
+
+        public static async Task<IResult> HandleEnsurePODatabaseReady(HttpContext context, string orderNo)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(orderNo))
+                    return Results.BadRequest(new EnsureReadyResponse { Success = false, Message = "orderNo is required." });
+
+                if (!GProduction.POLoader.Exists(orderNo))
+                    return Results.NotFound(new EnsureReadyResponse { Success = false, Message = $"PO '{orderNo}' not found." });
+
+                var request = await context.Request.ReadFromJsonAsync<EnsureReadyRequest>();
+                bool autoLoadCodes = request?.AutoLoadCodes ?? true;
+                int cartonCapacity = request?.CartonCapacity ?? 24;
+
+                // Lấy thông tin PO
+                var poResult = GProduction.POLoader.GetByOrderNo(orderNo);
+                if (!poResult.IsSuccess || poResult.Data == null || poResult.Data.Rows.Count == 0)
+                    return Results.Json(new EnsureReadyResponse { Success = false, Message = "PO not found." }, statusCode: 404);
+
+                var row = poResult.Data.Rows[0];
+                string gtin = row["gtin"]?.ToString() ?? "";
+                int orderQty = Convert.ToInt32(row["orderQty"]);
+
+                var result = GProduction.POCreator.EnsurePODatabaseReady(orderNo, gtin, orderQty, cartonCapacity, autoLoadCodes);
+
+                LogInfo("POApiServer", $"EnsurePODatabaseReady({orderNo}): {result.message}");
+
+                return Results.Json(new EnsureReadyResponse
+                {
+                    Success = result.success,
+                    Message = result.message,
+                    CodesLoaded = result.codesLoaded,
+                    CartonsCreated = result.cartonsCreated
+                });
+            }
+            catch (Exception ex)
+            {
+                LogError("POApiServer", $"Error ensuring PO ready '{orderNo}': {ex.Message}", ex);
+                return Results.Json(new EnsureReadyResponse { Success = false, Message = ex.Message }, statusCode: 500);
+            }
+        }
+
         #endregion
 
         #region Codes Endpoints
 
-        public static Task<IResult> HandleGetCodes(string orderNo, int? status = null, string? cartonCode = null, int limit = 100)
+        public static Task<IResult> HandleGetCodes(string orderNo, int? status = null, string? cartonCode = null, int limit = 100, int offset = 0)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(orderNo))
                     return Task.FromResult(Results.BadRequest(new { success = false, message = "orderNo is required." }));
 
-                var result = GProduction.POLoader.GetCodes(orderNo, status, cartonCode);
+                // Get total count for pagination
+                int totalCount = GProduction.POLoader.CountCodes(orderNo, status, cartonCode);
+
+                var result = GProduction.POLoader.GetCodes(orderNo, status, cartonCode, limit, offset);
                 if (!result.IsSuccess || result.Data == null)
                     return Task.FromResult(Results.Json(new { success = false, message = result.Message }, statusCode: 404));
 
                 var codes = new List<object>();
-                int count = 0;
                 foreach (System.Data.DataRow row in result.Data.Rows)
                 {
-                    if (count++ >= limit) break;
                     codes.Add(new
                     {
                         id = Convert.ToInt32(row["ID"]),
@@ -386,7 +498,7 @@ namespace GProject.ProductionOrderHelpers
                         packingDate = row["PackingDate"]?.ToString()
                     });
                 }
-                return Task.FromResult(Results.Json(new { success = true, count = codes.Count, data = codes }));
+                return Task.FromResult(Results.Json(new { success = true, count = codes.Count, total = totalCount, offset = offset, limit = limit, data = codes }));
             }
             catch (Exception ex)
             {

@@ -92,13 +92,16 @@ public class GProjectApiServer : IDisposable
         _app.MapDelete("/api/datapool/{poolName}/code/{code}", HandleDeleteCode);
 
         // PO endpoints
-        _app.MapPost("/api/po", async (HttpContext context) => await POApiServer.HandleCreatePO(context));
-        _app.MapGet("/api/po/list", (_) => POApiServer.HandleGetAllPO());
+        _app.MapPost("/api/po", (Func<HttpContext, Task<IResult>>)POApiServer.HandleCreatePO);
+        _app.MapGet("/api/po/list", POApiServer.HandleGetAllPO);
         _app.MapGet("/api/po/{orderNo}", (string orderNo) => POApiServer.HandleGetPO(orderNo));
         _app.MapGet("/api/po/{orderNo}/can-delete", (string orderNo) => POApiServer.HandleCanDeletePO(orderNo));
+        _app.MapGet("/api/po/{orderNo}/status", (string orderNo) => POApiServer.HandleCheckPOStatus(orderNo));
+        _app.MapPost("/api/po/{orderNo}/ensure-ready", async (HttpContext context, string orderNo) 
+            => await POApiServer.HandleEnsurePODatabaseReady(context, orderNo));
         _app.MapDelete("/api/po/{orderNo}", (string orderNo) => POApiServer.HandleDeletePO(orderNo));
-        _app.MapGet("/api/po/{orderNo}/codes", (string orderNo, int? status, string? cartonCode, int limit = 100) 
-            => POApiServer.HandleGetCodes(orderNo, status, cartonCode, limit));
+        _app.MapGet("/api/po/{orderNo}/codes", (string orderNo, int? status, string? cartonCode, int limit = 100, int offset = 0) 
+            => POApiServer.HandleGetCodes(orderNo, status, cartonCode, limit, offset));
         _app.MapPost("/api/po/{orderNo}/activate", async (HttpContext context, string orderNo) 
             => await POApiServer.HandleActivateCode(context, orderNo));
         _app.MapPost("/api/po/{orderNo}/pack", async (HttpContext context, string orderNo) 
@@ -110,7 +113,7 @@ public class GProjectApiServer : IDisposable
             => await POApiServer.HandleCompleteCarton(context, orderNo));
 
         // Production status
-        _app.MapGet("/api/production/status", (_) => POApiServer.HandleGetProductionStatus());
+        _app.MapGet("/api/production/status", POApiServer.HandleGetProductionStatus);
 
         // Initialize PO database
         POApiServer.Initialize();

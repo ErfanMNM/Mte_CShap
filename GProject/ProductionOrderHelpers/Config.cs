@@ -260,6 +260,6 @@ namespace GProject.ProductionOrderHelpers
         /// Lấy đường dẫn DataPool theo GTIN
         /// </summary>
         public static string GetDataPoolPath(string gtin)
-            => Path.Combine(GProject.DataPoolHelper.DataPoolStatic.DataPath, $"{gtin}.vnqrdb");
+            => Path.Combine(GProject.DataPoolHelper.DataPoolStatic.DataPath, $"{gtin}.db");
     }
 }

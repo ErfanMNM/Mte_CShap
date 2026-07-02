@@ -33,8 +33,10 @@ namespace GProject.ProductionOrderHelpers
             public static Result Update(string orderNo, POInfo po) => ProductionOrderHelpers.POLoader.Update(orderNo, po);
             public static Result Delete(string orderNo) => ProductionOrderHelpers.POLoader.Delete(orderNo);
             public static bool Exists(string orderNo) => ProductionOrderHelpers.POLoader.Exists(orderNo);
-            public static Result GetCodes(string orderNo, int? status = null, string? cartonCode = null)
-                => ProductionOrderHelpers.POLoader.GetCodes(orderNo, status, cartonCode);
+            public static Result GetCodes(string orderNo, int? status = null, string? cartonCode = null, int limit = 100, int offset = 0)
+                => ProductionOrderHelpers.POLoader.GetCodes(orderNo, status, cartonCode, limit, offset);
+            public static int CountCodes(string orderNo, int? status = null, string? cartonCode = null)
+                => ProductionOrderHelpers.POLoader.CountCodes(orderNo, status, cartonCode);
             public static Result GetCodeByCode(string orderNo, string code)
                 => ProductionOrderHelpers.POLoader.GetCodeByCode(orderNo, code);
             public static bool CodeExists(string orderNo, string code)
@@ -55,6 +57,11 @@ namespace GProject.ProductionOrderHelpers
                 => ProductionOrderHelpers.POCreator.CreateEmptyCartons(orderNo, count);
             public static (bool success, string message, int createdCount) CreateRequiredCartons(string orderNo, int orderQty, int cartonCapacity = 24)
                 => ProductionOrderHelpers.POCreator.CreateRequiredCartons(orderNo, orderQty, cartonCapacity);
+            public static PODatabaseStatus CheckPODatabaseStatus(string orderNo, int orderQty = 0, int cartonCapacity = 24)
+                => ProductionOrderHelpers.POCreator.CheckPODatabaseStatus(orderNo, orderQty, cartonCapacity);
+            public static (bool success, string message, int codesLoaded, int cartonsCreated) EnsurePODatabaseReady(
+                string orderNo, string gtin, int orderQty, int cartonCapacity = 24, bool autoLoadCodes = true)
+                => ProductionOrderHelpers.POCreator.EnsurePODatabaseReady(orderNo, gtin, orderQty, cartonCapacity, autoLoadCodes);
         }
 
         /// <summary>

@@ -314,6 +314,35 @@ else
 }
 ```
 
+### 10. Kiểm tra & Setup Database PO
+
+```csharp
+// Kiểm tra trạng thái database của PO
+var status = GProduction.POCreator.CheckPODatabaseStatus("PO001", orderQty: 100, cartonCapacity: 24);
+
+Console.WriteLine($"PO ready: {status.IsFullyInitialized}");
+Console.WriteLine($"Codes: {status.LoadedCodes}/{status.TotalCodes}");
+Console.WriteLine($"Cartons: {status.CreatedCartons}/{status.RequiredCartons}");
+foreach (var file in status.Files)
+{
+    Console.WriteLine($"{file.FileName}: {(file.Exists ? "OK" : "MISSING")}");
+}
+
+// Tự động setup PO database (tạo file, nạp mã, tạo thùng nếu thiếu)
+var setupResult = GProduction.POCreator.EnsurePODatabaseReady(
+    "PO001",           // orderNo
+    "1234567890123",   // gtin
+    100,              // orderQty
+    24,               // cartonCapacity
+    autoLoadCodes: true
+);
+
+if (setupResult.success)
+{
+    Console.WriteLine($"Setup thành công! Nạp {setupResult.codesLoaded} mã, tạo {setupResult.cartonsCreated} thùng");
+}
+```
+
 ---
 
 ## Sử Dụng - REST API
@@ -384,6 +413,50 @@ GET /api/po/{orderNo}/can-delete
 **Xóa PO**
 ```http
 DELETE /api/po/{orderNo}
+```
+
+**Kiểm tra trạng thái Database PO**
+```http
+GET /api/po/{orderNo}/status
+```
+Response:
+```json
+{
+  "success": true,
+  "orderNo": "PO001",
+  "isFullyInitialized": true,
+  "files": [
+    {"fileName": "PO001.db", "path": "C:/GProject/PODatabases/...", "exists": true, "fileSize": 4096},
+    {"fileName": "Record_Active_PO001.db", "exists": true, "fileSize": 4096},
+    {"fileName": "Record_Packing_PO001.db", "exists": true, "fileSize": 4096},
+    {"fileName": "Carton_PO001.db", "exists": true, "fileSize": 4096}
+  ],
+  "totalCodes": 100,
+  "loadedCodes": 100,
+  "requiredCartons": 5,
+  "createdCartons": 5,
+  "message": "PO ready - all files initialized and data loaded."
+}
+```
+
+**Tự động Setup Database PO**
+```http
+POST /api/po/{orderNo}/ensure-ready
+Content-Type: application/json
+
+{
+  "autoLoadCodes": true,
+  "cartonCapacity": 24
+}
+```
+Response:
+```json
+{
+  "success": true,
+  "message": "PO ready. Loaded 100 codes, 5 cartons.",
+  "codesLoaded": 100,
+  "cartonsCreated": 5
+}
 ```
 
 #### Codes
@@ -643,5 +716,8 @@ GProduction.Initialize();
 ---
 
 ## Version
-- Version: 1.0.0
-- Last Updated: 2026-07-01
+- Version: 1.1.0
+- Last Updated: 2026-07-02
+- Changelog:
+  - 1.1.0: Thêm CheckPODatabaseStatus() và EnsurePODatabaseReady() để kiểm tra và tự động setup PO database
+  - 1.0.0: Phiên bản đầu tiên

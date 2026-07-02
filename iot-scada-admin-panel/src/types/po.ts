@@ -146,3 +146,35 @@ export interface APIResponse<T> {
   message?: string;
   count?: number;
 }
+
+// PO Database Status Types
+export interface DBFileStatus {
+  fileName: string;
+  path: string;
+  exists: boolean;
+  fileSize?: number;
+}
+
+export interface PODatabaseStatus {
+  success: boolean;
+  orderNo: string;
+  isFullyInitialized: boolean;
+  files: DBFileStatus[];
+  totalCodes: number;
+  loadedCodes: number;
+  requiredCartons: number;
+  createdCartons: number;
+  message: string;
+}
+
+export interface EnsureReadyRequest {
+  autoLoadCodes: boolean;
+  cartonCapacity: number;
+}
+
+export interface EnsureReadyResponse {
+  success: boolean;
+  message: string;
+  codesLoaded: number;
+  cartonsCreated: number;
+}
