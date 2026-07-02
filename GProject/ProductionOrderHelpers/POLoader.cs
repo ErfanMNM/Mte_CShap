@@ -235,7 +235,7 @@ namespace GProject.ProductionOrderHelpers
         /// <summary>
         /// Lấy danh sách codes trong PO với optional filters
         /// </summary>
-        public static Result GetCodes(string orderNo, int? status = null, string? cartonCode = null)
+        public static Result GetCodes(string orderNo, int? status = null, string? cartonCode = null, int limit = 100, int offset = 0)
         {
             try
             {
@@ -257,6 +257,7 @@ namespace GProject.ProductionOrderHelpers
                     parameters.Add(new SqliteParameter("@cartonCode", cartonCode));
                 }
                 sql += " ORDER BY ID";
+                sql += $" LIMIT {limit} OFFSET {offset}";
 
                 var table = SQLiteHelper.ExecuteQuery(GetConnectionString(dbPath), sql, parameters.ToArray());
                 return Result.FromDataTable(table, $"Lấy {table.Rows.Count} mã thành công.", "Không tìm thấy mã nào.");
@@ -265,6 +266,36 @@ namespace GProject.ProductionOrderHelpers
             {
                 return Result.Fail($"Lỗi truy vấn codes: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Đếm tổng số codes trong PO theo filter
+        /// </summary>
+        public static int CountCodes(string orderNo, int? status = null, string? cartonCode = null)
+        {
+            try
+            {
+                string dbPath = Config.GetPODBPath(orderNo);
+                if (!File.Exists(dbPath)) return 0;
+
+                string sql = "SELECT COUNT(*) FROM UniqueCodes WHERE 1=1";
+                var parameters = new List<SqliteParameter>();
+
+                if (status.HasValue)
+                {
+                    sql += " AND Status = @Status";
+                    parameters.Add(new SqliteParameter("@Status", status.Value));
+                }
+                if (!string.IsNullOrWhiteSpace(cartonCode))
+                {
+                    sql += " AND cartonCode = @cartonCode";
+                    parameters.Add(new SqliteParameter("@cartonCode", cartonCode));
+                }
+
+                var result = SQLiteHelper.ExecuteScalar(GetConnectionString(dbPath), sql, parameters.ToArray());
+                return Convert.ToInt32(result);
+            }
+            catch { return 0; }
         }
 
         /// <summary>

@@ -13,6 +13,9 @@ import type {
   POCartonListResponse,
   ProductionStatusResponse,
   ApiResponse,
+  PODatabaseStatus,
+  EnsureReadyRequest,
+  EnsureReadyResponse,
 } from "../types/po";
 
 const PO_API_BASE_URL =
@@ -86,19 +89,20 @@ export const poApi = {
   },
 
   // Codes
-  async getCodes(orderNo: string, status?: number, cartonCode?: string, limit = 100): Promise<POCode[]> {
+  async getCodes(orderNo: string, status?: number, cartonCode?: string, limit = 100, offset = 0): Promise<{ data: POCode[]; total: number }> {
     const params = new URLSearchParams();
     if (status !== undefined) params.append("status", status.toString());
     if (cartonCode) params.append("cartonCode", cartonCode);
     params.append("limit", limit.toString());
+    params.append("offset", offset.toString());
 
-    const response = await apiClient.get<POCodeListResponse>(
+    const response = await apiClient.get<POCodeListResponse & { total?: number }>(
       `/api/po/${encodeURIComponent(orderNo)}/codes?${params.toString()}`,
     );
     if (!response.data.success) {
       throw new Error(response.data.message || "Failed to fetch codes");
     }
-    return response.data.data || [];
+    return { data: response.data.data || [], total: response.data.total || 0 };
   },
 
   async activateCode(orderNo: string, code: string, activateUser = "Frontend"): Promise<ApiResponse> {
@@ -147,6 +151,27 @@ export const poApi = {
   // Production Status
   async getProductionStatus(): Promise<ProductionStatusResponse> {
     const response = await apiClient.get<ProductionStatusResponse>("/api/production/status");
+    return response.data;
+  },
+
+  // Database Status
+  async getPOStatus(orderNo: string): Promise<PODatabaseStatus> {
+    const response = await apiClient.get<PODatabaseStatus>(
+      `/api/po/${encodeURIComponent(orderNo)}/status`,
+    );
+    return response.data;
+  },
+
+  async ensurePODatabaseReady(
+    orderNo: string,
+    autoLoadCodes = true,
+    cartonCapacity = 24,
+  ): Promise<EnsureReadyResponse> {
+    const body: EnsureReadyRequest = { autoLoadCodes, cartonCapacity };
+    const response = await apiClient.post<EnsureReadyResponse>(
+      `/api/po/${encodeURIComponent(orderNo)}/ensure-ready`,
+      body,
+    );
     return response.data;
   },
 };

@@ -34,10 +34,11 @@ import type {
   CreatePORequest,
   POCode,
   POCarton,
+  PODatabaseStatus,
 } from "../../types/po";
 
 type TabKey = "list" | "create" | "detail";
-type DetailTabKey = "info" | "codes" | "cartons";
+type DetailTabKey = "info" | "codes" | "cartons" | "database";
 
 interface POManagerViewProps {
   onNavigate?: (route: string) => void;
@@ -84,10 +85,18 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
   const [poCodes, setPoCodes] = useState<POCode[]>([]);
   const [isLoadingCodes, setIsLoadingCodes] = useState(false);
   const [codesFilter, setCodesFilter] = useState<"all" | "unused" | "active" | "packed">("all");
+  const [codesPage, setCodesPage] = useState(1);
+  const [totalCodes, setTotalCodes] = useState(0);
+  const CODES_PAGE_SIZE = 100;
 
   // Cartons for PO detail
   const [poCartons, setPoCartons] = useState<POCarton[]>([]);
   const [isLoadingCartons, setIsLoadingCartons] = useState(false);
+
+  // Database status
+  const [dbStatus, setDbStatus] = useState<PODatabaseStatus | null>(null);
+  const [isLoadingDbStatus, setIsLoadingDbStatus] = useState(false);
+  const [isEnsuringReady, setIsEnsuringReady] = useState(false);
 
   // Delete PO state
   const [deleteTarget, setDeleteTarget] = useState<POListItem | null>(null);
@@ -172,13 +181,23 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
     }
   };
 
-  const fetchPOCodes = async (orderNo: string) => {
+  const fetchPOCodes = async (orderNo: string, page = 1) => {
     setIsLoadingCodes(true);
+    const offset = (page - 1) * CODES_PAGE_SIZE;
+    // Chuyển filter sang status number
+    let statusNum: number | undefined;
+    if (codesFilter === "unused") statusNum = 0;
+    else if (codesFilter === "active") statusNum = 1;
+    // packed cần filter theo cartonCode, sẽ load all và filter ở frontend
+    
     try {
-      const codes = await poApi.getCodes(orderNo);
-      setPoCodes(codes);
+      const result = await poApi.getCodes(orderNo, statusNum, undefined, CODES_PAGE_SIZE, offset);
+      setPoCodes(result.data);
+      setTotalCodes(result.total);
+      setCodesPage(page);
     } catch (err) {
       setPoCodes([]);
+      setTotalCodes(0);
     } finally {
       setIsLoadingCodes(false);
     }
@@ -196,11 +215,55 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
     }
   };
 
+  const fetchPODatabaseStatus = async (orderNo: string) => {
+    setIsLoadingDbStatus(true);
+    try {
+      const status = await poApi.getPOStatus(orderNo);
+      setDbStatus(status);
+    } catch {
+      setDbStatus(null);
+    } finally {
+      setIsLoadingDbStatus(false);
+    }
+  };
+
+  const handleEnsureDatabaseReady = async () => {
+    if (!selectedPO) return;
+    setIsEnsuringReady(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const result = await poApi.ensurePODatabaseReady(
+        selectedPO.orderNo,
+        true,
+        selectedPO.orderQty > 0 ? Math.ceil(selectedPO.orderQty / 24) : 5,
+      );
+      if (result.success) {
+        setSuccess(result.message || "Database ready!");
+      } else {
+        setError(result.message || "Failed to setup database");
+      }
+      await fetchPODatabaseStatus(selectedPO.orderNo);
+      await fetchPOList();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to setup database");
+    } finally {
+      setIsEnsuringReady(false);
+    }
+  };
+
   const handleDetailTabChange = (tab: DetailTabKey) => {
     setDetailTab(tab);
     if (selectedPO) {
-      if (tab === "codes") fetchPOCodes(selectedPO.orderNo);
+      if (tab === "codes") fetchPOCodes(selectedPO.orderNo, 1);
       if (tab === "cartons") fetchPOCartons(selectedPO.orderNo);
+      if (tab === "database") fetchPODatabaseStatus(selectedPO.orderNo);
+    }
+  };
+
+  const handleCodesPageChange = (page: number) => {
+    if (selectedPO) {
+      fetchPOCodes(selectedPO.orderNo, page);
     }
   };
 
@@ -312,29 +375,28 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
     }
   };
 
-  const getFilteredCodes = () => {
-    switch (codesFilter) {
-      case "unused":
-        return poCodes.filter(c => c.status === 0);
-      case "active":
-        return poCodes.filter(c => c.status === 1);
-      case "packed":
-        return poCodes.filter(c => c.cartonCode && c.cartonCode !== "0");
-      default:
-        return poCodes;
+  const handleCodesFilterChange = (filter: "all" | "unused" | "active" | "packed") => {
+    setCodesFilter(filter);
+    if (selectedPO) {
+      fetchPOCodes(selectedPO.orderNo, 1);
     }
   };
 
+  const getFilteredCodes = () => {
+    // Filter đã xử lý ở backend, trả về tất cả codes của trang hiện tại
+    return poCodes;
+  };
+
   const getCodeStatusLabel = (code: POCode) => {
-    if (code.cartonCode && code.cartonCode !== "0") return { label: "Packed", class: "bg-purple-100 text-purple-700" };
-    if (code.status === 1) return { label: "Active", class: "bg-blue-100 text-blue-700" };
-    return { label: "Unused", class: "bg-green-100 text-green-700" };
+    if (code.cartonCode && code.cartonCode !== "0") return { label: "Đã đóng gói (Packed)", class: "bg-purple-100 text-purple-700" };
+    if (code.status === 1) return { label: "Đã kích hoạt (Active)", class: "bg-blue-100 text-blue-700" };
+    return { label: "Chưa dùng (Unused)", class: "bg-green-100 text-green-700" };
   };
 
   const getCartonStatusLabel = (carton: POCarton) => {
-    if (carton.completedDatetime && carton.completedDatetime !== "0") return { label: "Closed", class: "bg-slate-100 text-slate-700" };
-    if (carton.startDatetime && carton.startDatetime !== "0") return { label: "Open", class: "bg-amber-100 text-amber-700" };
-    return { label: "Empty", class: "bg-slate-50 text-slate-400" };
+    if (carton.completedDatetime && carton.completedDatetime !== "0") return { label: "Đã đóng (Closed)", class: "bg-slate-100 text-slate-700" };
+    if (carton.startDatetime && carton.startDatetime !== "0") return { label: "Đang mở (Open)", class: "bg-amber-100 text-amber-700" };
+    return { label: "Trống (Empty)", class: "bg-slate-50 text-slate-400" };
   };
 
   // ─────────────────────────────────────────────────────────────
@@ -735,13 +797,16 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
           {/* Detail Tabs */}
           <div className="flex items-center gap-1.5 bg-slate-100/60 p-1.5 rounded-2xl shrink-0 w-fit">
             <button onClick={() => setDetailTab("info")} className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all ${detailTab === "info" ? "bg-white text-blue-700 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
-              <FileText className="w-4 h-4" /> Info
+              <FileText className="w-4 h-4" /> Thông tin (Info)
             </button>
             <button onClick={() => handleDetailTabChange("codes")} className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all ${detailTab === "codes" ? "bg-white text-blue-700 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
-              <Code className="w-4 h-4" /> Codes ({poCodes.length})
+              <Code className="w-4 h-4" /> Mã (Codes) ({poCodes.length})
             </button>
             <button onClick={() => handleDetailTabChange("cartons")} className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all ${detailTab === "cartons" ? "bg-white text-blue-700 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
-              <Box className="w-4 h-4" /> Cartons ({poCartons.length})
+              <Box className="w-4 h-4" /> Thùng (Cartons) ({poCartons.length})
+            </button>
+            <button onClick={() => handleDetailTabChange("database")} className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all ${detailTab === "database" ? "bg-white text-blue-700 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
+              <Database className="w-4 h-4" /> Cơ sở dữ liệu (Database)
             </button>
           </div>
 
@@ -752,26 +817,26 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
                 <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
                   <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-blue-600" /> PO Detail:{" "}
+                    <FileText className="w-4 h-4 text-blue-600" /> Chi tiết PO (PO Detail):{" "}
                     <span className="font-mono text-blue-700">{selectedPO.orderNo}</span>
                   </h2>
                 </div>
                 <div className="p-4 xl:p-6 grid grid-cols-1 md:grid-cols-2 gap-x-6">
-                  <DetailRow label="Order No." value={selectedPO.orderNo} mono />
-                  <DetailRow label="Order Qty" value={selectedPO.orderQty?.toLocaleString()} />
+                  <DetailRow label="Mã đơn hàng (Order No.)" value={selectedPO.orderNo} mono />
+                  <DetailRow label="Số lượng đặt (Order Qty)" value={selectedPO.orderQty?.toLocaleString()} />
                   <DetailRow label="GTIN" value={selectedPO.gtin} mono />
-                  <DetailRow label="Product Name" value={selectedPO.productName} />
-                  <DetailRow label="Product Code" value={selectedPO.productCode} />
-                  <DetailRow label="Lot Number" value={selectedPO.lotNumber} />
+                  <DetailRow label="Tên sản phẩm (Product Name)" value={selectedPO.productName} />
+                  <DetailRow label="Mã sản phẩm (Product Code)" value={selectedPO.productCode} />
+                  <DetailRow label="Số lô (Lot Number)" value={selectedPO.lotNumber} />
                   <DetailRow label="Site" value={selectedPO.site} icon={Building2} />
-                  <DetailRow label="Factory" value={selectedPO.factory} icon={Factory} />
-                  <DetailRow label="Production Line" value={selectedPO.productionLine} />
-                  <DetailRow label="Shift" value={selectedPO.shift} />
-                  <DetailRow label="Production Date" value={selectedPO.productionDate} icon={Calendar} />
-                  <DetailRow label="Customer Order No." value={selectedPO.customerOrderNo} />
-                  <DetailRow label="UOM" value={selectedPO.uom} />
-                  <DetailRow label="Created Time" value={formatDate(selectedPO.createdTime)} />
-                  <DetailRow label="Modified Time" value={formatDate(selectedPO.modifiedTime)} />
+                  <DetailRow label="Nhà máy (Factory)" value={selectedPO.factory} icon={Factory} />
+                  <DetailRow label="Dây chuyền (Production Line)" value={selectedPO.productionLine} />
+                  <DetailRow label="Ca (Shift)" value={selectedPO.shift} />
+                  <DetailRow label="Ngày sản xuất (Production Date)" value={selectedPO.productionDate} icon={Calendar} />
+                  <DetailRow label="Mã đơn hàng KH (Customer Order No.)" value={selectedPO.customerOrderNo} />
+                  <DetailRow label="Đơn vị (UOM)" value={selectedPO.uom} />
+                  <DetailRow label="Thời gian tạo (Created Time)" value={formatDate(selectedPO.createdTime)} />
+                  <DetailRow label="Thời gian sửa (Modified Time)" value={formatDate(selectedPO.modifiedTime)} />
                 </div>
               </div>
 
@@ -779,36 +844,36 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
               <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
                 <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
                   <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-blue-600" /> Overview
+                    <Layers className="w-4 h-4 text-blue-600" /> Tổng quan (Overview)
                   </h2>
                 </div>
                 <div className="p-4 xl:p-6 flex flex-col gap-3">
                   <div className="rounded-2xl border border-blue-200/60 bg-blue-50/50 p-4 text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 opacity-70 mb-1">Order Qty</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 opacity-70 mb-1">Số lượng đặt (Order Qty)</div>
                     <div className="text-3xl font-black text-blue-800 tracking-tight">{selectedPO.orderQty?.toLocaleString() || "—"}</div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-xl border border-green-200/60 bg-green-50/50 p-3 text-center">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-green-600 mb-1">Active</div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-green-600 mb-1">Đã kích hoạt (Active)</div>
                       <div className="text-2xl font-black text-green-700">{selectedPO.stats?.activeCodes?.toLocaleString() || 0}</div>
                     </div>
                     <div className="rounded-xl border border-purple-200/60 bg-purple-50/50 p-3 text-center">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-purple-600 mb-1">Packed</div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-purple-600 mb-1">Đã đóng gói (Packed)</div>
                       <div className="text-2xl font-black text-purple-700">{selectedPO.stats?.packedCodes?.toLocaleString() || 0}</div>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-3 text-center">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Cartons</div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Thùng (Cartons)</div>
                       <div className="text-2xl font-black text-slate-700">{selectedPO.stats?.cartonCount || 0}</div>
                     </div>
                     <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-3 text-center">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Closed</div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Đã đóng (Closed)</div>
                       <div className="text-2xl font-black text-slate-700">{selectedPO.stats?.closedCartons || 0}</div>
                     </div>
                   </div>
                   <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Progress</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Tiến độ (Progress)</div>
                     <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
                       <div
                         className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
@@ -827,21 +892,21 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
           {/* CODES TAB */}
           {detailTab === "codes" && (
             <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
-              <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5 flex items-center justify-between">
+              <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5 flex items-center justify-between flex-wrap gap-3">
                 <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                  <Code className="w-4 h-4 text-blue-600" /> Codes in PO
+                  <Code className="w-4 h-4 text-blue-600" /> Mã trong PO (Codes in PO)
                 </h2>
                 <div className="flex items-center gap-2">
                   <div className="flex bg-slate-100 rounded-lg p-1">
                     {(["all", "unused", "active", "packed"] as const).map((filter) => (
-                      <button key={filter} onClick={() => setCodesFilter(filter)}
+                      <button key={filter} onClick={() => handleCodesFilterChange(filter)}
                         className={`px-3 py-1 text-[10px] font-bold rounded-md transition-colors ${codesFilter === filter ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-                        {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                        {filter === "all" ? "Tất cả (All)" : filter === "unused" ? "Chưa dùng (Unused)" : filter === "active" ? "Đã kích hoạt (Active)" : "Đã đóng gói (Packed)"}
                       </button>
                     ))}
                   </div>
-                  <button onClick={() => selectedPO && fetchPOCodes(selectedPO.orderNo)} className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                    <RefreshCw className={`w-3 h-3 ${isLoadingCodes ? "animate-spin" : ""}`} /> Refresh
+                  <button onClick={() => selectedPO && fetchPOCodes(selectedPO.orderNo, codesPage)} className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                    <RefreshCw className={`w-3 h-3 ${isLoadingCodes ? "animate-spin" : ""}`} /> Làm mới
                   </button>
                 </div>
               </div>
@@ -849,22 +914,22 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 {isLoadingCodes ? (
                   <div className="text-center text-slate-400 py-10">
                     <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
-                    <span className="text-sm">Loading codes...</span>
+                    <span className="text-sm">Đang tải mã...</span>
                   </div>
                 ) : getFilteredCodes().length === 0 ? (
                   <div className="text-center text-slate-400 py-10">
                     <Code className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    <span className="text-sm">No codes found</span>
+                    <span className="text-sm">Không tìm thấy mã nào</span>
                   </div>
                 ) : (
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="text-[10px] uppercase text-slate-400 bg-slate-50 border-b border-slate-100">
-                        <th className="px-4 py-3 font-bold text-left">Code</th>
-                        <th className="px-4 py-3 font-bold text-center">Status</th>
-                        <th className="px-4 py-3 font-bold text-left">Carton</th>
-                        <th className="px-4 py-3 font-bold text-left">Activate Date</th>
-                        <th className="px-4 py-3 font-bold text-left">Activate User</th>
+                        <th className="px-4 py-3 font-bold text-left">Mã (Code)</th>
+                        <th className="px-4 py-3 font-bold text-center">Trạng thái (Status)</th>
+                        <th className="px-4 py-3 font-bold text-left">Thùng (Carton)</th>
+                        <th className="px-4 py-3 font-bold text-left">Ngày kích hoạt (Activate Date)</th>
+                        <th className="px-4 py-3 font-bold text-left">Người kích hoạt (Activate User)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -886,6 +951,59 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                   </table>
                 )}
               </div>
+              {/* Pagination */}
+              {totalCodes > CODES_PAGE_SIZE && (
+                <div className="flex items-center justify-between px-4 xl:px-6 py-3 border-t border-slate-100 bg-slate-50/50">
+                  <span className="text-xs text-slate-500">
+                    Hiển thị {(codesPage - 1) * CODES_PAGE_SIZE + 1} - {Math.min(codesPage * CODES_PAGE_SIZE, totalCodes)} / {totalCodes} mã
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleCodesPageChange(codesPage - 1)}
+                      disabled={codesPage <= 1 || isLoadingCodes}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      ← Trước
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, Math.ceil(totalCodes / CODES_PAGE_SIZE)) }, (_, i) => {
+                        let pageNum: number;
+                        const totalPages = Math.ceil(totalCodes / CODES_PAGE_SIZE);
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (codesPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (codesPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = codesPage - 2 + i;
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => handleCodesPageChange(pageNum)}
+                            disabled={isLoadingCodes}
+                            className={`w-8 h-8 text-xs font-bold rounded-lg border transition-colors ${
+                              codesPage === pageNum
+                                ? "bg-blue-600 text-white border-blue-600"
+                                : "border-slate-200 hover:bg-white text-slate-600 disabled:opacity-50"
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      onClick={() => handleCodesPageChange(codesPage + 1)}
+                      disabled={codesPage >= Math.ceil(totalCodes / CODES_PAGE_SIZE) || isLoadingCodes}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Sau →
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -894,32 +1012,32 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
             <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
               <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5 flex items-center justify-between">
                 <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                  <Box className="w-4 h-4 text-blue-600" /> Cartons in PO
+                  <Box className="w-4 h-4 text-blue-600" /> Thùng trong PO (Cartons in PO)
                 </h2>
                 <button onClick={() => selectedPO && fetchPOCartons(selectedPO.orderNo)} className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                  <RefreshCw className={`w-3 h-3 ${isLoadingCartons ? "animate-spin" : ""}`} /> Refresh
+                  <RefreshCw className={`w-3 h-3 ${isLoadingCartons ? "animate-spin" : ""}`} /> Làm mới
                 </button>
               </div>
               <div className="overflow-auto max-h-[calc(100vh-380px)]">
                 {isLoadingCartons ? (
                   <div className="text-center text-slate-400 py-10">
                     <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
-                    <span className="text-sm">Loading cartons...</span>
+                    <span className="text-sm">Đang tải thùng...</span>
                   </div>
                 ) : poCartons.length === 0 ? (
                   <div className="text-center text-slate-400 py-10">
                     <Box className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    <span className="text-sm">No cartons found</span>
+                    <span className="text-sm">Không tìm thấy thùng nào</span>
                   </div>
                 ) : (
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="text-[10px] uppercase text-slate-400 bg-slate-50 border-b border-slate-100">
                         <th className="px-4 py-3 font-bold text-center">ID</th>
-                        <th className="px-4 py-3 font-bold text-center">Status</th>
-                        <th className="px-4 py-3 font-bold text-left">Start Time</th>
-                        <th className="px-4 py-3 font-bold text-left">Completed Time</th>
-                        <th className="px-4 py-3 font-bold text-left">User</th>
+                        <th className="px-4 py-3 font-bold text-center">Trạng thái (Status)</th>
+                        <th className="px-4 py-3 font-bold text-left">Thời gian bắt đầu (Start Time)</th>
+                        <th className="px-4 py-3 font-bold text-left">Thời gian hoàn thành (Completed Time)</th>
+                        <th className="px-4 py-3 font-bold text-left">Người dùng (User)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -941,6 +1059,176 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                   </table>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* DATABASE TAB */}
+          {detailTab === "database" && (
+            <div className="space-y-4">
+              {/* Status Header */}
+              <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+                <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5 flex items-center justify-between">
+                  <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
+                    <Database className="w-4 h-4 text-blue-600" /> Trạng thái CSDL (Database Status)
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => selectedPO && fetchPODatabaseStatus(selectedPO.orderNo)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isLoadingDbStatus ? "animate-spin" : ""}`} /> Làm mới
+                    </button>
+                    <button
+                      onClick={handleEnsureDatabaseReady}
+                      disabled={isEnsuringReady}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                        isEnsuringReady
+                          ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                          : "bg-green-600 hover:bg-green-700 text-white"
+                      }`}
+                    >
+                      {isEnsuringReady ? (
+                        <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Đang thiết lập...</>
+                      ) : (
+                        <><CheckCircle className="w-3.5 h-3.5" /> Thiết lập tự động</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-4 xl:p-6">
+                  {isLoadingDbStatus ? (
+                    <div className="flex items-center gap-3 text-slate-500 py-8 justify-center">
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                      <span className="text-sm font-medium">Đang tải trạng thái...</span>
+                    </div>
+                  ) : dbStatus ? (
+                    <div className="space-y-4">
+                      {/* Status Banner */}
+                      <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${
+                        dbStatus.isFullyInitialized
+                          ? "bg-green-50 border-green-200 text-green-800"
+                          : "bg-amber-50 border-amber-200 text-amber-800"
+                      }`}>
+                        {dbStatus.isFullyInitialized ? (
+                          <CheckCircle className="w-5 h-5 shrink-0" />
+                        ) : (
+                          <AlertCircle className="w-5 h-5 shrink-0" />
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm font-bold">
+                            {dbStatus.isFullyInitialized ? "Cơ sở dữ liệu đã sẵn sàng" : "Cơ sở dữ liệu chưa sẵn sàng"}
+                          </p>
+                          <p className="text-xs opacity-80">{dbStatus.message}</p>
+                        </div>
+                      </div>
+
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-3 text-center">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Mã đã nạp (Loaded Codes)</div>
+                          <div className="text-2xl font-black text-slate-700">
+                            {dbStatus.loadedCodes}
+                            <span className="text-sm font-normal text-slate-400">/{dbStatus.totalCodes}</span>
+                          </div>
+                        </div>
+                        <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-3 text-center">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Thùng đã tạo (Created Cartons)</div>
+                          <div className="text-2xl font-black text-slate-700">
+                            {dbStatus.createdCartons}
+                            <span className="text-sm font-normal text-slate-400">/{dbStatus.requiredCartons}</span>
+                          </div>
+                        </div>
+                        <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-3 text-center">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">File CSDL (DB Files)</div>
+                          <div className="text-2xl font-black text-slate-700">
+                            {dbStatus.files.filter(f => f.exists).length}
+                            <span className="text-sm font-normal text-slate-400">/4</span>
+                          </div>
+                        </div>
+                        <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-3 text-center">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">File thiếu (Missing Files)</div>
+                          <div className="text-2xl font-black text-slate-700">
+                            {dbStatus.files.filter(f => !f.exists).length}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Progress Bars */}
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="font-semibold text-slate-600">Mã đã nạp (Codes Loaded)</span>
+                            <span className="text-slate-500">{dbStatus.totalCodes > 0 ? Math.round(dbStatus.loadedCodes / dbStatus.totalCodes * 100) : 0}%</span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                            <div
+                              className="bg-blue-500 h-2.5 rounded-full transition-all duration-500"
+                              style={{ width: `${dbStatus.totalCodes > 0 ? Math.min(dbStatus.loadedCodes / dbStatus.totalCodes * 100, 100) : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="font-semibold text-slate-600">Thùng đã tạo (Cartons Created)</span>
+                            <span className="text-slate-500">{dbStatus.requiredCartons > 0 ? Math.round(dbStatus.createdCartons / dbStatus.requiredCartons * 100) : 0}%</span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                            <div
+                              className="bg-purple-500 h-2.5 rounded-full transition-all duration-500"
+                              style={{ width: `${dbStatus.requiredCartons > 0 ? Math.min(dbStatus.createdCartons / dbStatus.requiredCartons * 100, 100) : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-slate-400 py-8">
+                      <Database className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                      <span className="text-sm">Không có trạng thái CSDL</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Database Files List */}
+              {dbStatus && (
+                <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+                  <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
+                    <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-600" /> Danh sách file CSDL (Database Files)
+                    </h2>
+                  </div>
+                  <div className="divide-y divide-slate-100">
+                    {dbStatus.files.map((file) => (
+                      <div key={file.fileName} className="flex items-center gap-4 px-4 xl:px-6 py-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          file.exists ? "bg-green-100" : "bg-red-100"
+                        }`}>
+                          {file.exists ? (
+                            <Check className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <X className="w-4 h-4 text-red-600" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-700 truncate">{file.fileName}</p>
+                          <p className="text-xs text-slate-400 truncate">{file.path}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          {file.exists ? (
+                            <span className="text-xs font-medium text-green-600">
+                              {((file.fileSize || 0) / 1024).toFixed(1)} KB
+                            </span>
+                          ) : (
+                            <span className="text-xs font-medium text-red-600">Thiếu (Missing)</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

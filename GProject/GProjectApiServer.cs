@@ -96,9 +96,12 @@ public class GProjectApiServer : IDisposable
         _app.MapGet("/api/po/list", POApiServer.HandleGetAllPO);
         _app.MapGet("/api/po/{orderNo}", (string orderNo) => POApiServer.HandleGetPO(orderNo));
         _app.MapGet("/api/po/{orderNo}/can-delete", (string orderNo) => POApiServer.HandleCanDeletePO(orderNo));
+        _app.MapGet("/api/po/{orderNo}/status", (string orderNo) => POApiServer.HandleCheckPOStatus(orderNo));
+        _app.MapPost("/api/po/{orderNo}/ensure-ready", async (HttpContext context, string orderNo) 
+            => await POApiServer.HandleEnsurePODatabaseReady(context, orderNo));
         _app.MapDelete("/api/po/{orderNo}", (string orderNo) => POApiServer.HandleDeletePO(orderNo));
-        _app.MapGet("/api/po/{orderNo}/codes", (string orderNo, int? status, string? cartonCode, int limit = 100) 
-            => POApiServer.HandleGetCodes(orderNo, status, cartonCode, limit));
+        _app.MapGet("/api/po/{orderNo}/codes", (string orderNo, int? status, string? cartonCode, int limit = 100, int offset = 0) 
+            => POApiServer.HandleGetCodes(orderNo, status, cartonCode, limit, offset));
         _app.MapPost("/api/po/{orderNo}/activate", async (HttpContext context, string orderNo) 
             => await POApiServer.HandleActivateCode(context, orderNo));
         _app.MapPost("/api/po/{orderNo}/pack", async (HttpContext context, string orderNo) 
