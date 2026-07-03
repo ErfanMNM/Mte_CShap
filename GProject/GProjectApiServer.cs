@@ -1,6 +1,8 @@
+using System.Net.WebSockets;
 using System.Text.Json.Serialization;
 using GProject.DataPoolHelper;
 using GProject.ProductionOrderHelpers;
+using GProject.Production;
 using GProject.Auth;
 using Serilog;
 
@@ -66,6 +68,53 @@ public class GProjectApiServer : IDisposable
 
         _app.UseCors();
 
+        // WebSocket middleware
+        var webSocketOptions = new WebSocketOptions
+        {
+            KeepAliveInterval = TimeSpan.FromSeconds(30)
+        };
+        _app.UseWebSockets(webSocketOptions);
+
+        _app.Map("/ws/camera", async context =>
+        {
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+
+            using var ws = await context.WebSockets.AcceptWebSocketAsync();
+            CameraHub.Instance.Register(ws);
+            Log.Information("[WebSocket] Camera client connected. Total clients: {Count}", CameraHub.Instance.ClientCount);
+
+            try
+            {
+                var buffer = new byte[1024];
+                while (ws.State == WebSocketState.Open)
+                {
+                    var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        break;
+                    }
+                    // We do not process inbound messages; clients are pure subscribers.
+                }
+            }
+            finally
+            {
+                CameraHub.Instance.Unregister(ws);
+                Log.Information("[WebSocket] Camera client disconnected. Total clients: {Count}", CameraHub.Instance.ClientCount);
+                if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
+                {
+                    try
+                    {
+                        await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
+                    }
+                    catch { }
+                }
+            }
+        });
+
         // Auth endpoints
         _app.MapPost("/api/auth/login", HandleLogin);
         _app.MapPost("/api/auth/logout", HandleLogout);
@@ -114,6 +163,13 @@ public class GProjectApiServer : IDisposable
 
         // Production status
         _app.MapGet("/api/production/status", POApiServer.HandleGetProductionStatus);
+
+        // Production state machine control endpoints
+        _app.MapGet("/api/production/state", (Delegate)HandleGetProductionState);
+        _app.MapPost("/api/production/select-po", (Delegate)HandleSelectPO);
+        _app.MapPost("/api/production/start", (Delegate)HandleProductionStart);
+        _app.MapPost("/api/production/stop", (Delegate)HandleProductionStop);
+        _app.MapPost("/api/production/reset", (Delegate)HandleProductionReset);
 
         // Initialize PO database
         POApiServer.Initialize();
@@ -668,6 +724,172 @@ public class GProjectApiServer : IDisposable
         catch (Exception ex)
         {
             LogError("GProjectApiServer", $"Error deleting code '{code}' from pool '{poolName}': {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+    #endregion
+
+    #region Production State Machine Handlers
+    private async Task<IResult> HandleGetProductionState(HttpContext context)
+    {
+        try
+        {
+            var sm = ProductionStateMachine.Instance;
+            await Task.CompletedTask;
+            return Results.Json(new
+            {
+                success = true,
+                currentState = sm.CurrentState.ToString(),
+                previousState = sm.PreviousState.ToString(),
+                orderNo = ProductionStateMachine.ProductionData?.OrderNo ?? "",
+                productName = ProductionStateMachine.ProductionData?.ProductName ?? "",
+                orderQty = ProductionStateMachine.ProductionData?.OrderQty ?? 0,
+                activeCounter = new
+                {
+                    sm.ActiveCounter.PassCount,
+                    sm.ActiveCounter.FailCount,
+                    sm.ActiveCounter.DuplicateCount,
+                    sm.ActiveCounter.CartonID,
+                    sm.ActiveCounter.CartonCode
+                },
+                packageCounter = new
+                {
+                    sm.PackageCounter.PassCount,
+                    sm.PackageCounter.FailCount,
+                    sm.PackageCounter.CartonID
+                },
+                codesCount = sm.Dictionary_Codes.Count,
+                cartonsCount = sm.Dictionary_Cartons.Count,
+                lastWarning = sm.LastWarning,
+                isAppReady = sm.IsAppReady,
+                isDeviceReady = sm.IsDeviceReady
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error getting production state: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private async Task<IResult> HandleSelectPO(HttpContext context)
+    {
+        try
+        {
+            var body = await context.Request.ReadFromJsonAsync<Dictionary<string, string>>();
+            if (body == null || !body.TryGetValue("orderNo", out var orderNo) || string.IsNullOrWhiteSpace(orderNo))
+                return Results.Json(new ApiResponse { Success = false, Message = "orderNo is required" }, statusCode: 400);
+
+            var po = GProduction.POLoader.GetByOrderNo(orderNo);
+            if (!po.IsSuccess || po.Data == null || po.Data.Rows.Count == 0)
+                return Results.Json(new ApiResponse { Success = false, Message = $"PO '{orderNo}' không tồn tại" }, statusCode: 404);
+
+            ProductionStateMachine.ProductionData = POInfo.FromDataRow(po.Data.Rows[0]);
+            ProductionStateMachine.Instance.SetState(e_ProductionState.CheckPO, $"select PO {orderNo}");
+
+            return Results.Json(new
+            {
+                success = true,
+                message = $"Đã chọn PO '{orderNo}', chuyển sang CheckPO",
+                orderNo = ProductionStateMachine.ProductionData.OrderNo,
+                state = ProductionStateMachine.Instance.CurrentState.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error selecting PO: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private async Task<IResult> HandleProductionStart(HttpContext context)
+    {
+        try
+        {
+            await Task.CompletedTask;
+            var sm = ProductionStateMachine.Instance;
+            if (sm.CurrentState != e_ProductionState.Ready)
+                return Results.Json(new
+                {
+                    success = false,
+                    message = $"Không thể Start từ trạng thái {sm.CurrentState}. Cần ở trạng thái Ready."
+                }, statusCode: 400);
+
+            if (ProductionStateMachine.ProductionData != null)
+            {
+                GProduction.POHistoryManager.RecordStart(
+                    ProductionStateMachine.ProductionData.OrderNo,
+                    ProductionStateMachine.ProductionData.ProductionDate,
+                    "API");
+            }
+
+            sm.SetState(e_ProductionState.PushingToDic, "start production");
+            return Results.Json(new
+            {
+                success = true,
+                message = "Đã bắt đầu sản xuất",
+                state = sm.CurrentState.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error starting production: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private async Task<IResult> HandleProductionStop(HttpContext context)
+    {
+        try
+        {
+            await Task.CompletedTask;
+            var sm = ProductionStateMachine.Instance;
+            if (sm.CurrentState != e_ProductionState.Running && sm.CurrentState != e_ProductionState.Paused)
+                return Results.Json(new
+                {
+                    success = false,
+                    message = $"Không thể Stop từ trạng thái {sm.CurrentState}"
+                }, statusCode: 400);
+
+            if (ProductionStateMachine.ProductionData != null)
+            {
+                GProduction.POHistoryManager.RecordEnd(
+                    ProductionStateMachine.ProductionData.OrderNo);
+            }
+
+            sm.SetState(e_ProductionState.WaitingStop, "stop production");
+            sm.SetState(e_ProductionState.Editing, "ready for new PO");
+
+            return Results.Json(new
+            {
+                success = true,
+                message = "Đã dừng sản xuất",
+                state = sm.CurrentState.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error stopping production: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private async Task<IResult> HandleProductionReset(HttpContext context)
+    {
+        try
+        {
+            await Task.CompletedTask;
+            ProductionStateMachine.Instance.ResetForLogout();
+            return Results.Json(new
+            {
+                success = true,
+                message = "Đã reset state machine",
+                state = ProductionStateMachine.Instance.CurrentState.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error resetting production: {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }

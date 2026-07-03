@@ -6,6 +6,11 @@ namespace GProject.ProductionOrderHelpers
     public enum e_ProductionState
     {
         /// <summary>
+        /// Chưa đăng nhập
+        /// </summary>
+        NeedLogin = -1,
+
+        /// <summary>
         /// Chưa chọn PO
         /// </summary>
         NoSelectedPO = 0,
@@ -64,6 +69,26 @@ namespace GProject.ProductionOrderHelpers
         /// Đang chờ dừng
         /// </summary>
         WaitingStop = 11,
+
+        /// <summary>
+        /// Đang kiểm tra và tạo DB cho PO
+        /// </summary>
+        CheckPO = 12,
+
+        /// <summary>
+        /// Đang load dữ liệu PO vào RAM
+        /// </summary>
+        LoadPO = 13,
+
+        /// <summary>
+        /// Đang kiểm tra PO gần nhất trong lịch sử
+        /// </summary>
+        Checking = 14,
+
+        /// <summary>
+        /// Đang kiểm tra sau khi hoàn thành
+        /// </summary>
+        CheckAfterCompleted = 15,
 
         /// <summary>
         /// Lỗi
