@@ -84,7 +84,7 @@ namespace TApp.Views.Settings
         private void PLCSetting_Initialize(object sender, EventArgs e)
         {
             IsPageOpen = true;
-            webView21.Source = new Uri($"http://{AppConfigs.Current.Camera_01_IP}/monitor");
+            webView21.Source = new Uri($"http://{AppConfigs.Current.Camera_01_IP}/WebLink/#/dashboard");
             GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Mở trang cài đặt PLC", "", "UA-PLCSETTING-01");
         }
 
