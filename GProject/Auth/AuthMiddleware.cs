@@ -35,7 +35,7 @@ public static class AuthMiddleware
     {
         // Skip auth for certain paths
         var path = context.Request.Path.Value?.ToLower() ?? "";
-        if (path.StartsWith("/api/auth/login") || path == "/api/health")
+        if (path.StartsWith("/api/auth/login") || path == "/api/health" || path.StartsWith("/ws/"))
         {
             await next(context);
             return;
