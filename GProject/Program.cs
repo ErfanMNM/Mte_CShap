@@ -116,6 +116,20 @@ namespace GProject
         {
             Log.Information("[Camera:{Camera}] [{State}] {Data}", camera, state, data);
             _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
+
+            switch (state)
+            {
+                case eOmronCodeReaderState.Connected:
+                    break;
+                case eOmronCodeReaderState.Disconnected:
+                    break;
+                case eOmronCodeReaderState.Received:
+                    break;
+                case eOmronCodeReaderState.Reconnecting:
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }
