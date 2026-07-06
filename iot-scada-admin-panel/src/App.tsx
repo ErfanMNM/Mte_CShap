@@ -39,6 +39,7 @@ import ReactECharts from "echarts-for-react";
 import Keyboard from "react-simple-keyboard";
 import "react-simple-keyboard/build/css/index.css";
 import { useCameraSocket } from "./hooks/useCameraSocket";
+import { usePLCWebSocket } from "./hooks/usePLCWebSocket";
 import POManagerView from "./components/pomanager/POManagerView";
 import DataPoolView from "./components/datapool/DataPoolView";
 import ProductionView from "./components/production/ProductionView";
@@ -441,7 +442,7 @@ const AppStateIndicator = ({ state }: { state: string }) => {
    ========================================= */
 
 const ScadaMonitorView = () => {
-  const [activeTab, setActiveTab] = useState<"log" | "error">("log");
+  const [activeTab, setActiveTab] = useState<"log" | "error" | "plc">("log");
 
   // Camera WebSocket connection
   const wsUrl =
@@ -453,14 +454,36 @@ const ScadaMonitorView = () => {
     maxReconnectAttempts: 5,
   });
 
+  // PLC WebSocket connection (Omron FINS/UDP through GProject backend)
+  const plcWsUrl =
+    import.meta.env.VITE_PLC_WS_URL || "ws://localhost:9999/ws/plc";
+  const {
+    snapshot: plcSnapshot,
+    logs: plcLogs,
+    reconnect: plcReconnect,
+  } = usePLCWebSocket({
+    url: plcWsUrl,
+    reconnectIntervalMs: 3000,
+    maxReconnectAttempts: 5,
+  });
+
+  // Camera connection: only "Disconnected" is considered offline.
+  // Connected / Received / Reconnecting are all healthy (green).
   const mapStatus = (status: string | undefined) => {
     if (!status) return "offline";
     const s = status.toLowerCase();
-    if (s === "connected" || s === "ready" || s === "pass" || s === "ok")
-      return "ok";
-    if (s === "disconnected" || s === "deactive") return "offline";
+    if (s === "disconnected" || s === "deactive") return "error";
     if (s === "error" || s === "fail") return "error";
-    return "warning";
+    return "ok";
+  };
+
+  // PLC connection: 3 states — no data yet (warning), Connected (ok), Disconnected/Reconnecting (error).
+  const mapPlcStatus = (status: string | undefined, lastEventAt: string | null | undefined) => {
+    if (!lastEventAt) return "warning";
+    if (!status) return "warning";
+    const s = status.toLowerCase();
+    if (s === "disconnected" || s === "reconnecting") return "error";
+    return "ok";
   };
 
   const cameraActiveState = snapshot.active.state;
@@ -520,24 +543,16 @@ const ScadaMonitorView = () => {
             <CardHeader title="KẾT QUẢ VỪA KIỂM" icon={Activity} />
             <div className="p-3 2xl:p-5 flex flex-col sm:flex-row gap-3 2xl:gap-5 h-[110px] 2xl:h-40">
               <div className={`w-full sm:w-[35%] rounded-xl 2xl:rounded-2xl text-white flex flex-col items-center justify-center p-2 2xl:p-4 shadow-lg ring-1 ring-white/20 ${
-                cameraActiveState === "Received" || cameraActiveState === "Connected"
-                  ? "bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/20"
-                  : cameraActiveState === "Disconnected"
-                    ? "bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/20"
-                    : "bg-gradient-to-br from-slate-500 to-slate-600 shadow-slate-500/20"
+                cameraActiveState === "Disconnected"
+                  ? "bg-gradient-to-br from-slate-400 to-slate-500 shadow-slate-400/20"
+                  : "bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/20"
               }`}>
                 <CheckCircle2
                   className="w-10 h-10 2xl:w-12 2xl:h-12 mb-1 2xl:mb-2"
                   strokeWidth={2.5}
                 />
                 <span className="text-2xl 2xl:text-3xl font-black tracking-widest leading-none">
-                  {cameraActiveState === "Received" || cameraActiveState === "Connected"
-                    ? "TỐT"
-                    : cameraActiveState === "Disconnected"
-                      ? "LỖI"
-                      : cameraActiveState === "Reconnecting"
-                        ? "WAIT"
-                        : cameraActiveState.toUpperCase()}
+                  {cameraActiveState === "Disconnected" ? "WAIT" : "TỐT"}
                 </span>
               </div>
 
@@ -577,6 +592,12 @@ const ScadaMonitorView = () => {
                 <History className="w-4 h-4" /> THÔNG BÁO CHUNG
               </button>
               <button
+                onClick={() => setActiveTab("plc")}
+                className={`flex-1 py-2.5 2xl:py-3 px-4 text-xs 2xl:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === "plc" ? "bg-emerald-50 text-emerald-700" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"}`}
+              >
+                <Cpu className="w-4 h-4" /> NHẬT KÝ PLC
+              </button>
+              <button
                 onClick={() => setActiveTab("error")}
                 className={`flex-1 py-2.5 2xl:py-3 px-4 text-xs 2xl:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === "error" ? "bg-red-50 text-red-700" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"}`}
               >
@@ -591,18 +612,55 @@ const ScadaMonitorView = () => {
                       Thời gian
                     </th>
                     <th className="px-5 2xl:px-6 py-3 2xl:py-4 font-bold tracking-wider">
-                      Camera
+                      Nguồn
                     </th>
                     <th className="px-5 2xl:px-6 py-3 2xl:py-4 font-bold tracking-wider">
                       Trạng thái
                     </th>
                     <th className="px-5 2xl:px-6 py-3 2xl:py-4 font-bold tracking-wider">
-                      Dữ liệu
+                      Chi tiết
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100/80">
-                  {logs.length === 0 ? (
+                  {activeTab === "plc" ? (
+                    plcLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-5 2xl:px-6 py-8 text-center text-slate-400 text-sm">
+                          Đang chờ dữ liệu từ PLC...
+                        </td>
+                      </tr>
+                    ) : (
+                      plcLogs.map((msg, idx) => {
+                        const stateColor =
+                          msg.state === "Connected"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : msg.state === "Reconnecting"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-red-100 text-red-700";
+                        return (
+                          <tr key={`${msg.at}-${idx}`} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 font-mono text-[11px] 2xl:text-xs font-semibold text-slate-500 whitespace-nowrap">
+                              {new Date(msg.at).toLocaleTimeString("vi-VN")}
+                            </td>
+                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide bg-emerald-100 text-emerald-700">
+                                PLC
+                              </span>
+                            </td>
+                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5">
+                              <span className={`px-2.5 2xl:px-3 py-1 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide uppercase ${stateColor}`}>
+                                {msg.state}
+                              </span>
+                            </td>
+                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 text-xs 2xl:text-sm text-slate-700 font-medium font-mono break-all">
+                              {msg.message ?? `${msg.ip}:${msg.port}`}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )
+                  ) : logs.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-5 2xl:px-6 py-8 text-center text-slate-400 text-sm">
                         Đang chờ dữ liệu từ camera...
@@ -658,7 +716,7 @@ const ScadaMonitorView = () => {
         <div className="flex flex-col gap-4 xl:gap-5 w-full xl:w-[40%] h-full pb-1">
           <Card className="flex-[1] shadow-sm flex flex-col min-h-0">
             <CardHeader title="TRẠNG THÁI THIẾT BỊ" icon={Server} />
-            <div className="p-2 xl:p-3 2xl:p-4 grid grid-cols-2 grid-rows-2 gap-1.5 2xl:gap-2 flex-1 min-h-0">
+            <div className="p-2 xl:p-3 2xl:p-4 grid grid-cols-2 grid-rows-3 gap-1.5 2xl:gap-2 flex-1 min-h-0">
               <DeviceIndicator
                 icon={Monitor}
                 label="CAMERA ACTIVE"
@@ -672,10 +730,28 @@ const ScadaMonitorView = () => {
                 status={mapStatus(cameraPackageState)}
               />
               <DeviceIndicator
+                icon={Cpu}
+                label="PLC OMRON"
+                subLabel={
+                  plcSnapshot.ip
+                    ? `${plcSnapshot.ip}:${plcSnapshot.port ?? ""}`
+                    : plcSnapshot.connected
+                      ? "online"
+                      : "offline"
+                }
+                status={mapPlcStatus(plcSnapshot.state, plcSnapshot.lastEventAt)}
+              />
+              <DeviceIndicator
                 icon={Plug}
                 label="WS CAMERA"
                 subLabel={snapshot.connected ? "online" : "offline"}
                 status={snapshot.connected ? "ok" : "error"}
+              />
+              <DeviceIndicator
+                icon={PlugZap}
+                label="WS PLC"
+                subLabel={plcSnapshot.connected ? "online" : "offline"}
+                status={plcSnapshot.connected ? "ok" : "error"}
               />
               <DeviceIndicator
                 icon={Settings}
@@ -702,11 +778,35 @@ const ScadaMonitorView = () => {
                     Camera WS
                   </span>
                 </div>
+                <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3 flex items-center justify-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${plcSnapshot.connected ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
+                  <span className="text-xs font-bold text-slate-600">
+                    {plcSnapshot.connected ? "ONLINE" : "OFFLINE"}
+                  </span>
+                </div>
+                <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3 flex items-center justify-center gap-2">
+                  <PlugZap className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-bold text-slate-600">
+                    PLC WS
+                  </span>
+                </div>
               </div>
 
               <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3">
-                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Endpoint</div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Camera Endpoint</div>
                 <div className="text-xs font-mono text-slate-700 break-all">{wsUrl}</div>
+              </div>
+
+              <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3">
+                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">PLC Endpoint</div>
+                <div className="text-xs font-mono text-slate-700 break-all">{plcWsUrl}</div>
+              </div>
+
+              <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3">
+                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">PLC target</div>
+                <div className="text-xs font-mono text-slate-700 break-all">
+                  {plcSnapshot.ip ? `${plcSnapshot.ip}:${plcSnapshot.port}` : "—"}
+                </div>
               </div>
 
               <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3">

@@ -9,9 +9,10 @@ namespace GProject
 {
     public class Program
     {
-        private static OmronCodeReader? _CR_Active;
-        private static OmronCodeReader? _CR_Package;
-        private static GProjectApiServer? _apiServer;
+    private static OmronCodeReader? _CR_Active;
+    private static OmronCodeReader? _CR_Package;
+    private static PLCMonitor? _plcMonitor;
+    private static GProjectApiServer? _apiServer;
 
         static async Task Main(string[] args)
         {
@@ -75,6 +76,23 @@ namespace GProject
                 _CR_Package.Connect();
                 Log.Information("[Main] Cameras initialized: active=127.0.0.1:9001, package=127.0.0.1:9002");
 
+                // Khoi tao PLC Monitor (Omron FINS/UDP) - heartbeat + counter polling.
+                // Broadcasts connection state to FE via /ws/plc.
+                _plcMonitor = new PLCMonitor();
+                _plcMonitor.StateChanged += (_, args) =>
+                {
+                    var (state, message) = args;
+                    var stateStr = state switch
+                    {
+                        PLCConnectionState.Connected => "Connected",
+                        PLCConnectionState.Reconnecting => "Reconnecting",
+                        _ => "Disconnected",
+                    };
+                    Log.Information("[PLC] {State} - {Message}", stateStr, message);
+                    _ = PLCHub.Instance.BroadcastStateAsync(stateStr, message);
+                };
+                _plcMonitor.Start();
+
                 await Task.Delay(Timeout.Infinite);
             }
             catch (Exception ex)
@@ -88,6 +106,10 @@ namespace GProject
                 catch (Exception ex) { Log.Warning(ex, "[Main] Lỗi khi dừng camera active"); }
                 try { _CR_Package?.Disconnect(); }
                 catch (Exception ex) { Log.Warning(ex, "[Main] Lỗi khi dừng camera package"); }
+
+                // Dừng PLC monitor
+                try { _plcMonitor?.Dispose(); }
+                catch (Exception ex) { Log.Warning(ex, "[Main] Lỗi khi dừng PLCMonitor"); }
 
                 // Dừng state machine
                 try { await ProductionStateMachine.Instance.StopAsync(); }

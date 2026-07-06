@@ -2,13 +2,13 @@ using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using Glib.Omron;
+using Serilog;
 
 namespace GProject;
 
-public class CameraHub
+public class PLCHub
 {
-    public static readonly CameraHub Instance = new();
+    public static readonly PLCHub Instance = new();
 
     private readonly ConcurrentDictionary<Guid, WebSocket> _clients = new();
     private readonly object _registerLock = new();
@@ -34,13 +34,14 @@ public class CameraHub
 
     public int ClientCount => _clients.Count;
 
-    public async Task BroadcastAsync(string camera, eOmronCodeReaderState state, string data)
+    public async Task BroadcastStateAsync(string state, string? message = null)
     {
         var payload = JsonSerializer.Serialize(new
         {
-            camera,
-            state = state.ToString(),
-            data,
+            state,
+            message,
+            ip = Environment.GetEnvironmentVariable("PLC_IP") ?? "127.0.0.1",
+            port = int.TryParse(Environment.GetEnvironmentVariable("PLC_PORT"), out var p) ? p : 9600,
             at = DateTime.UtcNow
         });
         var bytes = Encoding.UTF8.GetBytes(payload);
@@ -80,9 +81,9 @@ public class CameraHub
             {
                 await ws.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
             }
-            catch
+            catch (Exception ex)
             {
-                // Client disconnected mid-send; remove it so the receive loop cleans up.
+                Log.Warning(ex, "[PLCHub] Failed to send PLC state — removing stale client");
                 lock (_registerLock)
                 {
                     _clients.TryRemove(FindKey(ws), out _);
