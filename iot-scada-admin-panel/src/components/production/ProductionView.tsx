@@ -13,12 +13,15 @@ import {
   Box,
   TrendingUp,
   Monitor,
+  Cpu,
 } from "lucide-react";
 import productionApi from "../../services/productionApi";
 import poApi from "../../services/poApi";
 import { useCameraSocket } from "../../hooks/useCameraSocket";
+import { usePLCWebSocket } from "../../hooks/usePLCWebSocket";
 import { handleActiveCodeScanned } from "../../services/cameraApi";
 import type { CameraState } from "../../types/camera";
+import type { PLCState } from "../../types/plc";
 import type { ProductionStatusResponse } from "../../types/production";
 import type { POListItem } from "../../types/po";
 
@@ -28,6 +31,12 @@ type CamUiStatus = "ok" | "error" | "offline" | "warning";
 // Connected / Received / Reconnecting are all healthy (green).
 const mapCamStatus = (state: CameraState): CamUiStatus => {
   if (state === "Disconnected") return "offline";
+  return "ok";
+};
+
+// PLC connection mirrors the rule: only "Disconnected" is offline.
+const mapPlcStatus = (state: PLCState): CamUiStatus => {
+  if (state === "Disconnected") return "error";
   return "ok";
 };
 
@@ -112,6 +121,11 @@ const ProductionView: React.FC = () => {
       }
     },
   });
+
+  // PLC WebSocket - read-only monitor
+  const plcWsUrl =
+    import.meta.env.VITE_PLC_WS_URL || "ws://localhost:9999/ws/plc";
+  const { snapshot: plcSnapshot } = usePLCWebSocket({ url: plcWsUrl });
 
   const handleStartProduction = async () => {
     if (!selectedPO) {
@@ -488,9 +502,20 @@ const ProductionView: React.FC = () => {
                 }
                 status={mapCamStatus(cameraSnapshot.package.state)}
               />
+              <MiniDeviceIndicator
+                icon={Cpu}
+                label="PLC"
+                subLabel={
+                  plcSnapshot.ip
+                    ? `${plcSnapshot.ip}:${plcSnapshot.port ?? ""}${plcSnapshot.message ? ` - ${plcSnapshot.message}` : ""}`
+                    : plcSnapshot.connected
+                      ? "online"
+                      : "offline"
+                }
+                status={mapPlcStatus(plcSnapshot.state)}
+              />
               <div className="mt-1 text-[10px] text-slate-400 font-mono break-all">
-                WS: {cameraSnapshot.connected ? "online" : "offline"} •{" "}
-                {cameraWsUrl.replace(/^wss?:\/\//, "")}
+                WS: cam {cameraSnapshot.connected ? "online" : "offline"} • plc {plcSnapshot.connected ? "online" : "offline"}
               </div>
             </div>
           </div>

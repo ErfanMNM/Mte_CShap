@@ -115,6 +115,45 @@ public class GProjectApiServer : IDisposable
             }
         });
 
+        _app.Map("/ws/plc", async context =>
+        {
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+
+            using var ws = await context.WebSockets.AcceptWebSocketAsync();
+            PLCHub.Instance.Register(ws);
+            Log.Information("[WebSocket] PLC client connected. Total clients: {Count}", PLCHub.Instance.ClientCount);
+
+            try
+            {
+                var buffer = new byte[1024];
+                while (ws.State == WebSocketState.Open)
+                {
+                    var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        break;
+                    }
+                }
+            }
+            finally
+            {
+                PLCHub.Instance.Unregister(ws);
+                Log.Information("[WebSocket] PLC client disconnected. Total clients: {Count}", PLCHub.Instance.ClientCount);
+                if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
+                {
+                    try
+                    {
+                        await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
+                    }
+                    catch { }
+                }
+            }
+        });
+
         // Auth endpoints
         _app.MapPost("/api/auth/login", HandleLogin);
         _app.MapPost("/api/auth/logout", HandleLogout);
