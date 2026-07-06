@@ -453,14 +453,14 @@ const ScadaMonitorView = () => {
     maxReconnectAttempts: 5,
   });
 
+  // Camera connection: only "Disconnected" is considered offline.
+  // Connected / Received / Reconnecting are all healthy (green).
   const mapStatus = (status: string | undefined) => {
     if (!status) return "offline";
     const s = status.toLowerCase();
-    if (s === "connected" || s === "ready" || s === "pass" || s === "ok")
-      return "ok";
-    if (s === "disconnected" || s === "deactive") return "offline";
+    if (s === "disconnected" || s === "deactive") return "error";
     if (s === "error" || s === "fail") return "error";
-    return "warning";
+    return "ok";
   };
 
   const cameraActiveState = snapshot.active.state;
@@ -520,24 +520,16 @@ const ScadaMonitorView = () => {
             <CardHeader title="KẾT QUẢ VỪA KIỂM" icon={Activity} />
             <div className="p-3 2xl:p-5 flex flex-col sm:flex-row gap-3 2xl:gap-5 h-[110px] 2xl:h-40">
               <div className={`w-full sm:w-[35%] rounded-xl 2xl:rounded-2xl text-white flex flex-col items-center justify-center p-2 2xl:p-4 shadow-lg ring-1 ring-white/20 ${
-                cameraActiveState === "Received" || cameraActiveState === "Connected"
-                  ? "bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/20"
-                  : cameraActiveState === "Disconnected"
-                    ? "bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/20"
-                    : "bg-gradient-to-br from-slate-500 to-slate-600 shadow-slate-500/20"
+                cameraActiveState === "Disconnected"
+                  ? "bg-gradient-to-br from-slate-400 to-slate-500 shadow-slate-400/20"
+                  : "bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/20"
               }`}>
                 <CheckCircle2
                   className="w-10 h-10 2xl:w-12 2xl:h-12 mb-1 2xl:mb-2"
                   strokeWidth={2.5}
                 />
                 <span className="text-2xl 2xl:text-3xl font-black tracking-widest leading-none">
-                  {cameraActiveState === "Received" || cameraActiveState === "Connected"
-                    ? "TỐT"
-                    : cameraActiveState === "Disconnected"
-                      ? "LỖI"
-                      : cameraActiveState === "Reconnecting"
-                        ? "WAIT"
-                        : cameraActiveState.toUpperCase()}
+                  {cameraActiveState === "Disconnected" ? "WAIT" : "TỐT"}
                 </span>
               </div>
 

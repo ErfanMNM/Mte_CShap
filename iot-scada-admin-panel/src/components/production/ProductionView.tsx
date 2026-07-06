@@ -24,11 +24,11 @@ import type { POListItem } from "../../types/po";
 
 type CamUiStatus = "ok" | "error" | "offline" | "warning";
 
+// Camera connection: only "Disconnected" is treated as offline.
+// Connected / Received / Reconnecting are all healthy (green).
 const mapCamStatus = (state: CameraState): CamUiStatus => {
-  if (state === "Connected") return "ok";
-  if (state === "Received") return "ok";
   if (state === "Disconnected") return "offline";
-  return "warning";
+  return "ok";
 };
 
 const ProductionView: React.FC = () => {
