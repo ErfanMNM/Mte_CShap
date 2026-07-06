@@ -71,48 +71,16 @@ public class PLCMonitor : IDisposable
                 int[]? counters = null;
                 int deactive = 0;
 
+                //gửi ok thì có nghĩa là PLC đang online.
                 if (writeOk)
                 {
-                    var readResult = _plc.ReadInt32(counterDm, 5);
-                    if (readResult.IsSuccess && readResult.Content != null)
-                    {
-                        counters = readResult.Content;
-                        readOk = true;
-                    }
-
-                    var deactRead = _plc.ReadInt32(deactiveDm);
-                    if (deactRead.IsSuccess)
-                    {
-                        deactive = deactRead.Content;
-                    }
-                }
-
-                if (writeOk && readOk)
-                {
                     consecutiveFailures = 0;
-                    EmitState(PLCConnectionState.Connected, $"PLC online @ {_ip}:{_port}; counters={string.Join(",", counters ?? Array.Empty<int>())}; deactive={deactive}");
-                }
-                else if (writeOk || readOk)
-                {
-                    consecutiveFailures++;
-                    if (consecutiveFailures >= 2)
-                    {
-                        EmitState(PLCConnectionState.Reconnecting, $"PLC transient issues (fails={consecutiveFailures})");
-                    }
+                    EmitState(PLCConnectionState.Connected, $"PLC online @ {_ip}:{_port};");
                 }
                 else
                 {
-                    consecutiveFailures++;
-                    if (consecutiveFailures == 1 || consecutiveFailures % 10 == 0)
-                    {
-                        var msg = writeResult.IsSuccess ? "counter read failed" : writeResult.ToMessageShowString();
-                        LastError = new PLCMonitorState(DateTime.UtcNow, msg, readyDm, counterDm, deactiveDm);
-                        Log.Warning("[PLCMonitor] Comm failure #{N}: {Msg}", consecutiveFailures, msg);
-                    }
-                    if (consecutiveFailures >= 2)
-                    {
                         EmitState(PLCConnectionState.Disconnected, $"PLC offline ({consecutiveFailures} consecutive fails)");
-                    }
+                    
                 }
 
                 Thread.Sleep(_pollMs);

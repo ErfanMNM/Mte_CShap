@@ -36,8 +36,6 @@ public class PLCHub
 
     public async Task BroadcastStateAsync(string state, string? message = null)
     {
-        if (_clients.IsEmpty) return;
-
         var payload = JsonSerializer.Serialize(new
         {
             state,
@@ -49,8 +47,35 @@ public class PLCHub
         var bytes = Encoding.UTF8.GetBytes(payload);
         var segment = new ArraySegment<byte>(bytes);
 
-        var snapshot = _clients.Values.Where(c => c.State == WebSocketState.Open).ToList();
-        foreach (var ws in snapshot)
+        List<WebSocket> clientsToRemove;
+        lock (_registerLock)
+        {
+            clientsToRemove = _clients.Values
+                .Where(c => c.State != WebSocketState.Open)
+                .ToList();
+            foreach (var ws in clientsToRemove)
+            {
+                _clients.TryRemove(FindKey(ws), out _);
+            }
+        }
+
+        foreach (var ws in clientsToRemove)
+        {
+            try { await ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None); }
+            catch { /* ignore — already closed */ }
+        }
+
+        if (_clients.IsEmpty) return;
+
+        WebSocket[] openClients;
+        lock (_registerLock)
+        {
+            openClients = _clients.Values
+                .Where(c => c.State == WebSocketState.Open)
+                .ToArray();
+        }
+
+        foreach (var ws in openClients)
         {
             try
             {
@@ -58,8 +83,20 @@ public class PLCHub
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "[PLCHub] Failed to send PLC state to client");
+                Log.Warning(ex, "[PLCHub] Failed to send PLC state — removing stale client");
+                lock (_registerLock)
+                {
+                    _clients.TryRemove(FindKey(ws), out _);
+                }
             }
+        }
+    }
+
+    private static Guid FindKey(WebSocket ws)
+    {
+        lock (_registerLock)
+        {
+            return _clients.First(kv => kv.Value == ws).Key;
         }
     }
 }

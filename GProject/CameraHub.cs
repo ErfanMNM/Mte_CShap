@@ -36,8 +36,6 @@ public class CameraHub
 
     public async Task BroadcastAsync(string camera, eOmronCodeReaderState state, string data)
     {
-        if (_clients.IsEmpty) return;
-
         var payload = JsonSerializer.Serialize(new
         {
             camera,
@@ -48,8 +46,35 @@ public class CameraHub
         var bytes = Encoding.UTF8.GetBytes(payload);
         var segment = new ArraySegment<byte>(bytes);
 
-        var snapshot = _clients.Values.Where(c => c.State == WebSocketState.Open).ToList();
-        foreach (var ws in snapshot)
+        List<WebSocket> clientsToRemove;
+        lock (_registerLock)
+        {
+            clientsToRemove = _clients.Values
+                .Where(c => c.State != WebSocketState.Open)
+                .ToList();
+            foreach (var ws in clientsToRemove)
+            {
+                _clients.TryRemove(FindKey(ws), out _);
+            }
+        }
+
+        foreach (var ws in clientsToRemove)
+        {
+            try { await ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None); }
+            catch { /* ignore — already closed */ }
+        }
+
+        if (_clients.IsEmpty) return;
+
+        WebSocket[] openClients;
+        lock (_registerLock)
+        {
+            openClients = _clients.Values
+                .Where(c => c.State == WebSocketState.Open)
+                .ToArray();
+        }
+
+        foreach (var ws in openClients)
         {
             try
             {
@@ -57,8 +82,20 @@ public class CameraHub
             }
             catch
             {
-                // Client disconnected mid-send; will be cleaned up on receive loop exit.
+                // Client disconnected mid-send; remove it so the receive loop cleans up.
+                lock (_registerLock)
+                {
+                    _clients.TryRemove(FindKey(ws), out _);
+                }
             }
+        }
+    }
+
+    private static Guid FindKey(WebSocket ws)
+    {
+        lock (_registerLock)
+        {
+            return _clients.First(kv => kv.Value == ws).Key;
         }
     }
 }

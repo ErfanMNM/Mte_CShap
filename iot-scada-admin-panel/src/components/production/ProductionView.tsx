@@ -34,10 +34,12 @@ const mapCamStatus = (state: CameraState): CamUiStatus => {
   return "ok";
 };
 
-// PLC connection mirrors the rule: only "Disconnected" is offline.
-const mapPlcStatus = (state: PLCState): CamUiStatus => {
-  if (state === "Disconnected") return "error";
-  return "ok";
+// PLC connection: 3 states — no data yet (warning), Connected (ok), Disconnected/Reconnecting (error).
+const mapPlcStatus = (state: PLCState | undefined, lastEventAt: string | null | undefined): CamUiStatus => {
+    if (!lastEventAt) return "warning";
+    if (!state) return "warning";
+    if (state === "Disconnected" || state === "Reconnecting") return "error";
+    return "ok";
 };
 
 const ProductionView: React.FC = () => {
@@ -512,7 +514,7 @@ const ProductionView: React.FC = () => {
                       ? "online"
                       : "offline"
                 }
-                status={mapPlcStatus(plcSnapshot.state)}
+                status={mapPlcStatus(plcSnapshot.state, plcSnapshot.lastEventAt)}
               />
               <div className="mt-1 text-[10px] text-slate-400 font-mono break-all">
                 WS: cam {cameraSnapshot.connected ? "online" : "offline"} • plc {plcSnapshot.connected ? "online" : "offline"}
