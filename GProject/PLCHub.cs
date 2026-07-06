@@ -92,7 +92,7 @@ public class PLCHub
         }
     }
 
-    private static Guid FindKey(WebSocket ws)
+    private Guid FindKey(WebSocket ws)
     {
         lock (_registerLock)
         {

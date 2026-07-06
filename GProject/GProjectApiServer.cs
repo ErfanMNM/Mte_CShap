@@ -139,6 +139,10 @@ public class GProjectApiServer : IDisposable
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                    Log.Error(ex, "[WebSocket] Error in PLC WebSocket connection.");
+            }
             finally
             {
                 PLCHub.Instance.Unregister(ws);

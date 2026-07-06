@@ -477,9 +477,10 @@ const ScadaMonitorView = () => {
     return "ok";
   };
 
-  // PLC connection: 3 states — no data yet (warning), Connected (ok), Disconnected/Reconnecting (error).
-  const mapPlcStatus = (status: string | undefined, lastEventAt: string | null | undefined) => {
-    if (!lastEventAt) return "warning";
+  // PLC connection: WebSocket connected + no error state → green.
+  // Disconnected or Reconnecting → red. No data yet (not connected) → amber.
+  const mapPlcStatus = (connected: boolean, status: string | undefined) => {
+    if (!connected) return "warning";
     if (!status) return "warning";
     const s = status.toLowerCase();
     if (s === "disconnected" || s === "reconnecting") return "error";
@@ -739,7 +740,7 @@ const ScadaMonitorView = () => {
                       ? "online"
                       : "offline"
                 }
-                status={mapPlcStatus(plcSnapshot.state, plcSnapshot.lastEventAt)}
+                status={mapPlcStatus(plcSnapshot.connected, plcSnapshot.state)}
               />
               <DeviceIndicator
                 icon={Plug}
