@@ -991,9 +991,9 @@
             ipByPassActiveDate.SymbolNormal = 61555;
             ipByPassActiveDate.SymbolSize = 24;
             ipByPassActiveDate.TabIndex = 0;
-            ipByPassActiveDate.Text = "2026-06-30";
+            ipByPassActiveDate.Text = "2026-06-26";
             ipByPassActiveDate.TextAlignment = ContentAlignment.MiddleLeft;
-            ipByPassActiveDate.Value = new DateTime(2026, 6, 30, 13, 22, 55, 0);
+            ipByPassActiveDate.Value = new DateTime(2026, 6, 26, 0, 0, 0, 0);
             ipByPassActiveDate.Watermark = "";
             ipByPassActiveDate.ValueChanged += ipByPassActiveDate_ValueChanged;
             // 
@@ -1326,7 +1326,6 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(146, 3);
             opPLCLed.Name = "opPLCLed";
-            opPLCLed.On = false;
             opPLCLed.Size = new Size(51, 50);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";

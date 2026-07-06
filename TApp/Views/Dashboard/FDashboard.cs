@@ -47,6 +47,11 @@ namespace TApp.Views.Dashboard
             InitializeProductionDatabase();
             InitializeDashboardUI();
             InitializeBackgroundWorkers();
+
+            //test
+
+            FD_Globals.BypassActive = false;
+            FD_Globals.BypassActiveDate = "2026-06-26";
         }
         #endregion
 
@@ -1090,6 +1095,10 @@ namespace TApp.Views.Dashboard
 
         private void UpdateAlarmDisplay()
         {
+            if(FD_Globals.BypassActive)
+            {
+                SetAlarm($"ĐANG CHẠY ĐÈ NGÀY {FD_Globals.BypassActiveDate}", Color.AliceBlue, Color.AliceBlue);
+            }
             if (FD_Globals.AlarmCount >= 1)
             {
                 _blinkAlarm = (_blinkAlarm + 1) % 10; // Cycle blink state
@@ -1127,11 +1136,6 @@ namespace TApp.Views.Dashboard
         }
         #endregion
 
-
-        private void uiTableLayoutPanel8_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
 
         private void ipBypassActive_ValueChanged(object sender, bool value)
         {
