@@ -482,27 +482,15 @@ const ProductionView: React.FC = () => {
             <div className="p-3 xl:p-4 flex flex-col gap-2">
               <MiniDeviceIndicator
                 icon={Monitor}
-                label="ACTIVE"
+                label="CAMERA"
                 subLabel={
-                  cameraSnapshot.active.lastCode
-                    ? `${cameraSnapshot.active.lastCode} @ ${new Date(
-                        cameraSnapshot.active.lastAt || Date.now()
+                  cameraSnapshot.camera.lastCode
+                    ? `${cameraSnapshot.camera.lastCode} @ ${new Date(
+                        cameraSnapshot.camera.lastAt || Date.now()
                       ).toLocaleTimeString("vi-VN")}`
                     : "-"
                 }
-                status={mapCamStatus(cameraSnapshot.active.state)}
-              />
-              <MiniDeviceIndicator
-                icon={Monitor}
-                label="PACKAGE"
-                subLabel={
-                  cameraSnapshot.package.lastCode
-                    ? `${cameraSnapshot.package.lastCode} @ ${new Date(
-                        cameraSnapshot.package.lastAt || Date.now()
-                      ).toLocaleTimeString("vi-VN")}`
-                    : "-"
-                }
-                status={mapCamStatus(cameraSnapshot.package.state)}
+                status={mapCamStatus(cameraSnapshot.camera.state)}
               />
               <MiniDeviceIndicator
                 icon={Cpu}

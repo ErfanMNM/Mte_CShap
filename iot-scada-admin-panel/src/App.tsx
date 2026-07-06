@@ -45,6 +45,7 @@ import DataPoolView from "./components/datapool/DataPoolView";
 import ProductionView from "./components/production/ProductionView";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LoginScreen } from "./components/LoginScreen";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 type KeyboardLayoutType = "default" | "shift" | "numeric";
 
@@ -1331,26 +1332,27 @@ const AdminPanelContent = ({ user, onLogout }: { user: any; onLogout: () => void
         <div
           className={`flex-1 overflow-hidden p-4 lg:p-6 2xl:p-8 bg-[#F6F8FA] transition-all duration-300 ${isOpen ? "pb-[380px] md:pb-[420px]" : ""}`}
         >
-          {activeRoute === "monitor" && <ScadaMonitorView />}
-          {activeRoute === "production" && <ProductionView />}
-          {activeRoute === "history" && <ProductionReportView />}
-          {activeRoute === "settings" && <SettingsView />}
-          {activeRoute === "batches" && <POManagerView />}
-          {activeRoute === "datapool" && <DataPoolView />}
-          {activeRoute === "production" && <ProductionView />}
-          {activeRoute !== "monitor" &&
-            activeRoute !== "production" &&
-            activeRoute !== "history" &&
-            activeRoute !== "settings" &&
-            activeRoute !== "batches" &&
-            activeRoute !== "datapool" && (
-              <PlaceholderView
-                title={
-                  navigation.find((n) => n.id === activeRoute)?.title ||
-                  "Chức năng"
-                }
-              />
-            )}
+          <ErrorBoundary key={activeRoute}>
+            {activeRoute === "monitor" && <ScadaMonitorView />}
+            {activeRoute === "production" && <ProductionView />}
+            {activeRoute === "history" && <ProductionReportView />}
+            {activeRoute === "settings" && <SettingsView />}
+            {activeRoute === "batches" && <POManagerView />}
+            {activeRoute === "datapool" && <DataPoolView />}
+            {activeRoute !== "monitor" &&
+              activeRoute !== "production" &&
+              activeRoute !== "history" &&
+              activeRoute !== "settings" &&
+              activeRoute !== "batches" &&
+              activeRoute !== "datapool" && (
+                <PlaceholderView
+                  title={
+                    navigation.find((n) => n.id === activeRoute)?.title ||
+                    "Chức năng"
+                  }
+                />
+              )}
+          </ErrorBoundary>
         </div>
       </main>
 
@@ -1395,5 +1397,9 @@ const AdminPanelWithAuth = () => {
     return <LoginScreen />;
   }
 
-  return <AdminPanelContent user={user} onLogout={logout} />;
+  return (
+    <ErrorBoundary>
+      <AdminPanelContent user={user} onLogout={logout} />
+    </ErrorBoundary>
+  );
 };
