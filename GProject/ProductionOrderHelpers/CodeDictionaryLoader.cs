@@ -123,7 +123,7 @@ namespace GProject.ProductionOrderHelpers
         public static Result ActivateCodeInDatabase(string orderNo, string code,
             string activateDate, string activateUser, string productionDate)
         {
-            return POActivator.ActivateCode(orderNo, code, activateDate, activateUser, productionDate);
+            return PORecord.ActivateCode(orderNo, code, activateDate, activateUser, productionDate);
         }
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace GProject.ProductionOrderHelpers
         public static Result PackCodeInDatabase(string orderNo, string code,
             string cartonCode, string packingDate, string packingUser, string productionDate)
         {
-            return POPacking.PackCode(orderNo, code, cartonCode, packingDate, packingUser, productionDate);
+            return PORecord.PackCode(orderNo, code, cartonCode, packingDate, packingUser, productionDate);
         }
 
         /// <summary>

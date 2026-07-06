@@ -205,8 +205,7 @@ namespace GProject.ProductionOrderHelpers
         {
             string[] paths = {
                 Config.GetPODBPath(orderNo),
-                Config.GetRecordActivePath(orderNo),
-                Config.GetRecordPackingPath(orderNo),
+                Config.GetRecordPath(orderNo),
                 Config.GetCartonPath(orderNo)
             };
             foreach (var p in paths)

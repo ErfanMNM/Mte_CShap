@@ -18,8 +18,7 @@ interface CameraLogEntry {
 }
 
 const initialSnapshot: CameraSnapshot = {
-  active: { state: "Reconnecting", lastCode: "", lastAt: null },
-  package: { state: "Reconnecting", lastCode: "", lastAt: null },
+  camera: { state: "Reconnecting", lastCode: "", lastAt: null },
   connected: false,
   clientCount: 0,
   lastEventAt: null,

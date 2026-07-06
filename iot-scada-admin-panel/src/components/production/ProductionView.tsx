@@ -101,19 +101,19 @@ const ProductionView: React.FC = () => {
     }
   }, [error]);
 
-  // Camera WebSocket - auto addFromReader khi nhận Received từ camera active
+  // Camera WebSocket - auto addFromReader khi nhận Received từ camera
   const cameraWsUrl =
     import.meta.env.VITE_CAMERA_WS_URL || "ws://localhost:9999/ws/camera";
   const { snapshot: cameraSnapshot } = useCameraSocket({
     url: cameraWsUrl,
     onEvent: async (msg) => {
-      if (msg.state !== "Received" || msg.camera !== "active") return;
+      if (msg.state !== "Received" || msg.camera !== "camera") return;
       if (!msg.data) return;
 
       const currentOrderNo = statusRef.current?.orderNo ?? "";
       const batchID = currentOrderNo || "default";
       try {
-        await handleActiveCodeScanned(msg.data, "active", batchID);
+        await handleActiveCodeScanned(msg.data, "camera", batchID);
         await fetchStatus();
         setSuccess(`Đã quét: ${msg.data}`);
       } catch (err) {

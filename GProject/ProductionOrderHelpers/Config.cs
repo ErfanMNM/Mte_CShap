@@ -129,9 +129,9 @@ namespace GProject.ProductionOrderHelpers
         ";
 
         /// <summary>
-        /// Schema cho bảng Records trong Record_Active_{orderNo}.db
+        /// Schema cho bảng Records trong Record_{orderNo}.db (chung cho cả activate và packing)
         /// </summary>
-        public const string SQL_CREATE_RECORD_ACTIVE = @"
+        public const string SQL_CREATE_RECORD = @"
             CREATE TABLE IF NOT EXISTS Records (
                 ID             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 Code           TEXT NOT NULL DEFAULT 'FAIL',
@@ -140,24 +140,6 @@ namespace GProject.ProductionOrderHelpers
                 PLC_Status     TEXT NOT NULL DEFAULT 'FAIL',
                 ActivateDate   TEXT NOT NULL DEFAULT '0',
                 ActivateUser   TEXT NOT NULL DEFAULT '',
-                ProductionDate TEXT NOT NULL DEFAULT '0'
-            );
-            PRAGMA journal_mode=WAL;
-            PRAGMA synchronous=NORMAL;
-            PRAGMA cache_size=10000;
-            PRAGMA temp_store=memory;
-        ";
-
-        /// <summary>
-        /// Schema cho bảng Records trong Record_Packing_{orderNo}.db
-        /// </summary>
-        public const string SQL_CREATE_RECORD_PACKING = @"
-            CREATE TABLE IF NOT EXISTS Records (
-                ID             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                Code           TEXT NOT NULL DEFAULT 'FAIL',
-                cartonCode     TEXT NOT NULL DEFAULT '0',
-                Status         TEXT NOT NULL DEFAULT '0',
-                PLC_Status     TEXT NOT NULL DEFAULT 'FAIL',
                 PackingDate    TEXT NOT NULL DEFAULT '0',
                 PackingUser    TEXT NOT NULL DEFAULT '',
                 ProductionDate TEXT NOT NULL DEFAULT '0'
@@ -239,16 +221,10 @@ namespace GProject.ProductionOrderHelpers
             => Path.Combine(GetBasePathByOrderNo(orderNo), $"{orderNo}.db");
 
         /// <summary>
-        /// Lấy đường dẫn file Record_Active
+        /// Lấy đường dẫn file Record
         /// </summary>
-        public static string GetRecordActivePath(string orderNo)
-            => Path.Combine(GetBasePathByOrderNo(orderNo), $"Record_Active_{orderNo}.db");
-
-        /// <summary>
-        /// Lấy đường dẫn file Record_Packing
-        /// </summary>
-        public static string GetRecordPackingPath(string orderNo)
-            => Path.Combine(GetBasePathByOrderNo(orderNo), $"Record_Packing_{orderNo}.db");
+        public static string GetRecordPath(string orderNo)
+            => Path.Combine(GetBasePathByOrderNo(orderNo), $"Record_{orderNo}.db");
 
         /// <summary>
         /// Lấy đường dẫn file Carton

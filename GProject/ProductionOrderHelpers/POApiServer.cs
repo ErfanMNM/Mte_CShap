@@ -264,8 +264,8 @@ namespace GProject.ProductionOrderHelpers
 
                 var row = result.Data.Rows[0];
                 var poInfo = POInfo.FromDataRow(row);
-                int activeCodes = GProduction.POActivator.GetActiveCount(orderNo);
-                int packedCodes = GProduction.POPacking.GetPackedCount(orderNo);
+                int activeCodes = GProduction.PORecordHelper.GetActiveCount(orderNo);
+                int packedCodes = GProduction.PORecordHelper.GetPackedCount(orderNo);
                 int cartonCount = GProduction.POCarton.GetTotalCartonCount(orderNo);
                 int closedCartons = GProduction.POCarton.GetClosedCartonCount(orderNo);
 
@@ -317,7 +317,7 @@ namespace GProject.ProductionOrderHelpers
                 if (!GProduction.POLoader.Exists(orderNo))
                     return Task.FromResult(Results.NotFound(new CheckDeleteResponse { CanDelete = false, Reason = "PO not found." }));
 
-                int usedCodes = GProduction.POActivator.GetActiveCount(orderNo);
+                int usedCodes = GProduction.PORecordHelper.GetActiveCount(orderNo);
                 int totalCodes = GProduction.POLoader.GetCodeCount(orderNo);
 
                 if (usedCodes > 0)
@@ -354,7 +354,7 @@ namespace GProject.ProductionOrderHelpers
                 if (!GProduction.POLoader.Exists(orderNo))
                     return Task.FromResult(Results.NotFound(new DeletePOResponse { Success = false, Message = "PO not found." }));
 
-                int usedCodes = GProduction.POActivator.GetActiveCount(orderNo);
+                int usedCodes = GProduction.PORecordHelper.GetActiveCount(orderNo);
                 if (usedCodes > 0)
                 {
                     int totalCodes = GProduction.POLoader.GetCodeCount(orderNo);
@@ -518,7 +518,7 @@ namespace GProject.ProductionOrderHelpers
                 if (request == null || string.IsNullOrWhiteSpace(request.Code))
                     return Results.BadRequest(new { success = false, message = "code is required." });
 
-                var result = GProduction.POActivator.ActivateCode(orderNo, request.Code,
+                var result = GProduction.PORecordHelper.ActivateCode(orderNo, request.Code,
                     request.ActivateDate ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                     request.ActivateUser ?? "API",
                     request.ProductionDate ?? "");
@@ -543,7 +543,7 @@ namespace GProject.ProductionOrderHelpers
                 if (request == null || string.IsNullOrWhiteSpace(request.Code))
                     return Results.BadRequest(new { success = false, message = "code is required." });
 
-                var result = GProduction.POPacking.PackCode(orderNo, request.Code, request.CartonCode,
+                var result = GProduction.PORecordHelper.PackCode(orderNo, request.Code, request.CartonCode,
                     request.PackingDate ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                     request.PackingUser ?? "API",
                     request.ProductionDate ?? "");

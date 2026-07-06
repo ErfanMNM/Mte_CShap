@@ -6,8 +6,8 @@ namespace GProject.ProductionOrderHelpers
     /// Sử dụng:
     ///   GProduction.POLoader.GetAll();
     ///   GProduction.POCreator.InitPO("PO001");
-    ///   GProduction.POActivator.ActivateCode("PO001", "code123", ...);
-    ///   GProduction.POPacking.PackCode("PO001", "code123", "CTN001", ...);
+    ///   GProduction.PORecordHelper.ActivateCode("PO001", "code123", ...);
+    ///   GProduction.PORecordHelper.PackCode("PO001", "code123", "CTN001", ...);
     /// </summary>
     public static class GProduction
     {
@@ -65,37 +65,28 @@ namespace GProject.ProductionOrderHelpers
         }
 
         /// <summary>
-        /// Camera Active - Kích hoạt mã
+        /// Camera - Ghi log và xử lý mã
         /// </summary>
-        public static class POActivator
+        public static class PORecordHelper
         {
             public static Result Record(string orderNo, RecordData data)
-                => ProductionOrderHelpers.POActivator.Record(orderNo, data);
+                => ProductionOrderHelpers.PORecord.Record(orderNo, data);
             public static Result ActivateCode(string orderNo, string code, string activateDate, string activateUser, string productionDate)
-                => ProductionOrderHelpers.POActivator.ActivateCode(orderNo, code, activateDate, activateUser, productionDate);
+                => ProductionOrderHelpers.PORecord.ActivateCode(orderNo, code, activateDate, activateUser, productionDate);
             public static Result DeactivateCode(string orderNo, string code)
-                => ProductionOrderHelpers.POActivator.DeactivateCode(orderNo, code);
-            public static int GetActiveCount(string orderNo)
-                => ProductionOrderHelpers.POActivator.GetActiveCount(orderNo);
-            public static int GetUnusedCount(string orderNo)
-                => ProductionOrderHelpers.POActivator.GetUnusedCount(orderNo);
-        }
-
-        /// <summary>
-        /// Camera Packing - Đóng thùng
-        /// </summary>
-        public static class POPacking
-        {
-            public static Result Record(string orderNo, RecordData data)
-                => ProductionOrderHelpers.POPacking.Record(orderNo, data);
+                => ProductionOrderHelpers.PORecord.DeactivateCode(orderNo, code);
             public static Result PackCode(string orderNo, string code, string cartonCode, string packingDate, string packingUser, string productionDate)
-                => ProductionOrderHelpers.POPacking.PackCode(orderNo, code, cartonCode, packingDate, packingUser, productionDate);
+                => ProductionOrderHelpers.PORecord.PackCode(orderNo, code, cartonCode, packingDate, packingUser, productionDate);
             public static Result UnpackCode(string orderNo, string code)
-                => ProductionOrderHelpers.POPacking.UnpackCode(orderNo, code);
+                => ProductionOrderHelpers.PORecord.UnpackCode(orderNo, code);
+            public static int GetActiveCount(string orderNo)
+                => ProductionOrderHelpers.PORecord.GetActiveCount(orderNo);
+            public static int GetUnusedCount(string orderNo)
+                => ProductionOrderHelpers.PORecord.GetUnusedCount(orderNo);
             public static int GetPackedCount(string orderNo)
-                => ProductionOrderHelpers.POPacking.GetPackedCount(orderNo);
+                => ProductionOrderHelpers.PORecord.GetPackedCount(orderNo);
             public static int GetCodeCountInCarton(string orderNo, string cartonCode)
-                => ProductionOrderHelpers.POPacking.GetCodeCountInCarton(orderNo, cartonCode);
+                => ProductionOrderHelpers.PORecord.GetCodeCountInCarton(orderNo, cartonCode);
         }
 
         /// <summary>

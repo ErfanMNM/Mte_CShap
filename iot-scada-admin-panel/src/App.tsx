@@ -487,8 +487,7 @@ const ScadaMonitorView = () => {
     return "ok";
   };
 
-  const cameraActiveState = snapshot.active.state;
-  const cameraPackageState = snapshot.package.state;
+  const cameraState = snapshot.camera.state;
 
   const formatLastCode = (lastCode: string, lastAt: string | null) => {
     if (!lastCode) return "-";
@@ -544,7 +543,7 @@ const ScadaMonitorView = () => {
             <CardHeader title="KẾT QUẢ VỪA KIỂM" icon={Activity} />
             <div className="p-3 2xl:p-5 flex flex-col sm:flex-row gap-3 2xl:gap-5 h-[110px] 2xl:h-40">
               <div className={`w-full sm:w-[35%] rounded-xl 2xl:rounded-2xl text-white flex flex-col items-center justify-center p-2 2xl:p-4 shadow-lg ring-1 ring-white/20 ${
-                cameraActiveState === "Disconnected"
+                cameraState === "Disconnected"
                   ? "bg-gradient-to-br from-slate-400 to-slate-500 shadow-slate-400/20"
                   : "bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/20"
               }`}>
@@ -553,7 +552,7 @@ const ScadaMonitorView = () => {
                   strokeWidth={2.5}
                 />
                 <span className="text-2xl 2xl:text-3xl font-black tracking-widest leading-none">
-                  {cameraActiveState === "Disconnected" ? "WAIT" : "TỐT"}
+                  {cameraState === "Disconnected" ? "WAIT" : "TỐT"}
                 </span>
               </div>
 
@@ -568,14 +567,9 @@ const ScadaMonitorView = () => {
                   {snapshot.lastEventAt ? new Date(snapshot.lastEventAt).toLocaleString("vi-VN") : "Đang chờ..."}
                 </div>
                 <div className="mt-auto text-xs flex items-center gap-2 flex-wrap">
-                  {snapshot.active.lastCode && (
+                  {snapshot.camera.lastCode && (
                     <span className="px-2 py-0.5 2xl:px-3 2xl:py-1 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide bg-blue-100/80 text-blue-700 font-mono">
-                      ACT: {snapshot.active.lastCode}
-                    </span>
-                  )}
-                  {snapshot.package.lastCode && (
-                    <span className="px-2 py-0.5 2xl:px-3 2xl:py-1 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide bg-purple-100/80 text-purple-700 font-mono">
-                      PKG: {snapshot.package.lastCode}
+                      {snapshot.camera.lastCode}
                     </span>
                   )}
                 </div>
@@ -687,11 +681,7 @@ const ScadaMonitorView = () => {
                             {new Date(log.time).toLocaleTimeString("vi-VN")}
                           </td>
                           <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide ${
-                              log.msg.camera === "active"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-purple-100 text-purple-700"
-                            }`}>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide bg-blue-100 text-blue-700">
                               {log.msg.camera.toUpperCase()}
                             </span>
                           </td>
@@ -720,15 +710,9 @@ const ScadaMonitorView = () => {
             <div className="p-2 xl:p-3 2xl:p-4 grid grid-cols-2 grid-rows-3 gap-1.5 2xl:gap-2 flex-1 min-h-0">
               <DeviceIndicator
                 icon={Monitor}
-                label="CAMERA ACTIVE"
-                subLabel={formatLastCode(snapshot.active.lastCode, snapshot.active.lastAt)}
-                status={mapStatus(cameraActiveState)}
-              />
-              <DeviceIndicator
-                icon={Monitor}
-                label="CAMERA PACKAGE"
-                subLabel={formatLastCode(snapshot.package.lastCode, snapshot.package.lastAt)}
-                status={mapStatus(cameraPackageState)}
+                label="CAMERA"
+                subLabel={formatLastCode(snapshot.camera.lastCode, snapshot.camera.lastAt)}
+                status={mapStatus(cameraState)}
               />
               <DeviceIndicator
                 icon={Cpu}

@@ -9,8 +9,7 @@ namespace GProject
 {
     public class Program
     {
-    private static OmronCodeReader? _CR_Active;
-    private static OmronCodeReader? _CR_Package;
+    private static OmronCodeReader? _CR_Camera;
     private static PLCMonitor? _plcMonitor;
     private static GProjectApiServer? _apiServer;
 
@@ -65,16 +64,11 @@ namespace GProject
                 Log.Information("[Main] ProductionStateMachine started. Initial state: {State}",
                     stateMachine.CurrentState);
 
-                // Khởi tạo 2 camera (active + package) - hardcoded cho demo
-                _CR_Active = new OmronCodeReader(OmronCodeReader.e_CodeReaderModel.V430, "127.0.0.1", 9001);
-                _CR_Package = new OmronCodeReader(OmronCodeReader.e_CodeReaderModel.V430, "127.0.0.1", 9002);
-
-                _CR_Active.ClientCallback += (state, data) => OnCameraEvent("active", state, data);
-                _CR_Package.ClientCallback += (state, data) => OnCameraEvent("package", state, data);
-
-                _CR_Active.Connect();
-                _CR_Package.Connect();
-                Log.Information("[Main] Cameras initialized: active=127.0.0.1:9001, package=127.0.0.1:9002");
+                // Khởi tạo 1 camera duy nhất (vừa active vừa phân làn)
+                _CR_Camera = new OmronCodeReader(OmronCodeReader.e_CodeReaderModel.V430, "127.0.0.1", 9001);
+                _CR_Camera.ClientCallback += (state, data) => OnCameraEvent("camera", state, data);
+                _CR_Camera.Connect();
+                Log.Information("[Main] Camera initialized: camera=127.0.0.1:9001");
 
                 // Khoi tao PLC Monitor (Omron FINS/UDP) - heartbeat + counter polling.
                 // Broadcasts connection state to FE via /ws/plc.
@@ -102,10 +96,8 @@ namespace GProject
             finally
             {
                 // Dừng camera
-                try { _CR_Active?.Disconnect(); }
-                catch (Exception ex) { Log.Warning(ex, "[Main] Lỗi khi dừng camera active"); }
-                try { _CR_Package?.Disconnect(); }
-                catch (Exception ex) { Log.Warning(ex, "[Main] Lỗi khi dừng camera package"); }
+                try { _CR_Camera?.Disconnect(); }
+                catch (Exception ex) { Log.Warning(ex, "[Main] Lỗi khi dừng camera"); }
 
                 // Dừng PLC monitor
                 try { _plcMonitor?.Dispose(); }

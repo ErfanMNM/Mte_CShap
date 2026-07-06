@@ -47,10 +47,9 @@ namespace GProject.ProductionOrderHelpers
                 if (!Directory.Exists(basePath))
                     Directory.CreateDirectory(basePath);
 
-                // Tạo database theo thứ tự: UniqueCodes -> Record_Active -> Record_Packing -> Carton
+                // Tạo database theo thứ tự: UniqueCodes -> Record -> Carton
                 CreateDatabaseIfNotExists(Config.GetPODBPath(orderNo), Config.SQL_CREATE_PO_CODES);
-                CreateDatabaseIfNotExists(Config.GetRecordActivePath(orderNo), Config.SQL_CREATE_RECORD_ACTIVE);
-                CreateDatabaseIfNotExists(Config.GetRecordPackingPath(orderNo), Config.SQL_CREATE_RECORD_PACKING);
+                CreateDatabaseIfNotExists(Config.GetRecordPath(orderNo), Config.SQL_CREATE_RECORD);
                 CreateDatabaseIfNotExists(Config.GetCartonPath(orderNo), Config.SQL_CREATE_CARTON);
 
                 return Result.Success($"Khởi tạo PO '{orderNo}' thành công.");
@@ -142,12 +141,11 @@ namespace GProject.ProductionOrderHelpers
                     return status;
                 }
 
-                // Kiểm tra 4 file database
+                // Kiểm tra 3 file database
                 var dbFiles = new (string name, string path)[]
                 {
                     ("UniqueCodes", Config.GetPODBPath(orderNo)),
-                    ("Record_Active", Config.GetRecordActivePath(orderNo)),
-                    ("Record_Packing", Config.GetRecordPackingPath(orderNo)),
+                    ("Record", Config.GetRecordPath(orderNo)),
                     ("Carton", Config.GetCartonPath(orderNo))
                 };
 

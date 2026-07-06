@@ -1,7 +1,7 @@
 // TypeScript interfaces for camera WebSocket events from GProject backend
 // Matches CameraHub.BroadcastAsync payload in GProject/CameraHub.cs
 
-export type CameraName = "active" | "package";
+export type CameraName = "camera";
 
 export type CameraState =
   | "Connected"
@@ -23,8 +23,7 @@ export interface CameraChannelSnapshot {
 }
 
 export interface CameraSnapshot {
-  active: CameraChannelSnapshot;
-  package: CameraChannelSnapshot;
+  camera: CameraChannelSnapshot;
   connected: boolean;
   clientCount: number;
   lastEventAt: string | null;

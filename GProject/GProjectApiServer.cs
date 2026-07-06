@@ -795,12 +795,6 @@ public class GProjectApiServer : IDisposable
                     sm.ActiveCounter.CartonID,
                     sm.ActiveCounter.CartonCode
                 },
-                packageCounter = new
-                {
-                    sm.PackageCounter.PassCount,
-                    sm.PackageCounter.FailCount,
-                    sm.PackageCounter.CartonID
-                },
                 codesCount = sm.Dictionary_Codes.Count,
                 cartonsCount = sm.Dictionary_Cartons.Count,
                 lastWarning = sm.LastWarning,
