@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Play,
   Square,
@@ -12,11 +12,24 @@ import {
   Copy,
   Box,
   TrendingUp,
+  Monitor,
 } from "lucide-react";
 import productionApi from "../../services/productionApi";
 import poApi from "../../services/poApi";
+import { useCameraSocket } from "../../hooks/useCameraSocket";
+import { handleActiveCodeScanned } from "../../services/cameraApi";
+import type { CameraState } from "../../types/camera";
 import type { ProductionStatusResponse } from "../../types/production";
 import type { POListItem } from "../../types/po";
+
+type CamUiStatus = "ok" | "error" | "offline" | "warning";
+
+const mapCamStatus = (state: CameraState): CamUiStatus => {
+  if (state === "Connected") return "ok";
+  if (state === "Received") return "ok";
+  if (state === "Disconnected") return "offline";
+  return "warning";
+};
 
 const ProductionView: React.FC = () => {
   const [status, setStatus] = useState<ProductionStatusResponse | null>(null);
@@ -29,6 +42,11 @@ const ProductionView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [healthOk, setHealthOk] = useState(false);
+
+  const statusRef = useRef<ProductionStatusResponse | null>(null);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -71,6 +89,29 @@ const ProductionView: React.FC = () => {
       return () => clearTimeout(t);
     }
   }, [error]);
+
+  // Camera WebSocket - auto addFromReader khi nhận Received từ camera active
+  const cameraWsUrl =
+    import.meta.env.VITE_CAMERA_WS_URL || "ws://localhost:9999/ws/camera";
+  const { snapshot: cameraSnapshot } = useCameraSocket({
+    url: cameraWsUrl,
+    onEvent: async (msg) => {
+      if (msg.state !== "Received" || msg.camera !== "active") return;
+      if (!msg.data) return;
+
+      const currentOrderNo = statusRef.current?.orderNo ?? "";
+      const batchID = currentOrderNo || "default";
+      try {
+        await handleActiveCodeScanned(msg.data, "active", batchID);
+        await fetchStatus();
+        setSuccess(`Đã quét: ${msg.data}`);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Lỗi xử lý code quét"
+        );
+      }
+    },
+  });
 
   const handleStartProduction = async () => {
     if (!selectedPO) {
@@ -415,6 +456,45 @@ const ProductionView: React.FC = () => {
             </div>
           </div>
 
+          {/* Camera Status */}
+          <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+            <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
+              <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
+                <Monitor className="w-4 h-4 text-indigo-600" /> Trạng thái Camera
+              </h2>
+            </div>
+            <div className="p-3 xl:p-4 flex flex-col gap-2">
+              <MiniDeviceIndicator
+                icon={Monitor}
+                label="ACTIVE"
+                subLabel={
+                  cameraSnapshot.active.lastCode
+                    ? `${cameraSnapshot.active.lastCode} @ ${new Date(
+                        cameraSnapshot.active.lastAt || Date.now()
+                      ).toLocaleTimeString("vi-VN")}`
+                    : "-"
+                }
+                status={mapCamStatus(cameraSnapshot.active.state)}
+              />
+              <MiniDeviceIndicator
+                icon={Monitor}
+                label="PACKAGE"
+                subLabel={
+                  cameraSnapshot.package.lastCode
+                    ? `${cameraSnapshot.package.lastCode} @ ${new Date(
+                        cameraSnapshot.package.lastAt || Date.now()
+                      ).toLocaleTimeString("vi-VN")}`
+                    : "-"
+                }
+                status={mapCamStatus(cameraSnapshot.package.state)}
+              />
+              <div className="mt-1 text-[10px] text-slate-400 font-mono break-all">
+                WS: {cameraSnapshot.connected ? "online" : "offline"} •{" "}
+                {cameraWsUrl.replace(/^wss?:\/\//, "")}
+              </div>
+            </div>
+          </div>
+
           {/* Quick Reference */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 text-white">
             <h3 className="text-xs font-bold uppercase tracking-wider opacity-60 mb-3">
@@ -471,6 +551,46 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, mono, color = "defaul
       <div className={`text-lg font-black tracking-tight ${mono ? "font-mono" : ""}`}>
         {value}
       </div>
+    </div>
+  );
+};
+
+const MiniDeviceIndicator: React.FC<{
+  icon: React.ElementType;
+  label: string;
+  subLabel?: string;
+  status: CamUiStatus;
+}> = ({ icon: Icon, label, subLabel, status }) => {
+  const styles: Record<CamUiStatus, string> = {
+    ok: "bg-green-50 text-green-700 border-green-100",
+    error: "bg-red-50 text-red-700 border-red-100",
+    warning: "bg-amber-50 text-amber-700 border-amber-100",
+    offline: "bg-slate-50 text-slate-600 border-slate-100",
+  };
+  const dotStyles: Record<CamUiStatus, string> = {
+    ok: "bg-green-500",
+    error: "bg-red-500 animate-pulse",
+    warning: "bg-amber-500",
+    offline: "bg-slate-400",
+  };
+  return (
+    <div
+      className={`flex items-center justify-between px-2.5 py-2 rounded-xl border ${styles[status]} min-w-0`}
+    >
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
+        <div className="min-w-0 flex-1">
+          <span className="text-[10px] font-bold tracking-wide uppercase block">
+            {label}
+          </span>
+          {subLabel && (
+            <span className="text-[9px] font-medium text-slate-500 font-mono tracking-wide truncate block">
+              {subLabel}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className={`w-2 h-2 rounded-full shrink-0 ${dotStyles[status]}`} />
     </div>
   );
 };
