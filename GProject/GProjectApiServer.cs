@@ -158,6 +158,49 @@ public class GProjectApiServer : IDisposable
             }
         });
 
+        _app.Map("/ws/production", async context =>
+        {
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+
+            using var ws = await context.WebSockets.AcceptWebSocketAsync();
+            ProductionHub.Instance.Register(ws);
+            Log.Information("[WebSocket] Production client connected. Total clients: {Count}", ProductionHub.Instance.ClientCount);
+
+            try
+            {
+                var buffer = new byte[1024];
+                while (ws.State == WebSocketState.Open)
+                {
+                    var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[WebSocket] Error in Production WebSocket connection.");
+            }
+            finally
+            {
+                ProductionHub.Instance.Unregister(ws);
+                Log.Information("[WebSocket] Production client disconnected. Total clients: {Count}", ProductionHub.Instance.ClientCount);
+                if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
+                {
+                    try
+                    {
+                        await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
+                    }
+                    catch { }
+                }
+            }
+        });
+
         // Auth endpoints
         _app.MapPost("/api/auth/login", HandleLogin);
         _app.MapPost("/api/auth/logout", HandleLogout);
@@ -206,6 +249,11 @@ public class GProjectApiServer : IDisposable
 
         // Production status
         _app.MapGet("/api/production/status", POApiServer.HandleGetProductionStatus);
+
+        // Carton PDA endpoints
+        _app.MapGet("/api/carton/current-po", POApiServer.HandleGetCurrentPO);
+        _app.MapPost("/api/carton/scan", async ctx => await POApiServer.HandleCartonScan(ctx));
+        _app.MapGet("/api/carton/{cartonCode}/info", (string cartonCode) => POApiServer.HandleCartonInfo(cartonCode));
 
         // Production state machine control endpoints
         _app.MapGet("/api/production/state", (Delegate)HandleGetProductionState);

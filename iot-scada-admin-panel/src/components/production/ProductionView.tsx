@@ -5,6 +5,7 @@ import {
   RotateCcw,
   RefreshCw,
   AlertCircle,
+  AlertTriangle,
   Check,
   Package,
   CheckCircle2,
@@ -14,11 +15,14 @@ import {
   TrendingUp,
   Monitor,
   Cpu,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import productionApi from "../../services/productionApi";
 import poApi from "../../services/poApi";
 import { useCameraSocket } from "../../hooks/useCameraSocket";
 import { usePLCWebSocket } from "../../hooks/usePLCWebSocket";
+import { useProductionWebSocket } from "../../hooks/useProductionWebSocket";
 import { handleActiveCodeScanned } from "../../services/cameraApi";
 import type { CameraState } from "../../types/camera";
 import type { PLCState } from "../../types/plc";
@@ -129,6 +133,11 @@ const ProductionView: React.FC = () => {
     import.meta.env.VITE_PLC_WS_URL || "ws://localhost:9999/ws/plc";
   const { snapshot: plcSnapshot } = usePLCWebSocket({ url: plcWsUrl });
 
+  // Production WebSocket - real-time state + counter
+  const prodWsUrl =
+    import.meta.env.VITE_PROD_WS_URL || "ws://localhost:9999/ws/production";
+  const { snapshot: prodSnapshot, connected: prodWsConnected } = useProductionWebSocket({ url: prodWsUrl });
+
   const handleStartProduction = async () => {
     if (!selectedPO) {
       setError("Vui lòng chọn một PO để bắt đầu.");
@@ -201,13 +210,22 @@ const ProductionView: React.FC = () => {
   const canReset = status?.hasPO === true;
 
   const stateConfig: Record<string, { label: string; bg: string; text: string; dot: string; icon: string }> = {
-    Checking: { label: "CHECKING", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", icon: "animate-pulse" },
+    NeedLogin: { label: "NEED LOGIN", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500 animate-pulse", icon: "" },
+    Checking: { label: "CHECKING", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500 animate-pulse", icon: "" },
     NoSelectedPO: { label: "NO PO", bg: "bg-slate-50", text: "text-slate-600", dot: "bg-slate-400", icon: "" },
-    Idle: { label: "IDLE", bg: "bg-slate-50", text: "text-slate-600", dot: "bg-slate-400", icon: "" },
+    Editing: { label: "EDITING", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", icon: "" },
+    CheckPO: { label: "CHECK PO", bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-500 animate-pulse", icon: "" },
+    LoadPO: { label: "LOAD PO", bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-500 animate-pulse", icon: "" },
     Ready: { label: "READY", bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500", icon: "" },
+    PushingToDic: { label: "PUSHING TO DIC", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500 animate-pulse", icon: "" },
     Running: { label: "RUNNING", bg: "bg-green-50", text: "text-green-800", dot: "bg-green-500 animate-pulse", icon: "" },
+    Paused: { label: "PAUSED", bg: "bg-amber-50", text: "text-amber-800", dot: "bg-amber-500", icon: "" },
+    WaitingStop: { label: "WAITING STOP", bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-500 animate-pulse", icon: "" },
+    CheckAfterCompleted: { label: "CHECKING", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500 animate-pulse", icon: "" },
     Completed: { label: "COMPLETED", bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", icon: "" },
-    Error: { label: "ERROR", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", icon: "animate-pulse" },
+    DeviceError: { label: "DEVICE ERROR", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500 animate-pulse", icon: "" },
+    Error: { label: "ERROR", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500 animate-pulse", icon: "" },
+    Idle: { label: "IDLE", bg: "bg-slate-50", text: "text-slate-600", dot: "bg-slate-400", icon: "" },
   };
 
   const state = status?.state || "Checking";
@@ -286,7 +304,7 @@ const ProductionView: React.FC = () => {
         <div className="xl:col-span-2 flex flex-col gap-4">
           {/* State Banner */}
           <div className={`rounded-2xl border p-4 ${cfg.bg}`}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className={`w-3 h-3 rounded-full ${cfg.dot}`} />
               <span className={`text-sm font-black tracking-wider ${cfg.text}`}>
                 {cfg.label}
@@ -296,6 +314,24 @@ const ProductionView: React.FC = () => {
                   • {status.orderNo}
                 </span>
               )}
+              {/* lastWarning indicator */}
+              {prodSnapshot.lastWarning && (
+                <span className="ml-2 flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">
+                  <AlertTriangle className="w-3 h-3" />
+                  {prodSnapshot.lastWarning}
+                </span>
+              )}
+              {/* WebSocket status */}
+              <span className="ml-auto flex items-center gap-1.5 text-xs font-semibold">
+                {prodWsConnected ? (
+                  <Wifi className="w-3.5 h-3.5 text-green-500" />
+                ) : (
+                  <WifiOff className="w-3.5 h-3.5 text-red-500" />
+                )}
+                <span className={prodWsConnected ? "text-green-600" : "text-red-500"}>
+                  WS {prodWsConnected ? "Online" : "Offline"}
+                </span>
+              </span>
             </div>
           </div>
 

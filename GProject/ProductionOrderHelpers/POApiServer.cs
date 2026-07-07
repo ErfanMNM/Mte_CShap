@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using GProject.Production;
 using Microsoft.Data.Sqlite;
 using Serilog;
 
@@ -66,6 +67,14 @@ namespace GProject.ProductionOrderHelpers
         [JsonPropertyName("cartonCount")] public int CartonCount { get; set; }
         [JsonPropertyName("closedCartonCount")] public int ClosedCartonCount { get; set; }
         [JsonPropertyName("progressPercent")] public double ProgressPercent { get; set; }
+        [JsonPropertyName("totalCount")] public int TotalCount { get; set; }
+        [JsonPropertyName("passCount")] public int PassCount { get; set; }
+        [JsonPropertyName("failCount")] public int FailCount { get; set; }
+        [JsonPropertyName("duplicateCount")] public int DuplicateCount { get; set; }
+        [JsonPropertyName("currentCartonId")] public int CurrentCartonId { get; set; }
+        [JsonPropertyName("currentCartonCode")] public string CurrentCartonCode { get; set; } = "";
+        [JsonPropertyName("itemsInCarton")] public int ItemsInCarton { get; set; }
+        [JsonPropertyName("cartonCapacity")] public int CartonCapacity { get; set; }
     }
 
     public class ApiResponse
@@ -645,18 +654,149 @@ namespace GProject.ProductionOrderHelpers
         {
             try
             {
+                var sm = ProductionStateMachine.Instance;
+                int packedCodes = 0;
+                int cartonCount = 0, closedCartons = 0;
+                string? orderNo = null, productName = null;
+                int orderQty = 0;
+
+                if (ProductionStateMachine.ProductionData != null)
+                {
+                    orderNo = ProductionStateMachine.ProductionData.OrderNo;
+                    productName = ProductionStateMachine.ProductionData.ProductName;
+                    orderQty = ProductionStateMachine.ProductionData.OrderQty;
+                    packedCodes = GProject.ProductionOrderHelpers.GProduction.PORecordHelper.GetPackedCount(orderNo);
+                    cartonCount = GProject.ProductionOrderHelpers.GProduction.POCarton.GetTotalCartonCount(orderNo);
+                    closedCartons = GProject.ProductionOrderHelpers.GProduction.POCarton.GetClosedCartonCount(orderNo);
+                }
+
                 return Task.FromResult(Results.Json(new ProductionStatusResponse
                 {
                     Success = true,
-                    State = "Ready",
-                    HasPO = false,
-                    ProgressPercent = 0
+                    State = sm.CurrentState.ToString(),
+                    HasPO = ProductionStateMachine.ProductionData != null,
+                    OrderNo = orderNo,
+                    ProductName = productName,
+                    OrderQty = orderQty,
+                    TotalCount = sm.ActiveCounter.TotalCount,
+                    PassCount = sm.ActiveCounter.PassCount,
+                    FailCount = sm.ActiveCounter.FailCount,
+                    DuplicateCount = sm.ActiveCounter.DuplicateCount,
+                    CartonCount = cartonCount,
+                    ClosedCartonCount = closedCartons,
+                    CurrentCartonId = sm.ActiveCounter.CartonID,
+                    CurrentCartonCode = sm.ActiveCounter.CartonCode,
+                    ItemsInCarton = sm.PackageCounter.PassCount,
+                    CartonCapacity = sm.ActiveCounter.CartonCapacity,
+                    ProgressPercent = orderQty > 0 ? Math.Round((double)packedCodes / orderQty * 100, 2) : 0
                 }));
             }
             catch (Exception ex)
             {
                 LogError("POApiServer", $"Error getting production status: {ex.Message}", ex);
                 return Task.FromResult(Results.Json(new ProductionStatusResponse { Success = false, Message = ex.Message }, statusCode: 500));
+            }
+        }
+
+        #endregion
+
+        #region Carton PDA Handlers
+
+        /// <summary>POST /api/carton/scan</summary>
+        public static async Task<IResult> HandleCartonScan(HttpContext context)
+        {
+            try
+            {
+                CartonScanRequest? req = await context.Request.ReadFromJsonAsync<CartonScanRequest>();
+                if (req == null || string.IsNullOrWhiteSpace(req.CartonCode))
+                    return Results.Json(new CartonScanResponse { Success = false, Message = "Invalid request" });
+
+                var sm = ProductionStateMachine.Instance;
+                if (sm.CurrentState != e_ProductionState.Running || ProductionStateMachine.ProductionData == null)
+                    return Results.Json(new CartonScanResponse { Success = false, Message = "PO not running" });
+
+                var task = new CartonWriteTask
+                {
+                    Type = CartonWriteType.ScanCarton,
+                    OrderNo = ProductionStateMachine.ProductionData.OrderNo,
+                    CartonCode = req.CartonCode,
+                    MachineName = req.MachineName,
+                    ScannedAt = req.ScannedAt,
+                    Mode = req.Mode
+                };
+
+                var result = await CartonWriteQueueManager.EnqueueAsync(ProductionStateMachine.ProductionData.OrderNo, task);
+
+                return Results.Json(new CartonScanResponse
+                {
+                    Success = result.Success,
+                    Message = result.Message,
+                    Status = result.Status,
+                    CartonIndex = result.CartonIndex,
+                    OrderNo = ProductionStateMachine.ProductionData.OrderNo,
+                    ProductCount = result.ProductCount,
+                    ActivateDate = result.ActivateDate
+                });
+            }
+            catch (Exception ex)
+            {
+                LogError("POApiServer", $"HandleCartonScan error: {ex.Message}", ex);
+                return Results.Json(new CartonScanResponse { Success = false, Message = ex.Message }, statusCode: 500);
+            }
+        }
+
+        /// <summary>GET /api/carton/{cartonCode}/info</summary>
+        public static IResult HandleCartonInfo(string cartonCode)
+        {
+            try
+            {
+                var sm = ProductionStateMachine.Instance;
+                if (sm.CurrentState != e_ProductionState.Running || ProductionStateMachine.ProductionData == null)
+                    return Results.Json(new CartonInfoResponse { Success = false, Message = "PO not running" });
+
+                var info = POCartonCode.GetCartonInfo(ProductionStateMachine.ProductionData.OrderNo, cartonCode);
+
+                return Results.Json(new CartonInfoResponse
+                {
+                    Success = info.Success,
+                    CartonCode = info.CartonCode,
+                    CartonIndex = info.CartonIndex,
+                    ActivateDate = info.StartDatetime,
+                    ActivateUser = info.ActivateUser,
+                    ProductCount = info.ProductCount,
+                    Status = info.Status,
+                    Message = info.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                LogError("POApiServer", $"HandleCartonInfo error: {ex.Message}", ex);
+                return Results.Json(new CartonInfoResponse { Success = false, Message = ex.Message }, statusCode: 500);
+            }
+        }
+
+        /// <summary>GET /api/carton/current-po</summary>
+        public static Task<IResult> HandleGetCurrentPO()
+        {
+            try
+            {
+                var sm = ProductionStateMachine.Instance;
+                if (ProductionStateMachine.ProductionData == null)
+                    return Task.FromResult(Results.Json(new CurrentPOResponse { Success = false, Message = "No PO loaded" }));
+
+                return Task.FromResult(Results.Json(new CurrentPOResponse
+                {
+                    Success = true,
+                    OrderNo = ProductionStateMachine.ProductionData.OrderNo,
+                    ProductName = ProductionStateMachine.ProductionData.ProductName,
+                    OrderQty = ProductionStateMachine.ProductionData.OrderQty,
+                    State = sm.CurrentState.ToString()
+                }));
+            }
+            catch (Exception ex)
+            {
+                LogError("POApiServer", $"HandleGetCurrentPO error: {ex.Message}", ex);
+                return Task.FromResult(Results.Json(new CurrentPOResponse { Success = false, Message = ex.Message }, statusCode: 500));
             }
         }
 

@@ -23,6 +23,9 @@ namespace GProject.Production
         private e_ProductionState _currentState = e_ProductionState.NeedLogin;
         private e_ProductionState _previousState = e_ProductionState.NeedLogin;
 
+        private DateTime _lastBroadcast = DateTime.MinValue;
+        private static readonly TimeSpan BroadcastThrottle = TimeSpan.FromMilliseconds(500);
+
         // Dữ liệu PO hiện tại trong RAM
         public static POInfo? ProductionData { get; set; }
 
@@ -34,6 +37,17 @@ namespace GProject.Production
 
         // Bộ đếm
         public ProductCounter ActiveCounter { get; private set; } = new();
+
+        /// <summary>
+        /// Cập nhật ActiveCounter.TotalCount từ PLC.
+        /// </summary>
+        public void UpdateActiveCounterTotal(int totalCount)
+        {
+            lock (_stateLock)
+            {
+                ActiveCounter.TotalCount = totalCount;
+            }
+        }
         public ProductCounter PackageCounter { get; private set; } = new();
 
         // Cờ trạng thái thiết bị
@@ -89,7 +103,7 @@ namespace GProject.Production
         }
 
         /// <summary>
-        /// Chuyển trạng thái (thread-safe)
+        /// Chuyển trạng thái (thread-safe) + broadcast qua WebSocket
         /// </summary>
         public void SetState(e_ProductionState newState, string? reason = null)
         {
@@ -101,6 +115,9 @@ namespace GProject.Production
             }
             Log.Information("[StateMachine] {Prev} -> {New} ({Reason})",
                 _previousState, newState, reason ?? "no reason");
+
+            // Broadcast ngay lập tức khi state đổi
+            _ = BroadcastStateAsync();
         }
 
         /// <summary>
@@ -114,6 +131,49 @@ namespace GProject.Production
             ActiveCounter = new ProductCounter();
             PackageCounter = new ProductCounter();
             SetState(e_ProductionState.NeedLogin, "logout");
+        }
+
+        private DateTime _lastPeriodicBroadcast = DateTime.MinValue;
+        private static readonly TimeSpan PeriodicBroadcastInterval = TimeSpan.FromMilliseconds(500);
+
+        /// <summary>
+        /// Broadcast production state qua ProductionHub WebSocket.
+        /// Throttle: chỉ broadcast nếu đã qua >= 500ms kể từ lần cuối.
+        /// </summary>
+        private async Task BroadcastStateAsync()
+        {
+            try
+            {
+                var now = DateTime.Now;
+                if ((now - _lastBroadcast) < BroadcastThrottle) return;
+                _lastBroadcast = now;
+
+                var sm = ProductionStateMachine.Instance;
+                await ProductionHub.Instance.BroadcastStateAsync(
+                    sm.CurrentState.ToString(),
+                    sm.PreviousState.ToString(),
+                    ProductionData?.OrderNo,
+                    ProductionData?.ProductName,
+                    ProductionData?.OrderQty ?? 0,
+                    new
+                    {
+                        sm.ActiveCounter.PassCount,
+                        sm.ActiveCounter.FailCount,
+                        sm.ActiveCounter.DuplicateCount,
+                        sm.ActiveCounter.CartonID,
+                        sm.ActiveCounter.CartonCode
+                    },
+                    sm.LastWarning,
+                    sm.IsAppReady,
+                    sm.IsDeviceReady,
+                    sm.Dictionary_Codes.Count,
+                    sm.Dictionary_Cartons.Count
+                );
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[StateMachine] Broadcast failed");
+            }
         }
 
         /// <summary>
@@ -133,8 +193,20 @@ namespace GProject.Production
                     SetState(e_ProductionState.Error, $"loop error: {ex.Message}");
                 }
 
-                try { Task.Delay(100, token).Wait(token); }
+                try { Task.Delay(10, token).Wait(token); }
                 catch (OperationCanceledException) { break; }
+
+                // Periodic broadcast mỗi 500ms để update counter
+                try
+                {
+                    var now = DateTime.Now;
+                    if ((now - _lastPeriodicBroadcast) >= PeriodicBroadcastInterval)
+                    {
+                        _lastPeriodicBroadcast = now;
+                        _ = BroadcastStateAsync();
+                    }
+                }
+                catch { }
             }
         }
 

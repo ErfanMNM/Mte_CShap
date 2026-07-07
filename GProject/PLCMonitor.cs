@@ -57,7 +57,7 @@ public class PLCMonitor : IDisposable
         var counterDm = Environment.GetEnvironmentVariable("PLC_TOTAL_COUNT_DM") ?? "D100";
         var deactiveDm = Environment.GetEnvironmentVariable("PLC_DEACTIVE_DM") ?? "D200";
 
-        var consecutiveFailures = 0;
+        int consecutiveFailures = 0;
 
         while (!ct.IsCancellationRequested && _running)
         {
@@ -67,20 +67,31 @@ public class PLCMonitor : IDisposable
                 var writeResult = _plc.Write(readyDm, (short)1);
 
                 bool writeOk = writeResult.IsSuccess;
-                bool readOk = false;
-                int[]? counters = null;
-                int deactive = 0;
 
-                //gửi ok thì có nghĩa là PLC đang online.
                 if (writeOk)
                 {
                     consecutiveFailures = 0;
                     EmitState(PLCConnectionState.Connected, $"PLC online @ {_ip}:{_port};");
+
+                    // 2) Doc counter tu PLC
+                    try
+                    {
+                        var readResult = _plc.ReadInt32(counterDm, 1);
+                        if (readResult.IsSuccess && readResult.Content.Length > 0)
+                        {
+                            int totalCount = readResult.Content[0];
+                            Production.ProductionStateMachine.Instance.UpdateActiveCounterTotal(totalCount);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning("[PLCMonitor] Failed to read counter: {Ex}", ex.Message);
+                    }
                 }
                 else
                 {
-                        EmitState(PLCConnectionState.Disconnected, $"PLC offline ({consecutiveFailures} consecutive fails)");
-                    
+                    consecutiveFailures++;
+                    EmitState(PLCConnectionState.Disconnected, $"PLC offline ({consecutiveFailures} consecutive fails)");
                 }
 
                 Thread.Sleep(_pollMs);

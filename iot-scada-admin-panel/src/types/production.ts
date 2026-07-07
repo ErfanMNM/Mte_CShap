@@ -28,3 +28,26 @@ export interface ProductionStatusResponse {
   cartonCapacity: number;
   progressPercent: number;
 }
+
+export interface ActiveCounterSnapshot {
+  PassCount: number;
+  FailCount: number;
+  DuplicateCount: number;
+  CartonID: number;
+  CartonCode: string;
+}
+
+export interface ProductionStateResponse {
+  success: boolean;
+  state: string;
+  previousState: string;
+  orderNo: string;
+  productName: string;
+  orderQty: number;
+  activeCounter: ActiveCounterSnapshot;
+  codesCount: number;
+  cartonsCount: number;
+  lastWarning: string;
+  isAppReady: boolean;
+  isDeviceReady: boolean;
+}

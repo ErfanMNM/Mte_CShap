@@ -17,46 +17,7 @@ Hệ thống sử dụng phần mềm giao tiếp với PLC thông qua việc **
 
 ---
 
-## 3. Luồng Hoạt Động Camera Đóng Gói
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        CAMERA ĐÓNG GÓI                                     │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-  PLC                                          PHẦN MỀM
-   │                                               │
-   │  ① Tín hiệu TRIGGER                          │
-   │ ─────────────────────────────────────────────►│
-   │                                               │
-   │  ② DELAY (canh vị trí chụp hợp lý)           │
-   │  ◄────────────────────────────────────────────│
-   │                                               │
-   │  ③ Gửi IO cho Camera chụp                    │
-   │ ─────────────────────────────────────────────►│
-   │                                               │
-   │                                               │ ④ Camera chụp
-   │                                               │ ⑤ Xử lý ảnh
-   │                                               │
-   │                   KẾT QUẢ                     │
-   │  ◄────────────────────────────────────────────│
-   │                                               │
-   │  ⑦ Write D10 = 1 (PASS)                      │
-   │     Hoặc: Write D10 = 0 (FAIL)               │
-   │                                               │
-```
-
-### Chi Tiết Kết Quả
-
-| Kết quả xử lý | Giá trị ghi vào D10 | Hành động PLC |
-|---------------|---------------------|---------------|
-| **PASS** | `1` | Tiếp tục quy trình |
-| **FAIL** | `0` | Loại sản phẩm |
-| **TIMEOUT** (>120ms) | `0` | **PLC bắt buộc loại sản phẩm** |
-
----
-
-## 4. Luồng Hoạt Động Camera Phân Làn Sản Phẩm
+## 3. Luồng Hoạt Động Camera Phân Làn Sản Phẩm
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -149,10 +110,3 @@ Hệ thống sử dụng phần mềm giao tiếp với PLC thông qua việc **
 | Dxx | Counter | PLC → Phần mềm (Read) |
 
 ---
-
-## 8. Lưu Ý Cho Team Cơ Khí
-
-1. **Trigger signal** cần được gửi từ PLC khi sản phẩm đến vị trí
-2. **Delay time** cần được tunning phù hợp với vị trí camera và tốc độ dây chuyền
-3. **Timeout 120ms** là cố định - nếu camera không phản hồi trong thời gian này, sản phẩm phải được loại
-4. **D10 = 1/2** để phân làn yêu cầu PLC có logic điều hướng tương ứng

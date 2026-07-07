@@ -169,6 +169,24 @@ namespace GProject.ProductionOrderHelpers
         ";
 
         /// <summary>
+        /// Schema cho bảng CartonCode trong Carton_{orderNo}.db — log mỗi lần scan thùng
+        /// </summary>
+        public const string SQL_CREATE_CARTON_CODE = @"
+            CREATE TABLE IF NOT EXISTS CartonCode (
+                ID            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                MachineName   TEXT NOT NULL,
+                CartonCode    TEXT NOT NULL,
+                CartonIndex   INTEGER NOT NULL DEFAULT 0,
+                ScanAt        TEXT NOT NULL,
+                Mode          TEXT NOT NULL DEFAULT 'scan',
+                Result        TEXT NOT NULL DEFAULT ''
+            );
+            CREATE INDEX IF NOT EXISTS IDX_CC_MachineName ON CartonCode(MachineName);
+            CREATE INDEX IF NOT EXISTS IDX_CC_CartonCode ON CartonCode(CartonCode);
+            PRAGMA journal_mode=WAL;
+        ";
+
+        /// <summary>
         /// Schema cho bảng POHistory
         /// </summary>
         public const string SQL_CREATE_PO_HISTORY = @"

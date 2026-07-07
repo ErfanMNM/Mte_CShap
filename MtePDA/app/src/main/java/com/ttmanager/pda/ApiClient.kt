@@ -10,6 +10,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 import java.util.concurrent.TimeUnit
 
 data class ScanRequest(
@@ -19,6 +20,44 @@ data class ScanRequest(
 
 data class ScanResponse(
     @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String
+)
+
+// Carton scan request/response
+data class CartonScanRequest(
+    @SerializedName("machineName") val machineName: String,
+    @SerializedName("cartonCode") val cartonCode: String,
+    @SerializedName("scannedAt") val scannedAt: String,
+    @SerializedName("mode") val mode: String = "scan"
+)
+
+data class CartonScanResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String,
+    @SerializedName("status") val status: String,
+    @SerializedName("cartonIndex") val cartonIndex: Int,
+    @SerializedName("orderNo") val orderNo: String,
+    @SerializedName("productCount") val productCount: Int = 0,
+    @SerializedName("activateDate") val activateDate: String = ""
+)
+
+data class CartonInfoResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("cartonCode") val cartonCode: String,
+    @SerializedName("cartonIndex") val cartonIndex: Int,
+    @SerializedName("activateDate") val activateDate: String,
+    @SerializedName("activateUser") val activateUser: String,
+    @SerializedName("productCount") val productCount: Int,
+    @SerializedName("status") val status: String,
+    @SerializedName("message") val message: String
+)
+
+data class CurrentPOResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("orderNo") val orderNo: String,
+    @SerializedName("productName") val productName: String,
+    @SerializedName("orderQty") val orderQty: Int,
+    @SerializedName("state") val state: String,
     @SerializedName("message") val message: String
 )
 
@@ -33,6 +72,15 @@ interface PdaApiService {
 
     @GET("/api/health")
     suspend fun getHealth(): Response<HealthResponse>
+
+    @POST("/api/carton/scan")
+    suspend fun postCartonScan(@Body request: CartonScanRequest): Response<CartonScanResponse>
+
+    @GET("/api/carton/{cartonCode}/info")
+    suspend fun getCartonInfo(@Path("cartonCode") code: String): Response<CartonInfoResponse>
+
+    @GET("/api/carton/current-po")
+    suspend fun getCurrentPO(): Response<CurrentPOResponse>
 }
 
 class ApiClient {
@@ -83,6 +131,45 @@ class ApiClient {
     suspend fun checkHealth(): Result<HealthResponse> {
         return try {
             val response = apiService?.getHealth()
+            if (response != null && response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("HTTP ${response?.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun postCartonScan(machineName: String, cartonCode: String, scannedAt: String, mode: String = "scan"): Result<CartonScanResponse> {
+        return try {
+            val response = apiService?.postCartonScan(CartonScanRequest(machineName, cartonCode, scannedAt, mode))
+            if (response != null && response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("HTTP ${response?.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getCartonInfo(cartonCode: String): Result<CartonInfoResponse> {
+        return try {
+            val response = apiService?.getCartonInfo(cartonCode)
+            if (response != null && response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("HTTP ${response?.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getCurrentPO(): Result<CurrentPOResponse> {
+        return try {
+            val response = apiService?.getCurrentPO()
             if (response != null && response.isSuccessful) {
                 Result.success(response.body()!!)
             } else {

@@ -22,6 +22,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+enum class ScanMode { QUET_THUNG, KIEM_TRA }
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -36,8 +38,10 @@ class MainActivity : AppCompatActivity() {
     private var last24hScans = 0
     private var healthCheckJob: Job? = null
     private var isServerOnline = false
+    private var currentMode = ScanMode.QUET_THUNG
 
     private val dateFormatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    private val fullDateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
     private val todayDateFormatter = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -116,7 +120,11 @@ class MainActivity : AppCompatActivity() {
             } else false
         }
 
+        // Mode: QUET THUNG
         binding.btnScan.setOnClickListener {
+            currentMode = ScanMode.QUET_THUNG
+            binding.tvScanModeLabel.text = "QUET THUNG"
+            binding.tvScanModeLabel.setBackgroundResource(R.drawable.badge_mode_quet)
             if (binding.etServerIp.text.isNullOrBlank()) {
                 showSnack(getString(R.string.msg_no_ip))
                 binding.etServerIp.requestFocus()
@@ -130,10 +138,23 @@ class MainActivity : AppCompatActivity() {
             scanManager.startScan()
         }
 
-        binding.btnQuickQcOk.setOnClickListener { quickSend("QC-OK") }
-        binding.btnQuickQcNg.setOnClickListener { quickSend("QC-NG") }
-        binding.btnQuickStart.setOnClickListener { quickSend("START") }
-        binding.btnQuickStop.setOnClickListener { quickSend("STOP") }
+        // Mode: KIEM TRA THUNG
+        binding.btnKiemTra.setOnClickListener {
+            currentMode = ScanMode.KIEM_TRA
+            binding.tvScanModeLabel.text = "KIEM TRA THUNG"
+            binding.tvScanModeLabel.setBackgroundResource(R.drawable.badge_mode_kiem_tra)
+            if (binding.etServerIp.text.isNullOrBlank()) {
+                showSnack(getString(R.string.msg_no_ip))
+                binding.etServerIp.requestFocus()
+                return@setOnClickListener
+            }
+            prefs.edit()
+                .putString("server_ip", binding.etServerIp.text.toString())
+                .putString("pda_name", binding.etPdaName.text.toString())
+                .apply()
+            configureApi()
+            scanManager.startScan()
+        }
 
         binding.btnClearHistory.setOnClickListener {
             history.clear()
@@ -150,7 +171,92 @@ class MainActivity : AppCompatActivity() {
     private fun handleScan(code: String, barcodeType: String) {
         if (code.isBlank()) return
         binding.etCode.setText(code)
-        sendToServer(code, barcodeType)
+        when (currentMode) {
+            ScanMode.QUET_THUNG -> sendCartonScan(code, barcodeType)
+            ScanMode.KIEM_TRA -> sendCartonInfo(code, barcodeType)
+        }
+    }
+
+    private fun sendCartonScan(code: String, barcodeType: String) {
+        val pdaName = binding.etPdaName.text?.toString()?.trim()
+            ?.ifBlank { getString(R.string.default_pda_name) }
+            ?: getString(R.string.default_pda_name)
+        val timeStr = dateFormatter.format(Date())
+
+        totalScans++
+        todayScans++
+        last24hScans++
+        updateStats()
+
+        val historyItem = ScanHistoryItem(
+            code = code,
+            time = timeStr,
+            pdaName = pdaName,
+            sendStatus = SendStatus.PENDING,
+            barcodeType = barcodeType
+        )
+        addToHistory(historyItem)
+
+        lifecycleScope.launch {
+            val scannedAt = fullDateFormatter.format(Date())
+            val result = apiClient.postCartonScan(pdaName, code, scannedAt, "scan")
+            result.fold(
+                onSuccess = { response ->
+                    val statusStr = response.status
+                    updateHistoryStatus(code, timeStr, if (response.success) SendStatus.SUCCESS else SendStatus.ERROR)
+                    val msg = if (response.success) {
+                        "[$statusStr] ${response.message} (Thuung #${response.cartonIndex})"
+                    } else {
+                        response.message
+                    }
+                    showSnack(msg, isError = !response.success)
+                },
+                onFailure = { error ->
+                    updateHistoryStatus(code, timeStr, SendStatus.ERROR)
+                    showSnack("Loi: ${error.message}", isError = true)
+                }
+            )
+        }
+    }
+
+    private fun sendCartonInfo(code: String, barcodeType: String) {
+        val pdaName = binding.etPdaName.text?.toString()?.trim()
+            ?.ifBlank { getString(R.string.default_pda_name) }
+            ?: getString(R.string.default_pda_name)
+        val timeStr = dateFormatter.format(Date())
+
+        totalScans++
+        todayScans++
+        last24hScans++
+        updateStats()
+
+        val historyItem = ScanHistoryItem(
+            code = code,
+            time = timeStr,
+            pdaName = pdaName,
+            sendStatus = SendStatus.PENDING,
+            barcodeType = barcodeType
+        )
+        addToHistory(historyItem)
+
+        lifecycleScope.launch {
+            val result = apiClient.getCartonInfo(code)
+            result.fold(
+                onSuccess = { response ->
+                    updateHistoryStatus(code, timeStr, if (response.success) SendStatus.SUCCESS else SendStatus.ERROR)
+                    val msg = if (response.success) {
+                        "[${response.status}] Thuung #${response.cartonIndex} | San pham: ${response.productCount} | Nguoi: ${response.activateUser} | Luc: ${response.activateDate}"
+                    } else {
+                        response.message
+                    }
+                    showSnack(msg, isError = !response.success)
+                },
+                onFailure = { error ->
+                    updateHistoryStatus(code, timeStr, SendStatus.ERROR)
+                    showSnack("Loi: ${error.message}", isError = true)
+                }
+            )
+        }
     }
 
     private fun sendManualCode() {
@@ -169,7 +275,7 @@ class MainActivity : AppCompatActivity() {
             .putString("pda_name", binding.etPdaName.text.toString())
             .apply()
         configureApi()
-        sendToServer(code, "MANUAL")
+        handleScan(code, "MANUAL")
     }
 
     private fun quickSend(code: String) {
@@ -188,44 +294,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendToServer(code: String, barcodeType: String) {
-        val pdaName = binding.etPdaName.text?.toString()?.trim()
-            ?.ifBlank { getString(R.string.default_pda_name) }
-            ?: getString(R.string.default_pda_name)
-
-        val timeStr = dateFormatter.format(Date())
-
-        totalScans++
-        todayScans++
-        last24hScans++
-        updateStats()
-
-        val historyItem = ScanHistoryItem(
-            code = code,
-            time = timeStr,
-            pdaName = pdaName,
-            sendStatus = SendStatus.PENDING,
-            barcodeType = barcodeType
-        )
-
-        addToHistory(historyItem)
-
-        lifecycleScope.launch {
-            val result = apiClient.postScan(code, pdaName)
-            result.fold(
-                onSuccess = { response ->
-                    updateHistoryStatus(code, timeStr, if (response.success) SendStatus.SUCCESS else SendStatus.ERROR)
-                    if (response.success) {
-                        showSnack(getString(R.string.msg_sent, code))
-                    } else {
-                        showSnack(response.message, isError = true)
-                    }
-                },
-                onFailure = { error ->
-                    updateHistoryStatus(code, timeStr, SendStatus.ERROR)
-                    showSnack(getString(R.string.msg_error, error.message ?: "Unknown"), isError = true)
-                }
-            )
-        }
+        handleScan(code, barcodeType)
     }
 
     private fun addToHistory(item: ScanHistoryItem) {
