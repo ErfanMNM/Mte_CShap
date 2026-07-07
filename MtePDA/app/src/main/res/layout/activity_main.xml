@@ -42,7 +42,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="PDA Scanner"
+                    android:text="@string/app_name"
                     android:textColor="@color/white"
                     android:textSize="20sp"
                     android:textStyle="bold"
@@ -57,7 +57,8 @@
                     android:gravity="center_vertical"
                     android:background="@drawable/bg_status_badge"
                     android:paddingHorizontal="10dp"
-                    android:paddingVertical="4dp">
+                    android:paddingVertical="4dp"
+                    android:layout_marginEnd="@dimen/spacing_sm">
 
                     <View
                         android:id="@+id/statusDot"
@@ -75,6 +76,16 @@
                         android:fontFamily="sans-serif-medium"
                         android:layout_marginStart="6dp"/>
                 </LinearLayout>
+
+                <!-- Settings Button -->
+                <ImageButton
+                    android:id="@+id/btnSettings"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_settings"
+                    app:tint="@color/white"
+                    android:contentDescription="Cài đặt"/>
             </LinearLayout>
 
             <!-- Stats Row -->
@@ -183,63 +194,6 @@
             android:orientation="vertical"
             android:padding="@dimen/spacing_lg">
 
-            <!-- Server IP + PDA Name Row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="@dimen/spacing_md">
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="@dimen/spacing_sm"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
-                    app:boxCornerRadiusBottomEnd="@dimen/radius_sm"
-                    app:boxCornerRadiusBottomStart="@dimen/radius_sm"
-                    app:boxCornerRadiusTopEnd="@dimen/radius_sm"
-                    app:boxCornerRadiusTopStart="@dimen/radius_sm"
-                    app:boxStrokeColor="@color/primary"
-                    app:hintTextColor="@color/primary">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etServerIp"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/hint_server_ip"
-                        android:textSize="@dimen/text_md"
-                        android:inputType="text"
-                        android:maxLines="1"
-                        android:imeOptions="actionNext"/>
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="@dimen/spacing_sm"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
-                    app:boxCornerRadiusBottomEnd="@dimen/radius_sm"
-                    app:boxCornerRadiusBottomStart="@dimen/radius_sm"
-                    app:boxCornerRadiusTopEnd="@dimen/radius_sm"
-                    app:boxCornerRadiusTopStart="@dimen/radius_sm"
-                    app:boxStrokeColor="@color/primary"
-                    app:hintTextColor="@color/primary">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etPdaName"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/hint_pda_name"
-                        android:textSize="@dimen/text_md"
-                        android:inputType="text"
-                        android:maxLines="1"
-                        android:imeOptions="actionDone"/>
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-
             <!-- Scan Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -269,7 +223,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Ma Code"
+                            android:text="@string/hint_code"
                             android:textSize="@dimen/text_sm"
                             android:textColor="@color/text_secondary"
                             android:textStyle="bold"
@@ -279,7 +233,7 @@
                             android:id="@+id/tvScanCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="0 lan quet"
+                            android:text="0 lần quét"
                             android:textSize="@dimen/text_xs"
                             android:textColor="@color/primary"
                             android:fontFamily="sans-serif-medium"
@@ -346,45 +300,45 @@
                         android:layout_height="1dp"
                         android:background="@color/border"/>
 
-            <!-- Scan Mode Indicator -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingHorizontal="@dimen/spacing_lg"
-                android:paddingVertical="@dimen/spacing_sm"
-                android:background="@color/bg">
+                    <!-- Scan Mode Indicator -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="@dimen/spacing_lg"
+                        android:paddingVertical="@dimen/spacing_sm"
+                        android:background="@color/bg">
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Che do quet"
-                    android:textSize="@dimen/text_sm"
-                    android:textColor="@color/text_secondary"
-                    android:textStyle="bold"
-                    android:textAllCaps="true"/>
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/che_doquet"
+                            android:textSize="@dimen/text_sm"
+                            android:textColor="@color/text_secondary"
+                            android:textStyle="bold"
+                            android:textAllCaps="true"/>
 
-                <TextView
-                    android:id="@+id/tvScanModeLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="QUET THUNG"
-                    android:textSize="@dimen/text_sm"
-                    android:textColor="@color/white"
-                    android:fontFamily="sans-serif-medium"
-                    android:background="@drawable/badge_mode_quet"
-                    android:paddingHorizontal="@dimen/spacing_md"
-                    android:paddingVertical="4dp"/>
-            </LinearLayout>
+                        <TextView
+                            android:id="@+id/tvScanModeLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/mode_quet_thung"
+                            android:textSize="@dimen/text_sm"
+                            android:textColor="@color/white"
+                            android:fontFamily="sans-serif-medium"
+                            android:background="@drawable/badge_mode_quet"
+                            android:paddingHorizontal="@dimen/spacing_md"
+                            android:paddingVertical="4dp"/>
+                    </LinearLayout>
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/border"/>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/border"/>
 
-                    <!-- Mode Selection -->
+                    <!-- Mode Selection Buttons -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -397,7 +351,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="QUET THUNG"
+                            android:text="@string/mode_quet_thung"
                             android:textAllCaps="false"
                             android:textSize="@dimen/text_md"
                             android:paddingHorizontal="@dimen/spacing_xl"
@@ -412,7 +366,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:layout_marginStart="@dimen/spacing_sm"
-                            android:text="KIEM TRA"
+                            android:text="@string/mode_kiem_tra"
                             android:textAllCaps="false"
                             android:textSize="@dimen/text_md"
                             android:paddingHorizontal="@dimen/spacing_xl"
@@ -437,7 +391,7 @@
                     android:src="@drawable/ic_history"
                     android:layout_marginEnd="@dimen/spacing_xs"
                     app:tint="@color/text_secondary"
-                    android:contentDescription="History"/>
+                    android:contentDescription="Lịch sử"/>
 
                 <TextView
                     android:layout_width="0dp"
@@ -484,7 +438,7 @@
                     android:src="@drawable/ic_history"
                     android:alpha="0.3"
                     app:tint="@color/text_secondary"
-                    android:contentDescription="Empty"/>
+                    android:contentDescription="Trống"/>
 
                 <TextView
                     android:layout_width="wrap_content"

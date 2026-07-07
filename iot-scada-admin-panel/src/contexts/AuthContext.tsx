@@ -19,8 +19,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const checkAuth = useCallback(async () => {
+  const checkAuth = useCallback(async (productionState?: string) => {
     try {
+      if (productionState === "NeedLogin") {
+        setUser(null);
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        setIsLoading(false);
+        return;
+      }
+
       const response = await authApi.getCurrentUser();
       if (response.success && response.user) {
         setUser(response.user);

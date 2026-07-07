@@ -67,12 +67,12 @@ export const authApi = {
 };
 
 export function hasPermission(role: string, permission: string): boolean {
-  const permissions: Record<string, string[]> = {
-    SAdmin: ["view", "add", "edit", "import", "manage_pools", "manage_users", "view_history"],
-    Administrator: ["view", "add", "edit", "import", "manage_pools", "view_history"],
-    Operator: ["view", "add", "edit", "import"],
-    Viewer: ["view"],
-  };
+const permissions: Record<string, string[]> = {
+  sadmin: ["view", "add", "edit", "import", "manage_pools", "manage_users", "view_history"],
+  administrator: ["view", "add", "edit", "import", "manage_pools", "view_history"],
+  operator: ["view", "add", "edit", "import"],
+  viewer: ["view"],
+};
   return permissions[role]?.includes(permission) ?? false;
 }
 

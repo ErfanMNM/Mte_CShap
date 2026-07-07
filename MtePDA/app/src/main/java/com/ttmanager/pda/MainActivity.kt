@@ -1,11 +1,10 @@
 package com.ttmanager.pda
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -61,6 +60,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Reload settings in case they changed in SettingsActivity
+        loadSettings()
         scanManager.initScan()
         scanManager.setOnScanReadListener { code, type ->
             runOnUiThread {
@@ -76,16 +77,29 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadSettings() {
         val savedIp = prefs.getString("server_ip", "") ?: ""
-        val savedPdaName = prefs.getString("pda_name", getString(R.string.default_pda_name)) ?: getString(R.string.default_pda_name)
-        binding.etServerIp.setText(savedIp)
-        binding.etPdaName.setText(savedPdaName)
-        configureApi()
+        val savedPort = prefs.getString("server_port", "9999")?.toIntOrNull() ?: 9999
+        val savedMode = prefs.getString("default_mode", "QUET_THUNG") ?: "QUET_THUNG"
+
+        currentMode = if (savedMode == "QUET_THUNG") ScanMode.QUET_THUNG else ScanMode.KIEM_TRA
+
+        if (currentMode == ScanMode.QUET_THUNG) {
+            binding.tvScanModeLabel.text = getString(R.string.mode_quet_thung)
+            binding.tvScanModeLabel.setBackgroundResource(R.drawable.badge_mode_quet)
+        } else {
+            binding.tvScanModeLabel.text = getString(R.string.mode_kiem_tra)
+            binding.tvScanModeLabel.setBackgroundResource(R.drawable.badge_mode_kiem_tra)
+        }
+
+        if (savedIp.isNotEmpty()) {
+            apiClient.configure(savedIp, savedPort)
+        }
     }
 
     private fun configureApi() {
-        val ip = binding.etServerIp.text.toString().trim()
+        val ip = prefs.getString("server_ip", "") ?: ""
+        val port = prefs.getString("server_port", "9999")?.toIntOrNull() ?: 9999
         if (ip.isNotEmpty()) {
-            apiClient.configure(ip)
+            apiClient.configure(ip, port)
         }
     }
 
@@ -98,23 +112,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        binding.etServerIp.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) {
-                prefs.edit().putString("server_ip", binding.etServerIp.text.toString()).apply()
-                configureApi()
-            }
+        // Nut Cai Dat
+        binding.btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        binding.etPdaName.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) {
-                prefs.edit().putString("pda_name", binding.etPdaName.text.toString()).apply()
-            }
-        }
-
+        // Nut Gui
         binding.btnSend.setOnClickListener { sendManualCode() }
 
+        // Phim tren o ma code
         binding.etCode.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_NULL) {
+            if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_GO) {
                 sendManualCode()
                 true
             } else false
@@ -123,17 +131,9 @@ class MainActivity : AppCompatActivity() {
         // Mode: QUET THUNG
         binding.btnScan.setOnClickListener {
             currentMode = ScanMode.QUET_THUNG
-            binding.tvScanModeLabel.text = "QUET THUNG"
+            binding.tvScanModeLabel.text = getString(R.string.mode_quet_thung)
             binding.tvScanModeLabel.setBackgroundResource(R.drawable.badge_mode_quet)
-            if (binding.etServerIp.text.isNullOrBlank()) {
-                showSnack(getString(R.string.msg_no_ip))
-                binding.etServerIp.requestFocus()
-                return@setOnClickListener
-            }
-            prefs.edit()
-                .putString("server_ip", binding.etServerIp.text.toString())
-                .putString("pda_name", binding.etPdaName.text.toString())
-                .apply()
+            prefs.edit().putString("default_mode", "QUET_THUNG").apply()
             configureApi()
             scanManager.startScan()
         }
@@ -141,21 +141,14 @@ class MainActivity : AppCompatActivity() {
         // Mode: KIEM TRA THUNG
         binding.btnKiemTra.setOnClickListener {
             currentMode = ScanMode.KIEM_TRA
-            binding.tvScanModeLabel.text = "KIEM TRA THUNG"
+            binding.tvScanModeLabel.text = getString(R.string.mode_kiem_tra)
             binding.tvScanModeLabel.setBackgroundResource(R.drawable.badge_mode_kiem_tra)
-            if (binding.etServerIp.text.isNullOrBlank()) {
-                showSnack(getString(R.string.msg_no_ip))
-                binding.etServerIp.requestFocus()
-                return@setOnClickListener
-            }
-            prefs.edit()
-                .putString("server_ip", binding.etServerIp.text.toString())
-                .putString("pda_name", binding.etPdaName.text.toString())
-                .apply()
+            prefs.edit().putString("default_mode", "KIEM_TRA").apply()
             configureApi()
             scanManager.startScan()
         }
 
+        // Nut Xoa lich su
         binding.btnClearHistory.setOnClickListener {
             history.clear()
             scanAdapter.submitList(history.toList())
@@ -171,6 +164,13 @@ class MainActivity : AppCompatActivity() {
     private fun handleScan(code: String, barcodeType: String) {
         if (code.isBlank()) return
         binding.etCode.setText(code)
+
+        val ip = prefs.getString("server_ip", "") ?: ""
+        if (ip.isBlank()) {
+            showSnack(getString(R.string.msg_no_ip))
+            return
+        }
+
         when (currentMode) {
             ScanMode.QUET_THUNG -> sendCartonScan(code, barcodeType)
             ScanMode.KIEM_TRA -> sendCartonInfo(code, barcodeType)
@@ -178,8 +178,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendCartonScan(code: String, barcodeType: String) {
-        val pdaName = binding.etPdaName.text?.toString()?.trim()
-            ?.ifBlank { getString(R.string.default_pda_name) }
+        val pdaName = prefs.getString("pda_name", getString(R.string.default_pda_name))
             ?: getString(R.string.default_pda_name)
         val timeStr = dateFormatter.format(Date())
 
@@ -202,10 +201,14 @@ class MainActivity : AppCompatActivity() {
             val result = apiClient.postCartonScan(pdaName, code, scannedAt, "scan")
             result.fold(
                 onSuccess = { response ->
-                    val statusStr = response.status
                     updateHistoryStatus(code, timeStr, if (response.success) SendStatus.SUCCESS else SendStatus.ERROR)
                     val msg = if (response.success) {
-                        "[$statusStr] ${response.message} (Thuung #${response.cartonIndex})"
+                        getString(
+                            R.string.carton_scan_ok,
+                            response.status,
+                            response.cartonIndex,
+                            response.message
+                        )
                     } else {
                         response.message
                     }
@@ -213,15 +216,14 @@ class MainActivity : AppCompatActivity() {
                 },
                 onFailure = { error ->
                     updateHistoryStatus(code, timeStr, SendStatus.ERROR)
-                    showSnack("Loi: ${error.message}", isError = true)
+                    showSnack(getString(R.string.msg_error, error.message ?: "Lỗi không xác định"), isError = true)
                 }
             )
         }
     }
 
     private fun sendCartonInfo(code: String, barcodeType: String) {
-        val pdaName = binding.etPdaName.text?.toString()?.trim()
-            ?.ifBlank { getString(R.string.default_pda_name) }
+        val pdaName = prefs.getString("pda_name", getString(R.string.default_pda_name))
             ?: getString(R.string.default_pda_name)
         val timeStr = dateFormatter.format(Date())
 
@@ -245,7 +247,14 @@ class MainActivity : AppCompatActivity() {
                 onSuccess = { response ->
                     updateHistoryStatus(code, timeStr, if (response.success) SendStatus.SUCCESS else SendStatus.ERROR)
                     val msg = if (response.success) {
-                        "[${response.status}] Thuung #${response.cartonIndex} | San pham: ${response.productCount} | Nguoi: ${response.activateUser} | Luc: ${response.activateDate}"
+                        getString(
+                            R.string.carton_info_ok,
+                            response.status,
+                            response.cartonIndex,
+                            response.productCount,
+                            response.activateUser,
+                            response.activateDate
+                        )
                     } else {
                         response.message
                     }
@@ -253,7 +262,7 @@ class MainActivity : AppCompatActivity() {
                 },
                 onFailure = { error ->
                     updateHistoryStatus(code, timeStr, SendStatus.ERROR)
-                    showSnack("Loi: ${error.message}", isError = true)
+                    showSnack(getString(R.string.msg_error, error.message ?: "Lỗi không xác định"), isError = true)
                 }
             )
         }
@@ -265,45 +274,17 @@ class MainActivity : AppCompatActivity() {
             showSnack(getString(R.string.msg_no_code))
             return
         }
-        if (binding.etServerIp.text.isNullOrBlank()) {
-            showSnack(getString(R.string.msg_no_ip))
-            binding.etServerIp.requestFocus()
-            return
-        }
-        prefs.edit()
-            .putString("server_ip", binding.etServerIp.text.toString())
-            .putString("pda_name", binding.etPdaName.text.toString())
-            .apply()
         configureApi()
         handleScan(code, "MANUAL")
-    }
-
-    private fun quickSend(code: String) {
-        if (binding.etServerIp.text.isNullOrBlank()) {
-            showSnack(getString(R.string.msg_no_ip))
-            binding.etServerIp.requestFocus()
-            return
-        }
-        prefs.edit()
-            .putString("server_ip", binding.etServerIp.text.toString())
-            .putString("pda_name", binding.etPdaName.text.toString())
-            .apply()
-        configureApi()
-        binding.etCode.setText(code)
-        sendToServer(code, "QUICK")
-    }
-
-    private fun sendToServer(code: String, barcodeType: String) {
-        handleScan(code, barcodeType)
     }
 
     private fun addToHistory(item: ScanHistoryItem) {
         history.add(0, item)
         if (history.size > 50) history.removeAt(history.size - 1)
         scanAdapter.submitList(history.toList())
-        binding.emptyState.isVisible = false
-        binding.rvHistory.isVisible = true
-        binding.tvScanCount.text = "${history.size} lan quet"
+        binding.emptyState.isVisible = history.isEmpty()
+        binding.rvHistory.isVisible = history.isNotEmpty()
+        binding.tvScanCount.text = getString(R.string.scan_count_format, history.size)
     }
 
     private fun updateHistoryStatus(code: String, time: String, status: SendStatus) {
@@ -335,7 +316,6 @@ class MainActivity : AppCompatActivity() {
     private suspend fun checkServerHealth() {
         configureApi()
         val result = apiClient.checkHealth()
-        val wasOnline = isServerOnline
         isServerOnline = result.isSuccess
 
         runOnUiThread {

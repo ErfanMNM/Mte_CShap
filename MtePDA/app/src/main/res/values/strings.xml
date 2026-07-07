@@ -1,29 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MtePDA</string>
-    <string name="hint_server_ip">IP May TTManager</string>
-    <string name="hint_pda_name">Ten PDA</string>
-    <string name="hint_code">Ma Code</string>
-    <string name="btn_scan">QUET</string>
-    <string name="btn_send">GUI</string>
-    <string name="btn_clear">XOA</string>
-    <string name="btn_clear_history">Xoa lich su</string>
-    <string name="status_online">Online</string>
-    <string name="status_offline">Offline</string>
-    <string name="status_checking">Checking...</string>
-    <string name="label_total">Tong</string>
-    <string name="label_today">Hom nay</string>
+
+    <!-- Main Screen -->
+    <string name="hint_server_ip">IP Máy TTManager</string>
+    <string name="hint_pda_name">Tên PDA</string>
+    <string name="hint_code">Mã Code</string>
+    <string name="btn_scan">QUÉT</string>
+    <string name="btn_send">GỬI</string>
+    <string name="btn_clear">XÓA</string>
+    <string name="btn_clear_history">Xóa lịch sử</string>
+    <string name="status_online">Đang kết nối</string>
+    <string name="status_offline">Mất kết nối</string>
+    <string name="status_checking">Đang kiểm tra…</string>
+    <string name="label_total">Tổng</string>
+    <string name="label_today">Hôm nay</string>
     <string name="label_24h">24h qua</string>
-    <string name="label_history">Lich su quet</string>
-    <string name="empty_history">Chua co ma nao</string>
-    <string name="empty_history_hint">Quet ma de bat dau</string>
-    <string name="msg_sent">Da gui: %s</string>
-    <string name="msg_error">Loi: %s</string>
-    <string name="msg_no_code">Vui long nhap ma Code!</string>
-    <string name="msg_no_ip">Vui long nhap IP may TTManager!</string>
-    <string name="quick_qc_ok">QC-OK</string>
-    <string name="quick_qc_ng">QC-NG</string>
-    <string name="quick_start">START</string>
-    <string name="quick_stop">STOP</string>
+    <string name="label_history">Lịch sử quét</string>
+    <string name="empty_history">Chưa có mã nào</string>
+    <string name="empty_history_hint">Quét mã để bắt đầu</string>
+    <string name="msg_sent">Đã gửi: %s</string>
+    <string name="msg_error">Lỗi: %s</string>
+    <string name="msg_no_code">Vui lòng nhập mã Code!</string>
+    <string name="msg_no_ip">Vui lòng nhập IP máy TTManager!</string>
     <string name="default_pda_name">PDA-MOBY</string>
+
+    <!-- Scan Modes -->
+    <string name="mode_quet_thung">QUÉT THÙNG</string>
+    <string name="mode_kiem_tra">KIỂM TRA</string>
+    <string name="che_doquet">Chế độ quét</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Cài Đặt</string>
+    <string name="settings_section_server">Máy Chủ</string>
+    <string name="settings_section_device">Thiết Bị</string>
+    <string name="settings_hint_ip">Địa chỉ IP máy chủ</string>
+    <string name="settings_hint_port">Cổng kết nối (mặc định: 9999)</string>
+    <string name="settings_hint_pda_name">Tên thiết bị PDA</string>
+    <string name="settings_label_default_mode">Chế độ mặc định khi khởi động</string>
+    <string name="settings_mode_quet_thung">Quét Thùng</string>
+    <string name="settings_mode_kiem_tra">Kiểm Tra Thùng</string>
+    <string name="settings_btn_save">Lưu Cài Đặt</string>
+    <string name="settings_btn_default">Khôi Phục Mặc Định</string>
+    <string name="settings_saved">Đã lưu cài đặt thành công!</string>
+    <string name="settings_reset_done">Đã khôi phục cài đặt mặc định!</string>
+    <string name="settings_ip_required">Vui lòng nhập địa chỉ IP</string>
+    <string name="settings_port_invalid">Cổng không hợp lệ (1–65535)</string>
+    <string name="settings_footer_info">Cài đặt được lưu tự động và áp dụng ngay lập tức.</string>
+
+    <!-- Carton Results -->
+    <string name="carton_ok">Thành công</string>
+    <string name="carton_warn">Cảnh báo</string>
+    <string name="carton_err">Lỗi</string>
+    <string name="carton_scan_ok">[%1$s] Thùng #%2$d - %3$s</string>
+    <string name="carton_info_ok">[%1$s] Thùng #%2$d | SP: %3$d | Người: %4$s | Lúc: %5$s</string>
+    <string name="scan_count_format">%d lần quét</string>
 </resources>

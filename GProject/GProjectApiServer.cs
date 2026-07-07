@@ -306,10 +306,14 @@ public class GProjectApiServer : IDisposable
                 Expires = DateTimeOffset.UtcNow.AddHours(8)
             });
 
+            // Transition BE state machine to Checking after successful login
+            ProductionStateMachine.Instance.SetState(e_ProductionState.Checking, $"login {user.Username}");
+
             return Results.Json(new
             {
                 success = true,
-                user = new { id = user.Id, username = user.Username, displayName = user.DisplayName, role = user.Role }
+                user = new { id = user.Id, username = user.Username, displayName = user.DisplayName, role = user.Role },
+                productionState = ProductionStateMachine.Instance.CurrentState.ToString()
             });
         }
         catch (Exception ex)

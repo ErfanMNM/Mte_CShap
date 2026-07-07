@@ -40,6 +40,7 @@ import Keyboard from "react-simple-keyboard";
 import "react-simple-keyboard/build/css/index.css";
 import { useCameraSocket } from "./hooks/useCameraSocket";
 import { usePLCWebSocket } from "./hooks/usePLCWebSocket";
+import { useProductionWebSocket } from "./hooks/useProductionWebSocket";
 import POManagerView from "./components/pomanager/POManagerView";
 import DataPoolView from "./components/datapool/DataPoolView";
 import ProductionView from "./components/production/ProductionView";
@@ -1380,7 +1381,19 @@ export default function AdminPanel() {
 }
 
 const AdminPanelWithAuth = () => {
-  const { isAuthenticated, isLoading, user, logout } = useAuth();
+  const { isAuthenticated, isLoading, user, logout, checkAuth } = useAuth();
+
+  // Connect to production WebSocket to sync with BE state machine
+  const prodWsUrl =
+    import.meta.env.VITE_PROD_WS_URL || "ws://localhost:9999/ws/production";
+  const { snapshot: prodSnapshot } = useProductionWebSocket({ url: prodWsUrl });
+
+  // React to BE state machine state changes
+  useEffect(() => {
+    if (prodSnapshot.state) {
+      checkAuth(prodSnapshot.state);
+    }
+  }, [prodSnapshot.state, checkAuth]);
 
   if (isLoading) {
     return (

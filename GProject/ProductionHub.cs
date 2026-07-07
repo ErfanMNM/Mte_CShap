@@ -56,6 +56,7 @@ public class ProductionHub
     {
         var payload = JsonSerializer.Serialize(new
         {
+            success = true,
             state,
             previousState,
             orderNo,

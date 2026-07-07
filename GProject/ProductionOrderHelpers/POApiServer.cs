@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.Json.Serialization;
 using GProject.Production;
 using Microsoft.Data.Sqlite;
@@ -712,8 +713,9 @@ namespace GProject.ProductionOrderHelpers
                     return Results.Json(new CartonScanResponse { Success = false, Message = "Invalid request" });
 
                 var sm = ProductionStateMachine.Instance;
-                if (sm.CurrentState != e_ProductionState.Running || ProductionStateMachine.ProductionData == null)
-                    return Results.Json(new CartonScanResponse { Success = false, Message = "PO not running" });
+                var activeStates = new[] { e_ProductionState.Running, e_ProductionState.Paused };
+                if (!activeStates.Contains(sm.CurrentState) || ProductionStateMachine.ProductionData == null)
+                    return Results.Json(new CartonScanResponse { Success = false, Message = $"PO not running (state={sm.CurrentState})" });
 
                 var task = new CartonWriteTask
                 {
@@ -751,8 +753,9 @@ namespace GProject.ProductionOrderHelpers
             try
             {
                 var sm = ProductionStateMachine.Instance;
-                if (sm.CurrentState != e_ProductionState.Running || ProductionStateMachine.ProductionData == null)
-                    return Results.Json(new CartonInfoResponse { Success = false, Message = "PO not running" });
+                var activeStates = new[] { e_ProductionState.Running, e_ProductionState.Paused };
+                if (!activeStates.Contains(sm.CurrentState) || ProductionStateMachine.ProductionData == null)
+                    return Results.Json(new CartonInfoResponse { Success = false, Message = $"PO not running (state={sm.CurrentState})" });
 
                 var info = POCartonCode.GetCartonInfo(ProductionStateMachine.ProductionData.OrderNo, cartonCode);
 

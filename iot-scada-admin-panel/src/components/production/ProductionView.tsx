@@ -204,7 +204,7 @@ const ProductionView: React.FC = () => {
   };
 
   const isRunning = status?.state === "Running";
-  const isIdle = status?.state === "Idle" || status?.state === "NoSelectedPO";
+  const isIdle = status?.state === "NoSelectedPO";
   const canStart = !isRunning && status?.hasPO === false && !!selectedPO;
   const canStop = isRunning;
   const canReset = status?.hasPO === true;
@@ -225,7 +225,8 @@ const ProductionView: React.FC = () => {
     Completed: { label: "COMPLETED", bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", icon: "" },
     DeviceError: { label: "DEVICE ERROR", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500 animate-pulse", icon: "" },
     Error: { label: "ERROR", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500 animate-pulse", icon: "" },
-    Idle: { label: "IDLE", bg: "bg-slate-50", text: "text-slate-600", dot: "bg-slate-400", icon: "" },
+    CheckingQueue: { label: "CHECKING QUEUE", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500 animate-pulse", icon: "" },
+    Saving: { label: "SAVING", bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500 animate-pulse", icon: "" },
   };
 
   const state = status?.state || "Checking";
