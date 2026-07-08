@@ -83,9 +83,11 @@ namespace GProject
                         _ => "Disconnected",
                     };
                     Log.Information("[PLC] {State} - {Message}", stateStr, message);
+                    ProductionStateMachine.Instance.OnDeviceStateChanged("PLC", state == PLCConnectionState.Connected, message);
                     _ = PLCHub.Instance.BroadcastStateAsync(stateStr, message);
                 };
                 _plcMonitor.Start();
+                ProductionStateMachine.Instance.PLCMonitor = _plcMonitor;
 
                 await Task.Delay(Timeout.Infinite);
             }
@@ -115,22 +117,34 @@ namespace GProject
         private static void OnCameraEvent(string camera, eOmronCodeReaderState state, string data)
         {
             Log.Information("[Camera:{Camera}] [{State}] {Data}", camera, state, data);
-            _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
 
             switch (state)
             {
                 case eOmronCodeReaderState.Connected:
-                    break;
                 case eOmronCodeReaderState.Disconnected:
-                    break;
-                case eOmronCodeReaderState.Received:
-                    // Gọi StateMachine để xử lý luồng 1-camera:
-                    // tra Dictionary_Codes O(1) -> activate -> enqueue Record + CodeUpdate ngay,
-                    // khi đủ thùng sẽ enqueue CompleteCarton.
-                    ProductionStateMachine.Instance.HandleCodeFromCamera(data);
-                    break;
                 case eOmronCodeReaderState.Reconnecting:
+                    _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
+                    ProductionStateMachine.Instance.OnDeviceStateChanged(
+                        "Camera", state == eOmronCodeReaderState.Connected, data);
                     break;
+
+                case eOmronCodeReaderState.Received:
+                    // Chỉ xử lý đầy đủ khi đang Running.
+                    // Ngược lại: vẫn ghi 0 xuống PLC để PLC biết "bỏ qua" mã này,
+                    // KHÔNG ghi DB, KHÔNG tăng counter, KHÔNG broadcast (lát thả lại mã sau).
+                    if (ProductionStateMachine.Instance.CurrentState != e_ProductionState.Running)
+                    {
+                        ProductionStateMachine.Instance.WritePLCResponseSkip();
+                        return;
+                    }
+                    var result = ProductionStateMachine.Instance.HandleCodeFromCamera(data, camera);
+                    if (result != null)
+                    {
+                        CameraHub.Instance.RecordHistory(result);
+                        _ = CameraHub.Instance.BroadcastCodeStatus(result);
+                    }
+                    break;
+
                 default:
                     break;
             }

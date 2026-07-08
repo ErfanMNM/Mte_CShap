@@ -58,10 +58,24 @@ namespace GProject.Production
         }
         public ProductCounter PackageCounter { get; private set; } = new();
 
+        // PLC monitor reference (injected by Program.cs after Start)
+        private PLCMonitor? _plcMonitor;
+
+        /// <summary>Program.cs inject sau khi _plcMonitor.Start().</summary>
+        public PLCMonitor? PLCMonitor
+        {
+            set => _plcMonitor = value;
+        }
+
         // Cờ trạng thái thiết bị
         public bool IsAppReady { get; set; }
         public bool IsDeviceReady { get; set; }
         public string LastWarning { get; set; } = "";
+
+        // Trạng thái kết nối thiết bị
+        public bool IsPLCConnected { get; private set; }
+        public bool IsCameraConnected { get; private set; }
+        public string DeviceDisconnectReason { get; private set; } = "";
 
         // Cấu hình
         public int CartonWarning { get; set; } = 3;
@@ -77,7 +91,11 @@ namespace GProject.Production
             get { lock (_stateLock) return _previousState; }
         }
 
-        private ProductionStateMachine() { }
+        private ProductionStateMachine()
+        {
+            IsPLCConnected = true;
+            IsCameraConnected = true;
+        }
 
         /// <summary>
         /// Bắt đầu vòng lặp state machine chạy nền
@@ -270,6 +288,10 @@ namespace GProject.Production
                         sm.ActiveCounter.PassCount,
                         sm.ActiveCounter.FailCount,
                         sm.ActiveCounter.DuplicateCount,
+                        sm.ActiveCounter.NotFoundCount,
+                        sm.ActiveCounter.ReadFailCount,
+                        sm.ActiveCounter.ErrorCount,
+                        sm.ActiveCounter.TimeoutCount,
                         sm.ActiveCounter.CartonID,
                         sm.ActiveCounter.CartonCode
                     },
@@ -287,20 +309,18 @@ namespace GProject.Production
         }
 
         /// <summary>
-        /// Xử lý 1 mã nhận được từ camera - luồng chính của chức năng 1-camera:
-        /// 1) Chuẩn hoá mã + loại FAIL
-        /// 2) Tra Dictionary_Codes O(1)
-        /// 3) Nếu Status=0: update RAM -> enqueue Record + CodeUpdate -> tăng PassCount
-        /// 4) Nếu đủ sức chứa carton -> enqueue CartonComplete (start thùng kế tiếp ở consumer)
-        /// 5) Nếu Status=1: Duplicate
-        /// 6) Nếu không có trong Dictionary: NotFound
+        /// Xử lý 1 mã nhận được từ camera - pipeline 11 nhánh khớp với MASAN FDashboard.CameraSub_Process.
+        /// Trả về CameraReadResult để Caller broadcast CodeScanned + push history.
+        /// Trả về null khi state không phải Running (không phát badge scan cho FE).
         /// </summary>
-        public void HandleCodeFromCamera(string? rawCode)
+        public CameraReadResult? HandleCodeFromCamera(string? rawCode, string camera = "camera")
         {
-            // Chuẩn hoá mã giống MASAN
             string code = rawCode?.Trim() ?? "";
             string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            var at = DateTime.UtcNow;
+            var cam = string.IsNullOrEmpty(camera) ? "camera" : camera;
 
+            // Nhánh 1: mã rỗng -> ReadFail
             if (string.IsNullOrEmpty(code))
             {
                 lock (_stateLock)
@@ -309,17 +329,19 @@ namespace GProject.Production
                     RecordQueue.Enqueue(new RecordData
                     {
                         Code = "FAIL",
-                        Status = "FAIL",
+                        Status = "ReadFail",
                         PLCStatus = "FAIL",
                         ActivateDate = now,
                         ActivateUser = "<API>"
                     });
                 }
                 Log.Warning("[Camera] Empty code");
-                return;
+                return WithPLCWrite(
+                    new CameraReadResult(cam, "", e_Production_Status.ReadFail, false, null, null, at),
+                    e_Production_Status.ReadFail, null, code: "");
             }
 
-            // Xử lý marker đặc biệt Omron (<GS>, <RS>, <US>)
+            // Nhánh 2: marker Omron <GS>/<RS>/<US> -> ReadFail
             if (code.Contains("<GS>") || code.Contains("<RS>") || code.Contains("<US>"))
             {
                 lock (_stateLock)
@@ -328,34 +350,45 @@ namespace GProject.Production
                     RecordQueue.Enqueue(new RecordData
                     {
                         Code = code,
-                        Status = "FAIL",
+                        Status = "ReadFail",
                         PLCStatus = "FAIL",
                         ActivateDate = now,
                         ActivateUser = "<API>"
                     });
                 }
                 Log.Warning("[Camera] Code contains special marker: {Code}", code);
-                return;
+                return WithPLCWrite(
+                    new CameraReadResult(cam, code, e_Production_Status.ReadFail, false, null, null, at),
+                    e_Production_Status.ReadFail, null, code: code);
             }
 
-            // Chỉ xử lý khi đang chạy
+            // Nhánh 3: chỉ xử lý khi đang Running; ngược lại bỏ qua (không phát badge)
             if (CurrentState != e_ProductionState.Running)
             {
                 Log.Debug("[Camera] Bỏ qua mã {Code} vì state={State}", code, CurrentState);
-                return;
+                return null;
             }
-
             if (ProductionData == null)
             {
                 Log.Warning("[Camera] Bỏ qua mã {Code} vì chưa chọn PO", code);
-                return;
+                return null;
             }
+
+            // Trim marker ASCII thành ký tự control (giống FDashboard.cs:529)
+            code = code.Replace("<GS>", "\u001D")
+                       .Replace("<RS>", "\u001E")
+                       .Replace("<US>", "\u001F");
+
+            // Biến capture NGOÀI lock (gán giá trị bên trong lock scope 1)
+            string currentCartonCode = "0";
+            CodeInfo infoSnapshot = default!;
+            int activeCartonId = 0;
 
             lock (_stateLock)
             {
                 ActiveCounter.TotalCount++;
 
-                // 1) Tra Dictionary
+                // Nhánh 4: NotFound
                 if (!Dictionary_Codes.TryGetValue(code, out var info))
                 {
                     ActiveCounter.NotFoundCount++;
@@ -369,10 +402,12 @@ namespace GProject.Production
                         ProductionDate = ProductionData.ProductionDate
                     });
                     Log.Warning("[Camera] NotFound: {Code}", code);
-                    return;
+                    return WithPLCWrite(
+                        new CameraReadResult(cam, code, e_Production_Status.NotFound, false, null, ActiveCounter.CartonID, at),
+                        e_Production_Status.NotFound, ActiveCounter.CartonID, code: code);
                 }
 
-                // 2) Đã active rồi -> Duplicate
+                // Nhánh 5: Duplicate (đã active từ trước)
                 if (info.Status == 1)
                 {
                     ActiveCounter.DuplicateCount++;
@@ -388,15 +423,16 @@ namespace GProject.Production
                         ProductionDate = ProductionData.ProductionDate
                     });
                     Log.Warning("[Camera] Duplicate: {Code} carton={Carton}", code, info.CartonCode);
-                    return;
+                    return WithPLCWrite(
+                        new CameraReadResult(cam, code, e_Production_Status.Duplicate, true, info.CartonCode, ActiveCounter.CartonID, at),
+                        e_Production_Status.Duplicate, ActiveCounter.CartonID, code: code);
                 }
 
                 // 3) Lấy cartonCode hiện tại
-                string currentCartonCode = "0";
                 if (Dictionary_Cartons.TryGetValue(ActiveCounter.CartonID, out var carton))
                     currentCartonCode = carton.CartonCode;
 
-                // 4) Thùng hiện tại chưa có mã -> Reject
+                // Nhánh 6: thùng hiện tại chưa có mã -> Error + Pause
                 if (currentCartonCode == "0" || string.IsNullOrEmpty(currentCartonCode))
                 {
                     ActiveCounter.FailCount++;
@@ -412,97 +448,153 @@ namespace GProject.Production
                     });
                     LastWarning = $"Thùng hiện tại (ID={ActiveCounter.CartonID}) chưa có mã";
                     Log.Warning("[Camera] Reject {Code}: {Warning}", code, LastWarning);
-                    return;
+                    SetState(e_ProductionState.Paused, LastWarning);
+                    return WithPLCWrite(
+                        new CameraReadResult(cam, code, e_Production_Status.Error, false, null, ActiveCounter.CartonID, at),
+                        e_Production_Status.Error, ActiveCounter.CartonID, code: code);
                 }
 
-                // 5) Cập nhật Dictionary ngay trong RAM
-                info.Status = 1;
-                info.ActivateDate = now;
-                info.ActivateUser = "<API>";
-                info.CartonCode = currentCartonCode;
-                info.PackingDate = now;
-                info.ProductionDate = ProductionData.ProductionDate;
-                Dictionary_Codes[code] = info;
+                // === Snapshot + thoát lock sớm để ghi PLC + check timeout NGOÀI lock ===
+                activeCartonId = ActiveCounter.CartonID;
+                infoSnapshot = info;
+            } // <- đóng lock sớm tại đây
 
-                // 6) Enqueue ghi Record ngay (audit)
-                RecordQueue.Enqueue(new RecordData
+            // === NGOÀI LOCK ===
+            // 5) Ghi phân làn xuống PLC NGAY (fire-and-forget, 1/2 theo carton id)
+            WritePLCResponse(e_Production_Status.Pass, activeCartonId, code);
+
+            // 6) Poll PLC D200 + D202 để xác nhận (NGOÀI lock, tối đa 5s).
+            var timeoutResult = CheckTimeoutV2(code);
+
+            if (timeoutResult == e_TimeoutCheckResult.Pass)
+            {
+                // 7) Re-lock để commit dic + DB + counter
+                lock (_stateLock)
                 {
-                    Code = code,
-                    CartonCode = currentCartonCode,
-                    Status = "Pass",
-                    PLCStatus = "PASS",
-                    ActivateDate = now,
-                    ActivateUser = "<API>",
-                    PackingDate = now,
-                    PackingUser = "<API>",
-                    ProductionDate = ProductionData.ProductionDate
-                });
+                    // Cập nhật Dictionary ngay trong RAM (chỉ khi Pass)
+                    infoSnapshot.Status = 1;
+                    infoSnapshot.ActivateDate = now;
+                    infoSnapshot.ActivateUser = "<API>";
+                    infoSnapshot.CartonCode = currentCartonCode;
+                    infoSnapshot.PackingDate = now;
+                    infoSnapshot.ProductionDate = ProductionData!.ProductionDate;
+                    Dictionary_Codes[code] = infoSnapshot;
 
-                // 7) Enqueue ghi CodeUpdate ngay (update UniqueCodes)
-                CodeUpdateQueue.Enqueue(new CodeUpdateItem
-                {
-                    OrderNo = ProductionData.OrderNo,
-                    Code = code,
-                    ActivateDate = now,
-                    ActivateUser = "<API>",
-                    PackingDate = now,
-                    CartonCode = currentCartonCode,
-                    ProductionDate = ProductionData.ProductionDate
-                });
-
-                // 8) Tăng bộ đếm
-                ActiveCounter.PassCount++;
-                PackageCounter.PassCount++;
-                ActiveCounter.CartonCode = currentCartonCode;
-
-                // 9) Đủ carton -> enqueue CompleteCarton + StartCarton next (consumer thread sẽ xử lý)
-                if (PackageCounter.PassCount >= ActiveCounter.CartonCapacity)
-                {
-                    int currentCartonID = ActiveCounter.CartonID;
-                    CartonUpdateQueue.Enqueue(new CartonUpdateItem
+                    // Enqueue ghi Record (audit)
+                    RecordQueue.Enqueue(new RecordData
                     {
-                        Type = CartonUpdateType.Complete,
-                        OrderNo = ProductionData.OrderNo,
-                        CartonId = currentCartonID,
-                        ActivateUser = "<API>"
+                        Code = code,
+                        CartonCode = currentCartonCode,
+                        Status = "Pass",
+                        PLCStatus = "PASS",
+                        ActivateDate = now,
+                        ActivateUser = "<API>",
+                        PackingDate = now,
+                        PackingUser = "<API>",
+                        ProductionDate = ProductionData.ProductionDate
                     });
 
-                    // Cập nhật RAM: carton đã đóng + chuyển sang carton kế tiếp
-                    if (Dictionary_Cartons.TryGetValue(currentCartonID, out var closedCarton))
+                    // Enqueue ghi CodeUpdate
+                    CodeUpdateQueue.Enqueue(new CodeUpdateItem
                     {
-                        closedCarton.CompletedDatetime = now;
-                    }
+                        OrderNo = ProductionData.OrderNo,
+                        Code = code,
+                        ActivateDate = now,
+                        ActivateUser = "<API>",
+                        PackingDate = now,
+                        CartonCode = currentCartonCode,
+                        ProductionDate = ProductionData.ProductionDate
+                    });
 
-                    ActiveCounter.CartonID++;
-                    PackageCounter.PassCount = 0;
+                    // Tăng bộ đếm
+                    ActiveCounter.PassCount++;
+                    PackageCounter.PassCount++;
+                    ActiveCounter.CartonCode = currentCartonCode;
 
-                    // Lấy cartonCode mới (nếu có)
-                    if (Dictionary_Cartons.TryGetValue(ActiveCounter.CartonID, out var nextCarton))
+                    // Đủ carton -> enqueue CompleteCarton + next carton
+                    if (PackageCounter.PassCount >= ActiveCounter.CartonCapacity)
                     {
-                        ActiveCounter.CartonCode = nextCarton.CartonCode;
-
-                        // Thùng kế tiếp chưa có mã -> Pause
-                        if (nextCarton.CartonCode == "0" || string.IsNullOrEmpty(nextCarton.CartonCode))
+                        int currentCartonID = ActiveCounter.CartonID;
+                        CartonUpdateQueue.Enqueue(new CartonUpdateItem
                         {
-                            LastWarning = $"Thùng kế tiếp (ID={ActiveCounter.CartonID}) chưa có mã";
+                            Type = CartonUpdateType.Complete,
+                            OrderNo = ProductionData.OrderNo,
+                            CartonId = currentCartonID,
+                            ActivateUser = "<API>"
+                        });
+
+                        if (Dictionary_Cartons.TryGetValue(currentCartonID, out var closedCarton))
+                            closedCarton.CompletedDatetime = now;
+
+                        ActiveCounter.CartonID++;
+                        PackageCounter.PassCount = 0;
+
+                        if (Dictionary_Cartons.TryGetValue(ActiveCounter.CartonID, out var nextCarton))
+                        {
+                            ActiveCounter.CartonCode = nextCarton.CartonCode;
+
+                            if (nextCarton.CartonCode == "0" || string.IsNullOrEmpty(nextCarton.CartonCode))
+                            {
+                                LastWarning = $"Thùng kế tiếp (ID={ActiveCounter.CartonID}) chưa có mã";
+                                SetState(e_ProductionState.Paused, LastWarning);
+                                return new CameraReadResult(cam, code, e_Production_Status.Error, false, null, currentCartonID, at);
+                            }
+                        }
+                        else
+                        {
+                            LastWarning = $"Không tìm thấy thùng kế tiếp (ID={ActiveCounter.CartonID})";
                             SetState(e_ProductionState.Paused, LastWarning);
-                            return;
+                            return new CameraReadResult(cam, code, e_Production_Status.Error, false, null, currentCartonID, at);
                         }
                     }
-                    else
+
+                    // Đạt orderQty -> WaitingStop
+                    if (ActiveCounter.PassCount >= ProductionData.OrderQty)
                     {
-                        LastWarning = $"Không tìm thấy thùng kế tiếp (ID={ActiveCounter.CartonID})";
-                        SetState(e_ProductionState.Paused, LastWarning);
-                        return;
+                        SetState(e_ProductionState.WaitingStop, $"orderQty {ProductionData.OrderQty} reached");
                     }
                 }
 
-                // 10) Đạt orderQty -> chuyển WaitingStop
-                if (ActiveCounter.PassCount >= ProductionData.OrderQty)
-                {
-                    SetState(e_ProductionState.WaitingStop, $"orderQty {ProductionData.OrderQty} reached");
-                }
+                return new CameraReadResult(cam, code, e_Production_Status.Pass, true,
+                                            currentCartonCode, activeCartonId, at);
             }
+            else
+            {
+                // PLC timeout / reject → KHÔNG update dic, KHÔNG tăng counter.
+                // Chỉ ghi DB Status=Timeout để audit (mã còn trong dic với Status=0,
+                // lần sau còn quét lại được).
+                lock (_stateLock)
+                {
+                    RecordQueue.Enqueue(new RecordData
+                    {
+                        Code = code,
+                        CartonCode = currentCartonCode,
+                        Status = "Timeout",
+                        PLCStatus = "FAIL",
+                        ActivateDate = now,
+                        ActivateUser = "<API>",
+                        ProductionDate = ProductionData!.ProductionDate
+                    });
+                }
+
+                return new CameraReadResult(cam, code, e_Production_Status.Timeout, false,
+                                            currentCartonCode, activeCartonId, at);
+            }
+        }
+
+        /// <summary>
+        /// Trả về e_Production_Status cho mã vừa quét — dùng khi cần tra cứu
+        /// trạng thái đã xử lý gần nhất (mặc định NotFound nếu chưa có kết quả).
+        /// </summary>
+        public e_Production_Status PeekLastCodeStatus(string code)
+        {
+            if (string.IsNullOrEmpty(code)) return e_Production_Status.ReadFail;
+            if (Dictionary_Codes.TryGetValue(code, out var info))
+            {
+                if (info.Status == 1) return e_Production_Status.Duplicate;
+                return e_Production_Status.Pass;
+            }
+            return e_Production_Status.NotFound;
         }
 
         /// <summary>
@@ -600,9 +692,70 @@ namespace GProject.Production
                     break;
 
                 case e_ProductionState.DeviceError:
+                    if (!string.IsNullOrEmpty(DeviceDisconnectReason))
+                    {
+                        Log.Error("[DeviceError] {Reason}", DeviceDisconnectReason);
+                    }
+                    TryReconnectDevices();
+                    break;
                 case e_ProductionState.Error:
                     // Đã lỗi - chờ xử lý
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Xử lý thay đổi trạng thái thiết bị (PLC/Camera)
+        /// </summary>
+        public void OnDeviceStateChanged(string deviceName, bool isConnected, string message)
+        {
+            lock (_stateLock)
+            {
+                if (deviceName == "PLC")
+                    IsPLCConnected = isConnected;
+                else if (deviceName == "Camera")
+                    IsCameraConnected = isConnected;
+
+                if (!isConnected)
+                {
+                    DeviceDisconnectReason = $"{deviceName}: {message}";
+                    Log.Warning("[Device] {Device} disconnected: {Msg}", deviceName, message);
+
+                    if (CurrentState == e_ProductionState.Running ||
+                        CurrentState == e_ProductionState.Ready ||
+                        CurrentState == e_ProductionState.Paused)
+                    {
+                        SetState(e_ProductionState.DeviceError, DeviceDisconnectReason);
+                    }
+                }
+                else
+                {
+                    Log.Information("[Device] {Device} reconnected", deviceName);
+                    // Không xóa DeviceDisconnectReason ở đây - để TryReconnectDevices tự quyết định
+                    // khi CẢ HAI thiết bị đều connected thì mới clear và resume.
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tự động reconnect và resume khi thiết bị kết nối lại
+        /// </summary>
+        private void TryReconnectDevices()
+        {
+            if (IsPLCConnected && IsCameraConnected && !string.IsNullOrEmpty(DeviceDisconnectReason))
+            {
+                Log.Information("[DeviceError] All devices reconnected, resuming...");
+                DeviceDisconnectReason = "";
+
+                if (PreviousState == e_ProductionState.Running ||
+                    PreviousState == e_ProductionState.Paused)
+                {
+                    SetState(PreviousState, "devices reconnected");
+                }
+                else
+                {
+                    SetState(e_ProductionState.Ready, "devices reconnected");
+                }
             }
         }
 
@@ -952,6 +1105,155 @@ namespace GProject.Production
             {
                 Log.Error(ex, "[StateMachine] Lỗi CheckAfterCompleted");
                 SetState(e_ProductionState.Error, ex.Message);
+            }
+        }
+
+        // ===== PLC Response + Timeout V2 =====
+
+        public enum e_TimeoutCheckResult
+        {
+            Pass,           // PLC confirm OK (D200==expected && D202 in {1,2})
+            Timeout,        // PLC confirm reject hoặc poll hết timeout hoặc ID nhảy
+            PlcUnavailable, // _plcMonitor null
+            Error,          // exception
+        }
+
+        /// <summary>Map status + carton id sang giá trị ghi xuống PLC DM.</summary>
+        private static short MapResultForPLC(e_Production_Status status, int cartonId)
+        {
+            return status switch
+            {
+                e_Production_Status.Pass => (short)(cartonId % 2 == 1 ? 1 : 2),
+                _ => 0
+            };
+        }
+
+        private void WritePLCResponse(e_Production_Status status, int? cartonId, string code)
+        {
+            if (status == e_Production_Status.Timeout) return; // PLC tự trả lời, không ghi đè
+            int id = cartonId ?? 0;
+            short value = MapResultForPLC(status, id);
+            try
+            {
+                _plcMonitor?.WriteResultFireAndForget(value);
+                Log.Debug("[Camera] PLC write {Value} code={Code} status={Status} cartonId={Id}",
+                          value, code, status, id);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[Camera] WritePLCResponse failed");
+            }
+        }
+
+        /// <summary>
+        /// Ghi 0 xuống PLC khi bỏ qua mã camera (state != Running).
+        /// PLC sẽ tự reject mã này, phần mềm KHÔNG xử lý DB / counter.
+        /// Dùng khi muốn "thả lại" mã về sau.
+        /// </summary>
+        public void WritePLCResponseSkip()
+        {
+            try
+            {
+                _plcMonitor?.WriteResultFireAndForget(0);
+                Log.Debug("[Camera] PLC skip (state != Running) — wrote 0");
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[Camera] WritePLCResponseSkip failed");
+            }
+        }
+
+        private CameraReadResult WithPLCWrite(
+            CameraReadResult result,
+            e_Production_Status status,
+            int? cartonId,
+            string code)
+        {
+            WritePLCResponse(status, cartonId, code);
+            return result;
+        }
+
+        /// <summary>
+        /// Poll D200 (ID) + D202 (status) của PLC để đồng bộ kết quả sau khi ghi phân làn.
+        /// Nguyên lý (tham chiếu CameraSubPlcSyncV2Helper.WaitAndResolve):
+        ///   - PLC giữ D200 = ID sản phẩm đang xử lý (int32, tăng dần).
+        ///   - D202 = status: 5 = idle, 0/1/2 = kết quả (1/2 = pass), 3 = reject.
+        ///   - Khi ghi D300 (1 hoặc 2), PLC xử lý rồi cập nhật D202. Nếu D202 đổi
+        ///     khỏi giá trị snapshot → đó là kết quả thật. Nếu D200 nhảy (currentId >
+        ///     snapshotId) trước khi D202 đổi → ID đã chuyển sang chai khác, tính timeout.
+        /// </summary>
+        public e_TimeoutCheckResult CheckTimeoutV2(string code, int? timeoutMs = null, int? pollMs = null)
+        {
+            if (_plcMonitor is null) return e_TimeoutCheckResult.PlcUnavailable;
+            if (string.IsNullOrEmpty(code)) return e_TimeoutCheckResult.Error;
+
+            int ms = timeoutMs
+                ?? (int.TryParse(Environment.GetEnvironmentVariable("PLC_TIMEOUT_MS"), out var t) ? t : 5000);
+            int poll = pollMs
+                ?? (int.TryParse(Environment.GetEnvironmentVariable("PLC_TIMEOUT_POLL_MS"), out var p) ? p : 50);
+
+            var idDm = Environment.GetEnvironmentVariable("PLC_TIMEOUT_ID_DM")
+                       ?? PLCMonitor.DefaultTimeoutIdDm;
+            var statusDm = Environment.GetEnvironmentVariable("PLC_TIMEOUT_STATUS_DM")
+                           ?? PLCMonitor.DefaultTimeoutStatusDm;
+
+            try
+            {
+                var snapIdR = _plcMonitor.ReadInt32Safe(idDm, 1);
+                var snapStatusR = _plcMonitor.ReadInt32Safe(statusDm, 1);
+                if (!snapIdR.Success || !snapStatusR.Success
+                    || snapIdR.Value.Length == 0 || snapStatusR.Value.Length == 0)
+                {
+                    Log.Warning("[Camera] CheckTimeoutV2: cannot snapshot D200/D202");
+                    return e_TimeoutCheckResult.PlcUnavailable;
+                }
+
+                int expectedId = snapIdR.Value[0];
+                int prevStatus = snapStatusR.Value[0];
+
+                var deadline = DateTime.UtcNow.AddMilliseconds(ms);
+                while (DateTime.UtcNow < deadline)
+                {
+                    var curIdR = _plcMonitor.ReadInt32Safe(idDm, 1);
+                    if (!curIdR.Success || curIdR.Value.Length == 0)
+                    {
+                        Thread.Sleep(poll);
+                        continue;
+                    }
+                    int currentId = curIdR.Value[0];
+
+                    if (currentId > expectedId)
+                    {
+                        Log.Warning("[Camera] CheckTimeoutV2: ID jumped {Exp}->{Cur} for {Code}",
+                                    expectedId, currentId, code);
+                        return e_TimeoutCheckResult.Timeout;
+                    }
+
+                    if (currentId == expectedId)
+                    {
+                        var curStatusR = _plcMonitor.ReadInt32Safe(statusDm, 1);
+                        if (curStatusR.Success && curStatusR.Value.Length > 0)
+                        {
+                            int currentStatus = curStatusR.Value[0];
+                            if (currentStatus != prevStatus)
+                            {
+                                if (currentStatus == 1 || currentStatus == 2)
+                                    return e_TimeoutCheckResult.Pass;
+                                return e_TimeoutCheckResult.Timeout;
+                            }
+                        }
+                    }
+
+                    Thread.Sleep(poll);
+                }
+
+                Log.Warning("[Camera] CheckTimeoutV2: timeout {Ms}ms for {Code}", ms, code);
+                return e_TimeoutCheckResult.Timeout;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[Camera] CheckTimeoutV2 failed");
+                return e_TimeoutCheckResult.Error;
             }
         }
     }

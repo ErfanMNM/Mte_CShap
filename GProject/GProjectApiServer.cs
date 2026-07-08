@@ -250,6 +250,9 @@ public class GProjectApiServer : IDisposable
         // Production status
         _app.MapGet("/api/production/status", POApiServer.HandleGetProductionStatus);
 
+        // Camera history ring buffer
+        _app.MapGet("/api/camera-history", CameraHistoryHandler.HandleGet);
+
         // Carton PDA endpoints
         _app.MapGet("/api/carton/current-po", POApiServer.HandleGetCurrentPO);
         _app.MapPost("/api/carton/scan", async ctx => await POApiServer.HandleCartonScan(ctx));
@@ -844,6 +847,10 @@ public class GProjectApiServer : IDisposable
                     sm.ActiveCounter.PassCount,
                     sm.ActiveCounter.FailCount,
                     sm.ActiveCounter.DuplicateCount,
+                    sm.ActiveCounter.NotFoundCount,
+                    sm.ActiveCounter.ReadFailCount,
+                    sm.ActiveCounter.ErrorCount,
+                    sm.ActiveCounter.TimeoutCount,
                     sm.ActiveCounter.CartonID,
                     sm.ActiveCounter.CartonCode
                 },

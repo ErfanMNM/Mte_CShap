@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   CheckCircle2,
   AlertCircle,
@@ -29,7 +29,6 @@ import {
   Keyboard as KeyboardIcon,
   X as CloseIcon,
   RefreshCw,
-  Plug,
   PlugZap,
   Package,
   LogOut,
@@ -47,6 +46,10 @@ import ProductionView from "./components/production/ProductionView";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LoginScreen } from "./components/LoginScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import type {
+  CameraHistoryItem,
+  CameraHistoryResponse,
+} from "./types/camera";
 
 type KeyboardLayoutType = "default" | "shift" | "numeric";
 
@@ -373,18 +376,21 @@ const DeviceIndicator = ({
   label: string;
   subLabel?: string;
   icon: React.ElementType;
-  status: "ok" | "error" | "offline" | "warning";
+  status: "ok" | "error" | "offline" | "warning" | "connecting";
 }) => {
-  const styles = {
+  const styles: Record<string, string> = {
     ok: "bg-green-50 text-green-700 border-green-100",
     error: "bg-red-50 text-red-700 border-red-100",
     warning: "bg-amber-50 text-amber-700 border-amber-100",
+    connecting: "bg-blue-50 text-blue-700 border-blue-100",
     offline: "bg-slate-50 text-slate-600 border-slate-100",
   };
-  const dotStyles = {
+  const dotStyles: Record<string, string> = {
     ok: "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]",
     error: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse",
     warning: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]",
+    connecting:
+      "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse",
     offline: "bg-slate-400",
   };
 
@@ -409,15 +415,129 @@ const DeviceIndicator = ({
 };
 
 const AppStateIndicator = ({ state }: { state: string }) => {
-  const stateConfig: Record<string, { label: string; bg: string; text: string; dot: string }> = {
-    Checking: { label: "CHECKING", bg: "bg-blue-50 border-blue-100", text: "text-blue-700", dot: "bg-blue-500 animate-pulse" },
-    Idle: { label: "IDLE", bg: "bg-slate-50 border-slate-100", text: "text-slate-700", dot: "bg-slate-400" },
-    Running: { label: "RUNNING", bg: "bg-green-50 border-green-100", text: "text-green-700", dot: "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" },
-    Error: { label: "ERROR", bg: "bg-red-50 border-red-100", text: "text-red-700", dot: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse" },
-    NotUsed: { label: "NOT USED", bg: "bg-slate-50 border-slate-100", text: "text-slate-500", dot: "bg-slate-300" },
+  const stateConfig: Record<
+    string,
+    { label: string; bg: string; text: string; dot: string }
+  > = {
+    NeedLogin: {
+      label: "NEED LOGIN",
+      bg: "bg-slate-50 border-slate-100",
+      text: "text-slate-700",
+      dot: "bg-slate-400",
+    },
+    NoSelectedPO: {
+      label: "NO PO",
+      bg: "bg-slate-50 border-slate-100",
+      text: "text-slate-700",
+      dot: "bg-slate-400",
+    },
+    Editing: {
+      label: "EDITING",
+      bg: "bg-slate-50 border-slate-100",
+      text: "text-slate-700",
+      dot: "bg-slate-400",
+    },
+    CheckingPO: {
+      label: "CHECKING PO",
+      bg: "bg-blue-50 border-blue-100",
+      text: "text-blue-700",
+      dot: "bg-blue-500 animate-pulse",
+    },
+    Checking: {
+      label: "CHECKING",
+      bg: "bg-blue-50 border-blue-100",
+      text: "text-blue-700",
+      dot: "bg-blue-500 animate-pulse",
+    },
+    CheckPO: {
+      label: "CHECK PO",
+      bg: "bg-blue-50 border-blue-100",
+      text: "text-blue-700",
+      dot: "bg-blue-500 animate-pulse",
+    },
+    LoadPO: {
+      label: "LOAD PO",
+      bg: "bg-blue-50 border-blue-100",
+      text: "text-blue-700",
+      dot: "bg-blue-500 animate-pulse",
+    },
+    Ready: {
+      label: "READY",
+      bg: "bg-green-50 border-green-100",
+      text: "text-green-700",
+      dot: "bg-green-500",
+    },
+    PushingToDic: {
+      label: "LOADING DIC",
+      bg: "bg-blue-50 border-blue-100",
+      text: "text-blue-700",
+      dot: "bg-blue-500 animate-pulse",
+    },
+    Running: {
+      label: "RUNNING",
+      bg: "bg-green-50 border-green-100",
+      text: "text-green-700",
+      dot: "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]",
+    },
+    Paused: {
+      label: "PAUSED",
+      bg: "bg-amber-50 border-amber-100",
+      text: "text-amber-700",
+      dot: "bg-amber-500",
+    },
+    CheckingQueue: {
+      label: "CHECK QUEUE",
+      bg: "bg-blue-50 border-blue-100",
+      text: "text-blue-700",
+      dot: "bg-blue-500 animate-pulse",
+    },
+    Saving: {
+      label: "SAVING",
+      bg: "bg-blue-50 border-blue-100",
+      text: "text-blue-700",
+      dot: "bg-blue-500 animate-pulse",
+    },
+    WaitingStop: {
+      label: "WAITING STOP",
+      bg: "bg-amber-50 border-amber-100",
+      text: "text-amber-700",
+      dot: "bg-amber-500 animate-pulse",
+    },
+    CheckAfterCompleted: {
+      label: "CHECK DONE",
+      bg: "bg-blue-50 border-blue-100",
+      text: "text-blue-700",
+      dot: "bg-blue-500 animate-pulse",
+    },
+    Completed: {
+      label: "COMPLETED",
+      bg: "bg-green-50 border-green-100",
+      text: "text-green-700",
+      dot: "bg-green-500",
+    },
+    DeviceError: {
+      label: "DEVICE ERROR",
+      bg: "bg-red-50 border-red-100",
+      text: "text-red-700",
+      dot: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse",
+    },
+    Error: {
+      label: "ERROR",
+      bg: "bg-red-50 border-red-100",
+      text: "text-red-700",
+      dot: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse",
+    },
+    Unknown: {
+      label: "IDLE",
+      bg: "bg-slate-50 border-slate-100",
+      text: "text-slate-700",
+      dot: "bg-slate-400",
+    },
   };
 
-  const config = stateConfig[state] || { label: state, bg: "bg-slate-50 border-slate-100", text: "text-slate-700", dot: "bg-slate-400" };
+  const config =
+    stateConfig[state] ||
+    stateConfig.Unknown;
 
   return (
     <div className={`flex items-center justify-between px-2 py-1.5 xl:py-2 2xl:py-2.5 rounded-xl border ${config.bg} transition-colors min-w-0`}>
@@ -444,13 +564,17 @@ const AppStateIndicator = ({ state }: { state: string }) => {
    ========================================= */
 
 const ScadaMonitorView = () => {
-  const [activeTab, setActiveTab] = useState<"log" | "error" | "plc">("log");
+  const [activeTab, setActiveTab] = useState<
+    "log" | "error" | "plc" | "history"
+  >("log");
+  const [cameraHistory, setCameraHistory] = useState<CameraHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Camera WebSocket connection
   const wsUrl =
     import.meta.env.VITE_CAMERA_WS_URL || "ws://localhost:9999/ws/camera";
 
-  const { snapshot, logs, reconnect } = useCameraSocket({
+  const { snapshot, logs, reconnect, lastScan } = useCameraSocket({
     url: wsUrl,
     reconnectIntervalMs: 3000,
     maxReconnectAttempts: 5,
@@ -469,73 +593,167 @@ const ScadaMonitorView = () => {
     maxReconnectAttempts: 5,
   });
 
-  // Camera connection: only "Disconnected" is considered offline.
-  // Connected / Received / Reconnecting are all healthy (green).
-  const mapStatus = (status: string | undefined) => {
-    if (!status) return "offline";
-    const s = status.toLowerCase();
+  // Production state WebSocket (used to drive "ỨNG DỤNG" + AppStateIndicator)
+  const prodWsUrl =
+    import.meta.env.VITE_PROD_WS_URL || "ws://localhost:9999/ws/production";
+  const {
+    snapshot: prodSnapshot,
+    connected: prodWsConnected,
+  } = useProductionWebSocket({
+    url: prodWsUrl,
+    reconnectIntervalMs: 3000,
+    maxReconnectAttempts: 5,
+  });
+
+  // ====== Helpers ======
+
+  // Camera: 3 trạng thái rõ ràng (kết nối/đang kết nối lại/mất kết nối)
+  const mapCameraStatus = (
+    state: string | undefined,
+    connected: boolean,
+  ) => {
+    if (!state && !connected) return "connecting";
+    const s = state?.toLowerCase();
+    if (s === "connected" || s === "received") return "ok";
+    if (s === "reconnecting") return "connecting";
     if (s === "disconnected" || s === "deactive") return "error";
-    if (s === "error" || s === "fail") return "error";
+    if (!connected) return "connecting";
     return "ok";
   };
 
-  // PLC connection: WebSocket connected + no error state → green.
-  // Disconnected or Reconnecting → red. No data yet (not connected) → amber.
-  const mapPlcStatus = (connected: boolean, status: string | undefined) => {
-    if (!connected) return "warning";
-    if (!status) return "warning";
-    const s = status.toLowerCase();
-    if (s === "disconnected" || s === "reconnecting") return "error";
+  // PLC: ban đầu connecting (chưa có data), ngược lại dựa trên state
+  const mapPlcStatus = (connected: boolean, state: string | undefined) => {
+    if (!connected && !state) return "connecting";
+    const s = state?.toLowerCase();
+    if (s === "disconnected") return "error";
+    if (s === "reconnecting") return "connecting";
+    if (!connected) return "connecting";
     return "ok";
   };
+
+  const cameraLabelMap: Record<string, string> = {
+    Connected: "Đã kết nối",
+    Reconnecting: "Đang kết nối lại",
+    Disconnected: "Mất kết nối",
+    Received: "Đang hoạt động",
+  };
+  const cameraSubLabel = (state: string | undefined) => {
+    if (!state) return "Đang kết nối";
+    return cameraLabelMap[state] ?? state;
+  };
+
+  // Ứng dụng: label + status lấy từ production WS
+  const appStateLabel = !prodWsConnected
+    ? "Mất kết nối WS"
+    : !prodSnapshot.state || prodSnapshot.state === "Unknown"
+      ? "Idle"
+      : prodSnapshot.state;
+  const appStateStatus: "ok" | "error" | "warning" | "connecting" =
+    !prodWsConnected
+      ? "connecting"
+      : prodSnapshot.state === "Running" || prodSnapshot.state === "Ready"
+        ? "ok"
+        : prodSnapshot.state === "Error" ||
+            prodSnapshot.state === "DeviceError"
+          ? "error"
+          : "warning";
 
   const cameraState = snapshot.camera.state;
 
   const formatLastCode = (lastCode: string, lastAt: string | null) => {
-    if (!lastCode) return "-";
+    if (!lastCode) return "—";
     if (!lastAt) return lastCode;
     return `${lastCode} @ ${new Date(lastAt).toLocaleTimeString("vi-VN")}`;
   };
 
+  // ====== Scan status (badge TỐT) ======
+  const scanBadge = useMemo(() => {
+    if (!lastScan) {
+      return {
+        label: cameraState === "Disconnected" ? "WAIT" : "TỐT",
+        subLabel: snapshot.lastEventAt
+          ? new Date(snapshot.lastEventAt).toLocaleString("vi-VN")
+          : "Đang chờ...",
+        code: snapshot.camera.lastCode || "",
+        tone: "wait" as "ok" | "warn" | "err" | "wait",
+      };
+    }
+    const status = lastScan.status;
+    if (status === "Pass")
+      return {
+        label: "TỐT",
+        subLabel: new Date(lastScan.at).toLocaleString("vi-VN"),
+        code: lastScan.code,
+        tone: "ok" as const,
+      };
+    if (status === "Duplicate")
+      return {
+        label: "TRÙNG",
+        subLabel: new Date(lastScan.at).toLocaleString("vi-VN"),
+        code: lastScan.code,
+        tone: "warn" as const,
+      };
+    if (status === "ReadFail" || status === "Timeout")
+      return {
+        label: "KHÔNG ĐỌC",
+        subLabel: new Date(lastScan.at).toLocaleString("vi-VN"),
+        code: lastScan.code || "",
+        tone: "err" as const,
+      };
+    if (status === "NotFound")
+      return {
+        label: "KHÔNG CÓ",
+        subLabel: new Date(lastScan.at).toLocaleString("vi-VN"),
+        code: lastScan.code,
+        tone: "err" as const,
+      };
+    if (status === "Error")
+      return {
+        label: "LỖI",
+        subLabel: new Date(lastScan.at).toLocaleString("vi-VN"),
+        code: lastScan.code,
+        tone: "err" as const,
+      };
+    return {
+      label: status,
+      subLabel: new Date(lastScan.at).toLocaleString("vi-VN"),
+      code: lastScan.code,
+      tone: "warn" as const,
+    };
+  }, [lastScan, cameraState, snapshot.lastEventAt, snapshot.camera.lastCode]);
+
+  // ====== Lịch sử camera (fetch khi mở tab) ======
+  useEffect(() => {
+    if (activeTab !== "history") return;
+    setHistoryLoading(true);
+    const apiBase =
+      (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
+      "http://localhost:9999";
+    fetch(`${apiBase}/api/camera-history?limit=200`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.statusText)))
+      .then((d: CameraHistoryResponse) => setCameraHistory(d.items ?? []))
+      .catch(() => setCameraHistory([]))
+      .finally(() => setHistoryLoading(false));
+  }, [activeTab]);
+
+  const statusBadgeClass = (status: string) => {
+    switch (status) {
+      case "Pass":
+        return "bg-green-100 text-green-700";
+      case "Duplicate":
+        return "bg-amber-100 text-amber-700";
+      case "ReadFail":
+      case "Timeout":
+      case "NotFound":
+      case "Error":
+        return "bg-red-100 text-red-700";
+      default:
+        return "bg-slate-100 text-slate-700";
+    }
+  };
+
   return (
     <div className="flex flex-col gap-3 xl:gap-4 h-full min-h-0 w-full animate-in fade-in duration-500">
-      {/* Connection Status Bar */}
-      <div className="flex items-center justify-between px-3 py-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 shadow-sm shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-2.5 h-2.5 rounded-full ${
-                snapshot.connected
-                  ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
-                  : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse"
-              }`}
-            />
-            <span className={`text-xs font-bold ${snapshot.connected ? "text-green-700" : "text-red-700"}`}>
-              {snapshot.connected ? "Đã kết nối Camera" : "Mất kết nối Camera"}
-            </span>
-          </div>
-          <div className="h-4 w-px bg-slate-200" />
-          <div className="flex items-center gap-1.5 text-slate-600">
-            <PlugZap className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">
-              {snapshot.clientCount || "-"} client(s)
-            </span>
-          </div>
-          <div className="h-4 w-px bg-slate-200" />
-          <div className="text-xs text-slate-500 font-mono">
-            {wsUrl.replace("ws://", "").replace("wss://", "")}
-          </div>
-        </div>
-        <button
-          onClick={reconnect}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-          title="Kết nối lại"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${!snapshot.connected ? "animate-spin" : ""}`} />
-          Kết nối lại
-        </button>
-      </div>
-
       {/* Main Dashboard Layout */}
       <div className="flex flex-col xl:flex-row gap-4 xl:gap-5 h-full min-h-0 pb-1">
         {/* LEFT COLUMN */}
@@ -544,17 +762,23 @@ const ScadaMonitorView = () => {
           <Card className="shrink-0">
             <CardHeader title="KẾT QUẢ VỪA KIỂM" icon={Activity} />
             <div className="p-3 2xl:p-5 flex flex-col sm:flex-row gap-3 2xl:gap-5 h-[110px] 2xl:h-40">
-              <div className={`w-full sm:w-[35%] rounded-xl 2xl:rounded-2xl text-white flex flex-col items-center justify-center p-2 2xl:p-4 shadow-lg ring-1 ring-white/20 ${
-                cameraState === "Disconnected"
-                  ? "bg-gradient-to-br from-slate-400 to-slate-500 shadow-slate-400/20"
-                  : "bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/20"
-              }`}>
+              <div
+                className={`w-full sm:w-[35%] rounded-xl 2xl:rounded-2xl text-white flex flex-col items-center justify-center p-2 2xl:p-4 shadow-lg ring-1 ring-white/20 ${
+                  scanBadge.tone === "err"
+                    ? "bg-gradient-to-br from-red-500 to-rose-600 shadow-red-500/20"
+                    : scanBadge.tone === "warn"
+                      ? "bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/20"
+                      : scanBadge.tone === "wait"
+                        ? "bg-gradient-to-br from-slate-400 to-slate-500 shadow-slate-400/20"
+                        : "bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/20"
+                }`}
+              >
                 <CheckCircle2
                   className="w-10 h-10 2xl:w-12 2xl:h-12 mb-1 2xl:mb-2"
                   strokeWidth={2.5}
                 />
                 <span className="text-2xl 2xl:text-3xl font-black tracking-widest leading-none">
-                  {cameraState === "Disconnected" ? "WAIT" : "TỐT"}
+                  {scanBadge.label}
                 </span>
               </div>
 
@@ -566,12 +790,12 @@ const ScadaMonitorView = () => {
                   Sự kiện camera gần nhất
                 </div>
                 <div className="text-sm 2xl:text-lg font-mono font-medium text-slate-800 break-all leading-tight pr-8">
-                  {snapshot.lastEventAt ? new Date(snapshot.lastEventAt).toLocaleString("vi-VN") : "Đang chờ..."}
+                  {scanBadge.subLabel}
                 </div>
                 <div className="mt-auto text-xs flex items-center gap-2 flex-wrap">
-                  {snapshot.camera.lastCode && (
+                  {scanBadge.code && (
                     <span className="px-2 py-0.5 2xl:px-3 2xl:py-1 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide bg-blue-100/80 text-blue-700 font-mono">
-                      {snapshot.camera.lastCode}
+                      {scanBadge.code}
                     </span>
                   )}
                 </div>
@@ -600,22 +824,31 @@ const ScadaMonitorView = () => {
               >
                 <AlertTriangle className="w-4 h-4" /> KIỂM TRA LỖI
               </button>
+              <button
+                onClick={() => setActiveTab("history")}
+                className={`flex-1 py-2.5 2xl:py-3 px-4 text-xs 2xl:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === "history" ? "bg-violet-50 text-violet-700" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"}`}
+              >
+                <QrCode className="w-4 h-4" /> LỊCH SỬ CAMERA
+              </button>
             </div>
             <div className="flex-1 overflow-auto bg-white p-0">
                 <table className="w-full text-sm text-left relative">
                 <thead className="text-[10px] 2xl:text-xs text-slate-400 uppercase bg-white sticky top-0 border-b border-slate-100 z-10 w-full backdrop-blur">
                   <tr>
                     <th className="px-5 2xl:px-6 py-3 2xl:py-4 font-bold tracking-wider">
-                      Thời gian
+                      ID
                     </th>
                     <th className="px-5 2xl:px-6 py-3 2xl:py-4 font-bold tracking-wider">
-                      Nguồn
+                      Thời gian
                     </th>
                     <th className="px-5 2xl:px-6 py-3 2xl:py-4 font-bold tracking-wider">
                       Trạng thái
                     </th>
                     <th className="px-5 2xl:px-6 py-3 2xl:py-4 font-bold tracking-wider">
-                      Chi tiết
+                      Mã
+                    </th>
+                    <th className="px-5 2xl:px-6 py-3 2xl:py-4 font-bold tracking-wider">
+                      Carton
                     </th>
                   </tr>
                 </thead>
@@ -623,7 +856,7 @@ const ScadaMonitorView = () => {
                   {activeTab === "plc" ? (
                     plcLogs.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-5 2xl:px-6 py-8 text-center text-slate-400 text-sm">
+                        <td colSpan={5} className="px-5 2xl:px-6 py-8 text-center text-slate-400 text-sm">
                           Đang chờ dữ liệu từ PLC...
                         </td>
                       </tr>
@@ -638,17 +871,18 @@ const ScadaMonitorView = () => {
                         return (
                           <tr key={`${msg.at}-${idx}`} className="hover:bg-slate-50/50 transition-colors">
                             <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 font-mono text-[11px] 2xl:text-xs font-semibold text-slate-500 whitespace-nowrap">
-                              {new Date(msg.at).toLocaleTimeString("vi-VN")}
+                              #{idx + 1}
                             </td>
-                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5">
-                              <span className="px-2 py-0.5 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide bg-emerald-100 text-emerald-700">
-                                PLC
-                              </span>
+                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 font-mono text-[11px] 2xl:text-xs font-semibold text-slate-500 whitespace-nowrap">
+                              {new Date(msg.at).toLocaleTimeString("vi-VN")}
                             </td>
                             <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5">
                               <span className={`px-2.5 2xl:px-3 py-1 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide uppercase ${stateColor}`}>
                                 {msg.state}
                               </span>
+                            </td>
+                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 text-xs 2xl:text-sm text-slate-700 font-medium font-mono break-all">
+                              PLC
                             </td>
                             <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 text-xs 2xl:text-sm text-slate-700 font-medium font-mono break-all">
                               {msg.message ?? `${msg.ip}:${msg.port}`}
@@ -657,9 +891,50 @@ const ScadaMonitorView = () => {
                         );
                       })
                     )
+                  ) : activeTab === "history" ? (
+                    historyLoading ? (
+                      <tr>
+                        <td colSpan={5} className="px-5 2xl:px-6 py-8 text-center text-slate-400 text-sm">
+                          Đang tải lịch sử...
+                        </td>
+                      </tr>
+                    ) : cameraHistory.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-5 2xl:px-6 py-8 text-center text-slate-400 text-sm">
+                          Chưa có lịch sử quét nào.
+                        </td>
+                      </tr>
+                    ) : (
+                      cameraHistory.map((entry) => (
+                        <tr
+                          key={entry.id}
+                          className="hover:bg-slate-50/50 transition-colors"
+                        >
+                          <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 font-mono text-[11px] 2xl:text-xs font-semibold text-slate-500 whitespace-nowrap">
+                            #{entry.id}
+                          </td>
+                          <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 font-mono text-[11px] 2xl:text-xs font-semibold text-slate-500 whitespace-nowrap">
+                            {new Date(entry.at).toLocaleString("vi-VN")}
+                          </td>
+                          <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5">
+                            <span
+                              className={`px-2.5 2xl:px-3 py-1 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide uppercase ${statusBadgeClass(entry.status)}`}
+                            >
+                              {entry.status}
+                            </span>
+                          </td>
+                          <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 text-xs 2xl:text-sm text-slate-700 font-medium font-mono break-all">
+                            {entry.code || "—"}
+                          </td>
+                          <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 text-xs 2xl:text-sm text-slate-700 font-medium font-mono">
+                            {entry.cartonCode ?? "—"}
+                          </td>
+                        </tr>
+                      ))
+                    )
                   ) : logs.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-5 2xl:px-6 py-8 text-center text-slate-400 text-sm">
+                      <td colSpan={5} className="px-5 2xl:px-6 py-8 text-center text-slate-400 text-sm">
                         Đang chờ dữ liệu từ camera...
                       </td>
                     </tr>
@@ -680,17 +955,18 @@ const ScadaMonitorView = () => {
                           className="hover:bg-slate-50/50 transition-colors"
                         >
                           <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 font-mono text-[11px] 2xl:text-xs font-semibold text-slate-500 whitespace-nowrap">
-                            {new Date(log.time).toLocaleTimeString("vi-VN")}
+                            —
                           </td>
-                          <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide bg-blue-100 text-blue-700">
-                              {log.msg.camera.toUpperCase()}
-                            </span>
+                          <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 font-mono text-[11px] 2xl:text-xs font-semibold text-slate-500 whitespace-nowrap">
+                            {new Date(log.time).toLocaleTimeString("vi-VN")}
                           </td>
                           <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5">
                             <span className={`px-2.5 2xl:px-3 py-1 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide uppercase ${stateBadgeColor}`}>
                               {log.msg.state}
                             </span>
+                          </td>
+                          <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 text-xs 2xl:text-sm text-slate-700 font-medium font-mono break-all">
+                            {log.msg.camera.toUpperCase()}
                           </td>
                           <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 text-xs 2xl:text-sm text-slate-700 font-medium font-mono break-all">
                             {log.msg.data || "-"}
@@ -709,12 +985,12 @@ const ScadaMonitorView = () => {
         <div className="flex flex-col gap-4 xl:gap-5 w-full xl:w-[40%] h-full pb-1">
           <Card className="flex-[1] shadow-sm flex flex-col min-h-0">
             <CardHeader title="TRẠNG THÁI THIẾT BỊ" icon={Server} />
-            <div className="p-2 xl:p-3 2xl:p-4 grid grid-cols-2 grid-rows-3 gap-1.5 2xl:gap-2 flex-1 min-h-0">
+            <div className="p-2 xl:p-3 2xl:p-4 grid grid-cols-2 gap-1.5 2xl:gap-2 flex-1 min-h-0">
               <DeviceIndicator
                 icon={Monitor}
                 label="CAMERA"
                 subLabel={formatLastCode(snapshot.camera.lastCode, snapshot.camera.lastAt)}
-                status={mapStatus(cameraState)}
+                status={mapCameraStatus(cameraState, snapshot.connected)}
               />
               <DeviceIndicator
                 icon={Cpu}
@@ -722,41 +998,71 @@ const ScadaMonitorView = () => {
                 subLabel={
                   plcSnapshot.ip
                     ? `${plcSnapshot.ip}:${plcSnapshot.port ?? ""}`
-                    : plcSnapshot.connected
-                      ? "online"
-                      : "offline"
+                    : cameraSubLabel(plcSnapshot.state)
                 }
                 status={mapPlcStatus(plcSnapshot.connected, plcSnapshot.state)}
               />
               <DeviceIndicator
-                icon={Plug}
-                label="WS CAMERA"
-                subLabel={snapshot.connected ? "online" : "offline"}
-                status={snapshot.connected ? "ok" : "error"}
-              />
-              <DeviceIndicator
-                icon={PlugZap}
-                label="WS PLC"
-                subLabel={plcSnapshot.connected ? "online" : "offline"}
-                status={plcSnapshot.connected ? "ok" : "error"}
-              />
-              <DeviceIndicator
                 icon={Settings}
                 label="ỨNG DỤNG"
-                subLabel="Idle"
-                status="warning"
+                subLabel={appStateLabel}
+                status={appStateStatus}
+              />
+              <AppStateIndicator
+                state={prodWsConnected ? prodSnapshot.state || "Unknown" : "Unknown"}
               />
             </div>
           </Card>
 
           <Card className="flex-[1.2] shadow-sm flex flex-col min-h-0">
-            <CardHeader title="KẾT NỐI WEBSOCKET" icon={Wifi} />
+            <CardHeader
+              title="KẾT NỐI WEBSOCKET"
+              icon={Wifi}
+              action={
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`flex items-center gap-1.5 text-xs font-semibold ${
+                      snapshot.connected ? "text-green-700" : "text-red-700"
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        snapshot.connected
+                          ? "bg-green-500"
+                          : "bg-red-500 animate-pulse"
+                      }`}
+                    />
+                    {snapshot.connected ? "Đã kết nối" : "Mất kết nối"}
+                  </span>
+                  <button
+                    onClick={reconnect}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Kết nối lại camera"
+                  >
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${!snapshot.connected ? "animate-spin" : ""}`}
+                    />
+                    Camera
+                  </button>
+                  <button
+                    onClick={plcReconnect}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                    title="Kết nối lại PLC"
+                  >
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${!plcSnapshot.connected ? "animate-spin" : ""}`}
+                    />
+                    PLC
+                  </button>
+                </div>
+              }
+            />
             <div className="p-3 xl:p-4 2xl:p-5 flex flex-col justify-between gap-3 flex-1 overflow-auto">
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3 flex items-center justify-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${snapshot.connected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
                   <span className="text-xs font-bold text-slate-600">
-                    {snapshot.connected ? "ONLINE" : "OFFLINE"}
+                    {cameraSubLabel(cameraState)}
                   </span>
                 </div>
                 <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3 flex items-center justify-center gap-2">
@@ -768,7 +1074,7 @@ const ScadaMonitorView = () => {
                 <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3 flex items-center justify-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${plcSnapshot.connected ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
                   <span className="text-xs font-bold text-slate-600">
-                    {plcSnapshot.connected ? "ONLINE" : "OFFLINE"}
+                    {cameraSubLabel(plcSnapshot.state)}
                   </span>
                 </div>
                 <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3 flex items-center justify-center gap-2">
@@ -1381,19 +1687,7 @@ export default function AdminPanel() {
 }
 
 const AdminPanelWithAuth = () => {
-  const { isAuthenticated, isLoading, user, logout, checkAuth } = useAuth();
-
-  // Connect to production WebSocket to sync with BE state machine
-  const prodWsUrl =
-    import.meta.env.VITE_PROD_WS_URL || "ws://localhost:9999/ws/production";
-  const { snapshot: prodSnapshot } = useProductionWebSocket({ url: prodWsUrl });
-
-  // React to BE state machine state changes
-  useEffect(() => {
-    if (prodSnapshot.state) {
-      checkAuth(prodSnapshot.state);
-    }
-  }, [prodSnapshot.state, checkAuth]);
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
 
   if (isLoading) {
     return (

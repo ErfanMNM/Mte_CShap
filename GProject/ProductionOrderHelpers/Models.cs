@@ -193,6 +193,7 @@ namespace GProject.ProductionOrderHelpers
         public int ReadFailCount { get; set; }
         public int NotFoundCount { get; set; }
         public int ErrorCount { get; set; }
+        public int TimeoutCount { get; set; }
         public int TotalCount { get; set; }
         public int TotalCartonCount { get; set; }
         public int ActivatedCartonCount { get; set; }
@@ -209,6 +210,7 @@ namespace GProject.ProductionOrderHelpers
             ReadFailCount = 0;
             NotFoundCount = 0;
             ErrorCount = 0;
+            TimeoutCount = 0;
             TotalCount = 0;
             TotalCartonCount = 0;
             ActivatedCartonCount = 0;

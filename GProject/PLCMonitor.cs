@@ -28,6 +28,12 @@ public class PLCMonitor : IDisposable
 
     public PLCConnectionState State { get; private set; } = PLCConnectionState.Disconnected;
 
+    public const string DefaultResultDm = "D300";
+    public const string DefaultTimeoutIdDm = "D200";
+    public const string DefaultTimeoutStatusDm = "D202";
+
+    public record PlcReadResult(bool Success, int[] Value, string Error);
+
     public PLCMonitor()
     {
         _ip = Environment.GetEnvironmentVariable("PLC_IP") ?? "127.0.0.1";
@@ -124,6 +130,42 @@ public class PLCMonitor : IDisposable
             {
                 Log.Warning(ex, "[PLCMonitor] StateChanged handler threw");
             }
+        }
+    }
+
+    /// <summary>
+    /// Ghi response camera (1/2/0) xuống DM 16-bit. Fire-and-forget — KHÔNG await,
+    /// phải hoàn tất trong vài chục ms để khớp cycle PLC.
+    /// </summary>
+    public void WriteResultFireAndForget(short value)
+    {
+        var dm = Environment.GetEnvironmentVariable("PLC_RESULT_DM") ?? DefaultResultDm;
+        try
+        {
+            var r = _plc.Write(dm, value);
+            if (!r.IsSuccess)
+                Log.Warning("[PLCMonitor] Write {Dm}={Value} failed: {Err}",
+                            dm, value, r.Message);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "[PLCMonitor] Write {Dm}={Value} threw", dm, value);
+        }
+    }
+
+    /// <summary>Đọc 1 vùng int32 từ DM, không throw.</summary>
+    public PlcReadResult ReadInt32Safe(string address, ushort length)
+    {
+        try
+        {
+            var r = _plc.ReadInt32(address, length);
+            return new PlcReadResult(r.IsSuccess,
+                                     r.IsSuccess ? r.Content : Array.Empty<int>(),
+                                     r.IsSuccess ? "" : r.Message);
+        }
+        catch (Exception ex)
+        {
+            return new PlcReadResult(false, Array.Empty<int>(), ex.Message);
         }
     }
 
