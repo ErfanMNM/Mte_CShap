@@ -124,6 +124,10 @@ namespace GProject
                 case eOmronCodeReaderState.Disconnected:
                     break;
                 case eOmronCodeReaderState.Received:
+                    // Gọi StateMachine để xử lý luồng 1-camera:
+                    // tra Dictionary_Codes O(1) -> activate -> enqueue Record + CodeUpdate ngay,
+                    // khi đủ thùng sẽ enqueue CompleteCarton.
+                    ProductionStateMachine.Instance.HandleCodeFromCamera(data);
                     break;
                 case eOmronCodeReaderState.Reconnecting:
                     break;

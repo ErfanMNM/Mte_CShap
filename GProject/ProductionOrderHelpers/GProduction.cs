@@ -87,6 +87,12 @@ namespace GProject.ProductionOrderHelpers
                 => ProductionOrderHelpers.PORecord.GetPackedCount(orderNo);
             public static int GetCodeCountInCarton(string orderNo, string cartonCode)
                 => ProductionOrderHelpers.PORecord.GetCodeCountInCarton(orderNo, cartonCode);
+
+            public static Result UpdateCodeStatusAndCarton(
+                string orderNo, string code, string activateDate, string activateUser,
+                string packingDate, string cartonCode, string productionDate)
+                => ProductionOrderHelpers.PORecord.UpdateCodeStatusAndCarton(
+                    orderNo, code, activateDate, activateUser, packingDate, cartonCode, productionDate);
         }
 
         /// <summary>

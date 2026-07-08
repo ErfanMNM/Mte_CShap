@@ -282,7 +282,40 @@ namespace GProject.ProductionOrderHelpers
     }
 
     /// <summary>
-    /// Dữ liệu lịch sử PO
+    /// Item trong queue ghi CodeUpdate (update Status=1 + cartonCode vào {orderNo}.db)
+    /// </summary>
+    public class CodeUpdateItem
+    {
+        public string OrderNo { get; set; } = "";
+        public string Code { get; set; } = "";
+        public string ActivateDate { get; set; } = "";
+        public string ActivateUser { get; set; } = "";
+        public string PackingDate { get; set; } = "";
+        public string CartonCode { get; set; } = "0";
+        public string ProductionDate { get; set; } = "";
+    }
+
+    /// <summary>
+    /// Loại update cho Carton (hiện tại chỉ có Complete)
+    /// </summary>
+    public enum CartonUpdateType
+    {
+        Complete
+    }
+
+    /// <summary>
+    /// Item trong queue ghi CartonUpdate (chỉ khi đủ 24 mã trong thùng)
+    /// </summary>
+    public class CartonUpdateItem
+    {
+        public CartonUpdateType Type { get; set; }
+        public string OrderNo { get; set; } = "";
+        public int CartonId { get; set; }
+        public string ActivateUser { get; set; } = "";
+    }
+
+    /// <summary>
+    /// Thông tin lịch sử PO
     /// </summary>
     public class POHistoryData
     {

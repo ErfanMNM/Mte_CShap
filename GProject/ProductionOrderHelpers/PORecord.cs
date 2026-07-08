@@ -143,6 +143,50 @@ namespace GProject.ProductionOrderHelpers
         }
 
         /// <summary>
+        /// Cập nhật trạng thái mã đồng thời: Status=1, ActivateDate, ActivateUser, cartonCode, PackingDate, ProductionDate
+        /// Dùng cho camera - update nhãn ngay khi quét mã
+        /// </summary>
+        public static Result UpdateCodeStatusAndCarton(
+            string orderNo, string code, string activateDate, string activateUser,
+            string packingDate, string cartonCode, string productionDate)
+        {
+            try
+            {
+                string dbPath = Config.GetPODBPath(orderNo);
+                if (!File.Exists(dbPath))
+                    return Result.Fail($"PO DB '{orderNo}' không tồn tại.");
+
+                using var con = new SqliteConnection($"Data Source={dbPath}");
+                con.Open();
+                const string sql = @"UPDATE UniqueCodes SET
+                    Status = 1,
+                    ActivateDate = COALESCE(NULLIF(@ActivateDate, ''), ActivateDate),
+                    ActivateUser = COALESCE(NULLIF(@ActivateUser, ''), ActivateUser),
+                    PackingDate = COALESCE(NULLIF(@PackingDate, ''), PackingDate),
+                    cartonCode = COALESCE(NULLIF(@cartonCode, ''), cartonCode),
+                    ProductionDate = COALESCE(NULLIF(@ProductionDate, ''), ProductionDate)
+                    WHERE Code = @Code;";
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = sql;
+                cmd.Parameters.AddWithValue("@Code", code ?? "");
+                cmd.Parameters.AddWithValue("@ActivateDate", activateDate ?? "");
+                cmd.Parameters.AddWithValue("@ActivateUser", activateUser ?? "");
+                cmd.Parameters.AddWithValue("@PackingDate", packingDate ?? "");
+                cmd.Parameters.AddWithValue("@cartonCode", cartonCode ?? "0");
+                cmd.Parameters.AddWithValue("@ProductionDate", productionDate ?? "");
+                int rows = cmd.ExecuteNonQuery();
+
+                return rows > 0
+                    ? Result.Success($"Update code '{code}' thành công.")
+                    : Result.Fail($"Không tìm thấy mã: {code}");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Lỗi khi update code: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Gỡ một mã khỏi thùng
         /// </summary>
         public static Result UnpackCode(string orderNo, string code)
