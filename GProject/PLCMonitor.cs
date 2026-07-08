@@ -70,35 +70,35 @@ public class PLCMonitor : IDisposable
             try
             {
                 // 1) Write Ready flag (heartbeat)
-                var writeResult = _plc.Write(readyDm, (short)1);
+                //var writeResult = _plc.Write(readyDm, (short)1);
 
-                bool writeOk = writeResult.IsSuccess;
+                //bool writeOk = writeResult.IsSuccess;
 
-                if (writeOk)
-                {
-                    consecutiveFailures = 0;
-                    EmitState(PLCConnectionState.Connected, $"PLC online @ {_ip}:{_port};");
+                //if (writeOk)
+                //{
+                //    consecutiveFailures = 0;
+                //    EmitState(PLCConnectionState.Connected, $"PLC online @ {_ip}:{_port};");
 
-                    // 2) Doc counter tu PLC
-                    try
-                    {
-                        var readResult = _plc.ReadInt32(counterDm, 1);
-                        if (readResult.IsSuccess && readResult.Content.Length > 0)
-                        {
-                            int totalCount = readResult.Content[0];
-                            Production.ProductionStateMachine.Instance.UpdateActiveCounterTotal(totalCount);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Warning("[PLCMonitor] Failed to read counter: {Ex}", ex.Message);
-                    }
-                }
-                else
-                {
-                    consecutiveFailures++;
-                    EmitState(PLCConnectionState.Disconnected, $"PLC offline ({consecutiveFailures} consecutive fails)");
-                }
+                //    // 2) Doc counter tu PLC
+                //    try
+                //    {
+                //        var readResult = _plc.ReadInt32(counterDm, 1);
+                //        if (readResult.IsSuccess && readResult.Content.Length > 0)
+                //        {
+                //            int totalCount = readResult.Content[0];
+                //            Production.ProductionStateMachine.Instance.UpdateActiveCounterTotal(totalCount);
+                //        }
+                //    }
+                //    catch (Exception ex)
+                //    {
+                //        Log.Warning("[PLCMonitor] Failed to read counter: {Ex}", ex.Message);
+                //    }
+                //}
+                //else
+                //{
+                //    consecutiveFailures++;
+                //    EmitState(PLCConnectionState.Disconnected, $"PLC offline ({consecutiveFailures} consecutive fails)");
+                //}
 
                 Thread.Sleep(_pollMs);
             }
