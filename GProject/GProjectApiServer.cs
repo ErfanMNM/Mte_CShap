@@ -269,6 +269,7 @@ public class GProjectApiServer : IDisposable
         _app.MapPost("/api/production/start", (Delegate)HandleProductionStart);
         _app.MapPost("/api/production/stop", (Delegate)HandleProductionStop);
         _app.MapPost("/api/production/reset", (Delegate)HandleProductionReset);
+        _app.MapGet("/api/production/ping", (Delegate)HandleProductionPing);
 
         // Initialize PO database
         POApiServer.Initialize();
@@ -1077,6 +1078,26 @@ public class GProjectApiServer : IDisposable
         catch (Exception ex)
         {
             LogError("GProjectApiServer", $"Error resetting production: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    /// <summary>
+    /// Ping endpoint - FE call định kỳ để trigger broadcast state ngay lập tức.
+    /// Giúp đảm bảo FE luôn có state mới nhất, đặc biệt khi WebSocket có thể miss message.
+    /// </summary>
+    private async Task<IResult> HandleProductionPing(HttpContext context)
+    {
+        try
+        {
+            await Task.CompletedTask;
+            // Broadcast ngay lập tức (không throttle)
+            await ProductionStateMachine.Instance.BroadcastCurrentStateAsync();
+            return Results.Json(new { success = true, at = DateTime.UtcNow });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error in ping: {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }

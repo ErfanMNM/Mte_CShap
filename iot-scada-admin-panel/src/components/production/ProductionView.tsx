@@ -24,27 +24,25 @@ import poApi from "../../services/poApi";
 import { useCameraSocket } from "../../hooks/useCameraSocket";
 import { usePLCWebSocket } from "../../hooks/usePLCWebSocket";
 import { useProductionWebSocket } from "../../hooks/useProductionWebSocket";
+import { useDeviceStore } from "../../store/useDeviceStore";
 import { handleActiveCodeScanned } from "../../services/cameraApi";
-import type { CameraState } from "../../types/camera";
-import type { PLCState } from "../../types/plc";
 import type { ProductionStatusResponse } from "../../types/production";
 import type { POListItem } from "../../types/po";
 
 type CamUiStatus = "ok" | "error" | "offline" | "warning";
 
-// Camera connection: only "Disconnected" is treated as offline.
-// Connected / Received / Reconnecting are all healthy (green).
-const mapCamStatus = (state: CameraState): CamUiStatus => {
+// Device status mapping using centralized store
+const getCamStatusFromStore = (state: string | undefined, connected: boolean): CamUiStatus => {
+  if (!connected) return "offline";
   if (state === "Disconnected") return "offline";
   return "ok";
 };
 
-// PLC connection: 3 states — no data yet (warning), Connected (ok), Disconnected/Reconnecting (error).
-const mapPlcStatus = (state: PLCState | undefined, lastEventAt: string | null | undefined): CamUiStatus => {
-    if (!lastEventAt) return "warning";
-    if (!state) return "warning";
-    if (state === "Disconnected" || state === "Reconnecting") return "error";
-    return "ok";
+const getPlcStatusFromStore = (state: string | undefined, connected: boolean): CamUiStatus => {
+  if (!connected) return "offline";
+  if (!state) return "warning";
+  if (state === "Disconnected" || state === "Reconnecting") return "error";
+  return "ok";
 };
 
 const ProductionView: React.FC = () => {
@@ -107,10 +105,15 @@ const ProductionView: React.FC = () => {
     }
   }, [error]);
 
-  // Camera WebSocket - auto addFromReader khi nhận Received từ camera
+  // Get device status from centralized store
+  const cameraStatus = useDeviceStore((s) => s.camera);
+  const plcStatus = useDeviceStore((s) => s.plc);
+  const productionStatus = useDeviceStore((s) => s.production);
+
+  // Camera WebSocket - auto addFromReader khi nhận Received từ camera (logs only, store sync handled by App.tsx)
   const cameraWsUrl =
     import.meta.env.VITE_CAMERA_WS_URL || "ws://localhost:9999/ws/camera";
-  const { snapshot: cameraSnapshot } = useCameraSocket({
+  const { lastScan } = useCameraSocket({
     url: cameraWsUrl,
     onEvent: async (msg) => {
       if (msg.state !== "Received" || msg.camera !== "camera") return;
@@ -128,17 +131,18 @@ const ProductionView: React.FC = () => {
         );
       }
     },
+    syncToStore: false, // Store sync handled by App.tsx hooks
   });
 
-  // PLC WebSocket - read-only monitor
+  // PLC WebSocket - read-only monitor (store sync handled by App.tsx)
   const plcWsUrl =
     import.meta.env.VITE_PLC_WS_URL || "ws://localhost:9999/ws/plc";
-  const { snapshot: plcSnapshot } = usePLCWebSocket({ url: plcWsUrl });
+  usePLCWebSocket({ url: plcWsUrl, syncToStore: false });
 
-  // Production WebSocket - real-time state + counter
+  // Production WebSocket - real-time state + counter (store sync handled by App.tsx)
   const prodWsUrl =
     import.meta.env.VITE_PROD_WS_URL || "ws://localhost:9999/ws/production";
-  const { snapshot: prodSnapshot, connected: prodWsConnected } = useProductionWebSocket({ url: prodWsUrl });
+  const { connected: prodWsConnected } = useProductionWebSocket({ url: prodWsUrl, syncToStore: false });
 
   const handleStartProduction = async () => {
     if (!selectedPO) {
@@ -366,10 +370,10 @@ const ProductionView: React.FC = () => {
                 </span>
               )}
               {/* lastWarning indicator */}
-              {prodSnapshot.lastWarning && (
+              {productionStatus?.lastWarning && (
                 <span className="ml-2 flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">
                   <AlertTriangle className="w-3 h-3" />
-                  {prodSnapshot.lastWarning}
+                  {productionStatus.lastWarning}
                 </span>
               )}
               {/* WebSocket status */}
@@ -600,28 +604,28 @@ const ProductionView: React.FC = () => {
                 icon={Monitor}
                 label="CAMERA"
                 subLabel={
-                  cameraSnapshot.camera.lastCode
-                    ? `${cameraSnapshot.camera.lastCode} @ ${new Date(
-                        cameraSnapshot.camera.lastAt || Date.now()
+                  cameraStatus.camera.lastCode
+                    ? `${cameraStatus.camera.lastCode} @ ${new Date(
+                        cameraStatus.camera.lastAt || Date.now()
                       ).toLocaleTimeString("vi-VN")}`
                     : "-"
                 }
-                status={mapCamStatus(cameraSnapshot.camera.state)}
+                status={getCamStatusFromStore(cameraStatus.camera.state, cameraStatus.connected)}
               />
               <MiniDeviceIndicator
                 icon={Cpu}
                 label="PLC"
                 subLabel={
-                  plcSnapshot.ip
-                    ? `${plcSnapshot.ip}:${plcSnapshot.port ?? ""}${plcSnapshot.message ? ` - ${plcSnapshot.message}` : ""}`
-                    : plcSnapshot.connected
+                  plcStatus.ip
+                    ? `${plcStatus.ip}:${plcStatus.port ?? ""}${plcStatus.message ? ` - ${plcStatus.message}` : ""}`
+                    : plcStatus.connected
                       ? "online"
                       : "offline"
                 }
-                status={mapPlcStatus(plcSnapshot.state, plcSnapshot.lastEventAt)}
+                status={getPlcStatusFromStore(plcStatus.state, plcStatus.connected)}
               />
               <div className="mt-1 text-[10px] text-slate-400 font-mono break-all">
-                WS: cam {cameraSnapshot.connected ? "online" : "offline"} • plc {plcSnapshot.connected ? "online" : "offline"}
+                WS: cam {cameraStatus.connected ? "online" : "offline"} • plc {plcStatus.connected ? "online" : "offline"}
               </div>
             </div>
           </div>

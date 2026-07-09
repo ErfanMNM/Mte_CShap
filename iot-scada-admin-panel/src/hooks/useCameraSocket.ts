@@ -5,12 +5,16 @@ import type {
   CameraSnapshot,
   ProductionStatus,
 } from "../types/camera";
+import { useDeviceStore } from "../store/useDeviceStore";
 
 interface UseCameraSocketOptions {
   url: string;
   onEvent?: (msg: CameraEventMessage) => void;
   reconnectIntervalMs?: number;
   maxReconnectAttempts?: number;
+  /** If true, this hook will update the centralized device store.
+   *  Set to false if using multiple instances (e.g., for logs only). */
+  syncToStore?: boolean;
 }
 
 interface CameraLogEntry {
@@ -41,6 +45,7 @@ export function useCameraSocket({
   onEvent,
   reconnectIntervalMs = 3000,
   maxReconnectAttempts = 10,
+  syncToStore = true,
 }: UseCameraSocketOptions) {
   const [snapshot, setSnapshot] = useState<CameraSnapshot>(initialSnapshot);
   const [logs, setLogs] = useState<CameraLogEntry[]>([]);
@@ -51,6 +56,9 @@ export function useCameraSocket({
   const manualRef = useRef(false);
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
+
+  // Centralized store reference (stable, doesn't cause re-renders in hooks)
+  const storeSetCamera = useDeviceStore((s) => s.setCamera);
 
   const pushLog = useCallback((msg: CameraEventMessage) => {
     setLogs((prev) =>
@@ -72,15 +80,19 @@ export function useCameraSocket({
 
       ws.onopen = () => {
         attemptsRef.current = 0;
-        setSnapshot((s) => ({ ...s, connected: true }));
+        const newSnapshot = { ...initialSnapshot, connected: true };
+        setSnapshot(newSnapshot);
+        if (syncToStore) storeSetCamera(newSnapshot);
       };
 
       ws.onclose = () => {
-        setSnapshot((s) => ({
-          ...s,
+        const newSnapshot = {
+          ...initialSnapshot,
           connected: false,
-          camera: { ...s.camera, state: "Disconnected" },
-        }));
+          camera: { ...initialSnapshot.camera, state: "Disconnected" },
+        };
+        setSnapshot(newSnapshot);
+        if (syncToStore) storeSetCamera(newSnapshot);
         if (!manualRef.current && attemptsRef.current < maxReconnectAttempts) {
           const delay = reconnectIntervalMs * Math.pow(1.5, attemptsRef.current);
           retryRef.current = setTimeout(() => {
@@ -118,33 +130,41 @@ export function useCameraSocket({
               at: codeMsg.at,
             };
             pushLog(eventMsg);
-            setSnapshot((s) => ({
-              ...s,
-              lastEventAt: codeMsg.at,
-              [codeMsg.camera]: {
-                state: "CodeScanned",
-                lastCode: codeMsg.data || s[codeMsg.camera].lastCode,
-                lastAt: codeMsg.at,
-              },
-            }));
+            setSnapshot((s) => {
+              const newSnapshot = {
+                ...s,
+                lastEventAt: codeMsg.at,
+                camera: {
+                  state: "CodeScanned" as const,
+                  lastCode: codeMsg.data || s.camera.lastCode,
+                  lastAt: codeMsg.at,
+                },
+              };
+              if (syncToStore) storeSetCamera(newSnapshot);
+              return newSnapshot;
+            });
             onEventRef.current?.(eventMsg);
             return;
           }
 
           const eventMsg = data as CameraEventMessage;
           pushLog(eventMsg);
-          setSnapshot((s) => ({
-            ...s,
-            lastEventAt: eventMsg.at,
-            [eventMsg.camera]: {
-              state: eventMsg.state,
-              lastCode:
-                eventMsg.state === "Received"
-                  ? eventMsg.data
-                  : s[eventMsg.camera].lastCode,
-              lastAt: eventMsg.at,
-            },
-          }));
+          setSnapshot((s) => {
+            const newSnapshot = {
+              ...s,
+              lastEventAt: eventMsg.at,
+              camera: {
+                state: eventMsg.state,
+                lastCode:
+                  eventMsg.state === "Received"
+                    ? eventMsg.data
+                    : s.camera.lastCode,
+                lastAt: eventMsg.at,
+              },
+            };
+            if (syncToStore) storeSetCamera(newSnapshot);
+            return newSnapshot;
+          });
           onEventRef.current?.(eventMsg);
         } catch {
           // ignore non-JSON frames
@@ -153,7 +173,7 @@ export function useCameraSocket({
     } catch {
       // swallow - next reconnect attempt will retry
     }
-  }, [url, reconnectIntervalMs, maxReconnectAttempts, pushLog]);
+  }, [url, reconnectIntervalMs, maxReconnectAttempts, pushLog, syncToStore, storeSetCamera]);
 
   useEffect(() => {
     connect();
@@ -170,10 +190,12 @@ export function useCameraSocket({
     wsRef.current?.close(1000, "manual");
     manualRef.current = false;
     attemptsRef.current = 0;
-    setSnapshot(initialSnapshot);
+    const resetSnapshot = { ...initialSnapshot };
+    setSnapshot(resetSnapshot);
     setLastScan(null);
+    if (syncToStore) storeSetCamera(resetSnapshot);
     connect();
-  }, [connect]);
+  }, [connect, syncToStore, storeSetCamera]);
 
   return { snapshot, logs, reconnect, lastScan };
 }

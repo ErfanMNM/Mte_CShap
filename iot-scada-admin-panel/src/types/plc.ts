@@ -15,7 +15,7 @@ export interface PLCMessage {
 }
 
 export interface PLCSnapshot {
-  state: PLCState;
+  state: PLCState | undefined;
   connected: boolean;
   ip: string | null;
   port: number | null;

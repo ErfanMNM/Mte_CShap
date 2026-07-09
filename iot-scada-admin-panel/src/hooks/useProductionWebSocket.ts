@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { ProductionStateResponse } from "../types/production";
+import { useDeviceStore } from "../store/useDeviceStore";
 
 interface UseProductionWebSocketOptions {
   url: string;
   reconnectIntervalMs?: number;
   maxReconnectAttempts?: number;
+  /** If true, this hook will update the centralized device store.
+   *  Set to false if using multiple instances (e.g., for logs only). */
+  syncToStore?: boolean;
 }
 
 const initialSnapshot: ProductionStateResponse = {
@@ -26,6 +30,7 @@ export function useProductionWebSocket({
   url,
   reconnectIntervalMs = 3000,
   maxReconnectAttempts = 10,
+  syncToStore = true,
 }: UseProductionWebSocketOptions) {
   const [snapshot, setSnapshot] = useState<ProductionStateResponse>(initialSnapshot);
   const [connected, setConnected] = useState(false);
@@ -33,6 +38,10 @@ export function useProductionWebSocket({
   const attemptsRef = useRef(0);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const manualRef = useRef(false);
+
+  // Centralized store references (stable, doesn't cause re-renders in hooks)
+  const storeSetProduction = useDeviceStore((s) => s.setProduction);
+  const storeSetProductionConnected = useDeviceStore((s) => s.setProductionConnected);
 
   const connect = useCallback(() => {
     try {
@@ -42,10 +51,12 @@ export function useProductionWebSocket({
       ws.onopen = () => {
         attemptsRef.current = 0;
         setConnected(true);
+        if (syncToStore) storeSetProductionConnected(true);
       };
 
       ws.onclose = () => {
         setConnected(false);
+        if (syncToStore) storeSetProductionConnected(false);
         if (!manualRef.current && attemptsRef.current < maxReconnectAttempts) {
           const delay = reconnectIntervalMs * Math.pow(1.5, attemptsRef.current);
           retryRef.current = setTimeout(() => {
@@ -62,7 +73,10 @@ export function useProductionWebSocket({
       ws.onmessage = (ev) => {
         try {
           const data = JSON.parse(ev.data as string) as ProductionStateResponse;
-          if (data.state) setSnapshot(data);
+          if (data.state) {
+            setSnapshot(data);
+            if (syncToStore) storeSetProduction(data);
+          }
         } catch {
           // ignore non-JSON frames
         }
@@ -70,7 +84,7 @@ export function useProductionWebSocket({
     } catch {
       // swallow — next reconnect attempt will retry
     }
-  }, [url, reconnectIntervalMs, maxReconnectAttempts]);
+  }, [url, reconnectIntervalMs, maxReconnectAttempts, syncToStore, storeSetProduction, storeSetProductionConnected]);
 
   useEffect(() => {
     connect();
@@ -89,8 +103,12 @@ export function useProductionWebSocket({
     attemptsRef.current = 0;
     setSnapshot(initialSnapshot);
     setConnected(false);
+    if (syncToStore) {
+      storeSetProduction(null);
+      storeSetProductionConnected(false);
+    }
     connect();
-  }, [connect]);
+  }, [connect, syncToStore, storeSetProduction, storeSetProductionConnected]);
 
   return { snapshot, connected, reconnect };
 }

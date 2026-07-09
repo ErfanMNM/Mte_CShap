@@ -40,6 +40,8 @@ import "react-simple-keyboard/build/css/index.css";
 import { useCameraSocket } from "./hooks/useCameraSocket";
 import { usePLCWebSocket } from "./hooks/usePLCWebSocket";
 import { useProductionWebSocket } from "./hooks/useProductionWebSocket";
+import { useProductionPing } from "./hooks/useProductionPing";
+import { useDeviceStore } from "./store/useDeviceStore";
 import POManagerView from "./components/pomanager/POManagerView";
 import DataPoolView from "./components/datapool/DataPoolView";
 import ProductionView from "./components/production/ProductionView";
@@ -376,17 +378,17 @@ const DeviceIndicator = ({
   label: string;
   subLabel?: string;
   icon: React.ElementType;
-  status: "ok" | "error" | "offline" | "warning" | "connecting";
+  status: "connected" | "error" | "offline" | "warning" | "connecting";
 }) => {
   const styles: Record<string, string> = {
-    ok: "bg-green-50 text-green-700 border-green-100",
+    connected: "bg-green-50 text-green-700 border-green-100",
     error: "bg-red-50 text-red-700 border-red-100",
     warning: "bg-amber-50 text-amber-700 border-amber-100",
     connecting: "bg-blue-50 text-blue-700 border-blue-100",
     offline: "bg-slate-50 text-slate-600 border-slate-100",
   };
   const dotStyles: Record<string, string> = {
-    ok: "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]",
+    connected: "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]",
     error: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse",
     warning: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]",
     connecting:
@@ -570,7 +572,7 @@ const ScadaMonitorView = () => {
   const [cameraHistory, setCameraHistory] = useState<CameraHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // Camera WebSocket connection
+  // Camera WebSocket connection (logs + lastScan only, store sync handled by hook)
   const wsUrl =
     import.meta.env.VITE_CAMERA_WS_URL || "ws://localhost:9999/ws/camera";
 
@@ -580,11 +582,10 @@ const ScadaMonitorView = () => {
     maxReconnectAttempts: 5,
   });
 
-  // PLC WebSocket connection (Omron FINS/UDP through GProject backend)
+  // PLC WebSocket connection (logs only, store sync handled by hook)
   const plcWsUrl =
     import.meta.env.VITE_PLC_WS_URL || "ws://localhost:9999/ws/plc";
   const {
-    snapshot: plcSnapshot,
     logs: plcLogs,
     reconnect: plcReconnect,
   } = usePLCWebSocket({
@@ -593,70 +594,54 @@ const ScadaMonitorView = () => {
     maxReconnectAttempts: 5,
   });
 
-  // Production state WebSocket (used to drive "ỨNG DỤNG" + AppStateIndicator)
+  // Production state WebSocket (store sync handled by hook)
   const prodWsUrl =
     import.meta.env.VITE_PROD_WS_URL || "ws://localhost:9999/ws/production";
-  const {
-    snapshot: prodSnapshot,
-    connected: prodWsConnected,
-  } = useProductionWebSocket({
+  const { connected: prodWsConnected } = useProductionWebSocket({
     url: prodWsUrl,
     reconnectIntervalMs: 3000,
     maxReconnectAttempts: 5,
   });
 
+  // Get device status from centralized store
+  const cameraStatus = useDeviceStore((s) => s.camera);
+  const plcStatus = useDeviceStore((s) => s.plc);
+  const appStatus = useDeviceStore((s) => s.production);
+
   // ====== Helpers ======
 
-  // Camera: 3 trạng thái rõ ràng (kết nối/đang kết nối lại/mất kết nối)
-  const mapCameraStatus = (
-    state: string | undefined,
-    connected: boolean,
-  ) => {
-    const s = state?.toLowerCase();
+  // Camera status mapping (using store data)
+  const getCameraStatus = (): "connected" | "error" | "warning" | "connecting" => {
+    const { camera, connected } = cameraStatus;
+    const s = camera.state?.toLowerCase();
     if (!connected) return "connecting";
-    if (s === "connected" || s === "received") return "ok";
+    if (s === "connected" || s === "received" || s === "codescanned") return "connected";
     if (s === "reconnecting" || s === "disconnected" || s === "deactive") return "error";
-    return "ok";
+    return "connected";
   };
 
-  // PLC: ban đầu connecting (chưa có data), ngược lại dựa trên state
-  const mapPlcStatus = (connected: boolean, state: string | undefined) => {
-    if (!connected && !state) return "connecting";
+  // PLC status mapping (using store data)
+  const getPlcStatus = (): "connected" | "error" | "warning" | "connecting" => {
+    const { connected, state } = plcStatus;
     const s = state?.toLowerCase();
+    if (!connected && !state) return "connecting";
     if (s === "disconnected") return "error";
     if (s === "reconnecting") return "connecting";
-    if (!connected) return "connecting";
-    return "ok";
+    if (connected) return "connected";
+    return "connecting";
   };
 
-  const cameraLabelMap: Record<string, string> = {
-    Connected: "Đã kết nối",
-    Reconnecting: "Đang kết nối lại",
-    Disconnected: "Mất kết nối",
-    Received: "Đang hoạt động",
-  };
-  const cameraSubLabel = (state: string | undefined) => {
-    if (!state) return "Đang kết nối";
-    return cameraLabelMap[state] ?? state;
+  // Application status mapping (using store data)
+  const getAppStatus = (): "connected" | "error" | "warning" | "connecting" => {
+    const state = appStatus?.state;
+    if (!prodWsConnected) return "connecting";
+    if (!state || state === "Unknown") return "connecting";
+    if (state === "Running" || state === "Ready" || state === "Paused" || state === "Completed") return "connected";
+    if (state === "Error" || state === "DeviceError") return "error";
+    return "warning";
   };
 
-  // Ứng dụng: label + status lấy từ production WS
-  const appStateLabel = !prodWsConnected
-    ? "Mất kết nối WS"
-    : !prodSnapshot.state || prodSnapshot.state === "Unknown"
-      ? "Idle"
-      : prodSnapshot.state;
-  const appStateStatus: "ok" | "error" | "warning" | "connecting" =
-    !prodWsConnected
-      ? "connecting"
-      : prodSnapshot.state === "Running" || prodSnapshot.state === "Ready"
-        ? "ok"
-        : prodSnapshot.state === "Error" ||
-            prodSnapshot.state === "DeviceError"
-          ? "error"
-          : "warning";
-
-  const cameraState = snapshot.camera.state;
+  const cameraState = cameraStatus.camera.state;
 
   const formatLastCode = (lastCode: string, lastAt: string | null) => {
     if (!lastCode) return "—";
@@ -664,15 +649,33 @@ const ScadaMonitorView = () => {
     return `${lastCode} @ ${new Date(lastAt).toLocaleTimeString("vi-VN")}`;
   };
 
+  const cameraSubLabel = (state: string | undefined) => {
+    if (!state) return "Đang kết nối";
+    const labelMap: Record<string, string> = {
+      Connected: "Đã kết nối",
+      Reconnecting: "Đang kết nối lại",
+      Disconnected: "Mất kết nối",
+      Received: "Đang hoạt động",
+    };
+    return labelMap[state] ?? state;
+  };
+
+  // App state label from store
+  const appStateLabel = !prodWsConnected
+    ? "Mất kết nối WS"
+    : !appStatus?.state || appStatus.state === "Unknown"
+      ? "Idle"
+      : appStatus.state;
+
   // ====== Scan status (badge TỐT) ======
   const scanBadge = useMemo(() => {
     if (!lastScan) {
       return {
         label: cameraState === "Disconnected" ? "WAIT" : "TỐT",
-        subLabel: snapshot.lastEventAt
-          ? new Date(snapshot.lastEventAt).toLocaleString("vi-VN")
+        subLabel: cameraStatus.lastEventAt
+          ? new Date(cameraStatus.lastEventAt).toLocaleString("vi-VN")
           : "Đang chờ...",
-        code: snapshot.camera.lastCode || "",
+        code: cameraStatus.camera.lastCode || "",
         tone: "wait" as "ok" | "warn" | "err" | "wait",
       };
     }
@@ -718,7 +721,7 @@ const ScadaMonitorView = () => {
       code: lastScan.code,
       tone: "warn" as const,
     };
-  }, [lastScan, cameraState, snapshot.lastEventAt, snapshot.camera.lastCode]);
+  }, [lastScan, cameraState, cameraStatus.lastEventAt, cameraStatus.camera.lastCode]);
 
   // ====== Lịch sử camera (fetch khi mở tab) ======
   useEffect(() => {
@@ -990,28 +993,28 @@ const ScadaMonitorView = () => {
                 subLabel={
                   cameraState && ["Reconnecting", "Disconnected", "Deactive"].includes(cameraState)
                     ? cameraSubLabel(cameraState)
-                    : formatLastCode(snapshot.camera.lastCode, snapshot.camera.lastAt)
+                    : formatLastCode(cameraStatus.camera.lastCode, cameraStatus.camera.lastAt)
                 }
-                status={mapCameraStatus(cameraState, snapshot.connected)}
+                status={getCameraStatus()}
               />
               <DeviceIndicator
                 icon={Cpu}
                 label="PLC OMRON"
                 subLabel={
-                  plcSnapshot.ip
-                    ? `${plcSnapshot.ip}:${plcSnapshot.port ?? ""}`
-                    : cameraSubLabel(plcSnapshot.state)
+                  plcStatus.ip
+                    ? `${plcStatus.ip}:${plcStatus.port ?? ""}`
+                    : cameraSubLabel(plcStatus.state)
                 }
-                status={mapPlcStatus(plcSnapshot.connected, plcSnapshot.state)}
+                status={getPlcStatus()}
               />
               <DeviceIndicator
                 icon={Settings}
                 label="ỨNG DỤNG"
                 subLabel={appStateLabel}
-                status={appStateStatus}
+                status={getAppStatus()}
               />
               <AppStateIndicator
-                state={prodWsConnected ? prodSnapshot.state || "Unknown" : "Unknown"}
+                state={prodWsConnected ? appStatus?.state || "Unknown" : "Unknown"}
               />
             </div>
           </Card>
@@ -1024,17 +1027,17 @@ const ScadaMonitorView = () => {
                 <div className="flex items-center gap-2">
                   <span
                     className={`flex items-center gap-1.5 text-xs font-semibold ${
-                      snapshot.connected ? "text-green-700" : "text-red-700"
+                      cameraStatus.connected ? "text-green-700" : "text-red-700"
                     }`}
                   >
                     <span
                       className={`w-2 h-2 rounded-full ${
-                        snapshot.connected
+                        cameraStatus.connected
                           ? "bg-green-500"
                           : "bg-red-500 animate-pulse"
                       }`}
                     />
-                    {snapshot.connected ? "Đã kết nối" : "Mất kết nối"}
+                    {cameraStatus.connected ? "Đã kết nối" : "Mất kết nối"}
                   </span>
                   <button
                     onClick={reconnect}
@@ -1042,7 +1045,7 @@ const ScadaMonitorView = () => {
                     title="Kết nối lại camera"
                   >
                     <RefreshCw
-                      className={`w-3.5 h-3.5 ${!snapshot.connected ? "animate-spin" : ""}`}
+                      className={`w-3.5 h-3.5 ${!cameraStatus.connected ? "animate-spin" : ""}`}
                     />
                     Camera
                   </button>
@@ -1052,7 +1055,7 @@ const ScadaMonitorView = () => {
                     title="Kết nối lại PLC"
                   >
                     <RefreshCw
-                      className={`w-3.5 h-3.5 ${!plcSnapshot.connected ? "animate-spin" : ""}`}
+                      className={`w-3.5 h-3.5 ${!plcStatus.connected ? "animate-spin" : ""}`}
                     />
                     PLC
                   </button>
@@ -1062,7 +1065,7 @@ const ScadaMonitorView = () => {
             <div className="p-3 xl:p-4 2xl:p-5 flex flex-col justify-between gap-3 flex-1 overflow-auto">
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3 flex items-center justify-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${snapshot.connected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
+                  <div className={`w-2 h-2 rounded-full ${cameraStatus.connected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
                   <span className="text-xs font-bold text-slate-600">
                     {cameraSubLabel(cameraState)}
                   </span>
@@ -1074,9 +1077,9 @@ const ScadaMonitorView = () => {
                   </span>
                 </div>
                 <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3 flex items-center justify-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${plcSnapshot.connected ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
+                  <div className={`w-2 h-2 rounded-full ${plcStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
                   <span className="text-xs font-bold text-slate-600">
-                    {cameraSubLabel(plcSnapshot.state)}
+                    {cameraSubLabel(plcStatus.state)}
                   </span>
                 </div>
                 <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3 flex items-center justify-center gap-2">
@@ -1100,14 +1103,14 @@ const ScadaMonitorView = () => {
               <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3">
                 <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">PLC target</div>
                 <div className="text-xs font-mono text-slate-700 break-all">
-                  {plcSnapshot.ip ? `${plcSnapshot.ip}:${plcSnapshot.port}` : "—"}
+                  {plcStatus.ip ? `${plcStatus.ip}:${plcStatus.port}` : "—"}
                 </div>
               </div>
 
               <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3">
                 <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Thời gian nhận cuối</div>
                 <div className="text-xs font-mono text-slate-700">
-                  {snapshot.lastEventAt ? new Date(snapshot.lastEventAt).toLocaleString("vi-VN") : "Chưa có dữ liệu"}
+                  {cameraStatus.lastEventAt ? new Date(cameraStatus.lastEventAt).toLocaleString("vi-VN") : "Chưa có dữ liệu"}
                 </div>
               </div>
             </div>
@@ -1525,6 +1528,9 @@ const AdminPanelContent = ({ user, onLogout }: { user: any; onLogout: () => void
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isOpen } = useVirtualKeyboard();
 
+  // Ping production state định kỳ để đảm bảo FE luôn có state mới nhất
+  useProductionPing({ intervalMs: 5000, enabled: true });
+
   const navigation = [
     { id: "monitor", title: "Giám sát SCADA", icon: LayoutDashboard },
     { id: "production", title: "Điều khiển SX", icon: Factory },
@@ -1691,37 +1697,9 @@ export default function AdminPanel() {
 const AdminPanelWithAuth = () => {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
 
-  // Production WebSocket for auto-logout when state = NeedLogin
-  const [prodState, setProdState] = useState<string>("Unknown");
-  const [prodConnected, setProdConnected] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
-
-  useEffect(() => {
-    const prodWsUrl = import.meta.env.VITE_PROD_WS_URL || "ws://localhost:9999/ws/production";
-    
-    const connect = () => {
-      const ws = new WebSocket(prodWsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = () => setProdConnected(true);
-      ws.onclose = () => setProdConnected(false);
-      ws.onerror = () => {};
-
-      ws.onmessage = (ev) => {
-        try {
-          const data = JSON.parse(ev.data as string);
-          if (data.state) {
-            setProdState(data.state);
-          }
-        } catch {}
-      };
-    };
-
-    connect();
-    return () => {
-      wsRef.current?.close();
-    };
-  }, []);
+  // Read production state from centralized store (synced by useProductionWebSocket)
+  const prodState = useDeviceStore((s) => s.production?.state ?? "Unknown");
+  const prodConnected = useDeviceStore((s) => s.productionConnected);
 
   // Auto logout when production state = NeedLogin and user is authenticated
   useEffect(() => {
