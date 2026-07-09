@@ -17,6 +17,7 @@ import {
   Cpu,
   Wifi,
   WifiOff,
+  Edit3,
 } from "lucide-react";
 import productionApi from "../../services/productionApi";
 import poApi from "../../services/poApi";
@@ -54,6 +55,7 @@ const ProductionView: React.FC = () => {
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isChangingPO, setIsChangingPO] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [healthOk, setHealthOk] = useState(false);
@@ -70,7 +72,7 @@ const ProductionView: React.FC = () => {
       setHealthOk(true);
     } catch {
       setHealthOk(false);
-      setError("Không thể kết nối API. Kiểm tra VNQR đang chạy.");
+      // Khong hien thi error message khi mat ket noi
     }
   }, []);
 
@@ -203,7 +205,50 @@ const ProductionView: React.FC = () => {
     }
   };
 
+  const handleChangePO = async () => {
+    setIsChangingPO(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const result = await productionApi.selectPO("");
+      if (result.success) {
+        setSuccess("Đã chuyển sang chế độ chỉnh sửa. Vui lòng chọn PO và nhấn Cài Lệnh.");
+      } else {
+        setError(result.message || "Không thể đổi PO.");
+        setIsChangingPO(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi khi đổi PO.");
+      setIsChangingPO(false);
+    }
+  };
+
+  const handleSetPO = async () => {
+    if (!selectedPO) {
+      setError("Vui lòng chọn một PO để cài lệnh.");
+      return;
+    }
+    setIsChangingPO(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const result = await productionApi.setPO(selectedPO);
+      if (result.success) {
+        setSuccess(`Đã cài PO: ${selectedPO}`);
+        await fetchStatus();
+      } else {
+        setError(result.message || "Không thể cài lệnh.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi khi cài lệnh.");
+    } finally {
+      setIsChangingPO(false);
+    }
+  };
+
   const isRunning = status?.state === "Running";
+  const isEditing = status?.state === "Editing";
+  const isReady = status?.state === "Ready";
   const isIdle = status?.state === "NoSelectedPO";
   const canStart = !isRunning && status?.hasPO === false && !!selectedPO;
   const canStop = isRunning;
@@ -231,6 +276,11 @@ const ProductionView: React.FC = () => {
 
   const state = status?.state || "Checking";
   const cfg = stateConfig[state] || { label: state, bg: "bg-slate-50", text: "text-slate-700", dot: "bg-slate-500", icon: "" };
+
+  // Override colors and label when WS is disconnected
+  const effectiveCfg = !prodWsConnected
+    ? { ...cfg, bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500 animate-pulse", label: "Mất Kết Nối" }
+    : cfg;
 
   return (
     <div className="flex flex-col gap-4 h-full min-h-0 w-full animate-in fade-in duration-500 overflow-auto scrollbar-hide pb-6">
@@ -304,11 +354,11 @@ const ProductionView: React.FC = () => {
         {/* Control Panel */}
         <div className="xl:col-span-2 flex flex-col gap-4">
           {/* State Banner */}
-          <div className={`rounded-2xl border p-4 ${cfg.bg}`}>
+          <div className={`rounded-2xl border p-4 ${effectiveCfg.bg}`}>
             <div className="flex items-center gap-3 flex-wrap">
-              <div className={`w-3 h-3 rounded-full ${cfg.dot}`} />
-              <span className={`text-sm font-black tracking-wider ${cfg.text}`}>
-                {cfg.label}
+              <div className={`w-3 h-3 rounded-full ${effectiveCfg.dot}`} />
+              <span className={`text-sm font-black tracking-wider ${effectiveCfg.text}`}>
+                {effectiveCfg.label}
               </span>
               {status?.hasPO && (
                 <span className="ml-2 text-xs font-semibold text-slate-500">
@@ -323,7 +373,12 @@ const ProductionView: React.FC = () => {
                 </span>
               )}
               {/* WebSocket status */}
-              <span className="ml-auto flex items-center gap-1.5 text-xs font-semibold">
+              <span className="ml-auto flex items-center gap-1.5">
+                {!prodWsConnected && (
+                  <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full animate-pulse">
+                    Mất Kết Nối
+                  </span>
+                )}
                 {prodWsConnected ? (
                   <Wifi className="w-3.5 h-3.5 text-green-500" />
                 ) : (
@@ -352,7 +407,7 @@ const ProductionView: React.FC = () => {
                 <select
                   value={selectedPO}
                   onChange={(e) => setSelectedPO(e.target.value)}
-                  disabled={isRunning}
+                  disabled={!isEditing}
                   className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:opacity-50"
                 >
                   <option value="">-- Chọn PO --</option>
@@ -369,9 +424,9 @@ const ProductionView: React.FC = () => {
                 {/* Start */}
                 <button
                   onClick={handleStartProduction}
-                  disabled={isStarting || isStopping || isResetting || !selectedPO || isRunning}
+                  disabled={isStarting || isStopping || isResetting || !selectedPO || isRunning || isEditing}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                    isStarting || !selectedPO || isRunning
+                    isStarting || !selectedPO || isRunning || isEditing
                       ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                       : "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20"
                   }`}
@@ -405,12 +460,8 @@ const ProductionView: React.FC = () => {
                 {/* Reset */}
                 <button
                   onClick={handleResetProduction}
-                  disabled={isStarting || isStopping || isResetting || !status?.hasPO}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                    !status?.hasPO
-                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                      : "bg-slate-600 hover:bg-slate-700 text-white shadow-lg shadow-slate-500/20"
-                  }`}
+                  disabled={true}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-slate-100 text-slate-400 cursor-not-allowed"
                 >
                   {isResetting ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -419,12 +470,40 @@ const ProductionView: React.FC = () => {
                   )}
                   {isResetting ? "Đang reset..." : "Reset PO"}
                 </button>
+
+                {/* Change PO - doi PO tu Ready sang Editing */}
+                <button
+                  onClick={handleChangePO}
+                  disabled={isStarting || isStopping || isResetting || status?.totalCount !== 0 || !isReady}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    status?.totalCount !== 0 || !isReady
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : "bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20"
+                  }`}
+                >
+                  <Edit3 className="w-4 h-4" />
+                  Đổi PO
+                </button>
+
+                {/* Cai Lenh - cai dat PO tu Editing */}
+                <button
+                  onClick={handleSetPO}
+                  disabled={isStarting || isStopping || isResetting || !isEditing || !selectedPO}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    !isEditing || !selectedPO
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Cài Lệnh
+                </button>
               </div>
 
               {/* Info text */}
               <div className="text-xs text-slate-400 flex items-center gap-2">
                 <AlertCircle className="w-3.5 h-3.5" />
-                Chọn PO → Nhấn Start để bắt đầu sản xuất. Stop để tạm dừng. Reset để xóa PO.
+                {isEditing ? "Chọn PO → Nhấn Cài Lệnh để thiết lập. Start để bắt đầu sản xuất." : "Chọn PO → Start để bắt đầu. Đổi PO để thay đổi lệnh sản xuất."}
               </div>
             </div>
           </div>

@@ -76,7 +76,11 @@ export function useCameraSocket({
       };
 
       ws.onclose = () => {
-        setSnapshot((s) => ({ ...s, connected: false }));
+        setSnapshot((s) => ({
+          ...s,
+          connected: false,
+          camera: { ...s.camera, state: "Disconnected" },
+        }));
         if (!manualRef.current && attemptsRef.current < maxReconnectAttempts) {
           const delay = reconnectIntervalMs * Math.pow(1.5, attemptsRef.current);
           retryRef.current = setTimeout(() => {

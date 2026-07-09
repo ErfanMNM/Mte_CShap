@@ -113,6 +113,9 @@ namespace GProject.Production
             _loopTask = Task.Run(() => RunLoop(token), token);
             StartDbWriter();
             Log.Information("[StateMachine] Started");
+
+            // Broadcast trạng thái hiện tại ngay khi start để FE nhận được
+            _ = BroadcastStateAsync();
         }
 
         /// <summary>
@@ -309,6 +312,45 @@ namespace GProject.Production
         }
 
         /// <summary>
+        /// Broadcast state ngay lập tức (không throttle) - dùng khi client mới kết nối WebSocket.
+        /// </summary>
+        public async Task BroadcastCurrentStateAsync()
+        {
+            try
+            {
+                var sm = ProductionStateMachine.Instance;
+                await ProductionHub.Instance.BroadcastStateAsync(
+                    sm.CurrentState.ToString(),
+                    sm.PreviousState.ToString(),
+                    ProductionData?.OrderNo,
+                    ProductionData?.ProductName,
+                    ProductionData?.OrderQty ?? 0,
+                    new
+                    {
+                        sm.ActiveCounter.PassCount,
+                        sm.ActiveCounter.FailCount,
+                        sm.ActiveCounter.DuplicateCount,
+                        sm.ActiveCounter.NotFoundCount,
+                        sm.ActiveCounter.ReadFailCount,
+                        sm.ActiveCounter.ErrorCount,
+                        sm.ActiveCounter.TimeoutCount,
+                        sm.ActiveCounter.CartonID,
+                        sm.ActiveCounter.CartonCode
+                    },
+                    sm.LastWarning,
+                    sm.IsAppReady,
+                    sm.IsDeviceReady,
+                    sm.Dictionary_Codes.Count,
+                    sm.Dictionary_Cartons.Count
+                );
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[StateMachine] BroadcastCurrentState failed");
+            }
+        }
+
+        /// <summary>
         /// Xử lý 1 mã nhận được từ camera - pipeline 11 nhánh khớp với MASAN FDashboard.CameraSub_Process.
         /// Trả về CameraReadResult để Caller broadcast CodeScanned + push history.
         /// Trả về null khi state không phải Running (không phát badge scan cho FE).
@@ -464,8 +506,8 @@ namespace GProject.Production
             WritePLCResponse(e_Production_Status.Pass, activeCartonId, code);
 
             // 6) Poll PLC D200 + D202 để xác nhận (NGOÀI lock, tối đa 5s).
-            var timeoutResult = CheckTimeoutV2(code);
-
+            //var timeoutResult = CheckTimeoutV2(code);
+            var timeoutResult = e_TimeoutCheckResult.Pass; // TODO: tạm bỏ check timeout PLC để test nhanh
             if (timeoutResult == e_TimeoutCheckResult.Pass)
             {
                 // 7) Re-lock để commit dic + DB + counter

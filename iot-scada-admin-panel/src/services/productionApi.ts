@@ -55,6 +55,24 @@ export const productionApi = {
     );
     return response.data;
   },
+
+  /** Select/change PO - chuyen sang Editing */
+  async selectPO(orderNo: string): Promise<ProductionControlResponse> {
+    const response = await apiClient.post<ProductionControlResponse>(
+      "/api/production/start-editing",
+      {}
+    );
+    return response.data;
+  },
+
+  /** Set PO - cai dat PO tu Editing */
+  async setPO(orderNo: string): Promise<ProductionControlResponse> {
+    const response = await apiClient.post<ProductionControlResponse>(
+      "/api/production/set-po",
+      { orderNo }
+    );
+    return response.data;
+  },
 };
 
 export default productionApi;

@@ -170,6 +170,9 @@ public class GProjectApiServer : IDisposable
             ProductionHub.Instance.Register(ws);
             Log.Information("[WebSocket] Production client connected. Total clients: {Count}", ProductionHub.Instance.ClientCount);
 
+            // Gửi state hiện tại ngay khi client kết nối
+            _ = ProductionStateMachine.Instance.BroadcastCurrentStateAsync();
+
             try
             {
                 var buffer = new byte[1024];
@@ -261,6 +264,8 @@ public class GProjectApiServer : IDisposable
         // Production state machine control endpoints
         _app.MapGet("/api/production/state", (Delegate)HandleGetProductionState);
         _app.MapPost("/api/production/select-po", (Delegate)HandleSelectPO);
+        _app.MapPost("/api/production/start-editing", (Delegate)HandleStartEditing);
+        _app.MapPost("/api/production/set-po", (Delegate)HandleSetPO);
         _app.MapPost("/api/production/start", (Delegate)HandleProductionStart);
         _app.MapPost("/api/production/stop", (Delegate)HandleProductionStop);
         _app.MapPost("/api/production/reset", (Delegate)HandleProductionReset);
@@ -868,6 +873,84 @@ public class GProjectApiServer : IDisposable
         }
     }
 
+    private async Task<IResult> HandleStartEditing(HttpContext context)
+    {
+        try
+        {
+            await Task.CompletedTask;
+            var sm = ProductionStateMachine.Instance;
+            
+            // Cho phep tu Ready hoac Editing
+            if (sm.CurrentState != e_ProductionState.Ready && 
+                sm.CurrentState != e_ProductionState.Editing)
+                return Results.Json(new
+                {
+                    success = false,
+                    message = $"Không thể đổi PO từ trạng thái {sm.CurrentState}. Cần ở trạng thái Ready."
+                }, statusCode: 400);
+
+            // Kiem tra da chay san pham chua
+            if (sm.ActiveCounter.TotalCount > 0)
+                return Results.Json(new
+                {
+                    success = false,
+                    message = "Không thể đổi PO khi đã chạy hàng. Vui lòng Reset PO trước."
+                }, statusCode: 400);
+
+            sm.SetState(e_ProductionState.Editing, "user request edit PO");
+            return Results.Json(new
+            {
+                success = true,
+                message = "Đã chuyển sang chế độ chỉnh sửa",
+                state = sm.CurrentState.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error StartEditing: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private async Task<IResult> HandleSetPO(HttpContext context)
+    {
+        try
+        {
+            var body = await context.Request.ReadFromJsonAsync<Dictionary<string, string>>();
+            if (body == null || !body.TryGetValue("orderNo", out var orderNo) || string.IsNullOrWhiteSpace(orderNo))
+                return Results.Json(new ApiResponse { Success = false, Message = "orderNo is required" }, statusCode: 400);
+
+            var sm = ProductionStateMachine.Instance;
+            
+            // Chi cho phep tu Editing
+            if (sm.CurrentState != e_ProductionState.Editing)
+                return Results.Json(new
+                {
+                    success = false,
+                    message = $"Không thể cài lệnh từ trạng thái {sm.CurrentState}. Cần ở trạng thái Editing."
+                }, statusCode: 400);
+
+            var po = GProduction.POLoader.GetByOrderNo(orderNo);
+            if (!po.IsSuccess || po.Data == null || po.Data.Rows.Count == 0)
+                return Results.Json(new ApiResponse { Success = false, Message = $"PO '{orderNo}' không tồn tại" }, statusCode: 404);
+
+            ProductionStateMachine.ProductionData = POInfo.FromDataRow(po.Data.Rows[0]);
+            sm.SetState(e_ProductionState.CheckPO, $"set PO {orderNo}");
+
+            return Results.Json(new
+            {
+                success = true,
+                message = $"Đã cài PO '{orderNo}', đang khởi tạo...",
+                state = sm.CurrentState.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error SetPO: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
     private async Task<IResult> HandleSelectPO(HttpContext context)
     {
         try
@@ -875,6 +958,14 @@ public class GProjectApiServer : IDisposable
             var body = await context.Request.ReadFromJsonAsync<Dictionary<string, string>>();
             if (body == null || !body.TryGetValue("orderNo", out var orderNo) || string.IsNullOrWhiteSpace(orderNo))
                 return Results.Json(new ApiResponse { Success = false, Message = "orderNo is required" }, statusCode: 400);
+
+            // Kiem tra totalCount > 0 -> da chay hang roi, khong cho doi PO
+            if (ProductionStateMachine.Instance.ActiveCounter.TotalCount > 0)
+                return Results.Json(new ApiResponse 
+                { 
+                    Success = false, 
+                    Message = "Không thể đổi PO khi đã chạy hàng. Vui lòng Reset PO trước." 
+                }, statusCode: 400);
 
             var po = GProduction.POLoader.GetByOrderNo(orderNo);
             if (!po.IsSuccess || po.Data == null || po.Data.Rows.Count == 0)

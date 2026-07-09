@@ -612,12 +612,10 @@ const ScadaMonitorView = () => {
     state: string | undefined,
     connected: boolean,
   ) => {
-    if (!state && !connected) return "connecting";
     const s = state?.toLowerCase();
-    if (s === "connected" || s === "received") return "ok";
-    if (s === "reconnecting") return "connecting";
-    if (s === "disconnected" || s === "deactive") return "error";
     if (!connected) return "connecting";
+    if (s === "connected" || s === "received") return "ok";
+    if (s === "reconnecting" || s === "disconnected" || s === "deactive") return "error";
     return "ok";
   };
 
@@ -989,7 +987,11 @@ const ScadaMonitorView = () => {
               <DeviceIndicator
                 icon={Monitor}
                 label="CAMERA"
-                subLabel={formatLastCode(snapshot.camera.lastCode, snapshot.camera.lastAt)}
+                subLabel={
+                  cameraState && ["Reconnecting", "Disconnected", "Deactive"].includes(cameraState)
+                    ? cameraSubLabel(cameraState)
+                    : formatLastCode(snapshot.camera.lastCode, snapshot.camera.lastAt)
+                }
                 status={mapCameraStatus(cameraState, snapshot.connected)}
               />
               <DeviceIndicator
@@ -1688,6 +1690,45 @@ export default function AdminPanel() {
 
 const AdminPanelWithAuth = () => {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
+
+  // Production WebSocket for auto-logout when state = NeedLogin
+  const [prodState, setProdState] = useState<string>("Unknown");
+  const [prodConnected, setProdConnected] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    const prodWsUrl = import.meta.env.VITE_PROD_WS_URL || "ws://localhost:9999/ws/production";
+    
+    const connect = () => {
+      const ws = new WebSocket(prodWsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => setProdConnected(true);
+      ws.onclose = () => setProdConnected(false);
+      ws.onerror = () => {};
+
+      ws.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data as string);
+          if (data.state) {
+            setProdState(data.state);
+          }
+        } catch {}
+      };
+    };
+
+    connect();
+    return () => {
+      wsRef.current?.close();
+    };
+  }, []);
+
+  // Auto logout when production state = NeedLogin and user is authenticated
+  useEffect(() => {
+    if (prodState === "NeedLogin" && isAuthenticated) {
+      logout();
+    }
+  }, [prodState, isAuthenticated, logout]);
 
   if (isLoading) {
     return (
