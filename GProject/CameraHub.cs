@@ -56,6 +56,19 @@ public class CameraHub
     private readonly ConcurrentQueue<CameraHistoryEntry> _history = new();
     private long _historySeq;
 
+    private string _lastScannedCode = "";
+    private DateTime? _lastScannedAt;
+    private DateTime? _lastEventAt;
+
+    /// <summary>Last scanned code from any camera (for REST polling endpoint).</summary>
+    public string LastScannedCode => _lastScannedCode;
+
+    /// <summary>Timestamp of last scanned code.</summary>
+    public DateTime? LastScannedAt => _lastScannedAt;
+
+    /// <summary>Timestamp of last camera event (any state).</summary>
+    public DateTime? LastEventAt => _lastEventAt;
+
     private CameraHub() { }
 
     public void Register(WebSocket ws)
@@ -84,6 +97,9 @@ public class CameraHub
     /// </summary>
     public void RecordHistory(CameraReadResult r)
     {
+        _lastScannedCode = r.Code;
+        _lastScannedAt = r.At;
+
         var entry = new CameraHistoryEntry(
             Interlocked.Increment(ref _historySeq),
             r.At, r.Code, r.Status, r.PlcSent, r.CartonCode, r.CartonId);
@@ -107,12 +123,14 @@ public class CameraHub
     /// </summary>
     public Task BroadcastAsync(string camera, eOmronCodeReaderState state, string data)
     {
+        _lastEventAt = DateTime.UtcNow;
+
         var payload = JsonSerializer.Serialize(new
         {
             camera,
             state = state.ToString(),
             data,
-            at = DateTime.UtcNow
+            at = _lastEventAt
         });
         return SendAsync(payload);
     }
@@ -122,6 +140,8 @@ public class CameraHub
     /// </summary>
     public Task BroadcastCodeStatus(CameraReadResult r)
     {
+        _lastEventAt = r.At;
+
         var payload = JsonSerializer.Serialize(new
         {
             camera = r.Camera,

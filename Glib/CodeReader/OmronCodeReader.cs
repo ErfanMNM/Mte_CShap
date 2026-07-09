@@ -19,12 +19,16 @@ namespace Glib.Omron
         #region Fields
         private Socket? _client;
         private CancellationTokenSource? _cancellationTokenSource;
+        private static OmronCodeReader? _instance;
         #endregion
 
         #region Properties
         public string? IP { get; set; } = string.Empty;
         public int Port { get; set; }
         public bool Connected { get; private set; } = false;
+        public string LastData { get; private set; } = "";
+
+        public static OmronCodeReader? Instance => _instance;
 
         public e_CodeReaderModel Model { get; set; }
         #endregion
@@ -40,6 +44,7 @@ namespace Glib.Omron
             Model = model;
             IP = ip;
             Port = port;
+            _instance = this;
         }
         #endregion
 
@@ -131,6 +136,7 @@ namespace Glib.Omron
                     string receivedData = Encoding.UTF8.GetString(buffer, 0, bytesReceived);
                     if (!string.IsNullOrEmpty(receivedData))
                     {
+                        LastData = receivedData.Trim();
                         OnClientCallback(eOmronCodeReaderState.Received, receivedData);
                     }
                 }

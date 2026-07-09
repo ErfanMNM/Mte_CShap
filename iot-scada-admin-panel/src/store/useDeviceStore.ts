@@ -75,6 +75,7 @@ const initialPlcSnapshot: PLCSnapshot = {
   port: null,
   message: null,
   lastEventAt: null,
+  clientCount: 0,
 };
 
 const getInitialState = (): DeviceStoreState => ({

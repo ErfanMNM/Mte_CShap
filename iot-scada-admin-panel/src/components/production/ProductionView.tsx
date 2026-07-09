@@ -22,8 +22,6 @@ import {
 import productionApi from "../../services/productionApi";
 import poApi from "../../services/poApi";
 import { useCameraSocket } from "../../hooks/useCameraSocket";
-import { usePLCWebSocket } from "../../hooks/usePLCWebSocket";
-import { useProductionWebSocket } from "../../hooks/useProductionWebSocket";
 import { useDeviceStore } from "../../store/useDeviceStore";
 import { handleActiveCodeScanned } from "../../services/cameraApi";
 import type { ProductionStatusResponse } from "../../types/production";
@@ -134,15 +132,8 @@ const ProductionView: React.FC = () => {
     syncToStore: false, // Store sync handled by App.tsx hooks
   });
 
-  // PLC WebSocket - read-only monitor (store sync handled by App.tsx)
-  const plcWsUrl =
-    import.meta.env.VITE_PLC_WS_URL || "ws://localhost:9999/ws/plc";
-  usePLCWebSocket({ url: plcWsUrl, syncToStore: false });
-
-  // Production WebSocket - real-time state + counter (store sync handled by App.tsx)
-  const prodWsUrl =
-    import.meta.env.VITE_PROD_WS_URL || "ws://localhost:9999/ws/production";
-  const { connected: prodWsConnected } = useProductionWebSocket({ url: prodWsUrl, syncToStore: false });
+  // PLC state from store (updated via REST polling)
+  const productionConnected = useDeviceStore((s) => s.productionConnected);
 
   const handleStartProduction = async () => {
     if (!selectedPO) {
@@ -282,7 +273,7 @@ const ProductionView: React.FC = () => {
   const cfg = stateConfig[state] || { label: state, bg: "bg-slate-50", text: "text-slate-700", dot: "bg-slate-500", icon: "" };
 
   // Override colors and label when WS is disconnected
-  const effectiveCfg = !prodWsConnected
+  const effectiveCfg = !productionConnected
     ? { ...cfg, bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500 animate-pulse", label: "Mất Kết Nối" }
     : cfg;
 
@@ -378,18 +369,18 @@ const ProductionView: React.FC = () => {
               )}
               {/* WebSocket status */}
               <span className="ml-auto flex items-center gap-1.5">
-                {!prodWsConnected && (
+                {!productionConnected && (
                   <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full animate-pulse">
                     Mất Kết Nối
                   </span>
                 )}
-                {prodWsConnected ? (
+                {productionConnected ? (
                   <Wifi className="w-3.5 h-3.5 text-green-500" />
                 ) : (
                   <WifiOff className="w-3.5 h-3.5 text-red-500" />
                 )}
-                <span className={prodWsConnected ? "text-green-600" : "text-red-500"}>
-                  WS {prodWsConnected ? "Online" : "Offline"}
+                <span className={productionConnected ? "text-green-600" : "text-red-500"}>
+                  WS {productionConnected ? "Online" : "Offline"}
                 </span>
               </span>
             </div>

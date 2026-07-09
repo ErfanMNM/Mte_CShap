@@ -1,5 +1,6 @@
 using System.Net.WebSockets;
 using System.Text.Json.Serialization;
+using Glib.Omron;
 using GProject.DataPoolHelper;
 using GProject.ProductionOrderHelpers;
 using GProject.Production;
@@ -270,6 +271,9 @@ public class GProjectApiServer : IDisposable
         _app.MapPost("/api/production/stop", (Delegate)HandleProductionStop);
         _app.MapPost("/api/production/reset", (Delegate)HandleProductionReset);
         _app.MapGet("/api/production/ping", (Delegate)HandleProductionPing);
+
+        // Device status (aggregates Camera, PLC, Production states)
+        _app.MapGet("/api/devices/status", HandleGetDevicesStatus);
 
         // Initialize PO database
         POApiServer.Initialize();
@@ -1098,6 +1102,120 @@ public class GProjectApiServer : IDisposable
         catch (Exception ex)
         {
             LogError("GProjectApiServer", $"Error in ping: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    /// <summary>
+    /// Trả về trạng thái tất cả thiết bị: Camera, PLC, Production.
+    /// Dùng cho Frontend REST polling thay thế WebSocket state sync.
+    /// </summary>
+    private IResult HandleGetDevicesStatus(HttpContext context)
+    {
+        try
+        {
+            // --- Camera ---
+            var cameraReader = OmronCodeReader.Instance;
+            var cameraHub = CameraHub.Instance;
+
+            string cameraState;
+            if (cameraReader == null)
+            {
+                cameraState = "NotInitialized";
+            }
+            else if (cameraReader.Connected)
+            {
+                cameraState = "Connected";
+            }
+            else
+            {
+                cameraState = "Disconnected";
+            }
+
+            // --- PLC ---
+            var plc = Program.GetPLCMonitor();
+            string plcState;
+            string? plcIp = null;
+            int? plcPort = null;
+            if (plc != null)
+            {
+                plcState = plc.State switch
+                {
+                    PLCConnectionState.Connected => "Connected",
+                    PLCConnectionState.Reconnecting => "Reconnecting",
+                    _ => "Disconnected"
+                };
+                plcIp = Environment.GetEnvironmentVariable("PLC_IP") ?? "127.0.0.1";
+                plcPort = int.TryParse(Environment.GetEnvironmentVariable("PLC_PORT"), out var p) ? p : 9600;
+            }
+            else
+            {
+                plcState = "NotInitialized";
+            }
+
+            // --- Production ---
+            var sm = ProductionStateMachine.Instance;
+
+            return Results.Json(new
+            {
+                success = true,
+                at = DateTime.UtcNow,
+
+                // Camera: OmronCodeReader (connection) + CameraHub (scan history)
+                camera = new
+                {
+                    state = cameraState,
+                    ip = cameraReader?.IP ?? "—",
+                    port = cameraReader?.Port ?? 0,
+                    connected = cameraReader?.Connected ?? false,
+                    lastCode = cameraHub.LastScannedCode,
+                    lastCodeAt = cameraHub.LastScannedAt,
+                    lastEventAt = cameraHub.LastEventAt,
+                    clientCount = cameraHub.ClientCount
+                },
+
+                // PLC: PLCMonitor state
+                plc = new
+                {
+                    state = plcState,
+                    ip = plcIp,
+                    port = plcPort,
+                    connected = plc?.State == PLCConnectionState.Connected,
+                    clientCount = PLCHub.Instance.ClientCount
+                },
+
+                // Production: full state machine snapshot
+                production = new
+                {
+                    state = sm.CurrentState.ToString(),
+                    previousState = sm.PreviousState.ToString(),
+                    orderNo = ProductionStateMachine.ProductionData?.OrderNo ?? "",
+                    productName = ProductionStateMachine.ProductionData?.ProductName ?? "",
+                    orderQty = ProductionStateMachine.ProductionData?.OrderQty ?? 0,
+                    activeCounter = new
+                    {
+                        sm.ActiveCounter.PassCount,
+                        sm.ActiveCounter.FailCount,
+                        sm.ActiveCounter.DuplicateCount,
+                        sm.ActiveCounter.NotFoundCount,
+                        sm.ActiveCounter.ReadFailCount,
+                        sm.ActiveCounter.ErrorCount,
+                        sm.ActiveCounter.TimeoutCount,
+                        sm.ActiveCounter.CartonID,
+                        sm.ActiveCounter.CartonCode
+                    },
+                    codesCount = sm.Dictionary_Codes.Count,
+                    cartonsCount = sm.Dictionary_Cartons.Count,
+                    lastWarning = sm.LastWarning,
+                    isAppReady = sm.IsAppReady,
+                    isDeviceReady = sm.IsDeviceReady,
+                    clientCount = ProductionHub.Instance.ClientCount
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error getting devices status: {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
     }

@@ -21,4 +21,5 @@ export interface PLCSnapshot {
   port: number | null;
   message: string | null;
   lastEventAt: string | null;
+  clientCount: number;
 }

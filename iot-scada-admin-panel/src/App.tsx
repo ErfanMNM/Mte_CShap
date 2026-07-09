@@ -38,9 +38,7 @@ import ReactECharts from "echarts-for-react";
 import Keyboard from "react-simple-keyboard";
 import "react-simple-keyboard/build/css/index.css";
 import { useCameraSocket } from "./hooks/useCameraSocket";
-import { usePLCWebSocket } from "./hooks/usePLCWebSocket";
-import { useProductionWebSocket } from "./hooks/useProductionWebSocket";
-import { useProductionPing } from "./hooks/useProductionPing";
+import { useDevicePolling } from "./hooks/useDevicePolling";
 import { useDeviceStore } from "./store/useDeviceStore";
 import POManagerView from "./components/pomanager/POManagerView";
 import DataPoolView from "./components/datapool/DataPoolView";
@@ -572,41 +570,23 @@ const ScadaMonitorView = () => {
   const [cameraHistory, setCameraHistory] = useState<CameraHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // Camera WebSocket connection (logs + lastScan only, store sync handled by hook)
+  // Camera WebSocket — kept only for real-time log table & onEvent callback
   const wsUrl =
     import.meta.env.VITE_CAMERA_WS_URL || "ws://localhost:9999/ws/camera";
 
-  const { snapshot, logs, reconnect, lastScan } = useCameraSocket({
+  const { logs, reconnect: reconnectCamera, lastScan } = useCameraSocket({
     url: wsUrl,
-    reconnectIntervalMs: 3000,
-    maxReconnectAttempts: 5,
+    syncToStore: false, // REST polling now handles store sync
   });
 
-  // PLC WebSocket connection (logs only, store sync handled by hook)
-  const plcWsUrl =
-    import.meta.env.VITE_PLC_WS_URL || "ws://localhost:9999/ws/plc";
-  const {
-    logs: plcLogs,
-    reconnect: plcReconnect,
-  } = usePLCWebSocket({
-    url: plcWsUrl,
-    reconnectIntervalMs: 3000,
-    maxReconnectAttempts: 5,
-  });
-
-  // Production state WebSocket (store sync handled by hook)
-  const prodWsUrl =
-    import.meta.env.VITE_PROD_WS_URL || "ws://localhost:9999/ws/production";
-  const { connected: prodWsConnected } = useProductionWebSocket({
-    url: prodWsUrl,
-    reconnectIntervalMs: 3000,
-    maxReconnectAttempts: 5,
-  });
+  // PLC & Production — REST polling via /api/devices/status every 2000ms
+  useDevicePolling({ intervalMs: 2000 });
 
   // Get device status from centralized store
   const cameraStatus = useDeviceStore((s) => s.camera);
   const plcStatus = useDeviceStore((s) => s.plc);
   const appStatus = useDeviceStore((s) => s.production);
+  const productionConnected = useDeviceStore((s) => s.productionConnected);
 
   // ====== Helpers ======
 
@@ -634,7 +614,7 @@ const ScadaMonitorView = () => {
   // Application status mapping (using store data)
   const getAppStatus = (): "connected" | "error" | "warning" | "connecting" => {
     const state = appStatus?.state;
-    if (!prodWsConnected) return "connecting";
+    if (!productionConnected) return "connecting";
     if (!state || state === "Unknown") return "connecting";
     if (state === "Running" || state === "Ready" || state === "Paused" || state === "Completed") return "connected";
     if (state === "Error" || state === "DeviceError") return "error";
@@ -644,7 +624,7 @@ const ScadaMonitorView = () => {
   const cameraState = cameraStatus.camera.state;
 
   const formatLastCode = (lastCode: string, lastAt: string | null) => {
-    if (!lastCode) return "—";
+    if (!lastCode) return "Chưa quét";
     if (!lastAt) return lastCode;
     return `${lastCode} @ ${new Date(lastAt).toLocaleTimeString("vi-VN")}`;
   };
@@ -661,7 +641,7 @@ const ScadaMonitorView = () => {
   };
 
   // App state label from store
-  const appStateLabel = !prodWsConnected
+  const appStateLabel = !productionConnected
     ? "Mất kết nối WS"
     : !appStatus?.state || appStatus.state === "Unknown"
       ? "Idle"
@@ -855,43 +835,47 @@ const ScadaMonitorView = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100/80">
                   {activeTab === "plc" ? (
-                    plcLogs.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-5 2xl:px-6 py-8 text-center text-slate-400 text-sm">
-                          Đang chờ dữ liệu từ PLC...
-                        </td>
-                      </tr>
-                    ) : (
-                      plcLogs.map((msg, idx) => {
-                        const stateColor =
-                          msg.state === "Connected"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : msg.state === "Reconnecting"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-red-100 text-red-700";
-                        return (
-                          <tr key={`${msg.at}-${idx}`} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 font-mono text-[11px] 2xl:text-xs font-semibold text-slate-500 whitespace-nowrap">
-                              #{idx + 1}
-                            </td>
-                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 font-mono text-[11px] 2xl:text-xs font-semibold text-slate-500 whitespace-nowrap">
-                              {new Date(msg.at).toLocaleTimeString("vi-VN")}
-                            </td>
-                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5">
-                              <span className={`px-2.5 2xl:px-3 py-1 rounded-full text-[10px] 2xl:text-[11px] font-bold tracking-wide uppercase ${stateColor}`}>
-                                {msg.state}
-                              </span>
-                            </td>
-                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 text-xs 2xl:text-sm text-slate-700 font-medium font-mono break-all">
-                              PLC
-                            </td>
-                            <td className="px-5 2xl:px-6 py-2.5 2xl:py-3.5 text-xs 2xl:text-sm text-slate-700 font-medium font-mono break-all">
-                              {msg.message ?? `${msg.ip}:${msg.port}`}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )
+                    <tr>
+                      <td colSpan={5} className="px-5 2xl:px-6 py-8">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${plcStatus.connected ? "bg-emerald-500" : "bg-red-500 animate-pulse"}`} />
+                            <span className={`text-sm font-semibold ${plcStatus.connected ? "text-emerald-700" : "text-red-700"}`}>
+                              PLC OMRON — {plcStatus.state ?? "Unknown"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-slate-50 rounded-xl border border-slate-100 px-4 py-3">
+                              <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Trạng thái</div>
+                              <div className={`text-sm font-semibold ${plcStatus.connected ? "text-emerald-700" : "text-red-700"}`}>
+                                {plcStatus.connected ? "Đã kết nối" : "Mất kết nối"}
+                              </div>
+                            </div>
+                            <div className="bg-slate-50 rounded-xl border border-slate-100 px-4 py-3">
+                              <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Kết nối WS</div>
+                              <div className={`text-sm font-semibold ${plcStatus.clientCount > 0 ? "text-emerald-700" : "text-slate-400"}`}>
+                                {plcStatus.clientCount > 0 ? `${plcStatus.clientCount} client(s)` : "Không có client"}
+                              </div>
+                            </div>
+                            <div className="bg-slate-50 rounded-xl border border-slate-100 px-4 py-3">
+                              <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">IP</div>
+                              <div className="text-sm font-mono font-medium text-slate-700">
+                                {plcStatus.ip ?? "—"}
+                              </div>
+                            </div>
+                            <div className="bg-slate-50 rounded-xl border border-slate-100 px-4 py-3">
+                              <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Port</div>
+                              <div className="text-sm font-mono font-medium text-slate-700">
+                                {plcStatus.port ?? "—"}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-xs text-slate-400 text-center">
+                            Trạng thái PLC được cập nhật qua REST polling mỗi 2000ms
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
                   ) : activeTab === "history" ? (
                     historyLoading ? (
                       <tr>
@@ -1014,7 +998,7 @@ const ScadaMonitorView = () => {
                 status={getAppStatus()}
               />
               <AppStateIndicator
-                state={prodWsConnected ? appStatus?.state || "Unknown" : "Unknown"}
+                state={productionConnected ? appStatus?.state || "Unknown" : "Unknown"}
               />
             </div>
           </Card>
@@ -1040,7 +1024,7 @@ const ScadaMonitorView = () => {
                     {cameraStatus.connected ? "Đã kết nối" : "Mất kết nối"}
                   </span>
                   <button
-                    onClick={reconnect}
+                    onClick={reconnectCamera}
                     className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
                     title="Kết nối lại camera"
                   >
@@ -1050,13 +1034,11 @@ const ScadaMonitorView = () => {
                     Camera
                   </button>
                   <button
-                    onClick={plcReconnect}
+                    onClick={() => window.location.reload()}
                     className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
-                    title="Kết nối lại PLC"
+                    title="Tải lại trang (PLC state cập nhật qua REST polling)"
                   >
-                    <RefreshCw
-                      className={`w-3.5 h-3.5 ${!plcStatus.connected ? "animate-spin" : ""}`}
-                    />
+                    <RefreshCw className="w-3.5 h-3.5" />
                     PLC
                   </button>
                 </div>
@@ -1096,8 +1078,10 @@ const ScadaMonitorView = () => {
               </div>
 
               <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3">
-                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">PLC Endpoint</div>
-                <div className="text-xs font-mono text-slate-700 break-all">{plcWsUrl}</div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Devices Status API</div>
+                <div className="text-xs font-mono text-slate-700 break-all">
+                  {`${import.meta.env.VITE_API_BASE_URL || "http://localhost:9999"}/api/devices/status`}
+                </div>
               </div>
 
               <div className="bg-slate-50/50 rounded-xl border border-slate-100 px-4 py-3">
@@ -1528,9 +1512,6 @@ const AdminPanelContent = ({ user, onLogout }: { user: any; onLogout: () => void
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isOpen } = useVirtualKeyboard();
 
-  // Ping production state định kỳ để đảm bảo FE luôn có state mới nhất
-  useProductionPing({ intervalMs: 5000, enabled: true });
-
   const navigation = [
     { id: "monitor", title: "Giám sát SCADA", icon: LayoutDashboard },
     { id: "production", title: "Điều khiển SX", icon: Factory },
@@ -1697,7 +1678,7 @@ export default function AdminPanel() {
 const AdminPanelWithAuth = () => {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
 
-  // Read production state from centralized store (synced by useProductionWebSocket)
+  // Read production state from centralized store (synced by useDevicePolling)
   const prodState = useDeviceStore((s) => s.production?.state ?? "Unknown");
   const prodConnected = useDeviceStore((s) => s.productionConnected);
 

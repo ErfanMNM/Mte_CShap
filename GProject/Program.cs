@@ -4,7 +4,6 @@ using GProject.Auth;
 using GProject.Production;
 using GProject.ProductionOrderHelpers;
 using Serilog;
-using GProject.Config;
 
 namespace GProject
 {
@@ -13,6 +12,9 @@ namespace GProject
     private static OmronCodeReader? _CR_Camera;
     private static PLCMonitor? _plcMonitor;
     private static GProjectApiServer? _apiServer;
+
+    /// <summary>Exposes the PLC monitor instance for API endpoints.</summary>
+    public static PLCMonitor? GetPLCMonitor() => _plcMonitor;
 
         static async Task Main(string[] args)
         {
@@ -52,6 +54,7 @@ namespace GProject
                 Log.Information("");
                 Log.Information("  REST API Server: http://localhost:9999");
                 Log.Information("  Health Check:    http://localhost:9999/api/health");
+                Log.Information("  Device Status:   http://localhost:9999/api/devices/status");
                 Log.Information("  DataPool API:    http://localhost:9999/api/datapool/pools");
                 Log.Information("  Production:      http://localhost:9999/api/production/state");
                 Log.Information("");
