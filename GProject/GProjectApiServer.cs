@@ -167,12 +167,10 @@ public class GProjectApiServer : IDisposable
                 return;
             }
 
+            // WebSocket endpoint kept for backward compatibility but production state is now
+            // delivered via REST polling (/api/devices/status). New clients should use polling.
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
-            ProductionHub.Instance.Register(ws);
-            Log.Information("[WebSocket] Production client connected. Total clients: {Count}", ProductionHub.Instance.ClientCount);
-
-            // Gửi state hiện tại ngay khi client kết nối
-            _ = ProductionStateMachine.Instance.BroadcastCurrentStateAsync();
+            Log.Information("[WebSocket] Production WebSocket connection accepted (REST polling preferred)");
 
             try
             {
@@ -192,8 +190,6 @@ public class GProjectApiServer : IDisposable
             }
             finally
             {
-                ProductionHub.Instance.Unregister(ws);
-                Log.Information("[WebSocket] Production client disconnected. Total clients: {Count}", ProductionHub.Instance.ClientCount);
                 if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
                 {
                     try
@@ -1086,25 +1082,15 @@ public class GProjectApiServer : IDisposable
         }
     }
 
-    /// <summary>
-    /// Ping endpoint - FE call định kỳ để trigger broadcast state ngay lập tức.
-    /// Giúp đảm bảo FE luôn có state mới nhất, đặc biệt khi WebSocket có thể miss message.
-    /// </summary>
-    private async Task<IResult> HandleProductionPing(HttpContext context)
-    {
-        try
+/// <summary>
+        /// Ping endpoint - retained for compatibility. State is now delivered via REST polling
+        /// on /api/devices/status, so this endpoint is a no-op success response.
+        /// </summary>
+        private async Task<IResult> HandleProductionPing(HttpContext context)
         {
             await Task.CompletedTask;
-            // Broadcast ngay lập tức (không throttle)
-            await ProductionStateMachine.Instance.BroadcastCurrentStateAsync();
             return Results.Json(new { success = true, at = DateTime.UtcNow });
         }
-        catch (Exception ex)
-        {
-            LogError("GProjectApiServer", $"Error in ping: {ex.Message}", ex);
-            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
-        }
-    }
 
     /// <summary>
     /// Trả về trạng thái tất cả thiết bị: Camera, PLC, Production.
@@ -1208,8 +1194,7 @@ public class GProjectApiServer : IDisposable
                     cartonsCount = sm.Dictionary_Cartons.Count,
                     lastWarning = sm.LastWarning,
                     isAppReady = sm.IsAppReady,
-                    isDeviceReady = sm.IsDeviceReady,
-                    clientCount = ProductionHub.Instance.ClientCount
+                    isDeviceReady = sm.IsDeviceReady
                 }
             });
         }

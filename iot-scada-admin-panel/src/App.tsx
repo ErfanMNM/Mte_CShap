@@ -372,11 +372,15 @@ const DeviceIndicator = ({
   subLabel,
   icon: Icon,
   status,
+  onRetry,
+  showRetrySpinner,
 }: {
   label: string;
   subLabel?: string;
   icon: React.ElementType;
   status: "connected" | "error" | "offline" | "warning" | "connecting";
+  onRetry?: () => void;
+  showRetrySpinner?: boolean;
 }) => {
   const styles: Record<string, string> = {
     connected: "bg-green-50 text-green-700 border-green-100",
@@ -408,7 +412,19 @@ const DeviceIndicator = ({
         </div>
       </div>
       <div className="flex items-center shrink-0 pl-1">
-        <div className={`w-1.5 h-1.5 xl:w-2 xl:h-2 rounded-full ${dotStyles[status]}`} />
+        {showRetrySpinner && status === "error" && onRetry ? (
+          <button
+            type="button"
+            onClick={onRetry}
+            aria-label="Thử lại"
+            title="Thử lại"
+            className="w-4 h-4 xl:w-5 xl:h-5 rounded-full flex items-center justify-center text-red-600 hover:bg-red-100/70 transition-colors"
+          >
+            <RefreshCw className="w-3 h-3 xl:w-3.5 xl:h-3.5 animate-spin" />
+          </button>
+        ) : (
+          <div className={`w-1.5 h-1.5 xl:w-2 xl:h-2 rounded-full ${dotStyles[status]}`} />
+        )}
       </div>
     </div>
   );
@@ -587,6 +603,7 @@ const ScadaMonitorView = () => {
   const plcStatus = useDeviceStore((s) => s.plc);
   const appStatus = useDeviceStore((s) => s.production);
   const productionConnected = useDeviceStore((s) => s.productionConnected);
+  const apiStatus = useDeviceStore((s) => s.apiStatus);
 
   // ====== Helpers ======
 
@@ -612,13 +629,25 @@ const ScadaMonitorView = () => {
   };
 
   // Application status mapping (using store data)
+  // Bind DeviceIndicator "Backend" trực tiếp vào appStatus.state (chuỗi API trả về).
+  // Trả "error" khi /api/devices/status fail liên tiếp, nếu không thì map theo state code.
   const getAppStatus = (): "connected" | "error" | "warning" | "connecting" => {
+    if (apiStatus.error) return "error";
     const state = appStatus?.state;
     if (!productionConnected) return "connecting";
     if (!state || state === "Unknown") return "connecting";
-    if (state === "Running" || state === "Ready" || state === "Paused" || state === "Completed") return "connected";
-    if (state === "Error" || state === "DeviceError") return "error";
-    return "warning";
+    const apiStateMap: Record<string, "connected" | "error" | "warning"> = {
+      Running: "connected",
+      Ready: "connected",
+      Paused: "warning",
+      Completed: "connected",
+      Error: "error",
+      DeviceError: "error",
+      NeedLogin: "warning",
+      NoSelectedPO: "warning",
+      Editing: "warning",
+    };
+    return apiStateMap[state] ?? "warning";
   };
 
   const cameraState = cameraStatus.camera.state;
@@ -641,11 +670,13 @@ const ScadaMonitorView = () => {
   };
 
   // App state label from store
-  const appStateLabel = !productionConnected
-    ? "Mất kết nối WS"
-    : !appStatus?.state || appStatus.state === "Unknown"
-      ? "Idle"
-      : appStatus.state;
+  const appStateLabel = apiStatus.error
+    ? `Lỗi kết nối${apiStatus.statusCode ? ` (HTTP ${apiStatus.statusCode})` : ""}`
+    : !productionConnected
+      ? "Mất kết nối WS"
+      : !appStatus?.state || appStatus.state === "Unknown"
+        ? "Idle"
+        : appStatus.state;
 
   // ====== Scan status (badge TỐT) ======
   const scanBadge = useMemo(() => {
@@ -993,9 +1024,11 @@ const ScadaMonitorView = () => {
               />
               <DeviceIndicator
                 icon={Settings}
-                label="ỨNG DỤNG"
+                label="Backend"
                 subLabel={appStateLabel}
                 status={getAppStatus()}
+                showRetrySpinner={apiStatus.error}
+                onRetry={() => useDeviceStore.getState().manualPoll()}
               />
               <AppStateIndicator
                 state={productionConnected ? appStatus?.state || "Unknown" : "Unknown"}

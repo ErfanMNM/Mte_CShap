@@ -38,6 +38,13 @@ interface DeviceStoreState {
   cameraConnected: boolean;
   plcConnected: boolean;
   productionConnected: boolean;
+
+  // /api/devices/status polling health (tracked separately from per-device flags)
+  apiStatus: {
+    error: boolean;
+    statusCode: number | null;
+    message: string | null;
+  };
 }
 
 // ============================================================================
@@ -53,6 +60,12 @@ interface DeviceStoreActions {
   setProduction: (snapshot: ProductionStateResponse | null) => void;
   // Update production connection status
   setProductionConnected: (connected: boolean) => void;
+  // Mark the devices-status API as failed (called after consecutive failures)
+  setApiStatus: (status: { error: boolean; statusCode: number | null; message: string | null }) => void;
+  // Clear devices-status API error
+  clearApiStatus: () => void;
+  // Trigger an immediate poll of /api/devices/status (registered by useDevicePolling)
+  manualPoll: () => Promise<void>;
   // Reset all state
   reset: () => void;
 }
@@ -85,6 +98,7 @@ const getInitialState = (): DeviceStoreState => ({
   cameraConnected: false,
   plcConnected: false,
   productionConnected: false,
+  apiStatus: { error: false, statusCode: null, message: null },
 });
 
 // ============================================================================
@@ -112,6 +126,14 @@ export const useDeviceStore = create<DeviceStoreState & DeviceStoreActions>()(
 
     setProductionConnected: (connected) =>
       set({ productionConnected: connected }),
+
+    setApiStatus: (status) => set({ apiStatus: status }),
+
+    clearApiStatus: () =>
+      set({ apiStatus: { error: false, statusCode: null, message: null } }),
+
+    // Default no-op; useDevicePolling registers the real implementation on mount.
+    manualPoll: async () => {},
 
     reset: () => set(getInitialState()),
   })

@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace GProject.ProductionOrderHelpers
 {
     /// <summary>
@@ -12,12 +14,74 @@ namespace GProject.ProductionOrderHelpers
     public static class GProduction
     {
         /// <summary>
-        /// Khởi tạo Production Helper
+        /// Khởi tạo Production Helper — wipe DB PO cũ nếu schema chưa có cột cartonCapacity (one-time migration)
         /// </summary>
         public static void Initialize()
         {
+            if (NeedsPOMigration())
+                WipeAllPODatabases();
             Config.EnsurePOList();
             Config.EnsurePOHistory();
+        }
+
+        private static bool NeedsPOMigration()
+        {
+            try
+            {
+                string dbPath = Config.GetPOListPath();
+                if (!File.Exists(dbPath)) return false;
+                using var con = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath}");
+                con.Open();
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = "PRAGMA table_info(PO);";
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    if (string.Equals(reader.GetString(1), "cartonCapacity", StringComparison.OrdinalIgnoreCase))
+                        return false;
+                }
+                return true;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private static void WipeAllPODatabases()
+        {
+            try
+            {
+                string basePath = Config.BasePath;
+                if (Directory.Exists(basePath))
+                {
+                    // Xóa các file DB ở root
+                    foreach (var name in new[] { "PO_List.db", "POHistory.db",
+                                                 "PO_List.db-wal", "PO_List.db-shm",
+                                                 "POHistory.db-wal", "POHistory.db-shm" })
+                    {
+                        string p = Path.Combine(basePath, name);
+                        if (File.Exists(p)) File.Delete(p);
+                    }
+
+                    // Xóa mọi *.db / *.db-* trong các thư mục con (yyyy-MM/gtin/)
+                    foreach (var file in Directory.EnumerateFiles(basePath, "*.db*", SearchOption.AllDirectories))
+                    {
+                        try { File.Delete(file); } catch { /* ignore */ }
+                    }
+
+                    // Dọn thư mục con rỗng
+                    foreach (var dir in Directory.EnumerateDirectories(basePath, "*", SearchOption.AllDirectories)
+                                                 .OrderByDescending(d => d.Length))
+                    {
+                        try { if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any()) Directory.Delete(dir); } catch { }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Console.WriteLine($"[GProduction] WipeAllPODatabases warning: {ex.Message}");
+            }
         }
 
         /// <summary>

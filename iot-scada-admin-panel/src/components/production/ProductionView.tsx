@@ -84,7 +84,7 @@ const ProductionView: React.FC = () => {
   useEffect(() => {
     fetchStatus();
     fetchPOList();
-    const interval = setInterval(fetchStatus, 2000);
+    const interval = setInterval(fetchStatus, 1000);
     return () => clearInterval(interval);
   }, [fetchStatus, fetchPOList]);
 
@@ -132,8 +132,9 @@ const ProductionView: React.FC = () => {
     syncToStore: false, // Store sync handled by App.tsx hooks
   });
 
-  // PLC state from store (updated via REST polling)
-  const productionConnected = useDeviceStore((s) => s.productionConnected);
+// PLC state from store (updated via REST polling)
+// Treat healthOk as the production connection signal: BE down => request fails => banner red.
+const productionConnected = healthOk;
 
   const handleStartProduction = async () => {
     if (!selectedPO) {

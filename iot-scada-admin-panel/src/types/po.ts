@@ -8,6 +8,7 @@ export interface POInfo {
   productionDate?: string;
   shift?: string;
   orderQty: number;
+  cartonCapacity?: number;
   lotNumber?: string;
   productCode?: string;
   productName?: string;
@@ -31,6 +32,7 @@ export interface POListItem {
   orderNo: string;
   productName?: string;
   orderQty: number;
+  cartonCapacity?: number;
   productionDate?: string;
   gtin?: string;
   status?: string;

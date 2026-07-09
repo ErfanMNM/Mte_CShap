@@ -166,8 +166,15 @@ namespace GProject.ProductionOrderHelpers
                 if (string.IsNullOrWhiteSpace(request.OrderNo))
                     return Results.BadRequest(new CreatePOResponse { Success = false, Message = "orderNo is required." });
 
-                if (request.OrderQty <= 24)
-                    return Results.BadRequest(new CreatePOResponse { Success = false, Message = "orderQty must be > 24." });
+                if (request.OrderQty <= 0)
+                    return Results.BadRequest(new CreatePOResponse { Success = false, Message = "orderQty must be > 0." });
+
+                int cartonCapacity = request.CartonCapacity > 0 ? request.CartonCapacity : 24;
+                if (cartonCapacity <= 0)
+                    return Results.BadRequest(new CreatePOResponse { Success = false, Message = "cartonCapacity must be > 0." });
+
+                if (request.OrderQty <= cartonCapacity)
+                    return Results.BadRequest(new CreatePOResponse { Success = false, Message = $"orderQty ({request.OrderQty}) must be > cartonCapacity ({cartonCapacity})." });
 
                 var poInfo = new POInfo
                 {
@@ -178,6 +185,7 @@ namespace GProject.ProductionOrderHelpers
                     ProductionDate = request.ProductionDate?.Trim() ?? DateTime.Now.ToString("yyyy-MM-dd"),
                     Shift = request.Shift?.Trim() ?? "",
                     OrderQty = request.OrderQty,
+                    CartonCapacity = cartonCapacity,
                     LotNumber = request.LotNumber?.Trim() ?? "",
                     ProductCode = request.ProductCode?.Trim() ?? "",
                     ProductName = request.ProductName?.Trim() ?? "",
@@ -206,9 +214,9 @@ namespace GProject.ProductionOrderHelpers
                 }
 
                 int createdCartons = 0;
-                if (request.OrderQty > 0 && request.CartonCapacity > 0)
+                if (poInfo.OrderQty > 0 && poInfo.CartonCapacity > 0)
                 {
-                    var cartonResult = GProduction.POCreator.CreateRequiredCartons(poInfo.OrderNo, request.OrderQty, request.CartonCapacity);
+                    var cartonResult = GProduction.POCreator.CreateRequiredCartons(poInfo.OrderNo, poInfo.OrderQty, poInfo.CartonCapacity);
                     if (cartonResult.success) createdCartons = cartonResult.createdCount;
                 }
 
@@ -245,6 +253,7 @@ namespace GProject.ProductionOrderHelpers
                             orderNo = row["orderNo"]?.ToString(),
                             productName = row["productName"]?.ToString(),
                             orderQty = Convert.ToInt32(row["orderQty"] ?? 0),
+                            cartonCapacity = Convert.ToInt32(row["cartonCapacity"] ?? 24),
                             productionDate = row["productionDate"]?.ToString(),
                             gtin = row["gtin"]?.ToString(),
                             status = "Active",
@@ -291,6 +300,7 @@ namespace GProject.ProductionOrderHelpers
                         productionDate = poInfo.ProductionDate,
                         shift = poInfo.Shift,
                         orderQty = poInfo.OrderQty,
+                        cartonCapacity = poInfo.CartonCapacity,
                         lotNumber = poInfo.LotNumber,
                         productCode = poInfo.ProductCode,
                         productName = poInfo.ProductName,
@@ -446,7 +456,7 @@ namespace GProject.ProductionOrderHelpers
 
                 var request = await context.Request.ReadFromJsonAsync<EnsureReadyRequest>();
                 bool autoLoadCodes = request?.AutoLoadCodes ?? true;
-                int cartonCapacity = request?.CartonCapacity ?? 24;
+                int? requestedCartonCapacity = request?.CartonCapacity;
 
                 // Lấy thông tin PO
                 var poResult = GProduction.POLoader.GetByOrderNo(orderNo);
@@ -456,6 +466,9 @@ namespace GProject.ProductionOrderHelpers
                 var row = poResult.Data.Rows[0];
                 string gtin = row["gtin"]?.ToString() ?? "";
                 int orderQty = Convert.ToInt32(row["orderQty"]);
+                int dbCartonCapacity = Convert.ToInt32(row["cartonCapacity"] ?? 24);
+                int cartonCapacity = requestedCartonCapacity ?? dbCartonCapacity;
+                if (cartonCapacity <= 0) cartonCapacity = 24;
 
                 var result = GProduction.POCreator.EnsurePODatabaseReady(orderNo, gtin, orderQty, cartonCapacity, autoLoadCodes);
 

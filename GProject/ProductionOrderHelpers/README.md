@@ -59,6 +59,7 @@ CREATE TABLE PO (
     productionDate TEXT,
     shift           TEXT,
     orderQty        INTEGER,
+    cartonCapacity  INTEGER DEFAULT 24,
     lotNumber       TEXT,
     productCode     TEXT,
     productName     TEXT,
@@ -708,7 +709,7 @@ GProduction.Initialize();
 
 ## Lưu Ý Quan Trọng
 
-1. **OrderQty phải > 24** - Đây là yêu cầu bắt buộc khi tạo PO
+1. **OrderQty phải > CartonCapacity (mặc định 24, có thể cấu hình khi tạo PO)** - Khi tạo PO cần truyền `cartonCapacity`; `orderQty` phải lớn hơn giá trị này.
 2. **Codes không thể xóa** - Nếu đã activate code, PO không thể xóa
 3. **Auto-load codes** - Khi tạo PO với `autoLoadCodes: true`, hệ thống sẽ tự động nạp mã từ DataPool tương ứng với GTIN
 4. **Dictionary cho lookup nhanh** - Nên sử dụng Dictionary thay vì query database trong vòng lặp production

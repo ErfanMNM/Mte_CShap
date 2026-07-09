@@ -90,6 +90,7 @@ namespace GProject.ProductionOrderHelpers
                 productionDate  TEXT NOT NULL DEFAULT '',
                 shift           TEXT NOT NULL DEFAULT '',
                 orderQty        INTEGER NOT NULL DEFAULT 0,
+                cartonCapacity  INTEGER NOT NULL DEFAULT 24,
                 lotNumber       TEXT NOT NULL DEFAULT '',
                 productCode     TEXT NOT NULL DEFAULT '',
                 productName     TEXT NOT NULL DEFAULT '',

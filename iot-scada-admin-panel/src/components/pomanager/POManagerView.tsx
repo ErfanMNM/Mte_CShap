@@ -236,7 +236,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
       const result = await poApi.ensurePODatabaseReady(
         selectedPO.orderNo,
         true,
-        selectedPO.orderQty > 0 ? Math.ceil(selectedPO.orderQty / 24) : 5,
+        selectedPO.cartonCapacity ?? Math.ceil(selectedPO.orderQty / 24),
       );
       if (result.success) {
         setSuccess(result.message || "Database ready!");
@@ -309,8 +309,18 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
     if (!formData.orderNo.trim()) {
       errors.orderNo = "Order No. is required";
     }
-    if (!formData.orderQty || formData.orderQty <= 24) {
-      errors.orderQty = "Order Qty must be greater than 24";
+    if (!formData.orderQty || formData.orderQty <= 0) {
+      errors.orderQty = "Order Qty must be greater than 0";
+    }
+    if (!formData.cartonCapacity || formData.cartonCapacity <= 0) {
+      errors.cartonCapacity = "Carton Capacity must be greater than 0";
+    }
+    if (
+      formData.orderQty &&
+      formData.cartonCapacity &&
+      formData.orderQty <= formData.cartonCapacity
+    ) {
+      errors.orderQty = `Order Qty must be greater than Carton Capacity (${formData.cartonCapacity})`;
     }
     if (!formData.productionDate) {
       errors.productionDate = "Production Date is required";
@@ -646,6 +656,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                     <th className="px-5 py-3 font-bold tracking-wider">Order No.</th>
                     <th className="px-5 py-3 font-bold tracking-wider">Product Name</th>
                     <th className="px-5 py-3 font-bold tracking-wider">Order Qty</th>
+                    <th className="px-5 py-3 font-bold tracking-wider">Carton Size</th>
                     <th className="px-5 py-3 font-bold tracking-wider">GTIN</th>
                     <th className="px-5 py-3 font-bold tracking-wider">Production Date</th>
                     <th className="px-5 py-3 font-bold tracking-wider text-right">Actions</th>
@@ -654,14 +665,14 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 <tbody className="divide-y divide-slate-100/80">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={6} className="px-5 py-10 text-center text-slate-400">
+                      <td colSpan={7} className="px-5 py-10 text-center text-slate-400">
                         <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
                         Loading data...
                       </td>
                     </tr>
                   ) : filteredList.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-5 py-10 text-center text-slate-400">
+                      <td colSpan={7} className="px-5 py-10 text-center text-slate-400">
                         {searchTerm
                           ? "No matching POs found"
                           : "No POs yet. Create a new PO to get started."}
@@ -678,6 +689,9 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                         </td>
                         <td className="px-5 py-3 font-semibold text-slate-700">
                           {po.orderQty?.toLocaleString() || "—"}
+                        </td>
+                        <td className="px-5 py-3 font-mono text-xs font-semibold text-blue-700">
+                          {po.cartonCapacity ? `${po.cartonCapacity}` : "—"}
                         </td>
                         <td className="px-5 py-3 font-mono text-xs text-slate-500">
                           {po.gtin || "—"}
@@ -735,7 +749,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
             <FormField label="Order No. *" name="orderNo" value={formData.orderNo} onChange={handleFormChange} error={formErrors.orderNo} icon={Hash} placeholder="e.g. PO0001" />
             <FormField label="GTIN" name="gtin" value={formData.gtin || ""} onChange={handleFormChange} icon={Tag} placeholder="e.g. A001" />
             <FormField label="Order Qty *" name="orderQty" type="number" value={formData.orderQty} onChange={handleFormChange} error={formErrors.orderQty} icon={Layers} />
-            <FormField label="Carton Capacity" name="cartonCapacity" type="number" value={formData.cartonCapacity || 24} onChange={handleFormChange} icon={Box} />
+            <FormField label="Carton Capacity" name="cartonCapacity" type="number" value={formData.cartonCapacity || 24} onChange={handleFormChange} error={formErrors.cartonCapacity} icon={Box} />
             <FormField label="Production Date *" name="productionDate" type="date" value={formData.productionDate || ""} onChange={handleFormChange} error={formErrors.productionDate} icon={Calendar} />
             <SelectField label="Shift" name="shift" value={formData.shift || "A"} onChange={handleFormChange} options={[{ value: "A", label: "Shift A" }, { value: "B", label: "Shift B" }, { value: "C", label: "Shift C" }]} />
             <FormField label="Product Name" name="productName" value={formData.productName || ""} onChange={handleFormChange} icon={Package} />
@@ -824,6 +838,7 @@ const POManagerView: React.FC<POManagerViewProps> = () => {
                 <div className="p-4 xl:p-6 grid grid-cols-1 md:grid-cols-2 gap-x-6">
                   <DetailRow label="Mã đơn hàng (Order No.)" value={selectedPO.orderNo} mono />
                   <DetailRow label="Số lượng đặt (Order Qty)" value={selectedPO.orderQty?.toLocaleString()} />
+                  <DetailRow label="Quy cách thùng (Carton Capacity)" value={selectedPO.cartonCapacity?.toLocaleString()} icon={Box} />
                   <DetailRow label="GTIN" value={selectedPO.gtin} mono />
                   <DetailRow label="Tên sản phẩm (Product Name)" value={selectedPO.productName} />
                   <DetailRow label="Mã sản phẩm (Product Code)" value={selectedPO.productCode} />

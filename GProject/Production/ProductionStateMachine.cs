@@ -23,9 +23,6 @@ namespace GProject.Production
         private e_ProductionState _currentState = e_ProductionState.NeedLogin;
         private e_ProductionState _previousState = e_ProductionState.NeedLogin;
 
-        private DateTime _lastBroadcast = DateTime.MinValue;
-        private static readonly TimeSpan BroadcastThrottle = TimeSpan.FromMilliseconds(500);
-
         // Background DB writer (3 queue + 1 consumer thread duy nhất)
         public ConcurrentQueue<RecordData> RecordQueue { get; } = new();
         public ConcurrentQueue<CodeUpdateItem> CodeUpdateQueue { get; } = new();
@@ -113,9 +110,6 @@ namespace GProject.Production
             _loopTask = Task.Run(() => RunLoop(token), token);
             StartDbWriter();
             Log.Information("[StateMachine] Started");
-
-            // Broadcast trạng thái hiện tại ngay khi start để FE nhận được
-            _ = BroadcastStateAsync();
         }
 
         /// <summary>
@@ -146,9 +140,6 @@ namespace GProject.Production
             }
             Log.Information("[StateMachine] {Prev} -> {New} ({Reason})",
                 _previousState, newState, reason ?? "no reason");
-
-            // Broadcast ngay lập tức khi state đổi
-            _ = BroadcastStateAsync();
         }
 
         /// <summary>
@@ -261,92 +252,6 @@ namespace GProject.Production
                     Log.Error(ex, "[DB Writer] Lỗi không mong đợi");
                     await Task.Delay(50, ct);
                 }
-            }
-        }
-
-        private DateTime _lastPeriodicBroadcast = DateTime.MinValue;
-        private static readonly TimeSpan PeriodicBroadcastInterval = TimeSpan.FromMilliseconds(500);
-
-        /// <summary>
-        /// Broadcast production state qua ProductionHub WebSocket.
-        /// Throttle: chỉ broadcast nếu đã qua >= 500ms kể từ lần cuối.
-        /// </summary>
-        private async Task BroadcastStateAsync()
-        {
-            try
-            {
-                var now = DateTime.Now;
-                if ((now - _lastBroadcast) < BroadcastThrottle) return;
-                _lastBroadcast = now;
-
-                var sm = ProductionStateMachine.Instance;
-                await ProductionHub.Instance.BroadcastStateAsync(
-                    sm.CurrentState.ToString(),
-                    sm.PreviousState.ToString(),
-                    ProductionData?.OrderNo,
-                    ProductionData?.ProductName,
-                    ProductionData?.OrderQty ?? 0,
-                    new
-                    {
-                        sm.ActiveCounter.PassCount,
-                        sm.ActiveCounter.FailCount,
-                        sm.ActiveCounter.DuplicateCount,
-                        sm.ActiveCounter.NotFoundCount,
-                        sm.ActiveCounter.ReadFailCount,
-                        sm.ActiveCounter.ErrorCount,
-                        sm.ActiveCounter.TimeoutCount,
-                        sm.ActiveCounter.CartonID,
-                        sm.ActiveCounter.CartonCode
-                    },
-                    sm.LastWarning,
-                    sm.IsAppReady,
-                    sm.IsDeviceReady,
-                    sm.Dictionary_Codes.Count,
-                    sm.Dictionary_Cartons.Count
-                );
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "[StateMachine] Broadcast failed");
-            }
-        }
-
-        /// <summary>
-        /// Broadcast state ngay lập tức (không throttle) - dùng khi client mới kết nối WebSocket.
-        /// </summary>
-        public async Task BroadcastCurrentStateAsync()
-        {
-            try
-            {
-                var sm = ProductionStateMachine.Instance;
-                await ProductionHub.Instance.BroadcastStateAsync(
-                    sm.CurrentState.ToString(),
-                    sm.PreviousState.ToString(),
-                    ProductionData?.OrderNo,
-                    ProductionData?.ProductName,
-                    ProductionData?.OrderQty ?? 0,
-                    new
-                    {
-                        sm.ActiveCounter.PassCount,
-                        sm.ActiveCounter.FailCount,
-                        sm.ActiveCounter.DuplicateCount,
-                        sm.ActiveCounter.NotFoundCount,
-                        sm.ActiveCounter.ReadFailCount,
-                        sm.ActiveCounter.ErrorCount,
-                        sm.ActiveCounter.TimeoutCount,
-                        sm.ActiveCounter.CartonID,
-                        sm.ActiveCounter.CartonCode
-                    },
-                    sm.LastWarning,
-                    sm.IsAppReady,
-                    sm.IsDeviceReady,
-                    sm.Dictionary_Codes.Count,
-                    sm.Dictionary_Cartons.Count
-                );
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "[StateMachine] BroadcastCurrentState failed");
             }
         }
 
@@ -658,18 +563,6 @@ namespace GProject.Production
 
                 try { Task.Delay(10, token).Wait(token); }
                 catch (OperationCanceledException) { break; }
-
-                // Periodic broadcast mỗi 500ms để update counter
-                try
-                {
-                    var now = DateTime.Now;
-                    if ((now - _lastPeriodicBroadcast) >= PeriodicBroadcastInterval)
-                    {
-                        _lastPeriodicBroadcast = now;
-                        _ = BroadcastStateAsync();
-                    }
-                }
-                catch { }
             }
         }
 
@@ -847,7 +740,8 @@ namespace GProject.Production
                 }
 
                 var status = GProduction.POCreator.CheckPODatabaseStatus(
-                    ProductionData.OrderNo, ProductionData.OrderQty, ActiveCounter.CartonCapacity);
+                    ProductionData.OrderNo, ProductionData.OrderQty,
+                    ProductionData.CartonCapacity > 0 ? ProductionData.CartonCapacity : 24);
 
                 if (!status.IsFullyInitialized)
                 {
@@ -856,7 +750,7 @@ namespace GProject.Production
                         ProductionData.OrderNo,
                         ProductionData.Gtin,
                         ProductionData.OrderQty,
-                        ActiveCounter.CartonCapacity,
+                        ProductionData.CartonCapacity > 0 ? ProductionData.CartonCapacity : 24,
                         autoLoadCodes: true);
 
                     if (!result.success)
@@ -889,7 +783,10 @@ namespace GProject.Production
 
                 Dictionary_Codes.Clear();
                 Dictionary_Cartons.Clear();
-                ActiveCounter = new ProductCounter();
+                ActiveCounter = new ProductCounter
+                {
+                    CartonCapacity = ProductionData.CartonCapacity > 0 ? ProductionData.CartonCapacity : 24
+                };
                 PackageCounter = new ProductCounter();
 
                 // Loader chỉ nhận Dictionary<string, CodeInfo> nên load vào tạm rồi copy sang ConcurrentDictionary

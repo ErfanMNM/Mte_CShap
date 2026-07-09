@@ -87,18 +87,22 @@ namespace GProject.ProductionOrderHelpers
             {
                 if (string.IsNullOrWhiteSpace(po.OrderNo))
                     return Result.Fail("orderNo không được trống.");
-                if (po.OrderQty <= 24)
-                    return Result.Fail("orderQty phải > 24.");
+                if (po.OrderQty <= 0)
+                    return Result.Fail("orderQty phải > 0.");
+                if (po.CartonCapacity <= 0)
+                    return Result.Fail("cartonCapacity phải > 0.");
+                if (po.OrderQty <= po.CartonCapacity)
+                    return Result.Fail($"orderQty ({po.OrderQty}) phải > cartonCapacity ({po.CartonCapacity}).");
 
                 EnsurePOList();
                 string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
                 int rows = SQLiteHelper.ExecuteNonQuery(GetConnectionString(Config.GetPOListPath()), @"
                     INSERT INTO PO (orderNo, site, factory, productionLine, productionDate,
-                                   shift, orderQty, lotNumber, productCode, productName,
+                                   shift, orderQty, cartonCapacity, lotNumber, productCode, productName,
                                    gtin, customerOrderNo, uom, CreatedTime, ModifiedTime)
                     VALUES (@orderNo, @site, @factory, @productionLine, @productionDate,
-                            @shift, @orderQty, @lotNumber, @productCode, @productName,
+                            @shift, @orderQty, @cartonCapacity, @lotNumber, @productCode, @productName,
                             @gtin, @customerOrderNo, @uom, @CreatedTime, @ModifiedTime)",
                     new SqliteParameter("@orderNo", po.OrderNo),
                     new SqliteParameter("@site", po.Site ?? ""),
@@ -107,6 +111,7 @@ namespace GProject.ProductionOrderHelpers
                     new SqliteParameter("@productionDate", po.ProductionDate ?? ""),
                     new SqliteParameter("@shift", po.Shift ?? ""),
                     new SqliteParameter("@orderQty", po.OrderQty),
+                    new SqliteParameter("@cartonCapacity", po.CartonCapacity > 0 ? po.CartonCapacity : 24),
                     new SqliteParameter("@lotNumber", po.LotNumber ?? ""),
                     new SqliteParameter("@productCode", po.ProductCode ?? ""),
                     new SqliteParameter("@productName", po.ProductName ?? ""),
@@ -145,6 +150,7 @@ namespace GProject.ProductionOrderHelpers
                     UPDATE PO SET
                         site = @site, factory = @factory, productionLine = @productionLine,
                         productionDate = @productionDate, shift = @shift, orderQty = @orderQty,
+                        cartonCapacity = @cartonCapacity,
                         lotNumber = @lotNumber, productCode = @productCode, productName = @productName,
                         gtin = @gtin, customerOrderNo = @customerOrderNo, uom = @uom,
                         ModifiedTime = @ModifiedTime
@@ -156,6 +162,7 @@ namespace GProject.ProductionOrderHelpers
                     new SqliteParameter("@productionDate", po.ProductionDate ?? ""),
                     new SqliteParameter("@shift", po.Shift ?? ""),
                     new SqliteParameter("@orderQty", po.OrderQty),
+                    new SqliteParameter("@cartonCapacity", po.CartonCapacity > 0 ? po.CartonCapacity : 24),
                     new SqliteParameter("@lotNumber", po.LotNumber ?? ""),
                     new SqliteParameter("@productCode", po.ProductCode ?? ""),
                     new SqliteParameter("@productName", po.ProductName ?? ""),
@@ -379,8 +386,15 @@ namespace GProject.ProductionOrderHelpers
                     return (false, $"PO '{orderNo}' không tồn tại.", 0);
 
                 int orderQty = Convert.ToInt32(poInfo.Data.Rows[0]["orderQty"]);
-                if (orderQty <= 24)
-                    return (false, "orderQty phải > 24.", 0);
+                if (orderQty <= 0)
+                    return (false, "orderQty phải > 0.", 0);
+
+                int cartonCapacity = poInfo.Data.Rows[0]["cartonCapacity"] != DBNull.Value
+                    ? Convert.ToInt32(poInfo.Data.Rows[0]["cartonCapacity"]) : 24;
+                if (cartonCapacity <= 0)
+                    cartonCapacity = 24;
+                if (orderQty <= cartonCapacity)
+                    return (false, $"orderQty ({orderQty}) phải > cartonCapacity ({cartonCapacity}).", 0);
 
                 string dbPoolPath = Config.GetDataPoolPath(gtin);
                 string dbPOPath = Config.GetPODBPath(orderNo);

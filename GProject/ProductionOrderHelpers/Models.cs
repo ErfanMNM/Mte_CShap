@@ -46,6 +46,7 @@ namespace GProject.ProductionOrderHelpers
         public string ProductionDate { get; set; } = "";
         public string Shift { get; set; } = "";
         public int OrderQty { get; set; }
+        public int CartonCapacity { get; set; } = 24;
         public string LotNumber { get; set; } = "";
         public string ProductCode { get; set; } = "";
         public string ProductName { get; set; } = "";
@@ -69,6 +70,7 @@ namespace GProject.ProductionOrderHelpers
                 ProductionDate = row["productionDate"]?.ToString() ?? "",
                 Shift = row["shift"]?.ToString() ?? "",
                 OrderQty = Convert.ToInt32(row["orderQty"] ?? 0),
+                CartonCapacity = Convert.ToInt32(row["cartonCapacity"] ?? 24),
                 LotNumber = row["lotNumber"]?.ToString() ?? "",
                 ProductCode = row["productCode"]?.ToString() ?? "",
                 ProductName = row["productName"]?.ToString() ?? "",
@@ -94,6 +96,7 @@ namespace GProject.ProductionOrderHelpers
                 ["productionDate"] = ProductionDate,
                 ["shift"] = Shift,
                 ["orderQty"] = OrderQty,
+                ["cartonCapacity"] = CartonCapacity,
                 ["lotNumber"] = LotNumber,
                 ["productCode"] = ProductCode,
                 ["productName"] = ProductName,
