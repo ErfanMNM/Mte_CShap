@@ -1,0 +1,111 @@
+- generic [ref=e7]:
+  - complementary [ref=e8]:
+    - generic [ref=e10]:
+      - img [ref=e12]
+      - generic [ref=e14]:
+        - heading "IoT.NEXUS" [level=1] [ref=e15]
+        - text: Admin Panel
+    - navigation [ref=e16]:
+      - generic [ref=e17]: Điều khiển trung tâm
+      - button "Giám sát SCADA" [ref=e18]:
+        - img [ref=e19]
+        - text: Giám sát SCADA
+      - button "Điều khiển SX" [ref=e24]:
+        - img [ref=e25]
+        - text: Điều khiển SX
+      - button "Quản lý thiết bị" [ref=e27]:
+        - img [ref=e28]
+        - text: Quản lý thiết bị
+      - button "Lệnh sản xuất" [ref=e31]:
+        - img [ref=e32]
+        - text: Lệnh sản xuất
+      - button "Quản lý DataPool" [ref=e36]:
+        - img [ref=e37]
+        - text: Quản lý DataPool
+      - button "Báo cáo sản xuất" [ref=e41]:
+        - img [ref=e42]
+        - text: Báo cáo sản xuất
+      - button "Quản lý tài khoản" [ref=e43]:
+        - img [ref=e44]
+        - text: Quản lý tài khoản
+      - button "Cấu hình hệ thống" [active] [ref=e49]:
+        - img [ref=e50]
+        - text: Cấu hình hệ thống
+    - generic [ref=e54]:
+      - generic [ref=e55]: SA
+      - generic [ref=e56]:
+        - paragraph [ref=e57]: sadmin
+        - paragraph [ref=e58]: SAdmin
+      - button "Logout" [ref=e59]:
+        - img [ref=e60]
+  - main [ref=e63]:
+    - generic [ref=e480]:
+      - generic [ref=e481]:
+        - heading "Cấu hình hệ thống" [level=1] [ref=e482]
+        - button "Lưu cấu hình" [ref=e483]:
+          - img [ref=e484]
+          - text: Lưu cấu hình
+      - generic [ref=e487]:
+        - generic [ref=e488]:
+          - heading "Cấu hình SCADA & Thiết bị" [level=2] [ref=e490]:
+            - img [ref=e491]
+            - text: Cấu hình SCADA & Thiết bị
+          - generic [ref=e494]:
+            - generic [ref=e495]:
+              - generic [ref=e496]: Địa chỉ IP PLC
+              - generic [ref=e497]:
+                - textbox [ref=e498]: 192.168.1.100
+                - button "Virtual Keyboard" [ref=e499]:
+                  - img [ref=e500]
+            - generic [ref=e502]:
+              - generic [ref=e503]: Cổng kết nối PLC (Port)
+              - generic [ref=e504]:
+                - spinbutton [ref=e505]: "502"
+                - button "Virtual Keyboard" [ref=e506]:
+                  - img [ref=e507]
+            - generic [ref=e509]:
+              - generic [ref=e510]: Bật kiểm tra Camera
+              - checkbox [checked] [ref=e512]
+            - generic [ref=e514]:
+              - generic [ref=e515]: Bật kết nối Scanner
+              - checkbox [ref=e517]
+            - generic [ref=e519]:
+              - generic [ref=e520]: Độ trễ Timeout (ms)
+              - generic [ref=e521]:
+                - spinbutton [ref=e522]: "5000"
+                - button "Virtual Keyboard" [ref=e523]:
+                  - img [ref=e524]
+        - generic [ref=e526]:
+          - generic [ref=e527]:
+            - heading "Kết nối mạng & Máy chủ" [level=2] [ref=e529]:
+              - img [ref=e530]
+              - text: Kết nối mạng & Máy chủ
+            - generic [ref=e535]:
+              - generic [ref=e536]: API Endpoint URL
+              - generic [ref=e537]:
+                - textbox [ref=e538]: http://tso.th.io.vn
+                - button "Virtual Keyboard" [ref=e539]:
+                  - img [ref=e540]
+          - generic [ref=e542]:
+            - heading "Tùy chọn ứng dụng" [level=2] [ref=e544]:
+              - img [ref=e545]
+              - text: Tùy chọn ứng dụng
+            - generic [ref=e548]:
+              - generic [ref=e549]:
+                - generic [ref=e550]: Giao diện sử dụng
+                - generic [ref=e551]:
+                  - combobox [ref=e552]:
+                    - option "Sáng (Light)" [selected]
+                    - option "Tối (Dark)"
+                    - option "Tự động (Auto)"
+                  - img
+              - generic [ref=e553]:
+                - generic [ref=e554]: Ngôn ngữ
+                - generic [ref=e555]:
+                  - combobox [ref=e556]:
+                    - option "Tiếng Việt" [selected]
+                    - option "English"
+                  - img
+              - generic [ref=e557]:
+                - generic [ref=e558]: Tự động sao lưu nhật ký (Logs)
+                - checkbox [checked] [ref=e560]

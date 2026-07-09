@@ -92,7 +92,7 @@ export function useDevicePolling(options: UseDevicePollingOptions = {}) {
       ?? "http://localhost:9999";
     const url = `${base}/api/devices/status`;
 
-    const failCountRef = useRef(0);
+    const failCountRef = { current: 0 };
 
     const fetchStatus = async () => {
       // Always clear optimistic error on retry attempt; final result decides whether to re-set.

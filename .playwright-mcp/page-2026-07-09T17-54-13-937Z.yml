@@ -1,0 +1,58 @@
+- generic [ref=e27]:
+  - complementary [ref=e28]:
+    - generic [ref=e30]:
+      - img [ref=e32]
+      - generic [ref=e34]:
+        - heading "IoT.NEXUS" [level=1] [ref=e35]
+        - text: Admin Panel
+    - navigation [ref=e36]:
+      - generic [ref=e37]: Điều khiển trung tâm
+      - button "Giám sát SCADA" [ref=e38]:
+        - img [ref=e39]
+        - text: Giám sát SCADA
+      - button "Điều khiển SX" [ref=e44]:
+        - img [ref=e45]
+        - text: Điều khiển SX
+      - button "Quản lý thiết bị" [ref=e47]:
+        - img [ref=e48]
+        - text: Quản lý thiết bị
+      - button "Lệnh sản xuất" [ref=e51]:
+        - img [ref=e52]
+        - text: Lệnh sản xuất
+      - button "Quản lý DataPool" [ref=e56]:
+        - img [ref=e57]
+        - text: Quản lý DataPool
+      - button "Báo cáo sản xuất" [ref=e61]:
+        - img [ref=e62]
+        - text: Báo cáo sản xuất
+      - button "Quản lý tài khoản" [ref=e63]:
+        - img [ref=e64]
+        - text: Quản lý tài khoản
+      - button "Cấu hình hệ thống" [ref=e69]:
+        - img [ref=e70]
+        - text: Cấu hình hệ thống
+    - generic [ref=e74]:
+      - generic [ref=e75]: SA
+      - generic [ref=e76]:
+        - paragraph [ref=e77]: Super Administrator
+        - paragraph [ref=e78]: SAdmin
+      - button "Logout" [ref=e79]:
+        - img [ref=e80]
+  - main [ref=e83]:
+    - generic [ref=e86]:
+      - generic [ref=e87]:
+        - img [ref=e89]
+        - generic [ref=e91]:
+          - heading "Đã xảy ra lỗi" [level=2] [ref=e92]
+          - paragraph [ref=e93]: Panel này gặp sự cố. Bạn có thể thử lại hoặc quay về trang Giám sát SCADA.
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - generic [ref=e96]: Chi tiết lỗi
+          - generic [ref=e97]: "Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons: 1. You might have mismatching versions of React and the renderer (such as React DOM) 2. You might be breaking the Rules of Hooks 3. You might have more than one copy of React in the same app See https://react.dev/link/invalid-hook-call for tips about how to debug and fix this problem."
+        - generic [ref=e98]:
+          - button "Thử lại" [ref=e99]:
+            - img [ref=e100]
+            - text: Thử lại
+          - button "Về trang Giám sát SCADA" [ref=e105]:
+            - img [ref=e106]
+            - text: Về trang Giám sát SCADA

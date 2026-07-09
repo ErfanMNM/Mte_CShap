@@ -1,0 +1,45 @@
+- generic [ref=e7]:
+  - complementary [ref=e8]:
+    - generic [ref=e10]:
+      - img [ref=e12]
+      - generic [ref=e14]:
+        - heading "IoT.NEXUS" [level=1] [ref=e15]
+        - text: Admin Panel
+    - navigation [ref=e16]:
+      - generic [ref=e17]: Điều khiển trung tâm
+      - button "Giám sát SCADA" [ref=e18]:
+        - img [ref=e19]
+        - text: Giám sát SCADA
+      - button "Điều khiển SX" [ref=e24]:
+        - img [ref=e25]
+        - text: Điều khiển SX
+      - button "Quản lý thiết bị" [active] [ref=e27]:
+        - img [ref=e28]
+        - text: Quản lý thiết bị
+      - button "Lệnh sản xuất" [ref=e31]:
+        - img [ref=e32]
+        - text: Lệnh sản xuất
+      - button "Quản lý DataPool" [ref=e36]:
+        - img [ref=e37]
+        - text: Quản lý DataPool
+      - button "Báo cáo sản xuất" [ref=e41]:
+        - img [ref=e42]
+        - text: Báo cáo sản xuất
+      - button "Quản lý tài khoản" [ref=e43]:
+        - img [ref=e44]
+        - text: Quản lý tài khoản
+      - button "Cấu hình hệ thống" [ref=e49]:
+        - img [ref=e50]
+        - text: Cấu hình hệ thống
+    - generic [ref=e54]:
+      - generic [ref=e55]: SA
+      - generic [ref=e56]:
+        - paragraph [ref=e57]: sadmin
+        - paragraph [ref=e58]: SAdmin
+      - button "Logout" [ref=e59]:
+        - img [ref=e60]
+  - main [ref=e63]:
+    - generic [ref=e357]:
+      - img [ref=e359]
+      - heading "Quản lý thiết bị" [level=2] [ref=e362]
+      - paragraph [ref=e363]: Tính năng này đang được lên kế hoạch phát triển ở phiên bản tiếp theo.

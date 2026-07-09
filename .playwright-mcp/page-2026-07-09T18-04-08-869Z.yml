@@ -1,0 +1,82 @@
+- generic [ref=e7]:
+  - complementary [ref=e8]:
+    - generic [ref=e10]:
+      - img [ref=e12]
+      - generic [ref=e14]:
+        - heading "IoT.NEXUS" [level=1] [ref=e15]
+        - text: Admin Panel
+    - navigation [ref=e16]:
+      - generic [ref=e17]: Điều khiển trung tâm
+      - button "Giám sát SCADA" [ref=e18]:
+        - img [ref=e19]
+        - text: Giám sát SCADA
+      - button "Điều khiển SX" [ref=e24]:
+        - img [ref=e25]
+        - text: Điều khiển SX
+      - button "Quản lý thiết bị" [ref=e27]:
+        - img [ref=e28]
+        - text: Quản lý thiết bị
+      - button "Lệnh sản xuất" [active] [ref=e31]:
+        - img [ref=e32]
+        - text: Lệnh sản xuất
+      - button "Quản lý DataPool" [ref=e36]:
+        - img [ref=e37]
+        - text: Quản lý DataPool
+      - button "Báo cáo sản xuất" [ref=e41]:
+        - img [ref=e42]
+        - text: Báo cáo sản xuất
+      - button "Quản lý tài khoản" [ref=e43]:
+        - img [ref=e44]
+        - text: Quản lý tài khoản
+      - button "Cấu hình hệ thống" [ref=e49]:
+        - img [ref=e50]
+        - text: Cấu hình hệ thống
+    - generic [ref=e54]:
+      - generic [ref=e55]: SA
+      - generic [ref=e56]:
+        - paragraph [ref=e57]: sadmin
+        - paragraph [ref=e58]: SAdmin
+      - button "Logout" [ref=e59]:
+        - img [ref=e60]
+  - main [ref=e63]:
+    - generic [ref=e364]:
+      - generic [ref=e365]:
+        - generic [ref=e366]:
+          - img [ref=e368]
+          - generic [ref=e372]:
+            - heading "Production Order Manager" [level=1] [ref=e373]
+            - paragraph [ref=e374]: Create and manage production orders
+        - generic [ref=e375]:
+          - generic [ref=e376]: "API: Online"
+          - button "Refresh" [ref=e378]:
+            - img [ref=e379]
+            - text: Refresh
+      - generic [ref=e384]:
+        - button "PO List" [ref=e385]:
+          - img [ref=e386]
+          - text: PO List
+        - button "New PO" [ref=e387]:
+          - img [ref=e388]
+          - text: New PO
+      - generic [ref=e389]:
+        - generic [ref=e390]:
+          - img [ref=e391]
+          - textbox "Search by order no., product name, or GTIN..." [ref=e394]
+        - generic [ref=e395]:
+          - heading "PO List 0" [level=2] [ref=e397]:
+            - img [ref=e398]
+            - text: PO List
+            - generic [ref=e402]: "0"
+          - table [ref=e404]:
+            - rowgroup [ref=e405]:
+              - row "Order No. Product Name Order Qty Carton Size GTIN Production Date Actions" [ref=e406]:
+                - columnheader "Order No." [ref=e407]
+                - columnheader "Product Name" [ref=e408]
+                - columnheader "Order Qty" [ref=e409]
+                - columnheader "Carton Size" [ref=e410]
+                - columnheader "GTIN" [ref=e411]
+                - columnheader "Production Date" [ref=e412]
+                - columnheader "Actions" [ref=e413]
+            - rowgroup [ref=e414]:
+              - row "No POs yet. Create a new PO to get started." [ref=e415]:
+                - cell "No POs yet. Create a new PO to get started." [ref=e416]

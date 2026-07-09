@@ -1,0 +1,142 @@
+- generic [ref=e7]:
+  - complementary [ref=e8]:
+    - generic [ref=e10]:
+      - img [ref=e12]
+      - generic [ref=e14]:
+        - heading "IoT.NEXUS" [level=1] [ref=e15]
+        - text: Admin Panel
+    - navigation [ref=e16]:
+      - generic [ref=e17]: Điều khiển trung tâm
+      - button "Giám sát SCADA" [ref=e18]:
+        - img [ref=e19]
+        - text: Giám sát SCADA
+      - button "Điều khiển SX" [active] [ref=e24]:
+        - img [ref=e25]
+        - text: Điều khiển SX
+      - button "Quản lý thiết bị" [ref=e27]:
+        - img [ref=e28]
+        - text: Quản lý thiết bị
+      - button "Lệnh sản xuất" [ref=e31]:
+        - img [ref=e32]
+        - text: Lệnh sản xuất
+      - button "Quản lý DataPool" [ref=e36]:
+        - img [ref=e37]
+        - text: Quản lý DataPool
+      - button "Báo cáo sản xuất" [ref=e41]:
+        - img [ref=e42]
+        - text: Báo cáo sản xuất
+      - button "Quản lý tài khoản" [ref=e43]:
+        - img [ref=e44]
+        - text: Quản lý tài khoản
+      - button "Cấu hình hệ thống" [ref=e49]:
+        - img [ref=e50]
+        - text: Cấu hình hệ thống
+    - generic [ref=e54]:
+      - generic [ref=e55]: SA
+      - generic [ref=e56]:
+        - paragraph [ref=e57]: sadmin
+        - paragraph [ref=e58]: SAdmin
+      - button "Logout" [ref=e59]:
+        - img [ref=e60]
+  - main [ref=e63]:
+    - generic [ref=e229]:
+      - generic [ref=e230]:
+        - generic [ref=e231]:
+          - img [ref=e233]
+          - generic [ref=e236]:
+            - heading "Điều khiển Sản xuất" [level=1] [ref=e237]
+            - paragraph [ref=e238]: Bắt đầu / Dừng / Reset production từ React Frontend
+        - generic [ref=e239]:
+          - generic [ref=e240]: API Online
+          - button "Làm mới" [ref=e242]:
+            - img [ref=e243]
+            - text: Làm mới
+      - generic [ref=e248]:
+        - generic [ref=e249]:
+          - generic [ref=e251]:
+            - generic [ref=e253]: EDITING
+            - generic [ref=e254]:
+              - img [ref=e255]
+              - generic [ref=e259]: WS Online
+          - generic [ref=e260]:
+            - heading "Chọn PO & Điều khiển" [level=2] [ref=e262]:
+              - img [ref=e263]
+              - text: Chọn PO & Điều khiển
+            - generic [ref=e267]:
+              - generic [ref=e268]:
+                - generic [ref=e269]: Chọn Lệnh sản xuất (PO)
+                - combobox [ref=e270]:
+                  - option "-- Chọn PO --" [selected]
+              - generic [ref=e271]:
+                - button "Bắt đầu (Start)" [disabled] [ref=e272]:
+                  - img [ref=e273]
+                  - text: Bắt đầu (Start)
+                - button "Dừng (Stop)" [disabled] [ref=e275]:
+                  - img [ref=e276]
+                  - text: Dừng (Stop)
+                - button "Reset PO" [disabled] [ref=e278]:
+                  - img [ref=e279]
+                  - text: Reset PO
+                - button "Đổi PO" [disabled] [ref=e282]:
+                  - img [ref=e283]
+                  - text: Đổi PO
+                - button "Cài Lệnh" [disabled] [ref=e285]:
+                  - img [ref=e286]
+                  - text: Cài Lệnh
+              - generic [ref=e289]:
+                - img [ref=e290]
+                - text: Chọn PO → Nhấn Cài Lệnh để thiết lập. Start để bắt đầu sản xuất.
+        - generic [ref=e292]:
+          - generic [ref=e293]:
+            - heading "Thông tin Thùng" [level=2] [ref=e295]:
+              - img [ref=e296]
+              - text: Thông tin Thùng
+            - generic [ref=e299]:
+              - generic [ref=e300]:
+                - generic [ref=e301]:
+                  - generic [ref=e302]: Tổng thùng
+                  - generic [ref=e303]: "0"
+                - generic [ref=e304]:
+                  - generic [ref=e305]: Đã đóng
+                  - generic [ref=e306]: "0"
+              - generic [ref=e307]:
+                - generic [ref=e308]: Thùng hiện tại
+                - generic [ref=e309]: "#1"
+                - generic [ref=e310]: —
+              - generic [ref=e311]:
+                - generic [ref=e312]: Items trong thùng
+                - generic [ref=e313]:
+                  - generic [ref=e314]: "0"
+                  - generic [ref=e315]: /
+                  - generic [ref=e316]: "24"
+          - generic [ref=e318]:
+            - heading "Trạng thái Camera" [level=2] [ref=e320]:
+              - img [ref=e321]
+              - text: Trạng thái Camera
+            - generic [ref=e323]:
+              - generic [ref=e325]:
+                - img [ref=e326]
+                - generic [ref=e328]:
+                  - generic [ref=e329]: CAMERA
+                  - generic [ref=e330]: "-"
+              - generic [ref=e333]:
+                - img [ref=e334]
+                - generic [ref=e337]:
+                  - generic [ref=e338]: PLC
+                  - generic [ref=e339]: 127.0.0.1:9600
+              - generic [ref=e341]: "WS: cam online • plc online"
+          - generic [ref=e342]:
+            - heading "API Endpoints" [level=3] [ref=e343]
+            - generic [ref=e344]:
+              - generic [ref=e345]:
+                - generic [ref=e346]: POST
+                - generic [ref=e347]: /api/production/start
+              - generic [ref=e348]:
+                - generic [ref=e349]: POST
+                - generic [ref=e350]: /api/production/stop
+              - generic [ref=e351]:
+                - generic [ref=e352]: POST
+                - generic [ref=e353]: /api/production/reset
+              - generic [ref=e354]:
+                - generic [ref=e355]: GET
+                - generic [ref=e356]: /api/production/status

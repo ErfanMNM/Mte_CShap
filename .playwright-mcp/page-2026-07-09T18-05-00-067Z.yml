@@ -1,0 +1,142 @@
+- generic [ref=e7]:
+  - complementary [ref=e8]:
+    - generic [ref=e10]:
+      - img [ref=e12]
+      - generic [ref=e14]:
+        - heading "IoT.NEXUS" [level=1] [ref=e15]
+        - text: Admin Panel
+    - navigation [ref=e16]:
+      - generic [ref=e17]: Điều khiển trung tâm
+      - button "Giám sát SCADA" [active] [ref=e18]:
+        - img [ref=e19]
+        - text: Giám sát SCADA
+      - button "Điều khiển SX" [ref=e24]:
+        - img [ref=e25]
+        - text: Điều khiển SX
+      - button "Quản lý thiết bị" [ref=e27]:
+        - img [ref=e28]
+        - text: Quản lý thiết bị
+      - button "Lệnh sản xuất" [ref=e31]:
+        - img [ref=e32]
+        - text: Lệnh sản xuất
+      - button "Quản lý DataPool" [ref=e36]:
+        - img [ref=e37]
+        - text: Quản lý DataPool
+      - button "Báo cáo sản xuất" [ref=e41]:
+        - img [ref=e42]
+        - text: Báo cáo sản xuất
+      - button "Quản lý tài khoản" [ref=e43]:
+        - img [ref=e44]
+        - text: Quản lý tài khoản
+      - button "Cấu hình hệ thống" [ref=e49]:
+        - img [ref=e50]
+        - text: Cấu hình hệ thống
+    - generic [ref=e54]:
+      - generic [ref=e55]: SA
+      - generic [ref=e56]:
+        - paragraph [ref=e57]: sadmin
+        - paragraph [ref=e58]: SAdmin
+      - button "Logout" [ref=e59]:
+        - img [ref=e60]
+  - main [ref=e63]:
+    - generic [ref=e563]:
+      - generic [ref=e564]:
+        - generic [ref=e565]:
+          - generic [ref=e567]:
+            - img [ref=e568]
+            - heading "KẾT QUẢ VỪA KIỂM" [level=2] [ref=e570]
+          - generic [ref=e571]:
+            - generic [ref=e572]:
+              - img [ref=e573]
+              - generic [ref=e576]: TỐT
+            - generic [ref=e577]:
+              - generic:
+                - img
+              - generic [ref=e578]: Sự kiện camera gần nhất
+              - generic [ref=e579]: 00:15:14 10/7/2026
+        - generic [ref=e580]:
+          - generic [ref=e581]:
+            - button "THÔNG BÁO CHUNG" [ref=e582]:
+              - img [ref=e583]
+              - text: THÔNG BÁO CHUNG
+            - button "NHẬT KÝ PLC" [ref=e587]:
+              - img [ref=e588]
+              - text: NHẬT KÝ PLC
+            - button "KIỂM TRA LỖI" [ref=e591]:
+              - img [ref=e592]
+              - text: KIỂM TRA LỖI
+            - button "LỊCH SỬ CAMERA" [ref=e594]:
+              - img [ref=e595]
+              - text: LỊCH SỬ CAMERA
+          - table [ref=e602]:
+            - rowgroup [ref=e603]:
+              - row "ID Thời gian Trạng thái Mã Carton" [ref=e604]:
+                - columnheader "ID" [ref=e605]
+                - columnheader "Thời gian" [ref=e606]
+                - columnheader "Trạng thái" [ref=e607]
+                - columnheader "Mã" [ref=e608]
+                - columnheader "Carton" [ref=e609]
+            - rowgroup [ref=e610]:
+              - row "Đang chờ dữ liệu từ camera..." [ref=e611]:
+                - cell "Đang chờ dữ liệu từ camera..." [ref=e612]
+      - generic [ref=e613]:
+        - generic [ref=e614]:
+          - generic [ref=e616]:
+            - img [ref=e617]
+            - heading "TRẠNG THÁI THIẾT BỊ" [level=2] [ref=e620]
+          - generic [ref=e621]:
+            - generic [ref=e623]:
+              - img [ref=e625]
+              - generic [ref=e627]:
+                - generic [ref=e628]: CAMERA
+                - generic [ref=e629]: Chưa quét
+            - generic [ref=e633]:
+              - img [ref=e635]
+              - generic [ref=e638]:
+                - generic [ref=e639]: PLC OMRON
+                - generic [ref=e640]: 127.0.0.1:9600
+            - generic [ref=e644]:
+              - img [ref=e646]
+              - generic [ref=e649]:
+                - generic [ref=e650]: Backend
+                - generic [ref=e651]: Editing
+            - generic [ref=e655]:
+              - img [ref=e657]
+              - generic [ref=e661]:
+                - generic [ref=e662]: HỆ THỐNG
+                - generic [ref=e663]: EDITING
+        - generic [ref=e666]:
+          - generic [ref=e667]:
+            - generic [ref=e668]:
+              - img [ref=e669]
+              - heading "KẾT NỐI WEBSOCKET" [level=2] [ref=e673]
+            - generic [ref=e675]:
+              - generic [ref=e676]: Đã kết nối
+              - button "Camera" [ref=e678]:
+                - img [ref=e679]
+                - text: Camera
+              - button "PLC" [ref=e684]:
+                - img [ref=e685]
+                - text: PLC
+          - generic [ref=e690]:
+            - generic [ref=e691]:
+              - generic [ref=e694]: Đã kết nối
+              - generic [ref=e695]:
+                - img [ref=e696]
+                - generic [ref=e702]: Camera WS
+              - generic [ref=e705]: Đã kết nối
+              - generic [ref=e706]:
+                - img [ref=e707]
+                - generic [ref=e713]: PLC WS
+            - generic [ref=e714]:
+              - generic [ref=e715]: Camera Endpoint
+              - generic [ref=e716]: ws://localhost:9999/ws/camera
+            - generic [ref=e717]:
+              - generic [ref=e718]: Devices Status API
+              - generic [ref=e719]: http://localhost:9999/api/devices/status
+            - generic [ref=e720]:
+              - generic [ref=e721]: PLC target
+              - generic [ref=e722]: 127.0.0.1:9600
+            - generic [ref=e723]:
+              - generic [ref=e724]: Thời gian nhận cuối
+              - generic [ref=e725]: 00:15:14 10/7/2026

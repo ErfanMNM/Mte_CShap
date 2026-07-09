@@ -1,0 +1,72 @@
+- generic [ref=e7]:
+  - complementary [ref=e8]:
+    - generic [ref=e10]:
+      - img [ref=e12]
+      - generic [ref=e14]:
+        - heading "IoT.NEXUS" [level=1] [ref=e15]
+        - text: Admin Panel
+    - navigation [ref=e16]:
+      - generic [ref=e17]: Điều khiển trung tâm
+      - button "Giám sát SCADA" [ref=e18]:
+        - img [ref=e19]
+        - text: Giám sát SCADA
+      - button "Điều khiển SX" [ref=e24]:
+        - img [ref=e25]
+        - text: Điều khiển SX
+      - button "Quản lý thiết bị" [ref=e27]:
+        - img [ref=e28]
+        - text: Quản lý thiết bị
+      - button "Lệnh sản xuất" [ref=e31]:
+        - img [ref=e32]
+        - text: Lệnh sản xuất
+      - button "Quản lý DataPool" [active] [ref=e36]:
+        - img [ref=e37]
+        - text: Quản lý DataPool
+      - button "Báo cáo sản xuất" [ref=e41]:
+        - img [ref=e42]
+        - text: Báo cáo sản xuất
+      - button "Quản lý tài khoản" [ref=e43]:
+        - img [ref=e44]
+        - text: Quản lý tài khoản
+      - button "Cấu hình hệ thống" [ref=e49]:
+        - img [ref=e50]
+        - text: Cấu hình hệ thống
+    - generic [ref=e54]:
+      - generic [ref=e55]: SA
+      - generic [ref=e56]:
+        - paragraph [ref=e57]: sadmin
+        - paragraph [ref=e58]: SAdmin
+      - button "Logout" [ref=e59]:
+        - img [ref=e60]
+  - main [ref=e63]:
+    - generic [ref=e417]:
+      - generic [ref=e418]:
+        - generic [ref=e419]:
+          - img [ref=e421]
+          - generic [ref=e425]:
+            - heading "Quản lý DataPool" [level=1] [ref=e426]
+            - paragraph [ref=e427]: Tạo pool, nhập mã và theo dõi kho mã QR
+        - generic [ref=e428]:
+          - button "Tạo Pool" [ref=e429]:
+            - img [ref=e430]
+            - text: Tạo Pool
+          - button "Nhập Code" [ref=e431]:
+            - img [ref=e432]
+            - text: Nhập Code
+          - button "Import CSV" [ref=e435]:
+            - img [ref=e436]
+            - text: Import CSV
+          - button "Làm mới" [ref=e439]:
+            - img [ref=e440]
+            - text: Làm mới
+      - generic [ref=e445]:
+        - img [ref=e446]
+        - textbox "Tìm kiếm theo tên pool..." [ref=e449]
+      - generic [ref=e450]:
+        - heading "Danh sách Pool 0" [level=2] [ref=e452]:
+          - img [ref=e453]
+          - text: Danh sách Pool
+          - generic [ref=e457]: "0"
+        - generic [ref=e459]:
+          - img [ref=e460]
+          - text: Chưa có pool nào — bấm 'Tạo Pool' để bắt đầu
