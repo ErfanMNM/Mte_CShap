@@ -48,6 +48,7 @@ const ProductionView: React.FC = () => {
   const [poList, setPoList] = useState<POListItem[]>([]);
   const [selectedPO, setSelectedPO] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState<number>(0);
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -73,13 +74,38 @@ const ProductionView: React.FC = () => {
   }, []);
 
   const fetchPOList = useCallback(async () => {
+    setIsLoading(true);
     try {
       const list = await poApi.getAllPOs();
       setPoList(list);
+      setSuccess(`Đã tải lại danh sách PO (${list.length} mục).`);
     } catch {
-      // ignore
+      setError("Không thể tải danh sách PO.");
+    } finally {
+      setIsLoading(false);
+      setCooldownUntil(Date.now() + 2000);
     }
-  }, []);
+  }, [setSuccess, setError]);
+
+  const handleReloadPOList = useCallback(async () => {
+    if (isLoading || Date.now() < cooldownUntil) return;
+    await fetchPOList();
+  }, [isLoading, cooldownUntil, fetchPOList]);
+
+  const [cooldownLeft, setCooldownLeft] = useState(0);
+  useEffect(() => {
+    if (cooldownUntil === 0) {
+      setCooldownLeft(0);
+      return;
+    }
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+      setCooldownLeft(left);
+    };
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
 
   useEffect(() => {
     fetchStatus();
@@ -400,19 +426,46 @@ const productionConnected = healthOk;
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
                   Chọn Lệnh sản xuất (PO)
                 </label>
-                <select
-                  value={selectedPO}
-                  onChange={(e) => setSelectedPO(e.target.value)}
-                  disabled={!isEditing}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:opacity-50"
-                >
-                  <option value="">-- Chọn PO --</option>
-                  {poList.map((po) => (
-                    <option key={po.orderNo} value={po.orderNo}>
-                      {po.orderNo} - {po.productName || "(no name)"} ({po.orderQty} pcs)
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedPO}
+                    onChange={(e) => setSelectedPO(e.target.value)}
+                    disabled={!isEditing}
+                    className="flex-1 bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:opacity-50"
+                  >
+                    <option value="">-- Chọn PO --</option>
+                    {poList.map((po) => (
+                      <option key={po.orderNo} value={po.orderNo}>
+                        {po.orderNo} - {po.productName || "(no name)"} ({po.orderQty} pcs)
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleReloadPOList}
+                    disabled={!isEditing || isLoading || cooldownLeft > 0}
+                    title={
+                      !isEditing
+                        ? "Chỉ khả dụng ở trạng thái Editing"
+                        : cooldownLeft > 0
+                          ? `Vui lòng đợi ${cooldownLeft}s`
+                          : "Tải lại danh sách PO"
+                    }
+                    className={`flex items-center justify-center w-10 h-10 border rounded-xl transition-all duration-200 active:scale-95 shrink-0 disabled:cursor-not-allowed ${
+                      isEditing && !isLoading && cooldownLeft === 0
+                        ? "bg-amber-50 hover:bg-amber-100 border-amber-300 hover:border-amber-400 text-amber-700 hover:text-amber-800 hover:scale-105 shadow-sm shadow-amber-500/10"
+                        : "bg-slate-100 border-slate-200 text-slate-400"
+                    }`}
+                  >
+                    {isLoading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin text-amber-600" />
+                    ) : cooldownLeft > 0 ? (
+                      <span className="text-xs font-bold tabular-nums">{cooldownLeft}</span>
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Action Buttons */}
