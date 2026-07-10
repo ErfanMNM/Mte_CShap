@@ -391,7 +391,7 @@ const productionConnected = healthOk;
   const isEditing = status?.state === "Editing";
   const isReady = status?.state === "Ready";
   const isIdle = status?.state === "NoSelectedPO";
-  const canStart = !isRunning && status?.hasPO === false && !!selectedPO;
+  const canStart = !isRunning && status?.hasPO === true && !!selectedPO;
   const canStop = isRunning;
   const canReset = status?.hasPO === true;
 
@@ -955,36 +955,67 @@ const MiniDeviceIndicator: React.FC<{
   subLabel?: string;
   status: CamUiStatus;
 }> = ({ icon: Icon, label, subLabel, status }) => {
-  const styles: Record<CamUiStatus, string> = {
-    ok: "bg-green-50 text-green-700 border-green-100",
-    error: "bg-red-50 text-red-700 border-red-100",
-    warning: "bg-amber-50 text-amber-700 border-amber-100",
-    offline: "bg-slate-50 text-slate-600 border-slate-100",
+  const config: Record<CamUiStatus, {
+    iconBg: string;
+    borderColor: string;
+    labelColor: string;
+    subColor: string;
+    dotColor: string;
+  }> = {
+    ok: {
+      iconBg: "bg-gradient-to-br from-green-400 to-emerald-500",
+      borderColor: "border-green-200",
+      labelColor: "text-green-700",
+      subColor: "text-green-600",
+      dotColor: "bg-green-500",
+    },
+    error: {
+      iconBg: "bg-gradient-to-br from-red-400 to-rose-500",
+      borderColor: "border-red-200",
+      labelColor: "text-red-700",
+      subColor: "text-red-600",
+      dotColor: "bg-red-500",
+    },
+    warning: {
+      iconBg: "bg-gradient-to-br from-amber-400 to-orange-500",
+      borderColor: "border-amber-200",
+      labelColor: "text-amber-700",
+      subColor: "text-amber-600",
+      dotColor: "bg-amber-500",
+    },
+    offline: {
+      iconBg: "bg-gradient-to-br from-slate-400 to-slate-500",
+      borderColor: "border-slate-200",
+      labelColor: "text-slate-600",
+      subColor: "text-slate-500",
+      dotColor: "bg-slate-400",
+    },
   };
-  const dotStyles: Record<CamUiStatus, string> = {
-    ok: "bg-green-500",
-    error: "bg-red-500 animate-pulse",
-    warning: "bg-amber-500",
-    offline: "bg-slate-400",
-  };
+
+  const c = config[status];
+  const isError = status === "error";
+
   return (
-    <div
-      className={`flex items-center justify-between px-2.5 py-2 rounded-xl border ${styles[status]} min-w-0`}
-    >
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        <Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
-        <div className="min-w-0 flex-1">
-          <span className="text-[10px] font-bold tracking-wide uppercase block">
+    <div className="flex items-center gap-2">
+      <div className="relative">
+        <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${c.iconBg} flex items-center justify-center shadow-sm`}>
+          <Icon className="w-3.5 h-3.5 text-white" strokeWidth={2} />
+        </div>
+        <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white ${c.dotColor} ${isError ? 'animate-pulse' : ''}`} />
+      </div>
+      <div className="min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className={`text-[9px] font-bold uppercase ${c.labelColor}`}>
             {label}
           </span>
-          {subLabel && (
-            <span className="text-[9px] font-medium text-slate-500 font-mono tracking-wide truncate block">
-              {subLabel}
-            </span>
-          )}
+          <span className={`w-1.5 h-1.5 rounded-full ${c.dotColor} ${isError ? 'animate-pulse' : ''}`} />
         </div>
+        {subLabel && (
+          <span className={`text-[8px] ${c.subColor} font-mono truncate block`}>
+            {subLabel}
+          </span>
+        )}
       </div>
-      <div className={`w-2 h-2 rounded-full shrink-0 ${dotStyles[status]}`} />
     </div>
   );
 };

@@ -725,12 +725,41 @@ namespace GProject.ProductionOrderHelpers
             {
                 CartonScanRequest? req = await context.Request.ReadFromJsonAsync<CartonScanRequest>();
                 if (req == null || string.IsNullOrWhiteSpace(req.CartonCode))
-                    return Results.Json(new CartonScanResponse { Success = false, Message = "Invalid request" });
+                {
+                    Log.Warning("[CartonScan] Invalid request: null or empty cartonCode");
+                    return Results.Json(new CartonScanResponse { Success = false, Message = "Invalid request: cartonCode is required" });
+                }
 
                 var sm = ProductionStateMachine.Instance;
+                
+                // Kiểm tra trạng thái - chỉ cho phép Running hoặc Paused
                 var activeStates = new[] { e_ProductionState.Running, e_ProductionState.Paused };
-                if (!activeStates.Contains(sm.CurrentState) || ProductionStateMachine.ProductionData == null)
-                    return Results.Json(new CartonScanResponse { Success = false, Message = $"PO not running (state={sm.CurrentState})" });
+                if (!activeStates.Contains(sm.CurrentState))
+                {
+                    var currentPO = ProductionStateMachine.ProductionData?.OrderNo ?? "None";
+                    Log.Warning("[CartonScan] PO not running. State={State}, PO={OrderNo}, CartonCode={CartonCode}", 
+                        sm.CurrentState, currentPO, req.CartonCode);
+                    
+                    return Results.Json(new CartonScanResponse 
+                    { 
+                        Success = false, 
+                        Message = $"PO not running. Current state: {sm.CurrentState}. Please start production first.",
+                        OrderNo = currentPO
+                    });
+                }
+
+                if (ProductionStateMachine.ProductionData == null)
+                {
+                    Log.Warning("[CartonScan] No PO selected. Cannot scan carton.");
+                    return Results.Json(new CartonScanResponse 
+                    { 
+                        Success = false, 
+                        Message = "No PO selected. Please select a PO first."
+                    });
+                }
+
+                Log.Information("[CartonScan] Processing scan. PO={OrderNo}, CartonCode={CartonCode}, State={State}", 
+                    ProductionStateMachine.ProductionData.OrderNo, req.CartonCode, sm.CurrentState);
 
                 var task = new CartonWriteTask
                 {
@@ -742,7 +771,13 @@ namespace GProject.ProductionOrderHelpers
                     Mode = req.Mode
                 };
 
-                var result = await CartonWriteQueueManager.EnqueueAsync(ProductionStateMachine.ProductionData.OrderNo, task);
+                var resultTask = CartonWriteQueueManager.EnqueueAsync(ProductionStateMachine.ProductionData.OrderNo, task);
+                
+                
+                var result = await resultTask;
+                
+                Log.Information("[CartonScan] Result. PO={OrderNo}, CartonCode={CartonCode}, Success={Success}, Status={Status}, Message={Message}", 
+                    ProductionStateMachine.ProductionData.OrderNo, req.CartonCode, result.Success, result.Status, result.Message);
 
                 return Results.Json(new CartonScanResponse
                 {
