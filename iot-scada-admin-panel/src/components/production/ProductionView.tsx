@@ -18,6 +18,7 @@ import {
   Wifi,
   WifiOff,
   Edit3,
+  Calendar,
 } from "lucide-react";
 import productionApi from "../../services/productionApi";
 import poApi from "../../services/poApi";
@@ -53,9 +54,58 @@ const ProductionView: React.FC = () => {
   const [isStopping, setIsStopping] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isChangingPO, setIsChangingPO] = useState(false);
+  const [isEditingDate, setIsEditingDate] = useState(false);
+  const [newProductionDate, setNewProductionDate] = useState("");
+  const [isSavingDate, setIsSavingDate] = useState(false);
+  const [isRefreshingPO, setIsRefreshingPO] = useState(false);
+  const isRefreshingPORef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [healthOk, setHealthOk] = useState(false);
+
+  const notifMap: Record<string, string> = {
+    // Error keys
+    NOTIF_ERR_LOAD_PO: "Không thể tải danh sách PO.",
+    NOTIF_ERR_SELECT_PO: "Vui lòng chọn một PO để bắt đầu.",
+    NOTIF_ERR_SELECT_PO_SET: "Vui lòng chọn một PO để cài lệnh.",
+    NOTIF_ERR_START: "Không thể bắt đầu sản xuất.",
+    NOTIF_ERR_START_UNKNOWN: "Lỗi khi bắt đầu.",
+    NOTIF_ERR_STOP: "Không thể dừng sản xuất.",
+    NOTIF_ERR_STOP_UNKNOWN: "Lỗi khi dừng.",
+    NOTIF_ERR_RESET: "Không thể reset sản xuất.",
+    NOTIF_ERR_RESET_UNKNOWN: "Lỗi khi reset.",
+    NOTIF_ERR_CHANGE_PO: "Không thể đổi PO.",
+    NOTIF_ERR_CHANGE_PO_UNKNOWN: "Lỗi khi đổi PO.",
+    NOTIF_ERR_SET_PO: "Không thể cài lệnh.",
+    NOTIF_ERR_SET_PO_UNKNOWN: "Lỗi khi cài lệnh.",
+    NOTIF_ERR_EDIT_DATE_NOT_READY: "Chỉ có thể sửa ngày SX khi đang ở trạng thái Ready.",
+    NOTIF_ERR_MISSING_DATE: "Vui lòng nhập ngày sản xuất.",
+    NOTIF_ERR_UPDATE_DATE: "Không thể cập nhật ngày SX.",
+    NOTIF_ERR_UPDATE_DATE_UNKNOWN: "Lỗi khi lưu ngày SX.",
+    NOTIF_ERR_SCAN: "Lỗi xử lý code quét.",
+    // Success keys
+    NOTIF_PO_LIST_RELOADED: "Đã tải lại danh sách PO ({count} mục).",
+    NOTIF_PO_STARTED: "Đã bắt đầu sản xuất: {po}.",
+    NOTIF_STOPPED: "Đã dừng sản xuất.",
+    NOTIF_RESET: "Đã reset sản xuất.",
+    NOTIF_CHANGE_PO_SUCCESS: "Đã chuyển sang chế độ chỉnh sửa. Vui lòng chọn PO và nhấn Cài Lệnh.",
+    NOTIF_PO_SET: "Đã cài PO: {po}.",
+    NOTIF_DATE_UPDATED: "Đã cập nhật ngày sản xuất.",
+  };
+
+  const t = (key: string, params?: Record<string, string | number>) => {
+    if (notifMap[key]) {
+      let msg = notifMap[key];
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          msg = msg.replace(`{${k}}`, String(v));
+        });
+      }
+      return msg;
+    }
+    if (key.startsWith("NOTIF_")) return key;
+    return key;
+  };
 
   const statusRef = useRef<ProductionStatusResponse | null>(null);
   useEffect(() => {
@@ -63,13 +113,21 @@ const ProductionView: React.FC = () => {
   }, [status]);
 
   const fetchStatus = useCallback(async () => {
+    if (isRefreshingPORef.current) return;
+    isRefreshingPORef.current = true;
+    setIsRefreshingPO(true);
     try {
       const data = await productionApi.getStatus();
       setStatus(data);
       setHealthOk(true);
     } catch {
       setHealthOk(false);
-      // Khong hien thi error message khi mat ket noi
+    } finally {
+      // Debounce: không cho gọi lại trong 2 giây sau khi hoàn thành
+      setTimeout(() => {
+        isRefreshingPORef.current = false;
+        setIsRefreshingPO(false);
+      }, 2000);
     }
   }, []);
 
@@ -78,9 +136,9 @@ const ProductionView: React.FC = () => {
     try {
       const list = await poApi.getAllPOs();
       setPoList(list);
-      setSuccess(`Đã tải lại danh sách PO (${list.length} mục).`);
+      setSuccess(t("NOTIF_PO_LIST_RELOADED", { count: list.length }));
     } catch {
-      setError("Không thể tải danh sách PO.");
+      setError("NOTIF_ERR_LOAD_PO");
     } finally {
       setIsLoading(false);
       setCooldownUntil(Date.now() + 2000);
@@ -93,6 +151,8 @@ const ProductionView: React.FC = () => {
   }, [isLoading, cooldownUntil, fetchPOList]);
 
   const [cooldownLeft, setCooldownLeft] = useState(0);
+  const initializedRef = useRef(false);
+
   useEffect(() => {
     if (cooldownUntil === 0) {
       setCooldownLeft(0);
@@ -108,10 +168,17 @@ const ProductionView: React.FC = () => {
   }, [cooldownUntil]);
 
   useEffect(() => {
+    // Skip if already initialized (handles StrictMode double-invoke)
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     fetchStatus();
     fetchPOList();
     const interval = setInterval(fetchStatus, 1000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      initializedRef.current = false;
+    };
   }, [fetchStatus, fetchPOList]);
 
   // Auto-dismiss messages
@@ -150,9 +217,8 @@ const ProductionView: React.FC = () => {
         await fetchStatus();
         setSuccess(`Đã quét: ${msg.data}`);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Lỗi xử lý code quét"
-        );
+        const msg = err instanceof Error ? err.message : "NOTIF_ERR_SCAN";
+        setError(msg);
       }
     },
     syncToStore: false, // Store sync handled by App.tsx hooks
@@ -164,7 +230,7 @@ const productionConnected = healthOk;
 
   const handleStartProduction = async () => {
     if (!selectedPO) {
-      setError("Vui lòng chọn một PO để bắt đầu.");
+      setError("NOTIF_ERR_SELECT_PO");
       return;
     }
     setIsStarting(true);
@@ -176,13 +242,14 @@ const productionConnected = healthOk;
         userName: "Frontend",
       });
       if (result.success) {
-        setSuccess(`Đã bắt đầu sản xuất: ${selectedPO}`);
+        setSuccess(t("NOTIF_PO_STARTED", { po: selectedPO }));
         await fetchStatus();
       } else {
-        setError(result.message || "Không thể bắt đầu sản xuất.");
+        setError(result.message || t("NOTIF_ERR_START"));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lỗi khi bắt đầu.");
+      const msg = err instanceof Error ? err.message : "NOTIF_ERR_START_UNKNOWN";
+      setError(msg);
     } finally {
       setIsStarting(false);
     }
@@ -195,13 +262,14 @@ const productionConnected = healthOk;
     try {
       const result = await productionApi.stopProduction("Frontend");
       if (result.success) {
-        setSuccess("Đã dừng sản xuất.");
+        setSuccess("NOTIF_STOPPED");
         await fetchStatus();
       } else {
-        setError(result.message || "Không thể dừng sản xuất.");
+        setError(`NOTIF_ERR_STOP:${result.message || ""}`);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lỗi khi dừng.");
+      const msg = err instanceof Error ? err.message : "NOTIF_ERR_STOP_UNKNOWN";
+      setError(msg);
     } finally {
       setIsStopping(false);
     }
@@ -214,14 +282,15 @@ const productionConnected = healthOk;
     try {
       const result = await productionApi.resetProduction("Frontend");
       if (result.success) {
-        setSuccess("Đã reset sản xuất.");
+        setSuccess("NOTIF_RESET");
         setSelectedPO("");
         await fetchStatus();
       } else {
-        setError(result.message || "Không thể reset sản xuất.");
+        setError(`NOTIF_ERR_RESET:${result.message || ""}`);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lỗi khi reset.");
+      const msg = err instanceof Error ? err.message : "NOTIF_ERR_RESET_UNKNOWN";
+      setError(msg);
     } finally {
       setIsResetting(false);
     }
@@ -234,20 +303,21 @@ const productionConnected = healthOk;
     try {
       const result = await productionApi.selectPO("");
       if (result.success) {
-        setSuccess("Đã chuyển sang chế độ chỉnh sửa. Vui lòng chọn PO và nhấn Cài Lệnh.");
+        setSuccess("NOTIF_CHANGE_PO_SUCCESS");
       } else {
-        setError(result.message || "Không thể đổi PO.");
+        setError(`NOTIF_ERR_CHANGE_PO:${result.message || ""}`);
         setIsChangingPO(false);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lỗi khi đổi PO.");
+      const msg = err instanceof Error ? err.message : "NOTIF_ERR_CHANGE_PO_UNKNOWN";
+      setError(msg);
       setIsChangingPO(false);
     }
   };
 
   const handleSetPO = async () => {
     if (!selectedPO) {
-      setError("Vui lòng chọn một PO để cài lệnh.");
+      setError("NOTIF_ERR_SELECT_PO_SET");
       return;
     }
     setIsChangingPO(true);
@@ -256,16 +326,65 @@ const productionConnected = healthOk;
     try {
       const result = await productionApi.setPO(selectedPO);
       if (result.success) {
-        setSuccess(`Đã cài PO: ${selectedPO}`);
+        setSuccess(t("NOTIF_PO_SET", { po: selectedPO }));
         await fetchStatus();
       } else {
-        setError(result.message || "Không thể cài lệnh.");
+        setError(result.message || t("NOTIF_ERR_SET_PO"));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lỗi khi cài lệnh.");
+      const msg = err instanceof Error ? err.message : "NOTIF_ERR_SET_PO_UNKNOWN";
+      setError(msg);
     } finally {
       setIsChangingPO(false);
     }
+  };
+
+  const handleEditProductionDate = () => {
+    if (!isReady) {
+      setError("NOTIF_ERR_EDIT_DATE_NOT_READY");
+      return;
+    }
+    if (status?.productionDate) {
+      const datePart = status.productionDate.split(' ')[0];
+      setNewProductionDate(datePart);
+    } else {
+      setNewProductionDate(new Date().toISOString().split('T')[0]);
+    }
+    setIsEditingDate(true);
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleSaveProductionDate = async () => {
+    if (!selectedPO || !newProductionDate) {
+      setError("NOTIF_ERR_MISSING_DATE");
+      return;
+    }
+    setIsSavingDate(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const result = await productionApi.updateProductionDate(selectedPO, newProductionDate);
+      if (result.success) {
+        setSuccess("NOTIF_DATE_UPDATED");
+        setIsEditingDate(false);
+        await fetchStatus();
+      } else {
+        setError(`NOTIF_ERR_UPDATE_DATE:${result.message || ""}`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "NOTIF_ERR_UPDATE_DATE_UNKNOWN";
+      setError(msg);
+    } finally {
+      setIsSavingDate(false);
+    }
+  };
+
+  const handleCancelEditDate = () => {
+    setIsEditingDate(false);
+    setNewProductionDate("");
+    setError(null);
+    setSuccess(null);
   };
 
   const isRunning = status?.state === "Running";
@@ -362,7 +481,7 @@ const productionConnected = healthOk;
           ) : (
             <Check className="w-5 h-5 shrink-0" />
           )}
-          <span className="text-sm font-semibold flex-1">{error || success}</span>
+          <span className="text-sm font-semibold flex-1">{error ? t(error) : t(success || "")}</span>
           <button
             onClick={() => { setError(null); setSuccess(null); }}
             className="p-1 hover:bg-white/50 rounded-lg transition-colors"
@@ -561,9 +680,23 @@ const productionConnected = healthOk;
           {status?.hasPO && (
             <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
               <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
-                <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-blue-600" /> Thông tin PO hiện tại
-                </h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-blue-600" /> Thông tin PO hiện tại
+                  </h2>
+                  <button
+                    onClick={fetchStatus}
+                    disabled={isRefreshingPO}
+                    className={`p-1.5 rounded-lg transition-all ${
+                      isRefreshingPO
+                        ? 'bg-blue-100 text-blue-500 cursor-not-allowed'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800'
+                    }`}
+                    title="Tải lại thông tin"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isRefreshingPO ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
               </div>
               <div className="p-4 xl:p-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -578,6 +711,111 @@ const productionConnected = healthOk;
                   <StatCard label="Fail ✗" value={status.failCount.toLocaleString()} color="red" />
                   <StatCard label="Trùng ⚡" value={status.duplicateCount.toLocaleString()} color="amber" />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Production Date Section */}
+          {status?.hasPO && isReady && (
+            <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
+                <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-blue-600" /> Ngày Sản Xuất
+                </h2>
+              </div>
+              <div className="p-4 xl:p-6">
+                {!isEditingDate ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        Ngày Sản Xuất hiện tại
+                      </div>
+                      <div className="text-xl font-black text-slate-800">
+                        {status.productionDate ? new Date(status.productionDate).toLocaleDateString('vi-VN', {
+                          year: 'numeric', month: '2-digit', day: '2-digit'
+                        }) : "—"}
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleEditProductionDate}
+                      disabled={!isReady || isSavingDate}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                        isReady
+                          ? "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                          : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      }`}
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      Sửa Ngày SX
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex-1 min-w-[200px]">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">
+                          Chọn ngày mới
+                        </label>
+                        <input
+                          type="date"
+                          value={newProductionDate}
+                          onChange={(e) => setNewProductionDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        />
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <button
+                          onClick={handleSaveProductionDate}
+                          disabled={isSavingDate || !newProductionDate}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                            isSavingDate || !newProductionDate
+                              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                              : "bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20"
+                          }`}
+                        >
+                          <Check className="w-4 h-4" />
+                          {isSavingDate ? "Đang lưu..." : "Lưu"}
+                        </button>
+                        <button
+                          onClick={handleCancelEditDate}
+                          disabled={isSavingDate}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Hủy
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-amber-600 flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Chỉ có thể sửa ngày khi đang ở trạng thái Ready. Ngày mới sẽ áp dụng cho các sản phẩm quét sau khi lưu.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Production Date info when not in Ready state */}
+          {status?.hasPO && !isReady && (
+            <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-slate-400" />
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    Ngày Sản Xuất
+                  </div>
+                  <div className="text-sm font-semibold text-slate-700">
+                    {status.productionDate ? new Date(status.productionDate).toLocaleDateString('vi-VN', {
+                      year: 'numeric', month: '2-digit', day: '2-digit'
+                    }) : "—"}
+                  </div>
+                </div>
+                {!isRunning && (
+                  <span className="ml-auto text-xs text-slate-400">
+                    Sửa ngày khi ở trạng thái Ready
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -675,30 +913,6 @@ const productionConnected = healthOk;
             </div>
           </div>
 
-          {/* Quick Reference */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 text-white">
-            <h3 className="text-xs font-bold uppercase tracking-wider opacity-60 mb-3">
-              API Endpoints
-            </h3>
-            <div className="space-y-2 text-xs font-mono">
-              <div className="flex items-start gap-2">
-                <span className="text-green-400 shrink-0">POST</span>
-                <span className="opacity-80">/api/production/start</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-red-400 shrink-0">POST</span>
-                <span className="opacity-80">/api/production/stop</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-amber-400 shrink-0">POST</span>
-                <span className="opacity-80">/api/production/reset</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-blue-400 shrink-0">GET</span>
-                <span className="opacity-80">/api/production/status</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import type {
   StartProductionRequest,
   ProductionControlResponse,
   ProductionStatusResponse,
+  UpdateProductionDateRequest,
 } from "../types/production";
 
 const PO_API_BASE_URL =
@@ -70,6 +71,20 @@ export const productionApi = {
     const response = await apiClient.post<ProductionControlResponse>(
       "/api/production/set-po",
       { orderNo }
+    );
+    return response.data;
+  },
+
+  /** Update production date for current PO */
+  async updateProductionDate(
+    orderNo: string,
+    productionDate: string,
+    userName = "Frontend"
+  ): Promise<ProductionControlResponse> {
+    const response = await apiClient.put<ProductionControlResponse>(
+      `/api/po/${orderNo}/production-date`,
+      { productionDate } as UpdateProductionDateRequest,
+      { headers: { "X-User-Name": userName } }
     );
     return response.data;
   },

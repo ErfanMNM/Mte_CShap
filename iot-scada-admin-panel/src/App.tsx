@@ -399,31 +399,31 @@ const DeviceIndicator = ({
   };
 
   return (
-    <div className={`flex items-center justify-between px-2 py-1.5 xl:py-2 2xl:py-2.5 rounded-xl border ${styles[status]} transition-colors min-w-0`}>
-      <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
-        <div className="p-1 rounded-md bg-white shadow-sm ring-1 ring-slate-900/5 hidden sm:block shrink-0">
-          <Icon className="w-3 h-3 xl:w-3.5 xl:h-3.5 text-slate-600" strokeWidth={2.5} />
+    <div className={`flex items-center justify-between px-0 py-0 xl:px-0.5 xl:py-0 2xl:px-0.5 2xl:py-0 rounded border ${styles[status]} transition-colors min-w-0`}>
+      <div className="flex items-center gap-0.5 min-w-0">
+        <div className="shrink-0">
+          <Icon className="w-2 h-2 xl:w-2.5 xl:h-2.5 text-slate-500" strokeWidth={2} />
         </div>
         <div className="min-w-0">
-          <span className="text-[9px] xl:text-[10px] 2xl:text-xs font-bold tracking-wide truncate block">{label}</span>
+          <span className="text-[9px] xl:text-[10px] 2xl:text-[11px] font-semibold tracking-wide truncate block leading-tight">{label}</span>
           {subLabel && (
-            <span className="text-[8px] xl:text-[9px] 2xl:text-[10px] font-medium text-slate-500 tracking-wide truncate block">{subLabel}</span>
+            <span className="text-[7px] xl:text-[8px] 2xl:text-[9px] font-medium text-slate-500 tracking-wide truncate block leading-tight">{subLabel}</span>
           )}
         </div>
       </div>
-      <div className="flex items-center shrink-0 pl-1">
+      <div className="flex items-center shrink-0 pl-0.5">
         {showRetrySpinner && status === "error" && onRetry ? (
           <button
             type="button"
             onClick={onRetry}
             aria-label="Thử lại"
             title="Thử lại"
-            className="w-4 h-4 xl:w-5 xl:h-5 rounded-full flex items-center justify-center text-red-600 hover:bg-red-100/70 transition-colors"
+            className="w-2.5 h-2.5 xl:w-3 xl:h-3 rounded-full flex items-center justify-center text-red-600 hover:bg-red-100/70 transition-colors"
           >
-            <RefreshCw className="w-3 h-3 xl:w-3.5 xl:h-3.5 animate-spin" />
+            <RefreshCw className="w-1.5 h-1.5 xl:w-2 xl:h-2 animate-spin" />
           </button>
         ) : (
-          <div className={`w-1.5 h-1.5 xl:w-2 xl:h-2 rounded-full ${dotStyles[status]}`} />
+          <div className={`w-1 h-1 xl:w-1.5 xl:h-1.5 2xl:w-1.5 2xl:h-1.5 rounded-full ${dotStyles[status]}`} />
         )}
       </div>
     </div>
@@ -556,20 +556,20 @@ const AppStateIndicator = ({ state }: { state: string }) => {
     stateConfig.Unknown;
 
   return (
-    <div className={`flex items-center justify-between px-2 py-1.5 xl:py-2 2xl:py-2.5 rounded-xl border ${config.bg} transition-colors min-w-0`}>
-      <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
-        <div className="p-1 rounded-md bg-white shadow-sm ring-1 ring-slate-900/5 hidden sm:block shrink-0">
-          <Wifi className="w-3 h-3 xl:w-3.5 xl:h-3.5 text-slate-600" strokeWidth={2.5} />
+    <div className={`flex items-center justify-between px-0 py-0 xl:px-0.5 xl:py-0 2xl:px-0.5 2xl:py-0 rounded border ${config.bg} transition-colors min-w-0`}>
+      <div className="flex items-center gap-0.5 min-w-0">
+        <div className="shrink-0">
+          <Wifi className="w-2 h-2 xl:w-2.5 xl:h-2.5 text-slate-500" strokeWidth={2} />
         </div>
         <div className="min-w-0">
-          <span className="text-[9px] xl:text-[10px] 2xl:text-xs font-bold tracking-wide truncate block">HỆ THỐNG</span>
-          <span className={`text-[10px] xl:text-[11px] 2xl:text-xs font-black tracking-wider truncate block ${config.text}`}>
+          <span className="text-[9px] xl:text-[10px] 2xl:text-[11px] font-semibold tracking-wide truncate block leading-tight">HỆ THỐNG</span>
+          <span className={`text-[9px] xl:text-[10px] 2xl:text-[11px] font-bold tracking-wider truncate block leading-tight ${config.text}`}>
             {config.label}
           </span>
         </div>
       </div>
-      <div className="flex items-center shrink-0 pl-1">
-        <div className={`w-1.5 h-1.5 xl:w-2 xl:h-2 rounded-full ${config.dot}`} />
+      <div className="flex items-center shrink-0 pl-0.5">
+        <div className={`w-1 h-1 xl:w-1.5 xl:h-1.5 2xl:w-1.5 2xl:h-1.5 rounded-full ${config.dot}`} />
       </div>
     </div>
   );
@@ -611,9 +611,10 @@ const ScadaMonitorView = () => {
   const getCameraStatus = (): "connected" | "error" | "warning" | "connecting" => {
     const { camera, connected } = cameraStatus;
     const s = camera.state?.toLowerCase();
-    if (!connected) return "connecting";
+    if (s === "reconnecting") return "connecting";
+    if (s === "disconnected" || s === "deactive") return "error";
+    if (!connected) return "error";
     if (s === "connected" || s === "received" || s === "codescanned") return "connected";
-    if (s === "reconnecting" || s === "disconnected" || s === "deactive") return "error";
     return "connected";
   };
 
@@ -1001,7 +1002,7 @@ const ScadaMonitorView = () => {
         <div className="flex flex-col gap-4 xl:gap-5 w-full xl:w-[40%] h-full pb-1">
           <Card className="flex-[1] shadow-sm flex flex-col min-h-0">
             <CardHeader title="TRẠNG THÁI THIẾT BỊ" icon={Server} />
-            <div className="p-2 xl:p-3 2xl:p-4 grid grid-cols-2 gap-1.5 2xl:gap-2 flex-1 min-h-0">
+            <div className="p-1.5 xl:p-2 2xl:p-2.5 grid grid-cols-2 gap-1 xl:gap-1.5 2xl:gap-2 flex-1 min-h-0">
               <DeviceIndicator
                 icon={Monitor}
                 label="CAMERA"
@@ -1015,11 +1016,7 @@ const ScadaMonitorView = () => {
               <DeviceIndicator
                 icon={Cpu}
                 label="PLC OMRON"
-                subLabel={
-                  plcStatus.ip
-                    ? `${plcStatus.ip}:${plcStatus.port ?? ""}`
-                    : cameraSubLabel(plcStatus.state)
-                }
+                subLabel={cameraSubLabel(plcStatus.state)}
                 status={getPlcStatus()}
               />
               <DeviceIndicator
@@ -1570,7 +1567,7 @@ const AdminPanelContent = ({ user, onLogout }: { user: any; onLogout: () => void
             </div>
             <div>
               <h1 className="text-lg font-black tracking-tighter text-slate-800 leading-none">
-                IoT.NEXUS
+                MASAN-SERIALIZATION
               </h1>
               <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
                 Admin Panel

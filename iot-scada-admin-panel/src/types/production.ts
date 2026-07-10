@@ -3,6 +3,11 @@ export interface StartProductionRequest {
   userName?: string;
 }
 
+export interface UpdateProductionDateRequest {
+  productionDate: string;
+  userName?: string;
+}
+
 export interface ProductionControlResponse {
   success: boolean;
   message: string;
@@ -15,6 +20,7 @@ export interface ProductionStatusResponse {
   hasPO: boolean;
   orderNo: string | null;
   productName: string | null;
+  productionDate: string | null;
   orderQty: number;
   totalCount: number;
   passCount: number;

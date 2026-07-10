@@ -246,6 +246,7 @@ public class GProjectApiServer : IDisposable
             => await POApiServer.HandleStartCarton(context, orderNo));
         _app.MapPost("/api/po/{orderNo}/cartons/complete", async (HttpContext context, string orderNo) 
             => await POApiServer.HandleCompleteCarton(context, orderNo));
+        _app.MapPut("/api/po/{orderNo}/production-date", HandleUpdateProductionDate);
 
         // Production status
         _app.MapGet("/api/production/status", POApiServer.HandleGetProductionStatus);
@@ -1082,11 +1083,59 @@ public class GProjectApiServer : IDisposable
         }
     }
 
-/// <summary>
-        /// Ping endpoint - retained for compatibility. State is now delivered via REST polling
-        /// on /api/devices/status, so this endpoint is a no-op success response.
-        /// </summary>
-        private async Task<IResult> HandleProductionPing(HttpContext context)
+    /// <summary>
+    /// Cập nhật ProductionDate cho PO hiện tại
+    /// PUT /api/po/{orderNo}/production-date
+    /// </summary>
+    private async Task<IResult> HandleUpdateProductionDate(HttpContext context, string orderNo)
+    {
+        try
+        {
+            // Validate orderNo
+            if (string.IsNullOrWhiteSpace(orderNo))
+                return Results.Json(new ApiResponse { Success = false, Message = "orderNo is required" }, statusCode: 400);
+
+            // Get current PO from state machine
+            var sm = ProductionStateMachine.Instance;
+            if (ProductionStateMachine.ProductionData == null || ProductionStateMachine.ProductionData.OrderNo != orderNo)
+            {
+                return Results.Json(new ApiResponse 
+                { 
+                    Success = false, 
+                    Message = $"PO '{orderNo}' không được chọn trong hệ thống." 
+                }, statusCode: 400);
+            }
+
+            // Parse request body
+            var body = await context.Request.ReadFromJsonAsync<UpdateProductionDateRequest>();
+            if (body == null || string.IsNullOrWhiteSpace(body.productionDate))
+                return Results.Json(new ApiResponse { Success = false, Message = "productionDate is required" }, statusCode: 400);
+
+            // Get username from header or body
+            string userName = context.Request.Headers.TryGetValue("X-User-Name", out var userHeader)
+                ? userHeader.ToString()
+                : body.userName ?? "API";
+
+            // Call state machine to update
+            var (success, message) = sm.UpdateProductionDate(body.productionDate, userName);
+
+            if (!success)
+                return Results.Json(new ApiResponse { Success = false, Message = message }, statusCode: 400);
+
+            return Results.Json(new ApiResponse { Success = true, Message = message });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error updating production date: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    /// <summary>
+    /// Ping endpoint - retained for compatibility. State is now delivered via REST polling
+    /// on /api/devices/status, so this endpoint is a no-op success response.
+    /// </summary>
+    private async Task<IResult> HandleProductionPing(HttpContext context)
         {
             await Task.CompletedTask;
             return Results.Json(new { success = true, at = DateTime.UtcNow });
@@ -1287,5 +1336,11 @@ public class GProjectApiServer : IDisposable
         [JsonPropertyName("userName")] public string? UserName { get; set; }
         [JsonPropertyName("createID")] public string CreateID { get; set; } = "";
         [JsonPropertyName("note")] public string? Note { get; set; }
+    }
+
+    private class UpdateProductionDateRequest
+    {
+        [JsonPropertyName("productionDate")] public string productionDate { get; set; } = "";
+        [JsonPropertyName("userName")] public string? userName { get; set; }
     }
 }

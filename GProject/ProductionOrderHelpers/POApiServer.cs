@@ -61,6 +61,7 @@ namespace GProject.ProductionOrderHelpers
         [JsonPropertyName("hasPO")] public bool HasPO { get; set; }
         [JsonPropertyName("orderNo")] public string? OrderNo { get; set; }
         [JsonPropertyName("productName")] public string? ProductName { get; set; }
+        [JsonPropertyName("productionDate")] public string? ProductionDate { get; set; }
         [JsonPropertyName("orderQty")] public int OrderQty { get; set; }
         [JsonPropertyName("totalCodes")] public int TotalCodes { get; set; }
         [JsonPropertyName("activeCodes")] public int ActiveCodes { get; set; }
@@ -691,6 +692,7 @@ namespace GProject.ProductionOrderHelpers
                     HasPO = ProductionStateMachine.ProductionData != null,
                     OrderNo = orderNo,
                     ProductName = productName,
+                    ProductionDate = ProductionStateMachine.ProductionData?.ProductionDate ?? "",
                     OrderQty = orderQty,
                     TotalCount = sm.ActiveCounter.TotalCount,
                     PassCount = sm.ActiveCounter.PassCount,

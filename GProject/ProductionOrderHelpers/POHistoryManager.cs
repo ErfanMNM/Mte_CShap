@@ -140,5 +140,36 @@ namespace GProject.ProductionOrderHelpers
             }
             catch { return false; }
         }
+
+        /// <summary>
+        /// Ghi nhận khi ProductionDate được thay đổi
+        /// </summary>
+        public static Result RecordProductionDateChange(string orderNo, string oldDate, string newDate, string userName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(orderNo))
+                    return Result.Fail("orderNo không được trống.");
+
+                EnsureHistoryDB();
+                string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                SQLiteHelper.ExecuteNonQuery(GetConnectionString(Config.GetPOHistoryPath()), @"
+                    INSERT INTO POHistory (PO, ProductionDate, StartTime, EndTime, Status, UserName)
+                    VALUES (@PO, @ProductionDate, @StartTime, @EndTime, @Status, @UserName)",
+                    new SqliteParameter("@PO", orderNo),
+                    new SqliteParameter("@ProductionDate", $"ChangeDate: {oldDate} -> {newDate}"),
+                    new SqliteParameter("@StartTime", now),
+                    new SqliteParameter("@EndTime", ""),
+                    new SqliteParameter("@Status", "DateChanged"),
+                    new SqliteParameter("@UserName", userName ?? ""));
+
+                return Result.Success($"Đã ghi thay đổi ProductionDate PO '{orderNo}': {oldDate} -> {newDate}");
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail($"Lỗi khi ghi thay đổi ProductionDate: {ex.Message}");
+            }
+        }
     }
 }

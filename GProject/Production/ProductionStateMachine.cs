@@ -162,6 +162,49 @@ namespace GProject.Production
         }
 
         /// <summary>
+        /// Cập nhật ProductionDate cho PO hiện tại
+        /// Chỉ cho phép khi đang ở trạng thái Ready
+        /// </summary>
+        /// <param name="newDate">Ngày sản xuất mới (format: yyyy-MM-dd hoặc yyyy-MM-dd HH:mm:ss)</param>
+        /// <param name="userName">Người dùng thực hiện</param>
+        /// <returns>true nếu cập nhật thành công, false nếu không thành công</returns>
+        public (bool success, string message) UpdateProductionDate(string newDate, string userName)
+        {
+            if (CurrentState != e_ProductionState.Ready)
+            {
+                return (false, $"Không thể sửa ngày SX từ trạng thái {CurrentState}. Cần ở trạng thái Ready.");
+            }
+
+            if (ProductionData == null)
+            {
+                return (false, "Chưa chọn PO.");
+            }
+
+            if (string.IsNullOrWhiteSpace(newDate))
+            {
+                return (false, "ProductionDate không được trống.");
+            }
+
+            // Validate date format
+            if (!DateTime.TryParse(newDate, out var parsedDate))
+            {
+                return (false, "Định dạng ngày không hợp lệ. Vui lòng nhập theo format yyyy-MM-dd.");
+            }
+
+            string oldDate = ProductionData.ProductionDate;
+            ProductionData.ProductionDate = parsedDate.ToString("yyyy-MM-dd HH:mm:ss");
+
+            // Ghi log thay đổi
+            GProduction.POHistoryManager.RecordProductionDateChange(
+ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
+
+            Log.Information("[StateMachine] ProductionDate updated from '{OldDate}' to '{NewDate}' by {User}",
+                oldDate, ProductionData.ProductionDate, userName);
+
+            return (true, $"Đã cập nhật ngày SX thành {ProductionData.ProductionDate}");
+        }
+
+        /// <summary>
         /// Khởi động background consumer thread ghi DB tuần tự (1 thread duy nhất)
         /// Ưu tiên: Record (audit) > CodeUpdate > CartonUpdate
         /// </summary>

@@ -206,6 +206,8 @@ namespace GProject.ProductionOrderHelpers
                 => ProductionOrderHelpers.POHistoryManager.GetByOrderNo(orderNo);
             public static bool IsPORunning(string orderNo)
                 => ProductionOrderHelpers.POHistoryManager.IsPORunning(orderNo);
+            public static Result RecordProductionDateChange(string orderNo, string oldDate, string newDate, string userName)
+                => ProductionOrderHelpers.POHistoryManager.RecordProductionDateChange(orderNo, oldDate, newDate, userName);
         }
 
         /// <summary>
