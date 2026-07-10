@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using GProject.ProductionOrderHelpers;
 using Serilog;
+using GProject.Infrastructure;
 
 namespace GProject.Production
 {
@@ -28,6 +29,8 @@ namespace GProject.Production
         public ConcurrentQueue<CodeUpdateItem> CodeUpdateQueue { get; } = new();
         public ConcurrentQueue<CartonUpdateItem> CartonUpdateQueue { get; } = new();
 
+        public ConcurrentDictionary<int, CartonInfo > Dictionary_Cartons { get; set; } = new();
+
         private CancellationTokenSource? _writerCts;
         private Task? _writerTask;
 
@@ -38,7 +41,7 @@ namespace GProject.Production
         public ConcurrentDictionary<string, CodeInfo> Dictionary_Codes { get; } = new();
 
         // Dictionary lưu thông tin carton
-        public ConcurrentDictionary<int, CartonInfo> Dictionary_Cartons { get; } = new();
+        
 
         // Bộ đếm
         public ProductCounter ActiveCounter { get; private set; } = new();
@@ -149,7 +152,7 @@ namespace GProject.Production
         {
             ProductionData = null;
             Dictionary_Codes.Clear();
-            Dictionary_Cartons.Clear();
+           Dictionary_Cartons.Clear();
             ActiveCounter = new ProductCounter();
             PackageCounter = new ProductCounter();
 
@@ -438,7 +441,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     });
                     LastWarning = $"Thùng hiện tại (ID={ActiveCounter.CartonID}) chưa có mã";
                     Log.Warning("[Camera] Reject {Code}: {Warning}", code, LastWarning);
-                    SetState(e_ProductionState.Paused, LastWarning);
+                    SetState(e_ProductionState.WaitCartonCode, LastWarning);
                     return WithPLCWrite(
                         new CameraReadResult(cam, code, e_Production_Status.Error, false, null, ActiveCounter.CartonID, at),
                         e_Production_Status.Error, ActiveCounter.CartonID, code: code);
@@ -526,14 +529,14 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                             if (nextCarton.CartonCode == "0" || string.IsNullOrEmpty(nextCarton.CartonCode))
                             {
                                 LastWarning = $"Thùng kế tiếp (ID={ActiveCounter.CartonID}) chưa có mã";
-                                SetState(e_ProductionState.Paused, LastWarning);
+                                SetState(e_ProductionState.WaitCartonCode, LastWarning);
                                 return new CameraReadResult(cam, code, e_Production_Status.Error, false, null, currentCartonID, at);
                             }
                         }
                         else
                         {
                             LastWarning = $"Không tìm thấy thùng kế tiếp (ID={ActiveCounter.CartonID})";
-                            SetState(e_ProductionState.Paused, LastWarning);
+                            SetState(e_ProductionState.WaitCartonCode, LastWarning);
                             return new CameraReadResult(cam, code, e_Production_Status.Error, false, null, currentCartonID, at);
                         }
                     }
@@ -654,6 +657,10 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     break;
 
                 case e_ProductionState.Paused:
+                    ProcessPauseState();
+                    break;
+                case e_ProductionState.WaitCartonCode:
+                    // Đang chờ user nhập mã thùng mới qua API
                     ProcessPauseState();
                     break;
 
@@ -991,7 +998,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 if (currentCarton.CartonCode == "0")
                 {
                     LastWarning = "Thùng hiện tại chưa có mã";
-                    SetState(e_ProductionState.Paused, LastWarning);
+                    SetState(e_ProductionState.WaitCartonCode, LastWarning);
                     return;
                 }
             }
@@ -1011,7 +1018,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     if (nextCarton.CartonCode == "0")
                     {
                         LastWarning = "Thùng sắp tới chưa có mã";
-                        SetState(e_ProductionState.Paused, LastWarning);
+                        SetState(e_ProductionState.WaitCartonCode, LastWarning);
                         return;
                     }
                 }

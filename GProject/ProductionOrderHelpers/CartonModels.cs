@@ -16,6 +16,12 @@ namespace GProject.ProductionOrderHelpers
 
         [System.Text.Json.Serialization.JsonPropertyName("mode")]
         public string Mode { get; set; } = "scan";
+
+        /// <summary>
+        /// Lane của PDA: "PDA01" / "PDA02" / "01" / "02". Chỉ bắt buộc khi mode=assign.
+        /// </summary>
+        [System.Text.Json.Serialization.JsonPropertyName("lane")]
+        public string Lane { get; set; } = "";
     }
 
     #endregion
@@ -104,7 +110,7 @@ namespace GProject.ProductionOrderHelpers
     #region Internal Models
 
     /// <summary>Dùng nội bộ trong CartonWriteQueue</summary>
-    public enum CartonWriteType { ScanCarton, StartCarton, CompleteCarton, ResetCarton }
+    public enum CartonWriteType { ScanCarton, StartCarton, CompleteCarton, ResetCarton, AssignCarton }
 
     /// <summary>Task gửi vào queue để serialize các thao tác write</summary>
     public class CartonWriteTask

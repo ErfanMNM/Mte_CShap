@@ -71,6 +71,7 @@ namespace GProject.ProductionOrderHelpers
                     CartonWriteType.StartCarton => ProcessStartCarton(con, tx, task),
                     CartonWriteType.CompleteCarton => ProcessCompleteCarton(con, tx, task),
                     CartonWriteType.ResetCarton => ProcessResetCarton(con, tx, task),
+                    CartonWriteType.AssignCarton => ProcessAssignCarton(con, tx, task),
                     _ => new CartonWriteResult { Success = false, Message = "Unknown type" }
                 };
 
@@ -218,6 +219,65 @@ namespace GProject.ProductionOrderHelpers
             return rows > 0
                 ? new CartonWriteResult { Success = true, Status = "OK", Message = $"Reset carton {task.CartonId}" }
                 : new CartonWriteResult { Success = false, Message = $"Khong tim thay carton {task.CartonId}" };
+        }
+
+        /// <summary>
+        /// Assign mã carton mới cho 1 carton ID cụ thể. Chỉ ghi khi cartonCode hiện tại = '0',
+        /// tránh over-write khi 2 PDA race cùng target.
+        /// </summary>
+        private CartonWriteResult ProcessAssignCarton(SqliteConnection con, SqliteTransaction tx, CartonWriteTask task)
+        {
+            if (!task.CartonId.HasValue)
+                return new CartonWriteResult { Success = false, Status = "ERR", Message = "CartonId required" };
+
+            string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+            using var upd = new SqliteCommand(
+                "UPDATE Carton SET cartonCode = @cc, Start_Datetime = @st, ActivateUser = @user " +
+                "WHERE ID = @id AND cartonCode = '0'", con, tx);
+            upd.Parameters.AddWithValue("@cc", task.CartonCode);
+            upd.Parameters.AddWithValue("@st", now);
+            upd.Parameters.AddWithValue("@user", task.MachineName);
+            upd.Parameters.AddWithValue("@id", task.CartonId.Value);
+            int rows = upd.ExecuteNonQuery();
+
+            if (rows == 0)
+            {
+                return new CartonWriteResult
+                {
+                    Success = false,
+                    Status = "ERR",
+                    Message = $"Thùng ID={task.CartonId} không ở trạng thái trống (đã có mã hoặc không tồn tại)"
+                };
+            }
+
+            // Tính CartonIndex = STT thùng trong PO
+            using var idxCmd = new SqliteCommand(
+                "SELECT COUNT(*) FROM Carton WHERE ID <= @id", con, tx);
+            idxCmd.Parameters.AddWithValue("@id", task.CartonId.Value);
+            int cartonIndex = Convert.ToInt32(idxCmd.ExecuteScalar());
+
+            // Log vào CartonCode
+            using var ins = new SqliteCommand(@"
+                INSERT INTO CartonCode (MachineName, CartonCode, CartonIndex, ScanAt, Mode, Result)
+                VALUES (@mn, @cc, @ci, @sa, @md, @rs)", con, tx);
+            ins.Parameters.AddWithValue("@mn", task.MachineName);
+            ins.Parameters.AddWithValue("@cc", task.CartonCode);
+            ins.Parameters.AddWithValue("@ci", cartonIndex);
+            ins.Parameters.AddWithValue("@sa", task.ScannedAt);
+            ins.Parameters.AddWithValue("@md", task.Mode);
+            ins.Parameters.AddWithValue("@rs", "Assign thành công");
+            ins.ExecuteNonQuery();
+
+            return new CartonWriteResult
+            {
+                Success = true,
+                Status = "OK",
+                Message = "Assign thành công",
+                CartonIndex = cartonIndex,
+                ProductCount = 0,
+                ActivateDate = now
+            };
         }
 
         public void Dispose()

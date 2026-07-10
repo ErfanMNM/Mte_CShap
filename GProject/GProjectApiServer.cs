@@ -962,7 +962,7 @@ public class GProjectApiServer : IDisposable
             }
 
             sm.SetState(e_ProductionState.WaitingStop, "stop production");
-            sm.SetState(e_ProductionState.Editing, "ready for new PO");
+            sm.SetState(e_ProductionState.Ready, "ready for new PO");
 
             return Results.Json(new
             {

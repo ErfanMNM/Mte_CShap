@@ -721,44 +721,74 @@ namespace GProject.ProductionOrderHelpers
         /// <summary>POST /api/carton/scan</summary>
         public static async Task<IResult> HandleCartonScan(HttpContext context)
         {
+            var respObj = new CartonScanResponse();
+            int statusCode = 200;
             try
             {
-                CartonScanRequest? req = await context.Request.ReadFromJsonAsync<CartonScanRequest>();
+                // Tự ghi response để đảm bảo Postman luôn nhận được body
+                context.Response.ContentType = "application/json; charset=utf-8";
+
+                CartonScanRequest? req;
+                try
+                {
+                    req = await context.Request.ReadFromJsonAsync<CartonScanRequest>(
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                }
+                catch (Exception jsonEx)
+                {
+                    Log.Warning("[CartonScan] JSON deserialize failed: {Msg}", jsonEx.Message);
+                    respObj.Success = false;
+                    respObj.Message = $"Body JSON không hợp lệ: {jsonEx.Message}";
+                    statusCode = 400;
+                    goto WriteResponse;
+                }
+
                 if (req == null || string.IsNullOrWhiteSpace(req.CartonCode))
                 {
                     Log.Warning("[CartonScan] Invalid request: null or empty cartonCode");
-                    return Results.Json(new CartonScanResponse { Success = false, Message = "Invalid request: cartonCode is required" });
+                    respObj.Success = false;
+                    respObj.Message = "Invalid request: cartonCode is required";
+                    statusCode = 400;
+                    goto WriteResponse;
+                }
+
+                // Route sang nhánh assign nếu mode = "assign"
+                if (string.Equals(req.Mode, "assign", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Gọi trực tiếp, không qua return await, để tránh nuốt exception
+                    var (assignStatus, assignResp) = await HandleCartonAssignRaw(req);
+                    respObj = assignResp;
+                    statusCode = assignStatus;
+                    goto WriteResponse;
                 }
 
                 var sm = ProductionStateMachine.Instance;
-                
+
                 // Kiểm tra trạng thái - chỉ cho phép Running hoặc Paused
                 var activeStates = new[] { e_ProductionState.Running, e_ProductionState.Paused };
                 if (!activeStates.Contains(sm.CurrentState))
                 {
                     var currentPO = ProductionStateMachine.ProductionData?.OrderNo ?? "None";
-                    Log.Warning("[CartonScan] PO not running. State={State}, PO={OrderNo}, CartonCode={CartonCode}", 
+                    Log.Warning("[CartonScan] PO not running. State={State}, PO={OrderNo}, CartonCode={CartonCode}",
                         sm.CurrentState, currentPO, req.CartonCode);
-                    
-                    return Results.Json(new CartonScanResponse 
-                    { 
-                        Success = false, 
-                        Message = $"PO not running. Current state: {sm.CurrentState}. Please start production first.",
-                        OrderNo = currentPO
-                    });
+
+                    respObj.Success = false;
+                    respObj.Message = $"PO not running. Current state: {sm.CurrentState}. Please start production first.";
+                    respObj.OrderNo = currentPO;
+                    statusCode = 400;
+                    goto WriteResponse;
                 }
 
                 if (ProductionStateMachine.ProductionData == null)
                 {
                     Log.Warning("[CartonScan] No PO selected. Cannot scan carton.");
-                    return Results.Json(new CartonScanResponse 
-                    { 
-                        Success = false, 
-                        Message = "No PO selected. Please select a PO first."
-                    });
+                    respObj.Success = false;
+                    respObj.Message = "No PO selected. Please select a PO first.";
+                    statusCode = 400;
+                    goto WriteResponse;
                 }
 
-                Log.Information("[CartonScan] Processing scan. PO={OrderNo}, CartonCode={CartonCode}, State={State}", 
+                Log.Information("[CartonScan] Processing scan. PO={OrderNo}, CartonCode={CartonCode}, State={State}",
                     ProductionStateMachine.ProductionData.OrderNo, req.CartonCode, sm.CurrentState);
 
                 var task = new CartonWriteTask
@@ -771,29 +801,186 @@ namespace GProject.ProductionOrderHelpers
                     Mode = req.Mode
                 };
 
-                var resultTask = CartonWriteQueueManager.EnqueueAsync(ProductionStateMachine.ProductionData.OrderNo, task);
-                
-                
-                var result = await resultTask;
-                
-                Log.Information("[CartonScan] Result. PO={OrderNo}, CartonCode={CartonCode}, Success={Success}, Status={Status}, Message={Message}", 
+                var result = await CartonWriteQueueManager.EnqueueAsync(ProductionStateMachine.ProductionData.OrderNo, task);
+
+                Log.Information("[CartonScan] Result. PO={OrderNo}, CartonCode={CartonCode}, Success={Success}, Status={Status}, Message={Message}",
                     ProductionStateMachine.ProductionData.OrderNo, req.CartonCode, result.Success, result.Status, result.Message);
 
-                return Results.Json(new CartonScanResponse
-                {
-                    Success = result.Success,
-                    Message = result.Message,
-                    Status = result.Status,
-                    CartonIndex = result.CartonIndex,
-                    OrderNo = ProductionStateMachine.ProductionData.OrderNo,
-                    ProductCount = result.ProductCount,
-                    ActivateDate = result.ActivateDate
-                });
+                respObj.Success = result.Success;
+                respObj.Message = result.Message;
+                respObj.Status = result.Status;
+                respObj.CartonIndex = result.CartonIndex;
+                respObj.OrderNo = ProductionStateMachine.ProductionData.OrderNo;
+                respObj.ProductCount = result.ProductCount;
+                respObj.ActivateDate = result.ActivateDate;
+                statusCode = 200;
+
+            WriteResponse:
+                var json = System.Text.Json.JsonSerializer.Serialize(respObj,
+                    new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null });
+                context.Response.StatusCode = statusCode;
+                context.Response.ContentLength = System.Text.Encoding.UTF8.GetByteCount(json);
+                await context.Response.WriteAsync(json, System.Text.Encoding.UTF8);
+                return Results.Empty;
             }
             catch (Exception ex)
             {
-                LogError("POApiServer", $"HandleCartonScan error: {ex.Message}", ex);
-                return Results.Json(new CartonScanResponse { Success = false, Message = ex.Message }, statusCode: 500);
+                LogError("POApiServer", $"HandleCartonScan top-level error: {ex.Message}", ex);
+                try
+                {
+                    var errJson = $"{{\"Success\":false,\"Message\":\"{ex.GetType().Name}: {ex.Message.Replace("\"", "'")}\"}}";
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    await context.Response.WriteAsync(errJson);
+                    return Results.Empty;
+                }
+                catch
+                {
+                    return Results.Text($"Critical error: {ex.Message}", statusCode: 500);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Nhánh mode=assign: PDA gửi mã carton mới, BE tự chọn target theo rule chẵn/lẻ.
+        /// Trả tuple (statusCode, response) để caller tự ghi vào HttpContext.Response,
+        /// tránh IResult pipeline nuốt response khi có exception.
+        /// </summary>
+        private static async Task<(int statusCode, CartonScanResponse resp)> HandleCartonAssignRaw(CartonScanRequest req)
+        {
+            var resp = new CartonScanResponse();
+            int statusCode = 200;
+            try
+            {
+                var sm = ProductionStateMachine.Instance;
+                Log.Information("[CartonAssign] Enter. PO={OrderNo}, CartonCode={Code}, Lane={Lane}, State={State}",
+                    ProductionStateMachine.ProductionData?.OrderNo ?? "(null)",
+                    req.CartonCode, req.Lane ?? "(null)", sm.CurrentState);
+
+                var activeStates = new[] { e_ProductionState.Running, e_ProductionState.WaitCartonCode };
+                if (!activeStates.Contains(sm.CurrentState))
+                {
+                    resp.Success = false;
+                    resp.Message = $"PO not running. Current state: {sm.CurrentState}. Please start production first.";
+                    resp.OrderNo = ProductionStateMachine.ProductionData?.OrderNo ?? "";
+                    statusCode = 400;
+                    return (statusCode, resp);
+                }
+
+                if (ProductionStateMachine.ProductionData == null)
+                {
+                    resp.Success = false;
+                    resp.Message = "No PO selected. Please select a PO first.";
+                    statusCode = 400;
+                    return (statusCode, resp);
+                }
+
+                string lane = (req.Lane ?? "").Trim().ToUpperInvariant();
+                if (lane != "PDA01" && lane != "PDA02" && lane != "01" && lane != "02")
+                {
+                    resp.Success = false;
+                    resp.Status = "ERR";
+                    resp.Message = "lane phải là PDA01 hoặc PDA02";
+                    statusCode = 400;
+                    return (statusCode, resp);
+                }
+
+                int currentId = sm.ActiveCounter.CartonID;
+                bool isEven = currentId % 2 == 0;
+                // PDA01: chẵn -> next, lẻ -> current ; PDA02: lẻ -> next, chẵn -> current
+                int targetId = lane.EndsWith("01")
+                    ? (isEven ? currentId + 1 : currentId)
+                    : (isEven ? currentId : currentId + 1);
+
+                if (!sm.Dictionary_Cartons.TryGetValue(targetId, out var targetCarton) || targetCarton == null)
+                {
+                    resp.Success = false;
+                    resp.Status = "ERR";
+                    resp.Message = $"Không tồn tại carton ID={targetId}";
+                    statusCode = 400;
+                    return (statusCode, resp);
+                }
+
+                // Nếu thùng đích đã có mã -> bỏ qua, trả WARN
+                if (targetCarton.CartonCode != "0")
+                {
+                    Log.Information("[CartonAssign] Target carton {Id} already has code {Code}, skipping",
+                        targetId, targetCarton.CartonCode);
+                    resp.Success = true;
+                    resp.Status = "WARN";
+                    resp.Message = "Thùng đích đã có mã, bỏ qua";
+                    resp.CartonIndex = targetId;
+                    resp.OrderNo = ProductionStateMachine.ProductionData.OrderNo;
+                    return (statusCode, resp);
+                }
+
+                string codeTrim = (req.CartonCode ?? "").Trim();
+
+                // Dedupe: code đã tồn tại ở thùng khác trong Dictionary_Cartons
+                bool dup = sm.Dictionary_Cartons.Values
+                    .Any(c => c.Id != targetId && string.Equals(c.CartonCode, codeTrim, StringComparison.Ordinal));
+                if (dup)
+                {
+                    resp.Success = false;
+                    resp.Status = "ERR";
+                    resp.Message = "Mã thùng đã tồn tại. Vui lòng kiểm tra lại!";
+                    statusCode = 400;
+                    return (statusCode, resp);
+                }
+
+                Log.Information("[CartonAssign] Assigning. PO={OrderNo}, Lane={Lane}, TargetID={TargetId}, Code={Code}",
+                    ProductionStateMachine.ProductionData.OrderNo, lane, targetId, codeTrim);
+
+                var task = new CartonWriteTask
+                {
+                    Type = CartonWriteType.AssignCarton,
+                    OrderNo = ProductionStateMachine.ProductionData.OrderNo,
+                    CartonCode = codeTrim,
+                    CartonId = targetId,
+                    MachineName = req.MachineName,
+                    ScannedAt = req.ScannedAt,
+                    Mode = "assign"
+                };
+
+                var result = await CartonWriteQueueManager.EnqueueAsync(ProductionStateMachine.ProductionData.OrderNo, task);
+
+                if (result.Success)
+                {
+                    // Cập nhật Dictionary_Cartons in-memory để CameraSub/StateMachine thấy ngay
+                    if (sm.Dictionary_Cartons.TryGetValue(targetId, out var entry) && entry != null)
+                    {
+                        entry.CartonCode = codeTrim;
+                        entry.StartDatetime = result.ActivateDate;
+                        if (!string.IsNullOrEmpty(req.MachineName))
+                            entry.ActivateUser = req.MachineName;
+                    }
+
+                    // Nếu thùng vừa assign là thùng đang chạy -> cập nhật ActiveCounter
+                    if (targetId == sm.ActiveCounter.CartonID)
+                        sm.ActiveCounter.CartonCode = codeTrim;
+                }
+
+                Log.Information("[CartonAssign] Result. TargetID={TargetId}, Success={Success}, Status={Status}, Message={Message}",
+                    targetId, result.Success, result.Status, result.Message);
+
+                resp.Success = result.Success;
+                resp.Message = result.Message;
+                resp.Status = result.Status;
+                resp.CartonIndex = result.CartonIndex;
+                resp.OrderNo = ProductionStateMachine.ProductionData.OrderNo;
+                resp.ProductCount = result.ProductCount;
+                resp.ActivateDate = result.ActivateDate;
+                return (statusCode, resp);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[CartonAssign] Unhandled exception. CartonCode={Code}, Lane={Lane}",
+                    req.CartonCode, req.Lane);
+                resp.Success = false;
+                resp.Status = "ERR";
+                resp.Message = $"HandleCartonAssign lỗi: {ex.GetType().Name}: {ex.Message}";
+                statusCode = 500;
+                return (statusCode, resp);
             }
         }
 

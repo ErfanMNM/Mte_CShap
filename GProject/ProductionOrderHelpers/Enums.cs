@@ -93,7 +93,12 @@ namespace GProject.ProductionOrderHelpers
         /// <summary>
         /// Lỗi
         /// </summary>
-        Error = 99
+        Error = 99,
+
+        ///<summary>
+        ///Chưa có mã thùng
+        ///</summary>
+        WaitCartonCode = 16
     }
 
     /// <summary>
