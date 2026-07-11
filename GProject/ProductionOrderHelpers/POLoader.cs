@@ -370,6 +370,7 @@ namespace GProject.ProductionOrderHelpers
 
         /// <summary>
         /// Nạp mã từ DataPool vào PO
+        /// Lấy TẤT CẢ mã Status=0 còn lại trong pool (không giới hạn bởi orderQty)
         /// </summary>
         public static (bool success, string message, int loadedCount) LoadCodesFromDataPool(
             string orderNo, string gtin, int? limitQty = null)
@@ -385,17 +386,6 @@ namespace GProject.ProductionOrderHelpers
                 if (!poInfo.IsSuccess || poInfo.Data == null || poInfo.Data.Rows.Count == 0)
                     return (false, $"PO '{orderNo}' không tồn tại.", 0);
 
-                int orderQty = Convert.ToInt32(poInfo.Data.Rows[0]["orderQty"]);
-                if (orderQty <= 0)
-                    return (false, "orderQty phải > 0.", 0);
-
-                int cartonCapacity = poInfo.Data.Rows[0]["cartonCapacity"] != DBNull.Value
-                    ? Convert.ToInt32(poInfo.Data.Rows[0]["cartonCapacity"]) : 24;
-                if (cartonCapacity <= 0)
-                    cartonCapacity = 24;
-                if (orderQty <= cartonCapacity)
-                    return (false, $"orderQty ({orderQty}) phải > cartonCapacity ({cartonCapacity}).", 0);
-
                 string dbPoolPath = Config.GetDataPoolPath(gtin);
                 string dbPOPath = Config.GetPODBPath(orderNo);
 
@@ -407,7 +397,7 @@ namespace GProject.ProductionOrderHelpers
 
                 int loadedCount = 0;
 
-                // Lấy mã Status=0 từ DataPool
+                // Lấy TẤT CẢ mã Status=0 từ DataPool (không cap ở orderQty)
                 List<string> availableCodes = new();
                 using (var conPool = new SqliteConnection($"Data Source={dbPoolPath}"))
                 {
@@ -419,8 +409,8 @@ namespace GProject.ProductionOrderHelpers
                     while (rd.Read()) availableCodes.Add(rd.GetString(0));
                 }
 
-                if (availableCodes.Count < orderQty)
-                    return (false, $"Không đủ mã! Cần: {orderQty} | Còn: {availableCodes.Count}", 0);
+                if (availableCodes.Count == 0)
+                    return (false, "Pool không còn mã chưa dùng nào (Status=0).", 0);
 
                 // Lấy mã đã có trong PO
                 HashSet<string> existingCodes = new(StringComparer.OrdinalIgnoreCase);
@@ -442,9 +432,9 @@ namespace GProject.ProductionOrderHelpers
                 const string insertPO = @"INSERT OR IGNORE INTO UniqueCodes (Code, Status, ProductionDate) VALUES (@Code, 0, @ProductionDate);";
                 const string updatePool = "UPDATE Codes SET Status = 1 WHERE Code = @Code;";
 
-                for (int i = 0; i < orderQty && i < availableCodes.Count; i++)
+                // Lấy TẤT CẢ mã chưa dùng trong pool, không giới hạn bởi orderQty
+                foreach (var code in availableCodes)
                 {
-                    string code = availableCodes[i];
                     if (existingCodes.Contains(code)) continue;
 
                     using (var cmdInsert = new SqliteCommand(insertPO, conPO2, tx))
@@ -461,7 +451,7 @@ namespace GProject.ProductionOrderHelpers
                     }
                 }
                 tx.Commit();
-                return (true, $"Nạp {loadedCount} mã thành công.", loadedCount);
+                return (true, $"Nạp {loadedCount} mã thành công (lấy từ tổng {availableCodes.Count} mã chưa dùng trong pool).", loadedCount);
             }
             catch (Exception ex)
             {

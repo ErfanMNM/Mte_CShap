@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Play,
   Square,
@@ -10,7 +10,6 @@ import {
   Package,
   CheckCircle2,
   XCircle,
-  Copy,
   Box,
   TrendingUp,
   Monitor,
@@ -19,6 +18,12 @@ import {
   WifiOff,
   Edit3,
   Calendar,
+  FileText,
+  Building2,
+  Factory,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
 } from "lucide-react";
 import productionApi from "../../services/productionApi";
 import poApi from "../../services/poApi";
@@ -26,7 +31,7 @@ import { useCameraSocket } from "../../hooks/useCameraSocket";
 import { useDeviceStore } from "../../store/useDeviceStore";
 import { handleActiveCodeScanned } from "../../services/cameraApi";
 import type { ProductionStatusResponse } from "../../types/production";
-import type { POListItem } from "../../types/po";
+import type { POInfo, POListItem, POCarton } from "../../types/po";
 
 type CamUiStatus = "ok" | "error" | "offline" | "warning";
 
@@ -62,6 +67,16 @@ const ProductionView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [healthOk, setHealthOk] = useState(false);
+
+  // PO detail state
+  const [poDetail, setPoDetail] = useState<POInfo | null>(null);
+  const [isLoadingPODetail, setIsLoadingPODetail] = useState(false);
+
+  // PO card active tab (stats | detail)
+  const [poCardTab, setPoCardTab] = useState<"stats" | "detail">("stats");
+
+  // Cartons list state (for prev/current/next carton display)
+  const [cartons, setCartons] = useState<POCarton[]>([]);
 
   const notifMap: Record<string, string> = {
     // Error keys
@@ -387,6 +402,108 @@ const productionConnected = healthOk;
     setSuccess(null);
   };
 
+  // ────── PO Detail ──────
+
+  const fetchPODetail = useCallback(async (orderNo: string) => {
+    setIsLoadingPODetail(true);
+    try {
+      const data = await poApi.getPO(orderNo);
+      setPoDetail(data);
+    } catch {
+      setPoDetail(null);
+    } finally {
+      setIsLoadingPODetail(false);
+    }
+  }, []);
+
+  // Reset detail + reload when current PO changes
+  useEffect(() => {
+    if (!status?.orderNo) {
+      setPoDetail(null);
+      return;
+    }
+    if (poDetail?.orderNo !== status.orderNo) {
+      fetchPODetail(status.orderNo);
+    }
+  }, [status?.orderNo, poDetail?.orderNo, fetchPODetail]);
+
+  // ────── Cartons list ──────
+  const fetchCartons = useCallback(async (orderNo: string) => {
+    try {
+      const data = await poApi.getCartons(orderNo);
+      setCartons(data || []);
+    } catch {
+      setCartons([]);
+    }
+  }, []);
+
+  // Reset cartons when PO changes
+  useEffect(() => {
+    if (!status?.orderNo) {
+      setCartons([]);
+      return;
+    }
+    fetchCartons(status.orderNo);
+  }, [status?.orderNo, fetchCartons]);
+
+  // Derive prev / current / next cartons from the list and status
+  const derivedCartons = useMemo(() => {
+    const currentId = status?.currentCartonId ?? 0;
+    const sorted = [...cartons].sort((a, b) => a.id - b.id);
+    // Current: match by id; otherwise fallback to status data
+    const current =
+      sorted.find((c) => c.id === currentId && currentId > 0) ||
+      (currentId > 0
+        ? {
+            id: currentId,
+            cartonCode: status?.currentCartonCode || "",
+            status: "Open",
+          }
+        : null);
+
+    // Prev: highest id that is "Closed" AND < currentId
+    const prevClosed =
+      sorted
+        .filter((c) => c.status === "Closed" && (!current || c.id < current.id))
+        .sort((a, b) => b.id - a.id)[0] || null;
+    // Fallback: only synthesize prev if current.id > 1 (otherwise there is no previous carton)
+    const prev =
+      prevClosed ||
+      (current && current.id > 1
+        ? {
+            id: current.id - 1,
+            cartonCode: "",
+            status: "Prev",
+          }
+        : null);
+
+    // Next: lowest id that is "Empty" AND > currentId
+    const nextEmpty =
+      sorted
+        .filter((c) => c.status === "Empty" && (!current || c.id > current.id))
+        .sort((a, b) => a.id - b.id)[0] || null;
+    // Fallback: if current exists but no empty carton in list, synthesize current + 1
+    const next =
+      nextEmpty ||
+      (current
+        ? {
+            id: current.id + 1,
+            cartonCode: "",
+            status: "Next",
+          }
+        : nextEmpty);
+    return { prev, current, next };
+  }, [cartons, status?.currentCartonId, status?.currentCartonCode]);
+
+  const formatDetailDate = (dateStr?: string) => {
+    if (!dateStr || dateStr === "0" || dateStr === "null") return "—";
+    try {
+      return new Date(dateStr).toLocaleString("vi-VN");
+    } catch {
+      return dateStr;
+    }
+  };
+
   const isRunning = status?.state === "Running";
   const isEditing = status?.state === "Editing";
   const isReady = status?.state === "Ready";
@@ -676,41 +793,106 @@ const productionConnected = healthOk;
             </div>
           </div>
 
-          {/* Live Stats */}
+          {/* PO Info Card (tabs: Thông tin PO | Chi tiết PO) */}
           {status?.hasPO && (
             <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
               <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-blue-600" /> Thông tin PO hiện tại
+                    <TrendingUp className="w-4 h-4 text-blue-600" /> Thông tin PO
+                    <span className="ml-1 font-mono text-blue-700 normal-case tracking-normal text-xs">
+                      ({status.orderNo})
+                    </span>
                   </h2>
                   <button
-                    onClick={fetchStatus}
-                    disabled={isRefreshingPO}
+                    onClick={() => {
+                      if (poCardTab === "stats") {
+                        fetchStatus();
+                      } else if (status?.orderNo) {
+                        fetchPODetail(status.orderNo);
+                      }
+                    }}
+                    disabled={poCardTab === "stats" ? isRefreshingPO : isLoadingPODetail}
                     className={`p-1.5 rounded-lg transition-all ${
-                      isRefreshingPO
+                      (poCardTab === "stats" ? isRefreshingPO : isLoadingPODetail)
                         ? 'bg-blue-100 text-blue-500 cursor-not-allowed'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800'
                     }`}
-                    title="Tải lại thông tin"
+                    title={poCardTab === "stats" ? "Tải lại thông tin" : "Tải lại chi tiết PO"}
                   >
-                    <RefreshCw className={`w-4 h-4 ${isRefreshingPO ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-4 h-4 ${(poCardTab === "stats" ? isRefreshingPO : isLoadingPODetail) ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+                {/* Tab bar */}
+                <div className="flex items-center gap-1 mt-2 w-fit">
+                  <button
+                    onClick={() => setPoCardTab("stats")}
+                    className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-md transition-all ${
+                      poCardTab === "stats"
+                        ? "bg-blue-50 text-blue-700 shadow-sm"
+                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                    }`}
+                  >
+                    <TrendingUp className="w-3.5 h-3.5" /> Thông tin PO
+                  </button>
+                  <button
+                    onClick={() => setPoCardTab("detail")}
+                    className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-md transition-all ${
+                      poCardTab === "detail"
+                        ? "bg-blue-50 text-blue-700 shadow-sm"
+                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Chi tiết PO
                   </button>
                 </div>
               </div>
               <div className="p-4 xl:p-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  <StatCard label="Mã PO" value={status.orderNo || "-"} mono />
-                  <StatCard label="Sản phẩm" value={status.productName || "-"} />
-                  <StatCard label="SL Order" value={status.orderQty.toLocaleString()} />
-                  <StatCard label="Tiến độ" value={`${status.progressPercent.toFixed(1)}%`} color="blue" />
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <StatCard label="Tổng đếm" value={status.totalCount.toLocaleString()} color="slate" />
-                  <StatCard label="Pass ✓" value={status.passCount.toLocaleString()} color="green" />
-                  <StatCard label="Fail ✗" value={status.failCount.toLocaleString()} color="red" />
-                  <StatCard label="Trùng ⚡" value={status.duplicateCount.toLocaleString()} color="amber" />
-                </div>
+                {poCardTab === "stats" ? (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                      <StatCard label="Mã PO" value={status.orderNo || "-"} mono />
+                      <StatCard label="Sản phẩm" value={status.productName || "-"} />
+                      <StatCard label="SL Order" value={status.orderQty.toLocaleString()} />
+                      <StatCard label="Tiến độ" value={`${status.progressPercent.toFixed(1)}%`} color="blue" />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <StatCard label="Tổng đếm" value={status.totalCount.toLocaleString()} color="slate" />
+                      <StatCard label="Pass ✓" value={status.passCount.toLocaleString()} color="green" />
+                      <StatCard label="Fail ✗" value={status.failCount.toLocaleString()} color="red" />
+                      <StatCard label="Trùng ⚡" value={status.duplicateCount.toLocaleString()} color="amber" />
+                    </div>
+                  </>
+                ) : isLoadingPODetail && !poDetail ? (
+                  <div className="flex items-center gap-3 text-slate-500 py-6 justify-center">
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    <span className="text-sm font-medium">Đang tải chi tiết PO...</span>
+                  </div>
+                ) : poDetail ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                    <DetailRow label="Mã đơn hàng (Order No.)" value={poDetail.orderNo} mono />
+                    <DetailRow label="Số lượng đặt (Order Qty)" value={poDetail.orderQty?.toLocaleString()} />
+                    <DetailRow label="Quy cách thùng (Carton Capacity)" value={poDetail.cartonCapacity?.toLocaleString()} icon={Box} />
+                    <DetailRow label="GTIN" value={poDetail.gtin} mono />
+                    <DetailRow label="Tên sản phẩm (Product Name)" value={poDetail.productName} />
+                    <DetailRow label="Mã sản phẩm (Product Code)" value={poDetail.productCode} />
+                    <DetailRow label="Số lô (Lot Number)" value={poDetail.lotNumber} />
+                    <DetailRow label="Site" value={poDetail.site} icon={Building2} />
+                    <DetailRow label="Nhà máy (Factory)" value={poDetail.factory} icon={Factory} />
+                    <DetailRow label="Dây chuyền (Production Line)" value={poDetail.productionLine} />
+                    <DetailRow label="Ca (Shift)" value={poDetail.shift} />
+                    <DetailRow label="Ngày sản xuất (Production Date)" value={poDetail.productionDate} icon={Calendar} />
+                    <DetailRow label="Mã đơn hàng KH (Customer Order No.)" value={poDetail.customerOrderNo} />
+                    <DetailRow label="Đơn vị (UOM)" value={poDetail.uom} />
+                    <DetailRow label="Thời gian tạo (Created Time)" value={formatDetailDate(poDetail.createdTime)} />
+                    <DetailRow label="Thời gian sửa (Modified Time)" value={formatDetailDate(poDetail.modifiedTime)} />
+                  </div>
+                ) : (
+                  <div className="text-center text-slate-400 py-6">
+                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <span className="text-sm">Không tải được chi tiết PO</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -836,14 +1018,110 @@ const productionConnected = healthOk;
                 <StatCard label="Đã đóng" value={status?.cartonClosedCount?.toString() || "0"} color="green" />
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                  Thùng hiện tại
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  Thùng trước / hiện tại / sắp
                 </div>
-                <div className="text-lg font-black text-slate-800 font-mono">
-                  #{status?.currentCartonId || 0}
-                </div>
-                <div className="text-xs font-semibold text-slate-600 mt-0.5 font-mono">
-                  {status?.currentCartonCode || "—"}
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Prev */}
+                  <div className={`rounded-lg border p-2 flex flex-col gap-1 ${
+                    derivedCartons.prev
+                      ? derivedCartons.prev.status === "Closed"
+                        ? "border-slate-200 bg-white"
+                        : "border-dashed border-slate-300 bg-slate-50/50"
+                      : "border-dashed border-slate-200 bg-slate-50/50"
+                  }`}>
+                    <div className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                      <ChevronLeft className="w-3 h-3" /> Trước
+                    </div>
+                    {derivedCartons.prev ? (
+                      <>
+                        <div className={`text-sm font-black font-mono ${
+                          derivedCartons.prev.status === "Closed" ? "text-slate-700" : "text-slate-400"
+                        }`}>
+                          #{derivedCartons.prev.id}
+                        </div>
+                        <div className={`text-[10px] font-mono truncate ${
+                          derivedCartons.prev.status === "Closed" ? "text-slate-500" : "text-slate-400 italic"
+                        }`}>
+                          {derivedCartons.prev.cartonCode && derivedCartons.prev.cartonCode !== "0"
+                            ? derivedCartons.prev.cartonCode
+                            : "—"}
+                        </div>
+                        <div className={`flex items-center gap-1 text-[9px] font-bold ${
+                          derivedCartons.prev.status === "Closed" ? "text-green-700" : "text-slate-400"
+                        }`}>
+                          <Lock className="w-2.5 h-2.5" />
+                          {derivedCartons.prev.status === "Closed" ? "Đã đóng" : "Sẽ tạo"}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-[10px] text-slate-400 italic">Chưa có</div>
+                    )}
+                  </div>
+
+                  {/* Current (highlighted) */}
+                  <div className={`rounded-lg border-2 p-2 flex flex-col gap-1 ${
+                    derivedCartons.current
+                      ? "border-blue-500 bg-blue-50 shadow-sm shadow-blue-500/10"
+                      : "border-dashed border-slate-300 bg-slate-50/50"
+                  }`}>
+                    <div className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-blue-700">
+                      <Box className="w-3 h-3" /> Hiện tại
+                    </div>
+                    {derivedCartons.current ? (
+                      <>
+                        <div className="text-base font-black text-blue-700 font-mono">
+                          #{derivedCartons.current.id}
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-700 truncate">
+                          {derivedCartons.current.cartonCode && derivedCartons.current.cartonCode !== "0"
+                            ? derivedCartons.current.cartonCode
+                            : "—"}
+                        </div>
+                        <div className="text-[9px] font-bold text-blue-700">
+                          {status?.itemsInCarton || 0}/{status?.cartonCapacity || 24}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-[10px] text-slate-400 italic">—</div>
+                    )}
+                  </div>
+
+                  {/* Next */}
+                  <div className={`rounded-lg border p-2 flex flex-col gap-1 ${
+                    derivedCartons.next
+                      ? derivedCartons.next.status === "Empty"
+                        ? "border-slate-200 bg-white"
+                        : "border-dashed border-slate-300 bg-slate-50/50"
+                      : "border-dashed border-slate-200 bg-slate-50/50"
+                  }`}>
+                    <div className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 justify-end">
+                      Sắp <ChevronRight className="w-3 h-3" />
+                    </div>
+                    {derivedCartons.next ? (
+                      <>
+                        <div className={`text-sm font-black font-mono ${
+                          derivedCartons.next.status === "Empty" ? "text-slate-700" : "text-slate-400"
+                        }`}>
+                          #{derivedCartons.next.id}
+                        </div>
+                        <div className={`text-[10px] font-mono truncate ${
+                          derivedCartons.next.status === "Empty" ? "text-slate-500" : "text-slate-400 italic"
+                        }`}>
+                          {derivedCartons.next.cartonCode && derivedCartons.next.cartonCode !== "0"
+                            ? derivedCartons.next.cartonCode
+                            : "—"}
+                        </div>
+                        <div className={`text-[9px] font-bold ${
+                          derivedCartons.next.status === "Empty" ? "text-slate-500" : "text-slate-400"
+                        }`}>
+                          {derivedCartons.next.status === "Empty" ? "Trống" : "Sẽ tạo"}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-[10px] text-slate-400 italic">Chưa có</div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -879,10 +1157,27 @@ const productionConnected = healthOk;
           <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
             <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
               <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-indigo-600" /> Trạng thái Camera
+                <Monitor className={`w-4 h-4 ${
+                  (cameraStatus.connected || plcStatus.connected)
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`} />
+                Trạng thái Camera
+                <span className="ml-auto flex items-center gap-1.5">
+                  {cameraStatus.connected ? (
+                    <Wifi className="w-3.5 h-3.5 text-green-600" />
+                  ) : (
+                    <WifiOff className="w-3.5 h-3.5 text-red-600 animate-pulse" />
+                  )}
+                  {plcStatus.connected ? (
+                    <Cpu className="w-3.5 h-3.5 text-green-600" />
+                  ) : (
+                    <Cpu className="w-3.5 h-3.5 text-red-600 animate-pulse" />
+                  )}
+                </span>
               </h2>
             </div>
-            <div className="p-3 xl:p-4 flex flex-col gap-2">
+            <div className="p-3 xl:p-4 flex flex-col gap-2.5">
               <MiniDeviceIndicator
                 icon={Monitor}
                 label="CAMERA"
@@ -907,8 +1202,62 @@ const productionConnected = healthOk;
                 }
                 status={getPlcStatusFromStore(plcStatus.state, plcStatus.connected)}
               />
-              <div className="mt-1 text-[10px] text-slate-400 font-mono break-all">
-                WS: cam {cameraStatus.connected ? "online" : "offline"} • plc {plcStatus.connected ? "online" : "offline"}
+              {/* WS banner chips */}
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div
+                  className={`flex-1 flex items-center gap-1.5 px-2 py-1.5 rounded-lg border ${
+                    cameraStatus.connected
+                      ? "bg-green-50 border-green-200"
+                      : "bg-red-50 border-red-200"
+                  }`}
+                >
+                  <Wifi
+                    className={`w-3 h-3 ${
+                      cameraStatus.connected ? "text-green-600" : "text-red-600"
+                    } ${cameraStatus.connected ? "" : "animate-pulse"}`}
+                  />
+                  <span
+                    className={`text-[9px] font-bold uppercase tracking-wider ${
+                      cameraStatus.connected ? "text-green-700" : "text-red-700"
+                    }`}
+                  >
+                    CAM WS
+                  </span>
+                  <span
+                    className={`ml-auto text-[9px] font-black ${
+                      cameraStatus.connected ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {cameraStatus.connected ? "ONLINE" : "OFFLINE"}
+                  </span>
+                </div>
+                <div
+                  className={`flex-1 flex items-center gap-1.5 px-2 py-1.5 rounded-lg border ${
+                    plcStatus.connected
+                      ? "bg-green-50 border-green-200"
+                      : "bg-red-50 border-red-200"
+                  }`}
+                >
+                  <Cpu
+                    className={`w-3 h-3 ${
+                      plcStatus.connected ? "text-green-600" : "text-red-600"
+                    } ${plcStatus.connected ? "" : "animate-pulse"}`}
+                  />
+                  <span
+                    className={`text-[9px] font-bold uppercase tracking-wider ${
+                      plcStatus.connected ? "text-green-700" : "text-red-700"
+                    }`}
+                  >
+                    PLC WS
+                  </span>
+                  <span
+                    className={`ml-auto text-[9px] font-black ${
+                      plcStatus.connected ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {plcStatus.connected ? "ONLINE" : "OFFLINE"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -949,69 +1298,84 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, mono, color = "defaul
   );
 };
 
+interface DetailRowProps {
+  label: string;
+  value?: string | number;
+  mono?: boolean;
+  icon?: React.ElementType;
+}
+
+const DetailRow: React.FC<DetailRowProps> = ({ label, value, mono, icon: Icon }) => (
+  <div className="flex items-start justify-between py-2.5 border-b border-slate-100 last:border-0 gap-3">
+    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 shrink-0">
+      {Icon && <Icon className="w-3.5 h-3.5" />} {label}
+    </span>
+    <span className={`text-sm font-semibold text-slate-800 text-right break-words ${mono ? "font-mono" : ""}`}>
+      {value || "—"}
+    </span>
+  </div>
+);
+
 const MiniDeviceIndicator: React.FC<{
   icon: React.ElementType;
   label: string;
   subLabel?: string;
   status: CamUiStatus;
 }> = ({ icon: Icon, label, subLabel, status }) => {
-  const config: Record<CamUiStatus, {
-    iconBg: string;
-    borderColor: string;
-    labelColor: string;
-    subColor: string;
-    dotColor: string;
-  }> = {
-    ok: {
-      iconBg: "bg-gradient-to-br from-green-400 to-emerald-500",
-      borderColor: "border-green-200",
-      labelColor: "text-green-700",
-      subColor: "text-green-600",
-      dotColor: "bg-green-500",
-    },
-    error: {
-      iconBg: "bg-gradient-to-br from-red-400 to-rose-500",
-      borderColor: "border-red-200",
-      labelColor: "text-red-700",
-      subColor: "text-red-600",
-      dotColor: "bg-red-500",
-    },
-    warning: {
-      iconBg: "bg-gradient-to-br from-amber-400 to-orange-500",
-      borderColor: "border-amber-200",
-      labelColor: "text-amber-700",
-      subColor: "text-amber-600",
-      dotColor: "bg-amber-500",
-    },
-    offline: {
-      iconBg: "bg-gradient-to-br from-slate-400 to-slate-500",
-      borderColor: "border-slate-200",
-      labelColor: "text-slate-600",
-      subColor: "text-slate-500",
-      dotColor: "bg-slate-400",
-    },
-  };
+  const isOk = status === "ok";
+  const isWarn = status === "warning";
+  const isBad = status === "error" || status === "offline";
+  const containerCls = isOk
+    ? "bg-green-50 border-green-300"
+    : isWarn
+      ? "bg-amber-50 border-amber-300"
+      : "bg-red-50 border-red-300";
 
-  const c = config[status];
-  const isError = status === "error";
+  const iconBgCls = isOk
+    ? "bg-gradient-to-br from-green-500 to-emerald-600 shadow-md shadow-green-500/30"
+    : isWarn
+      ? "bg-gradient-to-br from-amber-400 to-orange-500 shadow-md shadow-amber-500/30"
+      : "bg-gradient-to-br from-red-500 to-rose-600 shadow-md shadow-red-500/30";
+
+  const labelCls = isOk ? "text-green-800" : isWarn ? "text-amber-800" : "text-red-800";
+  const subCls = isOk ? "text-green-700" : isWarn ? "text-amber-700" : "text-red-700";
+  const badgeCls = isOk
+    ? "bg-green-100 text-green-700 border-green-300"
+    : isWarn
+      ? "bg-amber-100 text-amber-700 border-amber-300"
+      : "bg-red-100 text-red-700 border-red-300";
+  const dotCls = isOk ? "bg-green-500" : isWarn ? "bg-amber-500" : "bg-red-500";
+  const statusText = isOk ? "ONLINE" : isWarn ? "CẢNH BÁO" : "OFFLINE";
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative">
-        <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${c.iconBg} flex items-center justify-center shadow-sm`}>
-          <Icon className="w-3.5 h-3.5 text-white" strokeWidth={2} />
+    <div
+      className={`rounded-xl border p-2.5 flex items-center gap-2.5 transition-all duration-300 ${containerCls}`}
+    >
+      <div className="relative shrink-0">
+        <div
+          className={`w-9 h-9 rounded-lg flex items-center justify-center ${iconBgCls}`}
+        >
+          <Icon className="w-4 h-4 text-white" strokeWidth={2.5} />
         </div>
-        <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white ${c.dotColor} ${isError ? 'animate-pulse' : ''}`} />
+        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white flex items-center justify-center">
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${dotCls} ${!isOk ? "animate-pulse" : ""}`}
+          />
+        </div>
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className={`text-[9px] font-bold uppercase ${c.labelColor}`}>
+          <span className={`text-[10px] font-black uppercase tracking-wider ${labelCls}`}>
             {label}
           </span>
-          <span className={`w-1.5 h-1.5 rounded-full ${c.dotColor} ${isError ? 'animate-pulse' : ''}`} />
+          <span
+            className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${badgeCls}`}
+          >
+            {statusText}
+          </span>
         </div>
         {subLabel && (
-          <span className={`text-[8px] ${c.subColor} font-mono truncate block`}>
+          <span className={`text-[10px] ${subCls} font-mono truncate block mt-0.5`}>
             {subLabel}
           </span>
         )}
