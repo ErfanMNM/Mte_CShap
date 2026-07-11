@@ -31,6 +31,7 @@ public class PLCMonitor : IDisposable
     public const string DefaultResultDm = "D300";
     public const string DefaultTimeoutIdDm = "D200";
     public const string DefaultTimeoutStatusDm = "D202";
+    public const string DefaultRecipeDm = "D400"; // 3 int32: DelayCamera, DelayReject, RejectStreng
 
     public record PlcReadResult(bool Success, int[] Value, string Error);
 
@@ -166,6 +167,32 @@ public class PLCMonitor : IDisposable
         catch (Exception ex)
         {
             return new PlcReadResult(false, Array.Empty<int>(), ex.Message);
+        }
+    }
+
+    /// <summary>Đọc recipe (3 int32) từ DM. KHÔNG throw. Returns default zeros nếu lỗi.</summary>
+    public PlcReadResult ReadRecipe()
+    {
+        var dm = Environment.GetEnvironmentVariable("PLC_RECIPE_DM") ?? DefaultRecipeDm;
+        var r = ReadInt32Safe(dm, 3);
+        if (!r.Success || r.Value.Length < 3)
+            return new PlcReadResult(false, new int[] { -1, -1, -1 }, r.Error);
+        return new PlcReadResult(true, r.Value, "");
+    }
+
+    /// <summary>Ghi 3 int32 xuống DM recipe. Returns success/error.</summary>
+    public string WriteRecipe(int delayCamera, int delayReject, int rejectStreng)
+    {
+        var dm = Environment.GetEnvironmentVariable("PLC_RECIPE_DM") ?? DefaultRecipeDm;
+        try
+        {
+            var r = _plc.Write(dm, new int[] { delayCamera, delayReject, rejectStreng });
+            if (!r.IsSuccess) return r.Message ?? "Write failed";
+            return "";
+        }
+        catch (Exception ex)
+        {
+            return ex.Message;
         }
     }
 

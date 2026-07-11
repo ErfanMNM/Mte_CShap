@@ -43,6 +43,7 @@ import { useDeviceStore } from "./store/useDeviceStore";
 import POManagerView from "./components/pomanager/POManagerView";
 import DataPoolView from "./components/datapool/DataPoolView";
 import ProductionView from "./components/production/ProductionView";
+import PLCSettingsView from "./components/plcsetting/PLCSettingsView";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LoginScreen } from "./components/LoginScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -1545,7 +1546,7 @@ const AdminPanelContent = ({ user, onLogout }: { user: any; onLogout: () => void
   const navigation = [
     { id: "monitor", title: "Giám sát SCADA", icon: LayoutDashboard },
     { id: "production", title: "Điều khiển SX", icon: Factory },
-    { id: "devices", title: "Quản lý thiết bị", icon: Cpu },
+    { id: "plcsetting", title: "PLC Setting", icon: Cpu },
     { id: "batches", title: "Lệnh sản xuất", icon: Package },
     { id: "datapool", title: "Quản lý DataPool", icon: Database },
     { id: "history", title: "Báo cáo sản xuất", icon: BarChart2 },
@@ -1665,12 +1666,14 @@ const AdminPanelContent = ({ user, onLogout }: { user: any; onLogout: () => void
             {activeRoute === "settings" && <SettingsView />}
             {activeRoute === "batches" && <POManagerView />}
             {activeRoute === "datapool" && <DataPoolView />}
+            {activeRoute === "plcsetting" && <PLCSettingsView />}
             {activeRoute !== "monitor" &&
               activeRoute !== "production" &&
               activeRoute !== "history" &&
               activeRoute !== "settings" &&
               activeRoute !== "batches" &&
-              activeRoute !== "datapool" && (
+              activeRoute !== "datapool" &&
+              activeRoute !== "plcsetting" && (
                 <PlaceholderView
                   title={
                     navigation.find((n) => n.id === activeRoute)?.title ||

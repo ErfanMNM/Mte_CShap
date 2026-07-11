@@ -23,3 +23,15 @@ export interface PLCSnapshot {
   lastEventAt: string | null;
   clientCount: number;
 }
+
+export interface PLCRecipe {
+  id?: number;
+  recipeName: string;
+  delayCamera: number;
+  delayReject: number;
+  rejectStreng: number;
+  isActive?: boolean;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}

@@ -41,6 +41,10 @@ namespace GProject
             GProduction.Initialize();
             Log.Information("  PO databases initialized.");
 
+            // Initialize PLC recipe DB
+            PLCRecipeDb.EnsureCreated();
+            Log.Information("  PLC recipe database initialized.");
+
             DataPoolStatic.DataPath = DataPool.DefaultDataPath;
 
             _apiServer = new GProjectApiServer(9999, "0.0.0.0", (src, msg) =>
