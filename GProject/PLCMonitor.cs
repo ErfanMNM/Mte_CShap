@@ -1,6 +1,5 @@
 using HslCommunication;
 using HslCommunication.Profinet.Omron;
-using GProject.PLCHelpers;
 using GProject.ProductionOrderHelpers;
 using Serilog;
 
@@ -64,9 +63,9 @@ public class PLCMonitor : IDisposable
 
     private void PollLoop(CancellationToken ct)
     {
-        var readyDm    = Resolve("PLC_READY_DM",       "PLC_Ready_DM",        "D16");
-        var counterDm  = Resolve("PLC_TOTAL_COUNT_DM", "PLC_Total_Count_DM",  "D100");
-        var deactiveDm = Resolve("PLC_DEACTIVE_DM",    "PLC_Deactive_DM",     "D200");
+        var readyDm = Environment.GetEnvironmentVariable("PLC_READY_DM") ?? "D16";
+        var counterDm = Environment.GetEnvironmentVariable("PLC_TOTAL_COUNT_DM") ?? "D100";
+        var deactiveDm = Environment.GetEnvironmentVariable("PLC_DEACTIVE_DM") ?? "D200";
 
         int consecutiveFailures = 0;
 
@@ -144,7 +143,7 @@ public class PLCMonitor : IDisposable
     /// </summary>
     public void WriteResultFireAndForget(short value)
     {
-        var dm = Resolve("PLC_RESULT_DM", "PLC_Result_DM", DefaultResultDm);
+        var dm = Environment.GetEnvironmentVariable("PLC_RESULT_DM") ?? DefaultResultDm;
         try
         {
             var r = _plc.Write(dm, value);
@@ -177,7 +176,7 @@ public class PLCMonitor : IDisposable
     /// <summary>Đọc recipe (3 int32) từ DM. KHÔNG throw. Returns default zeros nếu lỗi.</summary>
     public PlcReadResult ReadRecipe()
     {
-        var dm = Resolve("PLC_RECIPE_DM", "PLC_Recipe_DM", DefaultRecipeDm);
+        var dm = Environment.GetEnvironmentVariable("PLC_RECIPE_DM") ?? DefaultRecipeDm;
         var r = ReadInt32Safe(dm, 3);
         if (!r.Success || r.Value.Length < 3)
             return new PlcReadResult(false, new int[] { -1, -1, -1 }, r.Error);
@@ -187,7 +186,7 @@ public class PLCMonitor : IDisposable
     /// <summary>Ghi 3 int32 xuống DM recipe. Returns success/error.</summary>
     public string WriteRecipe(int delayCamera, int delayReject, int rejectStreng)
     {
-        var dm = Resolve("PLC_RECIPE_DM", "PLC_Recipe_DM", DefaultRecipeDm);
+        var dm = Environment.GetEnvironmentVariable("PLC_RECIPE_DM") ?? DefaultRecipeDm;
         try
         {
             var r = _plc.Write(dm, new int[] { delayCamera, delayReject, rejectStreng });
@@ -291,27 +290,6 @@ public class PLCMonitor : IDisposable
     {
         _running = false;
         try { _cts.Cancel(); } catch { }
-    }
-
-    /// <summary>
-    /// Ưu tiên env var, sau đó Google Sheet (PLCAddressWithGoogleSheetHelper),
-    /// cuối cùng fallback về hard-code. Không throw — đảm bảo poll loop không crash
-    /// khi helper chưa Init hoặc sheet thiếu key.
-    /// </summary>
-    private static string Resolve(string envName, string sheetKey, string fallback)
-    {
-        var env = Environment.GetEnvironmentVariable(envName);
-        if (!string.IsNullOrEmpty(env)) return env;
-        try
-        {
-            return PLCAddressWithGoogleSheetHelper.Get(sheetKey);
-        }
-        catch (Exception ex)
-        {
-            Log.Warning("[PLCMonitor] Address key '{Key}' missing in Google Sheet, fallback to {Fallback}: {Ex}",
-                        sheetKey, fallback, ex.Message);
-            return fallback;
-        }
     }
 
     public void Dispose()

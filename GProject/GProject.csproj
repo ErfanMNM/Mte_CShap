@@ -14,9 +14,6 @@
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
     <PackageReference Include="HslCommunication" Version="11.3.0" />
-    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.70.0.3819" />
-    <PackageReference Include="Google.Apis.Auth" Version="1.72.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,6 @@
 ﻿using Glib.Omron;
 using GProject.DataPoolHelper;
 using GProject.Auth;
-using GProject.PLCHelpers;
 using GProject.Production;
 using GProject.ProductionOrderHelpers;
 using Raycoon.Serilog.Sinks.SQLite.Options;
@@ -95,17 +94,6 @@ namespace GProject
 
                 // Khoi tao PLC Monitor (Omron FINS/UDP) - heartbeat + counter polling.
                 // Broadcasts connection state to FE via /ws/plc.
-
-                // Load map địa chỉ PLC từ Google Sheet tab 'VINA CF' (cùng spreadsheet MasanQR mà TApp dùng).
-                // Helper sẽ tự fallback về cache local nếu Sheet không truy cập được.
-                const string spreadsheetId = "1V2xjY6AA4URrtcwUorQE54Ud5KyI7Ev2hpDPMMcXVTI";
-                bool sheetLoaded = PLCAddressWithGoogleSheetHelper.Init(
-                    spreadsheetId,
-                    Environment.GetEnvironmentVariable("PLC_GOOGLE_SHEET_RANGE") ?? "VINA CF!A1:D100");
-                Log.Information("[PLC] Address map loaded from {Source}, keys: {Count}",
-                    sheetLoaded ? "Google Sheet" : "local cache",
-                    PLCAddressWithGoogleSheetHelper.AddressMap.Count);
-
                 _plcMonitor = new PLCMonitor();
                 _plcMonitor.StateChanged += (_, args) =>
                 {
