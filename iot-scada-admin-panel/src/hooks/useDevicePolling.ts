@@ -17,8 +17,8 @@ import type { CameraSnapshot } from "../types/camera";
 import type { PLCSnapshot } from "../types/plc";
 import type { ProductionStateResponse } from "../types/production";
 
-/** Số lần fail liên tiếp trước khi bật trạng thái lỗi trên UI (polling 2000ms × 3 ≈ 6s). */
-const FAIL_THRESHOLD = 3;
+/** Số lần fail liên tiếp trước khi hiện dialog cảnh báo (polling 2000ms × 5 ≈ 10s). */
+const FAIL_THRESHOLD = 5;
 
 export interface UseDevicePollingOptions {
   /** Polling interval in ms. Default: 2000ms. */
@@ -170,8 +170,10 @@ export function useDevicePolling(options: UseDevicePollingOptions = {}) {
 
       if (ok) {
         failCountRef.current = 0;
+        useDeviceStore.getState().resetFailCount();
       } else {
         failCountRef.current += 1;
+        useDeviceStore.getState().incrementFailCount();
         if (failCountRef.current >= FAIL_THRESHOLD) {
           setApiStatus({ error: true, statusCode, message });
         }

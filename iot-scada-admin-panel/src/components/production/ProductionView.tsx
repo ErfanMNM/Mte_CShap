@@ -28,6 +28,7 @@ import {
 import productionApi from "../../services/productionApi";
 import poApi from "../../services/poApi";
 import { useCameraSocket } from "../../hooks/useCameraSocket";
+import { useDevicePolling } from "../../hooks/useDevicePolling";
 import { useDeviceStore } from "../../store/useDeviceStore";
 import { handleActiveCodeScanned } from "../../services/cameraApi";
 import type { ProductionStatusResponse } from "../../types/production";
@@ -215,6 +216,9 @@ const ProductionView: React.FC = () => {
   const cameraStatus = useDeviceStore((s) => s.camera);
   const plcStatus = useDeviceStore((s) => s.plc);
   const productionStatus = useDeviceStore((s) => s.production);
+
+  // REST polling for device status (Camera, PLC, Production state)
+  useDevicePolling({ intervalMs: 2000 });
 
   // Camera WebSocket - auto addFromReader khi nhận Received từ camera (logs only, store sync handled by App.tsx)
   const cameraWsUrl =

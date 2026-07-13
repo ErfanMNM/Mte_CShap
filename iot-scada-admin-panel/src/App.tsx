@@ -45,6 +45,7 @@ import { PLCSettingsView } from "./components/plcsetting/PLCSettingsView";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LoginScreen } from "./components/LoginScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import ConnectionLostDialog from "./components/ConnectionLostDialog";
 import type {
   CameraHistoryItem,
   CameraHistoryResponse,
@@ -172,50 +173,70 @@ const DeviceIndicator = ({
   onRetry?: () => void;
   showRetrySpinner?: boolean;
 }) => {
-  const styles: Record<string, string> = {
-    connected: "bg-green-50 text-green-700 border-green-100",
-    error: "bg-red-50 text-red-700 border-red-100",
-    warning: "bg-amber-50 text-amber-700 border-amber-100",
-    connecting: "bg-blue-50 text-blue-700 border-blue-100",
-    offline: "bg-slate-50 text-slate-600 border-slate-100",
-  };
-  const dotStyles: Record<string, string> = {
-    connected: "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]",
-    error: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse",
-    warning: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]",
-    connecting:
-      "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse",
-    offline: "bg-slate-400",
-  };
+  const isOk = status === "connected";
+  const isWarn = status === "warning" || status === "connecting";
+  const isBad = status === "error" || status === "offline";
+
+  const containerCls = isOk
+    ? "bg-green-50 border-green-200"
+    : isWarn
+      ? "bg-amber-50 border-amber-200"
+      : "bg-red-50 border-red-200";
+
+  const iconBgCls = isOk
+    ? "bg-gradient-to-br from-green-500 to-emerald-600 shadow-md shadow-green-500/30"
+    : isWarn
+      ? "bg-gradient-to-br from-amber-400 to-orange-500 shadow-md shadow-amber-500/30"
+      : "bg-gradient-to-br from-red-500 to-rose-600 shadow-md shadow-red-500/30";
+
+  const labelCls = isOk ? "text-green-800" : isWarn ? "text-amber-800" : "text-red-800";
+  const subCls = isOk ? "text-green-700" : isWarn ? "text-amber-700" : "text-red-700";
+  const badgeCls = isOk
+    ? "bg-green-100 text-green-700 border-green-200"
+    : isWarn
+      ? "bg-amber-100 text-amber-700 border-amber-200"
+      : "bg-red-100 text-red-700 border-red-200";
+  const dotCls = isOk ? "bg-green-500" : isWarn ? "bg-amber-500" : "bg-red-500";
+  const statusText = isOk ? "ONLINE" : isWarn ? "ĐANG KẾT NỐI" : "OFFLINE";
 
   return (
-    <div className={`flex items-center justify-between px-0 py-0 xl:px-0.5 xl:py-0 2xl:px-0.5 2xl:py-0 rounded border ${styles[status]} transition-colors min-w-0`}>
-      <div className="flex items-center gap-0.5 min-w-0">
-        <div className="shrink-0">
-          <Icon className="w-2 h-2 xl:w-2.5 xl:h-2.5 text-slate-500" strokeWidth={2} />
+    <div
+      className={`rounded-xl border p-2 flex items-center gap-2 transition-all duration-300 ${containerCls}`}
+    >
+      <div className="relative shrink-0">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBgCls}`}>
+          <Icon className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
         </div>
-        <div className="min-w-0">
-          <span className="text-[9px] xl:text-[10px] 2xl:text-[11px] font-semibold tracking-wide truncate block leading-tight">{label}</span>
-          {subLabel && (
-            <span className="text-[7px] xl:text-[8px] 2xl:text-[9px] font-medium text-slate-500 tracking-wide truncate block leading-tight">{subLabel}</span>
-          )}
+        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white flex items-center justify-center">
+          <span className={`w-1.5 h-1.5 rounded-full ${dotCls} ${!isOk ? "animate-pulse" : ""}`} />
         </div>
       </div>
-      <div className="flex items-center shrink-0 pl-0.5">
-        {showRetrySpinner && status === "error" && onRetry ? (
-          <button
-            type="button"
-            onClick={onRetry}
-            aria-label="Thử lại"
-            title="Thử lại"
-            className="w-2.5 h-2.5 xl:w-3 xl:h-3 rounded-full flex items-center justify-center text-red-600 hover:bg-red-100/70 transition-colors"
-          >
-            <RefreshCw className="w-1.5 h-1.5 xl:w-2 xl:h-2 animate-spin" />
-          </button>
-        ) : (
-          <div className={`w-1 h-1 xl:w-1.5 xl:h-1.5 2xl:w-1.5 2xl:h-1.5 rounded-full ${dotStyles[status]}`} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className={`text-[10px] font-black uppercase tracking-wider ${labelCls}`}>
+            {label}
+          </span>
+          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${badgeCls}`}>
+            {statusText}
+          </span>
+        </div>
+        {subLabel && (
+          <span className={`text-[10px] ${subCls} font-mono truncate block mt-0.5`}>
+            {subLabel}
+          </span>
         )}
       </div>
+      {showRetrySpinner && status === "error" && onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          aria-label="Thử lại"
+          title="Thử lại"
+          className="shrink-0 p-1.5 rounded-lg hover:bg-red-100 transition-colors"
+        >
+          <RefreshCw className="w-3.5 h-3.5 text-red-600 animate-spin" />
+        </button>
+      )}
     </div>
   );
 };
@@ -223,121 +244,140 @@ const DeviceIndicator = ({
 const AppStateIndicator = ({ state }: { state: string }) => {
   const stateConfig: Record<
     string,
-    { label: string; bg: string; text: string; dot: string }
+    { label: string; bg: string; text: string; dot: string; badge: string }
   > = {
     NeedLogin: {
       label: "NEED LOGIN",
-      bg: "bg-slate-50 border-slate-100",
+      bg: "bg-slate-50 border-slate-200",
       text: "text-slate-700",
       dot: "bg-slate-400",
+      badge: "bg-slate-100 text-slate-600 border-slate-200",
     },
     NoSelectedPO: {
       label: "NO PO",
-      bg: "bg-slate-50 border-slate-100",
+      bg: "bg-slate-50 border-slate-200",
       text: "text-slate-700",
       dot: "bg-slate-400",
+      badge: "bg-slate-100 text-slate-600 border-slate-200",
     },
     Editing: {
       label: "EDITING",
-      bg: "bg-slate-50 border-slate-100",
+      bg: "bg-slate-50 border-slate-200",
       text: "text-slate-700",
       dot: "bg-slate-400",
+      badge: "bg-slate-100 text-slate-600 border-slate-200",
     },
     CheckingPO: {
       label: "CHECKING PO",
-      bg: "bg-blue-50 border-blue-100",
+      bg: "bg-blue-50 border-blue-200",
       text: "text-blue-700",
       dot: "bg-blue-500 animate-pulse",
+      badge: "bg-blue-100 text-blue-700 border-blue-200",
     },
     Checking: {
       label: "CHECKING",
-      bg: "bg-blue-50 border-blue-100",
+      bg: "bg-blue-50 border-blue-200",
       text: "text-blue-700",
       dot: "bg-blue-500 animate-pulse",
+      badge: "bg-blue-100 text-blue-700 border-blue-200",
     },
     CheckPO: {
       label: "CHECK PO",
-      bg: "bg-blue-50 border-blue-100",
+      bg: "bg-blue-50 border-blue-200",
       text: "text-blue-700",
       dot: "bg-blue-500 animate-pulse",
+      badge: "bg-blue-100 text-blue-700 border-blue-200",
     },
     LoadPO: {
       label: "LOAD PO",
-      bg: "bg-blue-50 border-blue-100",
+      bg: "bg-blue-50 border-blue-200",
       text: "text-blue-700",
       dot: "bg-blue-500 animate-pulse",
+      badge: "bg-blue-100 text-blue-700 border-blue-200",
     },
     Ready: {
       label: "READY",
-      bg: "bg-green-50 border-green-100",
+      bg: "bg-green-50 border-green-200",
       text: "text-green-700",
       dot: "bg-green-500",
+      badge: "bg-green-100 text-green-700 border-green-200",
     },
     PushingToDic: {
       label: "LOADING DIC",
-      bg: "bg-blue-50 border-blue-100",
+      bg: "bg-blue-50 border-blue-200",
       text: "text-blue-700",
       dot: "bg-blue-500 animate-pulse",
+      badge: "bg-blue-100 text-blue-700 border-blue-200",
     },
     Running: {
       label: "RUNNING",
-      bg: "bg-green-50 border-green-100",
+      bg: "bg-green-50 border-green-200",
       text: "text-green-700",
-      dot: "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]",
+      dot: "bg-green-500",
+      badge: "bg-green-100 text-green-700 border-green-200",
     },
     Paused: {
       label: "PAUSED",
-      bg: "bg-amber-50 border-amber-100",
+      bg: "bg-amber-50 border-amber-200",
       text: "text-amber-700",
       dot: "bg-amber-500",
+      badge: "bg-amber-100 text-amber-700 border-amber-200",
     },
     CheckingQueue: {
       label: "CHECK QUEUE",
-      bg: "bg-blue-50 border-blue-100",
+      bg: "bg-blue-50 border-blue-200",
       text: "text-blue-700",
       dot: "bg-blue-500 animate-pulse",
+      badge: "bg-blue-100 text-blue-700 border-blue-200",
     },
     Saving: {
       label: "SAVING",
-      bg: "bg-blue-50 border-blue-100",
+      bg: "bg-blue-50 border-blue-200",
       text: "text-blue-700",
       dot: "bg-blue-500 animate-pulse",
+      badge: "bg-blue-100 text-blue-700 border-blue-200",
     },
     WaitingStop: {
       label: "WAITING STOP",
-      bg: "bg-amber-50 border-amber-100",
+      bg: "bg-amber-50 border-amber-200",
       text: "text-amber-700",
       dot: "bg-amber-500 animate-pulse",
+      badge: "bg-amber-100 text-amber-700 border-amber-200",
     },
     CheckAfterCompleted: {
       label: "CHECK DONE",
-      bg: "bg-blue-50 border-blue-100",
+      bg: "bg-blue-50 border-blue-200",
       text: "text-blue-700",
       dot: "bg-blue-500 animate-pulse",
+      badge: "bg-blue-100 text-blue-700 border-blue-200",
     },
     Completed: {
       label: "COMPLETED",
-      bg: "bg-green-50 border-green-100",
+      bg: "bg-green-50 border-green-200",
       text: "text-green-700",
       dot: "bg-green-500",
+      badge: "bg-green-100 text-green-700 border-green-200",
     },
     DeviceError: {
       label: "DEVICE ERROR",
-      bg: "bg-red-50 border-red-100",
+      bg: "bg-red-50 border-red-200",
       text: "text-red-700",
-      dot: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse",
+      dot: "bg-red-500 animate-pulse",
+      badge: "bg-red-100 text-red-700 border-red-200",
     },
     Error: {
       label: "ERROR",
-      bg: "bg-red-50 border-red-100",
+      bg: "bg-red-50 border-red-200",
       text: "text-red-700",
-      dot: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse",
+      dot: "bg-red-500 animate-pulse",
+      badge: "bg-red-100 text-red-700 border-red-200",
     },
     Unknown: {
       label: "IDLE",
-      bg: "bg-slate-50 border-slate-100",
+      bg: "bg-slate-50 border-slate-200",
       text: "text-slate-700",
       dot: "bg-slate-400",
+      badge: "bg-slate-100 text-slate-600 border-slate-200",
     },
   };
 
@@ -345,21 +385,33 @@ const AppStateIndicator = ({ state }: { state: string }) => {
     stateConfig[state] ||
     stateConfig.Unknown;
 
+  const isOk = ["Ready", "Running", "Completed"].includes(state);
+  const isBad = ["DeviceError", "Error"].includes(state);
+  const iconBgCls = isOk
+    ? "bg-gradient-to-br from-green-500 to-emerald-600 shadow-md shadow-green-500/30"
+    : isBad
+      ? "bg-gradient-to-br from-red-500 to-rose-600 shadow-md shadow-red-500/30"
+      : "bg-gradient-to-br from-blue-400 to-indigo-600 shadow-md shadow-blue-500/30";
+
   return (
-    <div className={`flex items-center justify-between px-0 py-0 xl:px-0.5 xl:py-0 2xl:px-0.5 2xl:py-0 rounded border ${config.bg} transition-colors min-w-0`}>
-      <div className="flex items-center gap-0.5 min-w-0">
-        <div className="shrink-0">
-          <Wifi className="w-2 h-2 xl:w-2.5 xl:h-2.5 text-slate-500" strokeWidth={2} />
+    <div className={`rounded-xl border p-2 flex items-center gap-2 transition-all duration-300 ${config.bg}`}>
+      <div className="relative shrink-0">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBgCls}`}>
+          <Wifi className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
         </div>
-        <div className="min-w-0">
-          <span className="text-[9px] xl:text-[10px] 2xl:text-[11px] font-semibold tracking-wide truncate block leading-tight">HỆ THỐNG</span>
-          <span className={`text-[9px] xl:text-[10px] 2xl:text-[11px] font-bold tracking-wider truncate block leading-tight ${config.text}`}>
+        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white flex items-center justify-center">
+          <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+        </div>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className={`text-[10px] font-black uppercase tracking-wider ${config.text}`}>
+            HỆ THỐNG
+          </span>
+          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${config.badge}`}>
             {config.label}
           </span>
         </div>
-      </div>
-      <div className="flex items-center shrink-0 pl-0.5">
-        <div className={`w-1 h-1 xl:w-1.5 xl:h-1.5 2xl:w-1.5 2xl:h-1.5 rounded-full ${config.dot}`} />
       </div>
     </div>
   );
@@ -1528,6 +1580,7 @@ const AdminPanelWithAuth = () => {
 
   return (
     <ErrorBoundary>
+      <ConnectionLostDialog />
       <AdminPanelContent user={user} onLogout={logout} />
     </ErrorBoundary>
   );
