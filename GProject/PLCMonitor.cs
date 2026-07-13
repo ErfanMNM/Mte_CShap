@@ -1,5 +1,6 @@
 using HslCommunication;
 using HslCommunication.Profinet.Omron;
+using GProject.ProductionOrderHelpers;
 using Serilog;
 
 namespace GProject;
@@ -31,8 +32,11 @@ public class PLCMonitor : IDisposable
     public const string DefaultResultDm = "D300";
     public const string DefaultTimeoutIdDm = "D200";
     public const string DefaultTimeoutStatusDm = "D202";
+    public const string DefaultRecipeDm = "D400"; // 3 int32: DelayCamera, DelayReject, RejectStreng
 
     public record PlcReadResult(bool Success, int[] Value, string Error);
+
+    public record PlcReadAnyResult(bool Success, GProject.ProductionOrderHelpers.PlcDataType DataType, string Value, string Error);
 
     public PLCMonitor()
     {
@@ -166,6 +170,119 @@ public class PLCMonitor : IDisposable
         catch (Exception ex)
         {
             return new PlcReadResult(false, Array.Empty<int>(), ex.Message);
+        }
+    }
+
+    /// <summary>Đọc recipe (3 int32) từ DM. KHÔNG throw. Returns default zeros nếu lỗi.</summary>
+    public PlcReadResult ReadRecipe()
+    {
+        var dm = Environment.GetEnvironmentVariable("PLC_RECIPE_DM") ?? DefaultRecipeDm;
+        var r = ReadInt32Safe(dm, 3);
+        if (!r.Success || r.Value.Length < 3)
+            return new PlcReadResult(false, new int[] { -1, -1, -1 }, r.Error);
+        return new PlcReadResult(true, r.Value, "");
+    }
+
+    /// <summary>Ghi 3 int32 xuống DM recipe. Returns success/error.</summary>
+    public string WriteRecipe(int delayCamera, int delayReject, int rejectStreng)
+    {
+        var dm = Environment.GetEnvironmentVariable("PLC_RECIPE_DM") ?? DefaultRecipeDm;
+        try
+        {
+            var r = _plc.Write(dm, new int[] { delayCamera, delayReject, rejectStreng });
+            if (!r.IsSuccess) return r.Message ?? "Write failed";
+            return "";
+        }
+        catch (Exception ex)
+        {
+            return ex.Message;
+        }
+    }
+
+    /// <summary>Đọc 1 ô tuỳ biến theo data type. KHÔNG throw.</summary>
+    public PlcReadAnyResult ReadRegister(string address, string dataType)
+    {
+        try
+        {
+            var t = PlcDataTypeMap.Parse(dataType);
+            switch (t)
+            {
+                case PlcDataType.Int16:
+                {
+                    var r = _plc.ReadInt16(address, 1);
+                    return new PlcReadAnyResult(r.IsSuccess, PlcDataType.Int16,
+                                                r.IsSuccess ? r.Content[0].ToString() : "",
+                                                r.IsSuccess ? "" : r.Message);
+                }
+                case PlcDataType.Int32:
+                {
+                    var r = _plc.ReadInt32(address, 1);
+                    return new PlcReadAnyResult(r.IsSuccess, PlcDataType.Int32,
+                                                r.IsSuccess ? r.Content[0].ToString() : "",
+                                                r.IsSuccess ? "" : r.Message);
+                }
+                case PlcDataType.Float:
+                {
+                    var r = _plc.ReadFloat(address, 1);
+                    return new PlcReadAnyResult(r.IsSuccess, PlcDataType.Float,
+                                                r.IsSuccess ? r.Content[0].ToString(System.Globalization.CultureInfo.InvariantCulture) : "",
+                                                r.IsSuccess ? "" : r.Message);
+                }
+                case PlcDataType.String:
+                {
+                    // Đọc tối đa 32 word (64 char) cho string.
+                    var r = _plc.ReadString(address, 64);
+                    return new PlcReadAnyResult(r.IsSuccess, PlcDataType.String,
+                                                r.IsSuccess ? r.Content : "",
+                                                r.IsSuccess ? "" : r.Message);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return new PlcReadAnyResult(false, PlcDataType.Int32, "", ex.Message);
+        }
+        return new PlcReadAnyResult(false, PlcDataType.Int32, "", "Unknown");
+    }
+
+    /// <summary>Ghi 1 ô tuỳ biến. Trả về "" nếu OK, message lỗi nếu thất bại.</summary>
+    public string WriteRegister(string address, string dataType, string value)
+    {
+        try
+        {
+            var t = PlcDataTypeMap.Parse(dataType);
+            switch (t)
+            {
+                case PlcDataType.Int16:
+                {
+                    if (!short.TryParse(value, out var s)) return $"Không parse được int16: {value}";
+                    var r = _plc.Write(address, s);
+                    return r.IsSuccess ? "" : (r.Message ?? "Write failed");
+                }
+                case PlcDataType.Int32:
+                {
+                    if (!int.TryParse(value, out var s)) return $"Không parse được int32: {value}";
+                    var r = _plc.Write(address, s);
+                    return r.IsSuccess ? "" : (r.Message ?? "Write failed");
+                }
+                case PlcDataType.Float:
+                {
+                    if (!float.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                        return $"Không parse được float: {value}";
+                    var r = _plc.Write(address, f);
+                    return r.IsSuccess ? "" : (r.Message ?? "Write failed");
+                }
+                case PlcDataType.String:
+                {
+                    var r = _plc.Write(address, value ?? "");
+                    return r.IsSuccess ? "" : (r.Message ?? "Write failed");
+                }
+            }
+            return "Unknown type";
+        }
+        catch (Exception ex)
+        {
+            return ex.Message;
         }
     }
 

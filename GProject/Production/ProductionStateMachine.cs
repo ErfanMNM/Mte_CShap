@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
+using Microsoft.Data.Sqlite;
 using GProject.ProductionOrderHelpers;
+using GProject.DataPoolHelper;
 using Serilog;
 using GProject.Infrastructure;
 
@@ -205,6 +207,133 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 oldDate, ProductionData.ProductionDate, userName);
 
             return (true, $"Đã cập nhật ngày SX thành {ProductionData.ProductionDate}");
+        }
+
+        /// <summary>
+        /// Đồng bộ PO Database với DataPool khi bắt đầu Run PO
+        /// - Mã có trong Pool nhưng không trong PO => Thêm vào PO (Status=0)
+        /// - Mã có trong PO nhưng không trong Pool => Đánh dấu Status=1 trong Pool
+        /// - Kiểm tra số mã còn lại trong Pool >= orderQty
+        /// </summary>
+        public (bool success, string message, int availableCodes) SyncPoolWithPO()
+        {
+            if (ProductionData == null)
+                return (false, "Chưa chọn PO.", 0);
+
+            string orderNo = ProductionData.OrderNo;
+            string gtin = ProductionData.Gtin;
+            int orderQty = ProductionData.OrderQty;
+
+            if (string.IsNullOrWhiteSpace(gtin))
+                return (false, "PO không có GTIN.", 0);
+
+            try
+            {
+                string dbPoolPath = GProject.ProductionOrderHelpers.Config.GetDataPoolPath(gtin);
+                string dbPOPath = GProject.ProductionOrderHelpers.Config.GetPODBPath(orderNo);
+
+                // Load mã từ PO Database
+                HashSet<string> codesInPO = new(StringComparer.OrdinalIgnoreCase);
+                using (var conPO = new SqliteConnection($"Data Source={dbPOPath}"))
+                {
+                    conPO.Open();
+                    using var cmd = new SqliteCommand("SELECT Code FROM UniqueCodes;", conPO);
+                    using var rd = cmd.ExecuteReader();
+                    while (rd.Read()) codesInPO.Add(rd.GetString(0));
+                }
+
+                // Load mã từ DataPool
+                HashSet<string> codesInPool = new(StringComparer.OrdinalIgnoreCase);
+                using (var conPool = new SqliteConnection($"Data Source={dbPoolPath}"))
+                {
+                    conPool.Open();
+                    using var cmd = new SqliteCommand("SELECT Code FROM Codes;", conPool);
+                    using var rd = cmd.ExecuteReader();
+                    while (rd.Read()) codesInPool.Add(rd.GetString(0));
+                }
+
+                // Mã có trong PO nhưng không trong Pool -> Đánh dấu Status=1 trong Pool
+                foreach (var code in codesInPO)
+                {
+                    if (!codesInPool.Contains(code))
+                    {
+                        // Mã có trong PO nhưng không tồn tại trong Pool
+                        // Không cần làm gì vì mã không có trong Pool
+                        continue;
+                    }
+                    // Mã này đã được activate (có trong PO) nên đánh dấu Used trong Pool
+                    DataPoolHelper.DataPoolStatic.MarkUsedSimple(gtin, code);
+                }
+
+                // Mã có trong Pool nhưng không trong PO -> Thêm vào PO
+                int addedCount = 0;
+                if (codesInPool.Count > codesInPO.Count)
+                {
+                    using var conPO2 = new SqliteConnection($"Data Source={dbPOPath}");
+                    conPO2.Open();
+                    using var tx = conPO2.BeginTransaction();
+
+                    var codesToAdd = codesInPool.Except(codesInPO, StringComparer.OrdinalIgnoreCase);
+                    foreach (var code in codesToAdd)
+                    {
+                        using var cmd = conPO2.CreateCommand();
+                        cmd.Transaction = tx;
+                        cmd.CommandText = @"INSERT OR IGNORE INTO UniqueCodes (Code, Status, ProductionDate) 
+                                           VALUES ($code, 0, $prodDate)";
+                        cmd.Parameters.AddWithValue("$code", code);
+                        cmd.Parameters.AddWithValue("$prodDate", ProductionData.ProductionDate ?? "");
+                        cmd.ExecuteNonQuery();
+                        addedCount++;
+                    }
+                    tx.Commit();
+                }
+
+                // Đếm số mã còn lại trong Pool (Status=0)
+                int availableInPool = 0;
+                using (var conPool2 = new SqliteConnection($"Data Source={dbPoolPath}"))
+                {
+                    conPool2.Open();
+                    using var cmd = new SqliteCommand("SELECT COUNT(*) FROM Codes WHERE Status = 0;", conPool2);
+                    availableInPool = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+
+                Log.Information("[SyncPoolWithPO] Sync completed: added={Added}, availableInPool={Available}, orderQty={OrderQty}",
+                    addedCount, availableInPool, orderQty);
+
+                // Kiểm tra số mã có đủ không
+                if (availableInPool < orderQty)
+                {
+                    LastWarning = $"Khong du ma: Pool con {availableInPool}, can {orderQty}";
+                    return (false, LastWarning, availableInPool);
+                }
+
+                return (true, $"Sync thanh cong. Them {addedCount} ma vao PO.", availableInPool);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[SyncPoolWithPO] Error syncing PO with DataPool");
+                return (false, $"Loi sync: {ex.Message}", 0);
+            }
+        }
+
+        /// <summary>
+        /// Thử lại kiểm tra và chạy sản xuất sau khi đã thêm mã vào pool
+        /// Chỉ hoạt động khi đang ở trạng thái InsufficientCodes
+        /// </summary>
+        public (bool success, string message, int availableCodes) RetryRunProduction()
+        {
+            if (CurrentState != e_ProductionState.InsufficientCodes)
+                return (false, $"Chi co the retry khi o trang thai InsufficientCodes. State hien tai: {CurrentState}", 0);
+
+            // Gọi lại SyncPoolWithPO để kiểm tra
+            var result = SyncPoolWithPO();
+            if (result.success)
+            {
+                // Đủ mã -> Quay về PushingToDic để bắt đầu
+                SetState(e_ProductionState.PushingToDic, "Du ma sau khi retry");
+                Log.Information("[RetryRunProduction] Retry success, transitioning to PushingToDic");
+            }
+            return result;
         }
 
         /// <summary>
@@ -504,6 +633,12 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     PackageCounter.PassCount++;
                     ActiveCounter.CartonCode = currentCartonCode;
 
+                    // Đánh dấu Status=1 trong DataPool khi activate thành công
+                    if (!string.IsNullOrEmpty(ProductionData?.Gtin))
+                    {
+                        DataPoolHelper.DataPoolStatic.MarkUsedSimple(ProductionData.Gtin, code);
+                    }
+
                     // Đủ carton -> enqueue CompleteCarton + next carton
                     if (PackageCounter.PassCount >= ActiveCounter.CartonCapacity)
                     {
@@ -661,6 +796,11 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     break;
                 case e_ProductionState.WaitCartonCode:
                     // Đang chờ user nhập mã thùng mới qua API
+                    ProcessPauseState();
+                    break;
+
+                case e_ProductionState.InsufficientCodes:
+                    // Không đủ mã trong pool - chờ user thêm mã vào pool hoặc quay lại Ready
                     ProcessPauseState();
                     break;
 
@@ -962,6 +1102,15 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
 
                     // 3) Tính lại ActiveCounter.PassCount = tổng mã đã active trong PO
                     ActiveCounter.PassCount = GProduction.PORecordHelper.GetActiveCount(ProductionData.OrderNo);
+
+                    // 4) Đồng bộ PO với DataPool và kiểm tra đủ mã
+                    var syncResult = SyncPoolWithPO();
+                    if (!syncResult.success)
+                    {
+                        Log.Warning("[StateMachine] SyncPoolWithPO failed: {Message}", syncResult.message);
+                        SetState(e_ProductionState.InsufficientCodes, syncResult.message);
+                        return;
+                    }
 
                     Log.Information("[StateMachine] Reload state: cartonID={CartonId}, cartonCode={CartonCode}, packed={Packed}, totalActive={Active}",
                         ActiveCounter.CartonID, ActiveCounter.CartonCode, PackageCounter.PassCount, ActiveCounter.PassCount);

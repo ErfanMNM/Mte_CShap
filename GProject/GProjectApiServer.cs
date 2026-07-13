@@ -1,4 +1,5 @@
 using System.Net.WebSockets;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Glib.Omron;
 using GProject.DataPoolHelper;
@@ -183,9 +184,24 @@ public class GProjectApiServer : IDisposable
         _app.MapPost("/api/production/stop", (Delegate)HandleProductionStop);
         _app.MapPost("/api/production/reset", (Delegate)HandleProductionReset);
         _app.MapGet("/api/production/ping", (Delegate)HandleProductionPing);
+        _app.MapPost("/api/production/retry", (Delegate)HandleProductionRetry);
 
         // Device status (aggregates Camera, PLC, Production states)
         _app.MapGet("/api/devices/status", HandleGetDevicesStatus);
+
+        // PLC recipe endpoints
+        _app.MapGet("/api/plc/recipe/active", (Delegate)HandlePlcGetActiveRecipe);
+        _app.MapGet("/api/plc/recipe/list", (Delegate)HandlePlcGetAllRecipes);
+        _app.MapGet("/api/plc/recipe/from-plc", (Delegate)HandlePlcReadRecipeFromDevice);
+        _app.MapPost("/api/plc/recipe/save", (Delegate)HandlePlcSaveRecipe);
+        _app.MapPost("/api/plc/recipe/active", (Delegate)HandlePlcSetActiveRecipe);
+        _app.MapDelete("/api/plc/recipe/{id:int}", (Delegate)HandlePlcDeleteRecipe);
+
+        // Recipe custom registers endpoints
+        _app.MapGet("/api/plc/recipe/{recipeId:int}/registers", (Delegate)HandlePlcGetRegisters);
+        _app.MapPost("/api/plc/recipe/{recipeId:int}/registers", (Delegate)HandlePlcSaveRegisters);
+        _app.MapPost("/api/plc/recipe/{recipeId:int}/registers/read", (Delegate)HandlePlcReadRegistersFromDevice);
+        _app.MapPost("/api/plc/recipe/{recipeId:int}/registers/write", (Delegate)HandlePlcWriteRegistersToDevice);
 
         // Initialize PO database
         POApiServer.Initialize();
@@ -1057,6 +1073,45 @@ public class GProjectApiServer : IDisposable
         }
 
     /// <summary>
+    /// Retry kiểm tra và chạy sản xuất sau khi đã thêm mã vào pool
+    /// Chỉ hoạt động khi đang ở trạng thái InsufficientCodes
+    /// </summary>
+    private async Task<IResult> HandleProductionRetry(HttpContext context)
+    {
+        try
+        {
+            var sm = ProductionStateMachine.Instance;
+            if (sm.CurrentState != e_ProductionState.InsufficientCodes)
+            {
+                return Results.Json(new RetryRunResponse
+                {   
+                    Success = false,
+                    Message = $"Chi co the retry khi o trang thai InsufficientCodes. State hien tai: {sm.CurrentState}"
+                }, statusCode: 400);
+            }
+
+            var result = sm.RetryRunProduction();
+            return Results.Json(new RetryRunResponse
+            {
+                Success = result.success,
+                Message = result.message,
+                AvailableCodes = result.availableCodes,
+                OrderQty = ProductionStateMachine.ProductionData?.OrderQty ?? 0,
+                NeededCodes = Math.Max(0, (ProductionStateMachine.ProductionData?.OrderQty ?? 0) - result.availableCodes)
+            }, statusCode: result.success ? 200 : 400);
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error in HandleProductionRetry: {ex.Message}", ex);
+            return Results.Json(new RetryRunResponse
+            {
+                Success = false,
+                Message = ex.Message
+            }, statusCode: 500);
+        }
+    }
+
+    /// <summary>
     /// Trả về trạng thái tất cả thiết bị: Camera, PLC, Production.
     /// Dùng cho Frontend REST polling thay thế WebSocket state sync.
     /// </summary>
@@ -1167,6 +1222,350 @@ public class GProjectApiServer : IDisposable
             LogError("GProjectApiServer", $"Error getting devices status: {ex.Message}", ex);
             return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
         }
+    }
+    #endregion
+
+    #region === PLC RECIPE ===
+    private IResult HandlePlcGetActiveRecipe()
+    {
+        try
+        {
+            PLCRecipeDb.EnsureCreated();
+            var r = PLCRecipeDb.GetActive();
+            if (r == null)
+                return Results.Json(new { success = true, message = "Chưa có recipe active nào.", data = (PLCRecipe?)null });
+            return Results.Json(new { success = true, message = "OK", data = r });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error getting active recipe: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private IResult HandlePlcGetAllRecipes()
+    {
+        try
+        {
+            PLCRecipeDb.EnsureCreated();
+            var list = PLCRecipeDb.GetAll();
+            return Results.Json(new { success = true, message = "OK", data = list, count = list.Count });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error getting recipes: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private IResult HandlePlcReadRecipeFromDevice()
+    {
+        try
+        {
+            var plc = Program.GetPLCMonitor();
+            if (plc == null)
+                return Results.Json(new ApiResponse { Success = false, Message = "PLC monitor chưa khởi tạo." }, statusCode: 503);
+
+            var r = plc.ReadRecipe();
+            if (!r.Success)
+                return Results.Json(new { success = false, message = r.Error, data = (object?)null });
+
+            return Results.Json(new
+            {
+                success = true,
+                message = "OK",
+                data = new
+                {
+                    delayCamera = r.Value[0],
+                    delayReject = r.Value[1],
+                    rejectStreng = r.Value[2],
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error reading from PLC: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private async Task HandlePlcSaveRecipe(HttpContext context)
+    {
+        try
+        {
+            var body = await JsonSerializer.DeserializeAsync<RecipePayload>(
+                context.Request.Body,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (body == null || string.IsNullOrWhiteSpace(body.RecipeName))
+            {
+                context.Response.StatusCode = 400;
+                await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = "Thiếu RecipeName." });
+                return;
+            }
+
+            var username = AuthMiddleware.GetCurrentUser(context)?.Username ?? "Operator";
+
+            PLCRecipeDb.EnsureCreated();
+            var r = new PLCRecipe
+            {
+                Id = body.Id,
+                RecipeName = body.RecipeName.Trim(),
+                DelayCamera = body.DelayCamera,
+                DelayReject = body.DelayReject,
+                RejectStreng = body.RejectStreng,
+                IsActive = body.IsActive,
+                CreatedBy = username,
+            };
+            var saved = PLCRecipeDb.Save(r);
+
+            // Nếu lưu recipe active thì ghi xuống PLC
+            string plcWriteMsg = "";
+            if (saved.IsActive)
+            {
+                var plc = Program.GetPLCMonitor();
+                if (plc == null)
+                    plcWriteMsg = "PLC chưa kết nối; chỉ lưu DB.";
+                else
+                {
+                    var err = plc.WriteRecipe(saved.DelayCamera, saved.DelayReject, saved.RejectStreng);
+                    plcWriteMsg = string.IsNullOrEmpty(err) ? "Đã ghi xuống PLC." : $"Lỗi ghi PLC: {err}";
+                }
+            }
+
+            await context.Response.WriteAsJsonAsync(new
+            {
+                success = true,
+                message = $"Lưu thành công. {plcWriteMsg}",
+                data = saved
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error saving recipe: {ex.Message}", ex);
+            context.Response.StatusCode = 500;
+            await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = ex.Message });
+        }
+    }
+
+    private async Task HandlePlcSetActiveRecipe(HttpContext context)
+    {
+        try
+        {
+            var body = await JsonSerializer.DeserializeAsync<SetActivePayload>(
+                context.Request.Body,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (body == null || body.Id <= 0)
+            {
+                context.Response.StatusCode = 400;
+                await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = "Thiếu Id." });
+                return;
+            }
+
+            var ok = PLCRecipeDb.SetActive(body.Id);
+            if (!ok)
+            {
+                context.Response.StatusCode = 404;
+                await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = $"Không tìm thấy recipe id={body.Id}." });
+                return;
+            }
+
+            var r = PLCRecipeDb.GetById(body.Id);
+            // Ghi xuống PLC
+            string plcWriteMsg = "";
+            if (r != null)
+            {
+                var plc = Program.GetPLCMonitor();
+                if (plc != null)
+                {
+                    var err = plc.WriteRecipe(r.DelayCamera, r.DelayReject, r.RejectStreng);
+                    plcWriteMsg = string.IsNullOrEmpty(err) ? "Đã ghi xuống PLC." : $"Lỗi ghi PLC: {err}";
+                }
+            }
+
+            await context.Response.WriteAsJsonAsync(new
+            {
+                success = true,
+                message = $"Đã đặt active. {plcWriteMsg}",
+                data = r
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error set active: {ex.Message}", ex);
+            context.Response.StatusCode = 500;
+            await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = ex.Message });
+        }
+    }
+
+    private IResult HandlePlcDeleteRecipe(int id)
+    {
+        try
+        {
+            var (ok, msg) = PLCRecipeDb.Delete(id);
+            if (!ok)
+                return Results.Json(new ApiResponse { Success = false, Message = msg }, statusCode: 400);
+            return Results.Json(new { success = true, message = msg });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error delete recipe: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private class RecipePayload
+    {
+        public int Id { get; set; }
+        public string RecipeName { get; set; } = "";
+        public int DelayCamera { get; set; }
+        public int DelayReject { get; set; }
+        public int RejectStreng { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    private class SetActivePayload
+    {
+        public int Id { get; set; }
+    }
+
+    private IResult HandlePlcGetRegisters(int recipeId)
+    {
+        try
+        {
+            var list = RecipeRegisterDb.GetByRecipe(recipeId);
+            return Results.Json(new { success = true, message = "OK", data = list, count = list.Count });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error getting registers: {ex.Message}", ex);
+            return Results.Json(new ApiResponse { Success = false, Message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private async Task HandlePlcSaveRegisters(HttpContext context, int recipeId)
+    {
+        try
+        {
+            var body = await JsonSerializer.DeserializeAsync<RegistersPayload>(
+                context.Request.Body,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (body == null)
+            {
+                context.Response.StatusCode = 400;
+                await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = "Body trống." });
+                return;
+            }
+
+            var saved = RecipeRegisterDb.SaveAll(recipeId, body.Registers ?? new List<RecipeRegister>());
+            await context.Response.WriteAsJsonAsync(new
+            {
+                success = true,
+                message = $"Đã lưu {saved.Count} thanh ghi.",
+                data = saved,
+                count = saved.Count,
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error saving registers: {ex.Message}", ex);
+            context.Response.StatusCode = 500;
+            await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = ex.Message });
+        }
+    }
+
+    private async Task HandlePlcReadRegistersFromDevice(HttpContext context, int recipeId)
+    {
+        try
+        {
+            var plc = Program.GetPLCMonitor();
+            if (plc == null)
+            {
+                context.Response.StatusCode = 503;
+                await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = "PLC chưa khởi tạo." });
+                return;
+            }
+            var regs = RecipeRegisterDb.GetByRecipe(recipeId);
+            var reads = new List<object>();
+            foreach (var r in regs)
+            {
+                var rr = plc.ReadRegister(r.Address, r.DataType);
+                reads.Add(new
+                {
+                    id = r.Id,
+                    name = r.Name,
+                    address = r.Address,
+                    dataType = r.DataType,
+                    ok = rr.Success,
+                    value = rr.Value,
+                    error = rr.Success ? "" : rr.Error,
+                });
+            }
+            await context.Response.WriteAsJsonAsync(new { success = true, message = "OK", data = reads });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error reading registers from PLC: {ex.Message}", ex);
+            context.Response.StatusCode = 500;
+            await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = ex.Message });
+        }
+    }
+
+    private async Task HandlePlcWriteRegistersToDevice(HttpContext context, int recipeId)
+    {
+        try
+        {
+            var plc = Program.GetPLCMonitor();
+            if (plc == null)
+            {
+                context.Response.StatusCode = 503;
+                await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = "PLC chưa khởi tạo." });
+                return;
+            }
+            var body = await JsonSerializer.DeserializeAsync<RegistersWritePayload>(
+                context.Request.Body,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var regs = RecipeRegisterDb.GetByRecipe(recipeId);
+            var results = new List<object>();
+            int okCount = 0, errCount = 0;
+            foreach (var r in regs)
+            {
+                string? val = body?.Values != null && body.Values.TryGetValue(r.Id.ToString(), out var v)
+                    ? v
+                    : (body?.Values != null && body.Values.TryGetValue(r.Name, out var vn) ? vn : r.DefaultValue);
+                var err = plc.WriteRegister(r.Address, r.DataType, val ?? r.DefaultValue);
+                results.Add(new
+                {
+                    id = r.Id,
+                    name = r.Name,
+                    address = r.Address,
+                    ok = string.IsNullOrEmpty(err),
+                    error = err,
+                });
+                if (string.IsNullOrEmpty(err)) okCount++; else errCount++;
+            }
+            await context.Response.WriteAsJsonAsync(new
+            {
+                success = errCount == 0,
+                message = $"OK: {okCount}, lỗi: {errCount}.",
+                data = results,
+            });
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error writing registers to PLC: {ex.Message}", ex);
+            context.Response.StatusCode = 500;
+            await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = ex.Message });
+        }
+    }
+
+    private class RegistersPayload
+    {
+        public List<RecipeRegister>? Registers { get; set; }
+    }
+
+    private class RegistersWritePayload
+    {
+        public Dictionary<string, string>? Values { get; set; }
     }
     #endregion
 

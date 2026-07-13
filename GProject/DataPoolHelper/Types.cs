@@ -4,11 +4,20 @@ using System.Data;
 namespace GProject.DataPoolHelper;
 
 /// <summary>
-/// Enum trạng thái mã.
+/// Enum trạng thái mã trong DataPool.
+/// Status=0: Mã chưa được activate
+/// Status=1: Mã đã được activate thành công (scan/kích hoạt)
 /// </summary>
 public enum CodeStatus
 {
+    /// <summary>
+    /// Mã chưa được activate
+    /// </summary>
     Unused = 0,
+
+    /// <summary>
+    /// Mã đã được activate thành công
+    /// </summary>
     Used = 1
 }
 

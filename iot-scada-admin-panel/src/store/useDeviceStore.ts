@@ -45,6 +45,8 @@ interface DeviceStoreState {
     statusCode: number | null;
     message: string | null;
   };
+  // Số lần fail liên tiếp hiện tại
+  failCount: number;
 }
 
 // ============================================================================
@@ -62,6 +64,10 @@ interface DeviceStoreActions {
   setProductionConnected: (connected: boolean) => void;
   // Mark the devices-status API as failed (called after consecutive failures)
   setApiStatus: (status: { error: boolean; statusCode: number | null; message: string | null }) => void;
+  // Increment fail count
+  incrementFailCount: () => void;
+  // Reset fail count to 0 (called on successful poll)
+  resetFailCount: () => void;
   // Clear devices-status API error
   clearApiStatus: () => void;
   // Trigger an immediate poll of /api/devices/status (registered by useDevicePolling)
@@ -99,6 +105,7 @@ const getInitialState = (): DeviceStoreState => ({
   plcConnected: false,
   productionConnected: false,
   apiStatus: { error: false, statusCode: null, message: null },
+  failCount: 0,
 });
 
 // ============================================================================
@@ -128,6 +135,10 @@ export const useDeviceStore = create<DeviceStoreState & DeviceStoreActions>()(
       set({ productionConnected: connected }),
 
     setApiStatus: (status) => set({ apiStatus: status }),
+
+    incrementFailCount: () => set((s) => ({ failCount: s.failCount + 1 })),
+
+    resetFailCount: () => set({ failCount: 0 }),
 
     clearApiStatus: () =>
       set({ apiStatus: { error: false, statusCode: null, message: null } }),

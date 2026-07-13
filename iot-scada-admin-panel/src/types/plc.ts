@@ -23,3 +23,39 @@ export interface PLCSnapshot {
   lastEventAt: string | null;
   clientCount: number;
 }
+
+export interface PLCRecipe {
+  id?: number;
+  recipeName: string;
+  delayCamera: number;
+  delayReject: number;
+  rejectStreng: number;
+  isActive?: boolean;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type PlcDataType = "int16" | "int32" | "float" | "string";
+
+export interface RecipeRegister {
+  id?: number;
+  recipeId?: number;
+  name: string;
+  address: string;
+  dataType: PlcDataType;
+  defaultValue: string;
+  unit?: string;
+  note?: string;
+  sortOrder?: number;
+}
+
+export interface RecipeRegisterLive {
+  id: number;
+  name: string;
+  address: string;
+  dataType: PlcDataType;
+  ok: boolean;
+  value: string;
+  error: string;
+}

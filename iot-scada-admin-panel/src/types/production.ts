@@ -13,6 +13,14 @@ export interface ProductionControlResponse {
   message: string;
 }
 
+export interface RetryRunResponse {
+  success: boolean;
+  message: string;
+  availableCodes: number;
+  orderQty: number;
+  neededCodes: number;
+}
+
 export interface ProductionStatusResponse {
   success: boolean;
   message?: string;

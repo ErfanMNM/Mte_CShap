@@ -534,6 +534,15 @@ public static class DataPoolStatic
         return Result.Fail($"Không tìm thấy mã '{code}'.");
     }
 
+    /// <summary>
+    /// Đánh dấu mã là đã sử dụng (Status=1) trong DataPool - không yêu cầu batchID
+    /// Dùng khi mã được activate thành công
+    /// </summary>
+    public static bool MarkUsedSimple(string poolName, string code)
+    {
+        return UpdateStatus(poolName, code, (int)CodeStatus.Used);
+    }
+
     public static Result MarkUnused(string poolName, string code)
     {
         if (UpdateStatus(poolName, code, (int)CodeStatus.Unused, "", "", ""))
