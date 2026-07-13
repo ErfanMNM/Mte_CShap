@@ -139,7 +139,12 @@ namespace GProject.Production
         {
             lock (_stateLock)
             {
-                if (_currentState == newState) return;
+                if (_currentState == newState)
+                {
+                    Log.Debug("[StateMachine] SetState no-op: {State} already set (reason: {Reason})",
+                        newState, reason ?? "no reason");
+                    return;
+                }
                 _previousState = _currentState;
                 _currentState = newState;
             }
@@ -1054,7 +1059,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 }
 
                 var cartonsResult = GProduction.POCarton.GetAll(ProductionData.OrderNo);
-                if (cartonsResult.IsSuccess && cartonsResult.Data != null)
+                if (cartonsResult.IsSuccess && cartonsResult.Data != null && cartonsResult.Data.Rows.Count > 0)
                 {
                     Dictionary_Cartons.Clear();
                     foreach (System.Data.DataRow row in cartonsResult.Data.Rows)
@@ -1120,6 +1125,89 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     Log.Information("[StateMachine] Reload state: cartonID={CartonId}, cartonCode={CartonCode}, packed={Packed}, totalActive={Active}",
                         ActiveCounter.CartonID, ActiveCounter.CartonCode, PackageCounter.PassCount, ActiveCounter.PassCount);
                 }
+                else
+                {
+                    // Carton DB thiếu hoặc rỗng -> auto-recover trước khi chuyển sang Running.
+                    // Trước đây nhánh này bị bỏ qua khiến Dictionary rỗng -> Running tick -> Ready loop.
+                    Log.Warning("[StateMachine] POCarton.GetAll failed/rong cho {OrderNo}, attempting auto-recover...",
+                        ProductionData.OrderNo);
+
+                    int cartonCap = ProductionData.CartonCapacity > 0 ? ProductionData.CartonCapacity : 24;
+                    var recoverResult = GProduction.POCreator.EnsurePODatabaseReady(
+                        ProductionData.OrderNo,
+                        ProductionData.Gtin,
+                        ProductionData.OrderQty,
+                        cartonCap,
+                        autoLoadCodes: true);
+
+                    if (!recoverResult.success)
+                    {
+                        SetState(e_ProductionState.Error,
+                            $"Cannot recover PO DB: {recoverResult.message}");
+                        return;
+                    }
+
+                    // Retry sau auto-recover
+                    cartonsResult = GProduction.POCarton.GetAll(ProductionData.OrderNo);
+                    if (!cartonsResult.IsSuccess || cartonsResult.Data == null || cartonsResult.Data.Rows.Count == 0)
+                    {
+                        SetState(e_ProductionState.Error,
+                            $"Carton DB not loadable sau auto-recover. File: {Config.GetCartonPath(ProductionData.OrderNo)}");
+                        return;
+                    }
+
+                    Dictionary_Cartons.Clear();
+                    foreach (System.Data.DataRow row in cartonsResult.Data.Rows)
+                    {
+                        var info = new CartonInfo
+                        {
+                            Id = Convert.ToInt32(row["Id"] ?? 0),
+                            CartonCode = row["cartonCode"]?.ToString() ?? "0",
+                            StartDatetime = row["Start_Datetime"]?.ToString() ?? "0",
+                            CompletedDatetime = row["Completed_Datetime"]?.ToString() ?? "0"
+                        };
+                        Dictionary_Cartons[info.Id] = info;
+                    }
+
+                    var lastRunningAfterRecover = Dictionary_Cartons.Values
+                        .Where(c => c.StartDatetime != "0" && c.CompletedDatetime == "0")
+                        .OrderBy(c => c.Id)
+                        .FirstOrDefault();
+
+                    if (lastRunningAfterRecover != null)
+                    {
+                        ActiveCounter.CartonID = lastRunningAfterRecover.Id;
+                        ActiveCounter.CartonCode = lastRunningAfterRecover.CartonCode;
+                    }
+                    else
+                    {
+                        var firstOpenAfterRecover = Dictionary_Cartons.Values
+                            .Where(c => c.CompletedDatetime == "0")
+                            .OrderBy(c => c.Id)
+                            .FirstOrDefault();
+                        ActiveCounter.CartonID = firstOpenAfterRecover?.Id ?? 1;
+                        ActiveCounter.CartonCode = firstOpenAfterRecover?.CartonCode ?? "";
+                    }
+
+                    PackageCounter.PassCount = (Dictionary_Cartons.TryGetValue(ActiveCounter.CartonID, out var curCartonAfter)
+                            && curCartonAfter.CartonCode != "0")
+                        ? GProduction.PORecordHelper.GetCodeCountInCarton(
+                            ProductionData.OrderNo, curCartonAfter.CartonCode)
+                        : 0;
+
+                    ActiveCounter.PassCount = GProduction.PORecordHelper.GetActiveCount(ProductionData.OrderNo);
+
+                    var syncResultAfter = SyncPoolWithPO();
+                    if (!syncResultAfter.success)
+                    {
+                        Log.Warning("[StateMachine] SyncPoolWithPO failed (after recover): {Message}", syncResultAfter.message);
+                        SetState(e_ProductionState.InsufficientCodes, syncResultAfter.message);
+                        return;
+                    }
+
+                    Log.Information("[StateMachine] Auto-recover OK: cartonID={CartonId}, cartonCode={CartonCode}, packed={Packed}, totalActive={Active}",
+                        ActiveCounter.CartonID, ActiveCounter.CartonCode, PackageCounter.PassCount, ActiveCounter.PassCount);
+                }
 
                 SetState(e_ProductionState.Running, "data pushed to dic");
             }
@@ -1158,8 +1246,10 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
             }
             else
             {
-                LastWarning = "Thùng hiện tại chưa tồn tại";
-                SetState(e_ProductionState.Ready, LastWarning);
+                Log.Error("[StateMachine] cartonID {CartonId} not in Dictionary_Cartons. DB inconsistent.",
+                    currentCartonId);
+                SetState(e_ProductionState.Error,
+                    $"Carton '{currentCartonId}' missing in dict. Carton DB có thể chưa được load đúng.");
                 return;
             }
 

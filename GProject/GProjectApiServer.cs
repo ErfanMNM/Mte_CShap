@@ -197,6 +197,12 @@ public class GProjectApiServer : IDisposable
         _app.MapPost("/api/plc/recipe/active", (Delegate)HandlePlcSetActiveRecipe);
         _app.MapDelete("/api/plc/recipe/{id:int}", (Delegate)HandlePlcDeleteRecipe);
 
+        // Logs API (SAdmin only - see LogApi.Permission)
+        _app.MapGet("/api/logs", GProject.Logs.LogApi.HandleList);
+        _app.MapGet("/api/logs/levels", GProject.Logs.LogApi.HandleListLevels);
+        _app.MapGet("/api/logs/tags", GProject.Logs.LogApi.HandleListTags);
+        _app.MapGet("/api/logs/{id:long}", GProject.Logs.LogApi.HandleGet);
+
         // Recipe custom registers endpoints
         _app.MapGet("/api/plc/recipe/{recipeId:int}/registers", (Delegate)HandlePlcGetRegisters);
         _app.MapPost("/api/plc/recipe/{recipeId:int}/registers", (Delegate)HandlePlcSaveRegisters);

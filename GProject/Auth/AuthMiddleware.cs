@@ -93,7 +93,7 @@ public static class AuthHelper
     {
         return role.ToLower() switch
         {
-            "sadmin" => new[] { "view", "add", "edit", "import", "manage_pools", "manage_users", "view_history" },
+            "sadmin" => new[] { "view", "add", "edit", "import", "manage_pools", "manage_users", "view_history", "view_logs" },
             "administrator" => new[] { "view", "add", "edit", "import", "manage_pools", "view_history" },
             "operator" => new[] { "view", "add", "edit", "import" },
             "viewer" => new[] { "view" },
