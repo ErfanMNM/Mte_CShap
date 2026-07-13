@@ -86,6 +86,15 @@ namespace GProject.ProductionOrderHelpers
         [JsonPropertyName("count")] public int Count { get; set; }
     }
 
+    public class RetryRunResponse
+    {
+        [JsonPropertyName("success")] public bool Success { get; set; }
+        [JsonPropertyName("message")] public string Message { get; set; } = "";
+        [JsonPropertyName("availableCodes")] public int AvailableCodes { get; set; }
+        [JsonPropertyName("orderQty")] public int OrderQty { get; set; }
+        [JsonPropertyName("neededCodes")] public int NeededCodes { get; set; }
+    }
+
     public class ActivateCodeRequest
     {
         [JsonPropertyName("code")] public string Code { get; set; } = "";
@@ -680,9 +689,9 @@ namespace GProject.ProductionOrderHelpers
                     orderNo = ProductionStateMachine.ProductionData.OrderNo;
                     productName = ProductionStateMachine.ProductionData.ProductName;
                     orderQty = ProductionStateMachine.ProductionData.OrderQty;
-                    packedCodes = GProject.ProductionOrderHelpers.GProduction.PORecordHelper.GetPackedCount(orderNo);
-                    cartonCount = GProject.ProductionOrderHelpers.GProduction.POCarton.GetTotalCartonCount(orderNo);
-                    closedCartons = GProject.ProductionOrderHelpers.GProduction.POCarton.GetClosedCartonCount(orderNo);
+                    packedCodes = GProduction.PORecordHelper.GetPackedCount(orderNo);
+                    cartonCount = GProduction.POCarton.GetTotalCartonCount(orderNo);
+                    closedCartons = GProduction.POCarton.GetClosedCartonCount(orderNo);
                 }
 
                 return Task.FromResult(Results.Json(new ProductionStatusResponse
