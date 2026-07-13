@@ -7,7 +7,7 @@ import {
   Globe,
 } from "lucide-react";
 
-const DEFAULT_URL = "https://www.google.com";
+const DEFAULT_URL = "https://example.com";
 
 const normalizeUrl = (raw: string): string | null => {
   const trimmed = raw.trim();
@@ -20,26 +20,22 @@ export const CameraIframe: React.FC = () => {
   const [currentUrl, setCurrentUrl] = useState<string>(DEFAULT_URL);
   const [inputUrl, setInputUrl] = useState<string>(DEFAULT_URL);
   const [iframeKey, setIframeKey] = useState<number>(0);
-  const [iframeError, setIframeError] = useState<boolean>(false);
 
   const apply = () => {
     const u = normalizeUrl(inputUrl);
     if (!u) return;
     setCurrentUrl(u);
     setIframeKey((k) => k + 1);
-    setIframeError(false);
   };
 
   const reset = () => {
     setInputUrl(DEFAULT_URL);
     setCurrentUrl(DEFAULT_URL);
     setIframeKey((k) => k + 1);
-    setIframeError(false);
   };
 
   const reload = () => {
     setIframeKey((k) => k + 1);
-    setIframeError(false);
   };
 
   return (
@@ -99,7 +95,7 @@ export const CameraIframe: React.FC = () => {
           <button
             onClick={reset}
             className="flex items-center gap-1.5 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-semibold transition-colors border border-slate-200 shrink-0"
-            title="Reset về Google"
+            title="Reset về example.com"
           >
             Reset
           </button>
@@ -115,26 +111,10 @@ export const CameraIframe: React.FC = () => {
           key={iframeKey}
           src={currentUrl}
           title="Camera iframe viewer"
-          className={`w-full h-full min-h-[420px] bg-white ${iframeError ? "hidden" : ""}`}
+          className="w-full h-full min-h-[420px] bg-white"
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           referrerPolicy="no-referrer-when-downgrade"
-          onError={() => setIframeError(true)}
         />
-        {iframeError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 text-center p-6">
-            <Globe className="w-12 h-12 text-slate-300 mb-3" />
-            <p className="text-sm font-semibold text-slate-600 mb-1">
-              Không thể nhúng URL này
-            </p>
-            <p className="text-xs text-slate-400 max-w-md">
-              Trang web này chặn iframe (X-Frame-Options: sameorigin). Bấm{" "}
-              <span className="font-bold">"Mở tab mới"</span> để xem, hoặc nhập URL khác (ví dụ: example.com).
-            </p>
-            <div className="mt-3 text-[10px] font-mono text-slate-500 px-3 py-1 bg-white rounded border border-slate-200">
-              {currentUrl}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

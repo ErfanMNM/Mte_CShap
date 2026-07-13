@@ -18,6 +18,7 @@ import {
 import plcApi from "../../services/plcApi";
 import type { PLCRecipe } from "../../types/plc";
 import { useVirtualKeyboard } from "../../App";
+import RecipeRegistersEditor from "./RecipeRegistersEditor";
 
 const EMPTY_RECIPE: PLCRecipe = {
   id: 0,
@@ -276,7 +277,7 @@ export const PLCRecipeForm: React.FC = () => {
       )}
 
       {/* Body */}
-      <div className="p-4 xl:p-6 flex-1 overflow-auto space-y-5">
+      <div className="p-4 xl:p-6 flex-1 overflow-auto space-y-3">
         {/* Live PLC status */}
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold text-slate-500">
           <CircleDot
@@ -383,7 +384,7 @@ export const PLCRecipeForm: React.FC = () => {
         </div>
 
         {/* 3 number fields - dual value (Setting + Live from PLC) */}
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-2">
           <DualNumberField
             label="DelayCamera"
             unit="ms"
@@ -436,6 +437,11 @@ export const PLCRecipeForm: React.FC = () => {
             }
             kbOpen={isOpen}
           />
+        </div>
+
+        {/* Custom Registers (per recipe) */}
+        <div className="border-t border-slate-100 pt-4 mt-2">
+          <RecipeRegistersEditor recipeId={recipe.id ?? null} />
         </div>
 
         {/* Bottom actions */}
@@ -559,16 +565,16 @@ const DualNumberField: React.FC<DualNumberFieldProps> = ({
   const matchBg = differs ? "bg-amber-50 border-amber-200" : "bg-green-50 border-green-200";
 
   return (
-    <div className={`rounded-xl border ${COLOR_RING[color]} p-3 ring-1 ring-transparent transition-all`}>
+    <div className={`rounded-xl border ${COLOR_RING[color]} p-2 ring-1 ring-transparent transition-all`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <label className={`text-xs font-bold ${COLOR_TEXT[color]} flex items-center gap-2`}>
+      <div className="flex items-center justify-between mb-1">
+        <label className={`text-[11px] font-bold ${COLOR_TEXT[color]} flex items-center gap-1.5`}>
           <span>{label}</span>
-          <span className="text-[10px] font-mono text-slate-400 font-normal">({unit})</span>
+          <span className="text-[9px] font-mono text-slate-400 font-normal">({unit})</span>
         </label>
         {liveValue !== null && liveValue !== undefined && (
           <span
-            className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${matchBg} ${matchColor}`}
+            className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 rounded-full border ${matchBg} ${matchColor}`}
             title={differs ? "Giá trị cài đặt khác giá trị PLC" : "Khớp"}
           >
             {differs ? "Lệch" : "Khớp"}
@@ -577,45 +583,45 @@ const DualNumberField: React.FC<DualNumberFieldProps> = ({
       </div>
 
       {/* Two columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
         {/* Setting */}
         <button
           type="button"
           onClick={handleKb}
-          className={`text-left rounded-lg px-3 py-2 border-2 transition-all ${
+          className={`text-left rounded-md px-2 py-1 border-2 transition-all ${
             kbOpen
               ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500/30"
               : "border-slate-200 bg-white hover:border-slate-300"
           }`}
         >
-          <div className="flex items-center justify-between gap-2 mb-0.5">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
+          <div className="flex items-center justify-between gap-1 mb-0">
+            <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500">
               Cài đặt
             </span>
-            <KeyboardIcon className="w-3 h-3 text-slate-400" />
+            <KeyboardIcon className="w-2.5 h-2.5 text-slate-400" />
           </div>
-          <div className="text-2xl font-black text-slate-800 font-mono leading-tight">
+          <div className="text-base font-black text-slate-800 font-mono leading-tight">
             {settingValue}
           </div>
         </button>
 
         {/* Live from PLC */}
-        <div className="rounded-lg px-3 py-2 border-2 border-slate-200 bg-slate-50">
-          <div className="flex items-center justify-between gap-2 mb-0.5">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
+        <div className="rounded-md px-2 py-1 border-2 border-slate-200 bg-slate-50">
+          <div className="flex items-center justify-between gap-1 mb-0">
+            <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500">
               Đọc từ PLC
             </span>
-            <Eye className="w-3 h-3 text-slate-400" />
+            <Eye className="w-2.5 h-2.5 text-slate-400" />
           </div>
           <div
-            className={`text-2xl font-black font-mono leading-tight ${
+            className={`text-base font-black font-mono leading-tight ${
               liveValue === null ? "text-slate-300" : "text-slate-700"
             }`}
           >
             {liveValue === null ? "—" : liveValue}
           </div>
           {min !== undefined || max !== undefined ? (
-            <div className="text-[9px] text-slate-400 mt-0.5">
+            <div className="text-[8px] text-slate-400 mt-0">
               {min !== undefined ? `min ${min}` : ""}
               {min !== undefined && max !== undefined ? " • " : ""}
               {max !== undefined ? `max ${max}` : ""}
@@ -626,7 +632,7 @@ const DualNumberField: React.FC<DualNumberFieldProps> = ({
 
       {/* Sync hint */}
       {differs && liveValue !== null && (
-        <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+        <div className="mt-1 flex items-center justify-between gap-1 text-[9px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
           <span>
             Đã lưu DB nhưng chưa ghi xuống PLC. Bấm{" "}
             <span className="font-bold">"Đặt active & ghi PLC"</span> hoặc "Lưu vào DB" (nếu đang active).
@@ -634,15 +640,15 @@ const DualNumberField: React.FC<DualNumberFieldProps> = ({
         </div>
       )}
 
-      {/* Quick adjust row (giữ dropdown native như fallback) */}
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
+      {/* Quick adjust row */}
+      <div className="mt-1 flex items-center justify-between gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={() =>
               onChangeSetting(Math.max(min ?? -Infinity, settingValue - 10))
             }
-            className={`text-xs font-bold w-8 h-7 rounded-md text-white ${COLOR_BUTTON[color]} transition-colors`}
+            className={`text-[10px] font-bold w-7 h-6 rounded text-white ${COLOR_BUTTON[color]} transition-colors`}
             title="Giảm 10"
           >
             -10
@@ -650,7 +656,7 @@ const DualNumberField: React.FC<DualNumberFieldProps> = ({
           <button
             type="button"
             onClick={() => onChangeSetting(settingValue - 1)}
-            className="text-xs font-bold w-7 h-7 rounded-md bg-white border border-slate-300 hover:bg-slate-100 transition-colors"
+            className="text-[11px] font-bold w-6 h-6 rounded bg-white border border-slate-300 hover:bg-slate-100 transition-colors"
             title="Giảm 1"
           >
             -
@@ -658,7 +664,7 @@ const DualNumberField: React.FC<DualNumberFieldProps> = ({
           <button
             type="button"
             onClick={() => onChangeSetting(settingValue + 1)}
-            className="text-xs font-bold w-7 h-7 rounded-md bg-white border border-slate-300 hover:bg-slate-100 transition-colors"
+            className="text-[11px] font-bold w-6 h-6 rounded bg-white border border-slate-300 hover:bg-slate-100 transition-colors"
             title="Tăng 1"
           >
             +
@@ -670,7 +676,7 @@ const DualNumberField: React.FC<DualNumberFieldProps> = ({
                 Math.min(max ?? Infinity, settingValue + 10),
               )
             }
-            className={`text-xs font-bold w-8 h-7 rounded-md text-white ${COLOR_BUTTON[color]} transition-colors`}
+            className={`text-[10px] font-bold w-7 h-6 rounded text-white ${COLOR_BUTTON[color]} transition-colors`}
             title="Tăng 10"
           >
             +10
@@ -679,9 +685,9 @@ const DualNumberField: React.FC<DualNumberFieldProps> = ({
         <button
           type="button"
           onClick={handleKb}
-          className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 hover:text-indigo-600 transition-colors"
+          className="flex items-center gap-0.5 text-[9px] font-semibold text-slate-500 hover:text-indigo-600 transition-colors"
         >
-          <KeyboardIcon className="w-3 h-3" /> Bàn phím số
+          <KeyboardIcon className="w-2.5 h-2.5" /> Bàn phím số
         </button>
       </div>
     </div>

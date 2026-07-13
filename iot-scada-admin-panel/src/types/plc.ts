@@ -35,3 +35,27 @@ export interface PLCRecipe {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export type PlcDataType = "int16" | "int32" | "float" | "string";
+
+export interface RecipeRegister {
+  id?: number;
+  recipeId?: number;
+  name: string;
+  address: string;
+  dataType: PlcDataType;
+  defaultValue: string;
+  unit?: string;
+  note?: string;
+  sortOrder?: number;
+}
+
+export interface RecipeRegisterLive {
+  id: number;
+  name: string;
+  address: string;
+  dataType: PlcDataType;
+  ok: boolean;
+  value: string;
+  error: string;
+}

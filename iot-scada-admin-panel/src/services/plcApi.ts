@@ -2,7 +2,7 @@
 // Endpoints registered in GProject/GProjectApiServer.cs (PLC RECIPE region).
 
 import axios from "axios";
-import type { PLCRecipe } from "../types/plc";
+import type { PLCRecipe, RecipeRegister, RecipeRegisterLive } from "../types/plc";
 
 const PO_API_BASE_URL =
   import.meta.env.VITE_PO_API_URL || "http://localhost:9999";
@@ -81,6 +81,54 @@ export const plcApi = {
       throw new Error(r.data.message || "PLC read failed");
     }
     return r.data.data ?? null;
+  },
+
+  // ============ CUSTOM REGISTERS (per recipe) ============
+
+  /** GET /api/plc/recipe/{recipeId}/registers */
+  async getRegisters(recipeId: number): Promise<RecipeRegister[]> {
+    const r = await apiClient.get<ApiOk<RecipeRegister[]>>(
+      `/api/plc/recipe/${recipeId}/registers`,
+    );
+    if (!r.data.success) throw new Error(r.data.message || "Failed");
+    return r.data.data ?? [];
+  },
+
+  /** POST /api/plc/recipe/{recipeId}/registers — replace-all */
+  async saveRegisters(
+    recipeId: number,
+    registers: RecipeRegister[],
+  ): Promise<ApiOk<RecipeRegister[]>> {
+    const r = await apiClient.post<ApiOk<RecipeRegister[]>>(
+      `/api/plc/recipe/${recipeId}/registers`,
+      { registers },
+    );
+    if (!r.data.success) throw new Error(r.data.message || "Save failed");
+    return r.data;
+  },
+
+  /** POST /api/plc/recipe/{recipeId}/registers/read — đọc tất cả từ PLC */
+  async readRegistersFromPlc(
+    recipeId: number,
+  ): Promise<{ success: boolean; message: string; data: RecipeRegisterLive[] }> {
+    const r = await apiClient.post<{
+      success: boolean;
+      message: string;
+      data: RecipeRegisterLive[];
+    }>(`/api/plc/recipe/${recipeId}/registers/read`, {});
+    return r.data;
+  },
+
+  /** POST /api/plc/recipe/{recipeId}/registers/write — ghi tất cả xuống PLC */
+  async writeRegistersToPlc(
+    recipeId: number,
+    values: Record<string, string>,
+  ): Promise<{ success: boolean; message: string; data: any[] }> {
+    const r = await apiClient.post<{ success: boolean; message: string; data: any[] }>(
+      `/api/plc/recipe/${recipeId}/registers/write`,
+      { values },
+    );
+    return r.data;
   },
 };
 

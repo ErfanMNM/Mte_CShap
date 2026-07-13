@@ -278,4 +278,153 @@ namespace GProject.ProductionOrderHelpers
             };
         }
     }
+
+    /// <summary>
+    /// Một thanh ghi tuỳ biến trong recipe — đọc/ghi từ PLC tại một địa chỉ cụ thể.
+    /// DataType: int16 / int32 / float / string.
+    /// </summary>
+    public class RecipeRegister
+    {
+        public int Id { get; set; }
+        public int RecipeId { get; set; }
+        public string Name { get; set; } = "";
+        public string Address { get; set; } = "D0";   // VD: D100, D400, W10
+        public string DataType { get; set; } = "int32"; // int16 | int32 | float | string
+        public string DefaultValue { get; set; } = "0";
+        public string Unit { get; set; } = "";
+        public string Note { get; set; } = "";
+        public int SortOrder { get; set; }
+    }
+
+    public enum PlcDataType { Int16, Int32, Float, String }
+
+    public static class PlcDataTypeMap
+    {
+        public static PlcDataType Parse(string s) => s?.ToLowerInvariant() switch
+        {
+            "int16" or "short" => PlcDataType.Int16,
+            "int32" or "int" => PlcDataType.Int32,
+            "float" or "single" => PlcDataType.Float,
+            "string" => PlcDataType.String,
+            _ => PlcDataType.Int32,
+        };
+        public static string AsString(PlcDataType t) => t switch
+        {
+            PlcDataType.Int16 => "int16",
+            PlcDataType.Int32 => "int32",
+            PlcDataType.Float => "float",
+            PlcDataType.String => "string",
+            _ => "int32",
+        };
+    }
+
+    /// <summary>DAL cho bảng recipe_registers — cùng file PLCRecipes.db.</summary>
+    public static class RecipeRegisterDb
+    {
+        public static void EnsureCreated()
+        {
+            using var con = new SqliteConnection(PLCRecipeDb.GetConnectionString());
+            con.Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS recipe_registers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    recipe_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    address TEXT NOT NULL,
+                    data_type TEXT NOT NULL DEFAULT 'int32',
+                    default_value TEXT NOT NULL DEFAULT '0',
+                    unit TEXT NOT NULL DEFAULT '',
+                    note TEXT NOT NULL DEFAULT '',
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    FOREIGN KEY (recipe_id) REFERENCES plc_recipes(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS IDX_RR_recipe ON recipe_registers(recipe_id, sort_order);
+                PRAGMA foreign_keys=ON;
+            ";
+            cmd.ExecuteNonQuery();
+        }
+
+        public static List<RecipeRegister> GetByRecipe(int recipeId)
+        {
+            EnsureCreated();
+            var list = new List<RecipeRegister>();
+            using var con = new SqliteConnection(PLCRecipeDb.GetConnectionString());
+            con.Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"SELECT id, recipe_id, name, address, data_type, default_value, unit, note, sort_order
+                                FROM recipe_registers WHERE recipe_id=$r ORDER BY sort_order, id";
+            cmd.Parameters.AddWithValue("$r", recipeId);
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read()) list.Add(MapRow(rd));
+            return list;
+        }
+
+        /// <summary>Replace-all: xóa hết registers của recipe rồi insert lại theo danh sách mới.</summary>
+        public static List<RecipeRegister> SaveAll(int recipeId, List<RecipeRegister> items)
+        {
+            EnsureCreated();
+            using var con = new SqliteConnection(PLCRecipeDb.GetConnectionString());
+            con.Open();
+            using var tx = con.BeginTransaction();
+            try
+            {
+                using (var del = con.CreateCommand())
+                {
+                    del.Transaction = tx;
+                    del.CommandText = "DELETE FROM recipe_registers WHERE recipe_id=$r";
+                    del.Parameters.AddWithValue("$r", recipeId);
+                    del.ExecuteNonQuery();
+                }
+
+                int order = 0;
+                foreach (var it in items)
+                {
+                    it.RecipeId = recipeId;
+                    it.SortOrder = order++;
+                    using var ins = con.CreateCommand();
+                    ins.Transaction = tx;
+                    ins.CommandText = @"
+                        INSERT INTO recipe_registers (recipe_id, name, address, data_type, default_value, unit, note, sort_order)
+                        VALUES ($r, $n, $a, $dt, $dv, $u, $nt, $so)";
+                    ins.Parameters.AddWithValue("$r", it.RecipeId);
+                    ins.Parameters.AddWithValue("$n", it.Name ?? "");
+                    ins.Parameters.AddWithValue("$a", it.Address ?? "");
+                    ins.Parameters.AddWithValue("$dt", string.IsNullOrEmpty(it.DataType) ? "int32" : it.DataType);
+                    ins.Parameters.AddWithValue("$dv", it.DefaultValue ?? "0");
+                    ins.Parameters.AddWithValue("$u", it.Unit ?? "");
+                    ins.Parameters.AddWithValue("$nt", it.Note ?? "");
+                    ins.Parameters.AddWithValue("$so", it.SortOrder);
+                    ins.ExecuteNonQuery();
+                    using var lid = con.CreateCommand();
+                    lid.Transaction = tx;
+                    lid.CommandText = "SELECT last_insert_rowid()";
+                    it.Id = Convert.ToInt32(lid.ExecuteScalar());
+                }
+                tx.Commit();
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
+            }
+            return GetByRecipe(recipeId);
+        }
+
+        private static RecipeRegister MapRow(SqliteDataReader rd)
+        {
+            return new RecipeRegister
+            {
+                Id = rd.GetInt32(0),
+                RecipeId = rd.GetInt32(1),
+                Name = rd.GetString(2),
+                Address = rd.GetString(3),
+                DataType = rd.GetString(4),
+                DefaultValue = rd.GetString(5),
+                Unit = rd.GetString(6),
+                Note = rd.GetString(7),
+                SortOrder = rd.GetInt32(8),
+            };
+        }
+    }
 }

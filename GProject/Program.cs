@@ -43,7 +43,8 @@ namespace GProject
 
             // Initialize PLC recipe DB
             PLCRecipeDb.EnsureCreated();
-            Log.Information("  PLC recipe database initialized.");
+            RecipeRegisterDb.EnsureCreated();
+            Log.Information("  PLC recipe & registers database initialized.");
 
             DataPoolStatic.DataPath = DataPool.DefaultDataPath;
 
