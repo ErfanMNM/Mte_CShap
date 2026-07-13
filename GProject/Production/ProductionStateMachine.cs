@@ -317,6 +317,26 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
         }
 
         /// <summary>
+        /// Thử lại kiểm tra và chạy sản xuất sau khi đã thêm mã vào pool
+        /// Chỉ hoạt động khi đang ở trạng thái InsufficientCodes
+        /// </summary>
+        public (bool success, string message, int availableCodes) RetryRunProduction()
+        {
+            if (CurrentState != e_ProductionState.InsufficientCodes)
+                return (false, $"Chi co the retry khi o trang thai InsufficientCodes. State hien tai: {CurrentState}", 0);
+
+            // Gọi lại SyncPoolWithPO để kiểm tra
+            var result = SyncPoolWithPO();
+            if (result.success)
+            {
+                // Đủ mã -> Quay về PushingToDic để bắt đầu
+                SetState(e_ProductionState.PushingToDic, "Du ma sau khi retry");
+                Log.Information("[RetryRunProduction] Retry success, transitioning to PushingToDic");
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Khởi động background consumer thread ghi DB tuần tự (1 thread duy nhất)
         /// Ưu tiên: Record (audit) > CodeUpdate > CartonUpdate
         /// </summary>

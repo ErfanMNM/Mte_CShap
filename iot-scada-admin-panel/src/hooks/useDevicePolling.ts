@@ -95,9 +95,7 @@ export function useDevicePolling(options: UseDevicePollingOptions = {}) {
     const failCountRef = { current: 0 };
 
     const fetchStatus = async () => {
-      // Always clear optimistic error on retry attempt; final result decides whether to re-set.
-      useDeviceStore.getState().clearApiStatus();
-      const setApiStatus = useDeviceStore.getState().setApiStatus;
+      const storeState = useDeviceStore.getState();
 
       let ok = false;
       let statusCode: number | null = null;
@@ -116,6 +114,10 @@ export function useDevicePolling(options: UseDevicePollingOptions = {}) {
             console.warn("[DevicePolling] API returned success=false");
           } else {
             ok = true;
+
+            // Clear error ONLY on successful response
+            storeState.clearApiStatus();
+            storeState.resetFailCount();
 
             // --- Update Camera store ---
             const cameraSnapshot: CameraSnapshot = {
@@ -170,12 +172,12 @@ export function useDevicePolling(options: UseDevicePollingOptions = {}) {
 
       if (ok) {
         failCountRef.current = 0;
-        useDeviceStore.getState().resetFailCount();
+        // Store already updated above on success
       } else {
         failCountRef.current += 1;
-        useDeviceStore.getState().incrementFailCount();
+        storeState.incrementFailCount();
         if (failCountRef.current >= FAIL_THRESHOLD) {
-          setApiStatus({ error: true, statusCode, message });
+          storeState.setApiStatus({ error: true, statusCode, message });
         }
       }
     };

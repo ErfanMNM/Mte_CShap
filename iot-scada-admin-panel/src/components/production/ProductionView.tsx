@@ -31,7 +31,7 @@ import { useCameraSocket } from "../../hooks/useCameraSocket";
 import { useDevicePolling } from "../../hooks/useDevicePolling";
 import { useDeviceStore } from "../../store/useDeviceStore";
 import { handleActiveCodeScanned } from "../../services/cameraApi";
-import type { ProductionStatusResponse } from "../../types/production";
+import type { ProductionStatusResponse, RetryRunResponse } from "../../types/production";
 import type { POInfo, POListItem, POCarton } from "../../types/po";
 
 type CamUiStatus = "ok" | "error" | "offline" | "warning";
@@ -68,6 +68,8 @@ const ProductionView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [healthOk, setHealthOk] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryResult, setRetryResult] = useState<RetryRunResponse | null>(null);
 
   // PO detail state
   const [poDetail, setPoDetail] = useState<POInfo | null>(null);
@@ -99,6 +101,8 @@ const ProductionView: React.FC = () => {
     NOTIF_ERR_UPDATE_DATE: "Không thể cập nhật ngày SX.",
     NOTIF_ERR_UPDATE_DATE_UNKNOWN: "Lỗi khi lưu ngày SX.",
     NOTIF_ERR_SCAN: "Lỗi xử lý code quét.",
+    NOTIF_ERR_RETRY: "Không thể thử lại kiểm tra mã.",
+    NOTIF_ERR_RETRY_INVALID_STATE: "Chỉ có thể thử lại khi ở trạng thái InsufficientCodes.",
     // Success keys
     NOTIF_PO_LIST_RELOADED: "Đã tải lại danh sách PO ({count} mục).",
     NOTIF_PO_STARTED: "Đã bắt đầu sản xuất: {po}.",
@@ -107,6 +111,7 @@ const ProductionView: React.FC = () => {
     NOTIF_CHANGE_PO_SUCCESS: "Đã chuyển sang chế độ chỉnh sửa. Vui lòng chọn PO và nhấn Cài Lệnh.",
     NOTIF_PO_SET: "Đã cài PO: {po}.",
     NOTIF_DATE_UPDATED: "Đã cập nhật ngày sản xuất.",
+    NOTIF_RETRY_SUCCESS: "Đã kiểm tra mã - đủ để chạy sản xuất!",
   };
 
   const t = (key: string, params?: Record<string, string | number>) => {
@@ -183,8 +188,18 @@ const ProductionView: React.FC = () => {
     return () => clearInterval(id);
   }, [cooldownUntil]);
 
+  // Auto-select PO when backend has a running PO and PO list is loaded
   useEffect(() => {
-    // Skip if already initialized (handles StrictMode double-invoke)
+    if (!status || poList.length === 0) return;
+    if (status.hasPO && status.orderNo && selectedPO !== status.orderNo) {
+      const exists = poList.some((po) => po.orderNo === status.orderNo);
+      if (exists) {
+        setSelectedPO(status.orderNo);
+      }
+    }
+  }, [status, poList, selectedPO]);
+
+  useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
@@ -406,6 +421,33 @@ const productionConnected = healthOk;
     setSuccess(null);
   };
 
+  // ────── Retry Production (InsufficientCodes) ──────
+  const handleRetryProduction = async () => {
+    if (!isInsufficientCodes) {
+      setError("NOTIF_ERR_RETRY_INVALID_STATE");
+      return;
+    }
+    setIsRetrying(true);
+    setError(null);
+    setSuccess(null);
+    setRetryResult(null);
+    try {
+      const result = await productionApi.retryProduction();
+      setRetryResult(result);
+      if (result.success) {
+        setSuccess("NOTIF_RETRY_SUCCESS");
+        await fetchStatus();
+      } else {
+        setError(`Không đủ mã! Còn thiếu: ${result.neededCodes} mã`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "NOTIF_ERR_RETRY";
+      setError(msg);
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
   // ────── PO Detail ──────
 
   const fetchPODetail = useCallback(async (orderNo: string) => {
@@ -512,7 +554,8 @@ const productionConnected = healthOk;
   const isEditing = status?.state === "Editing";
   const isReady = status?.state === "Ready";
   const isIdle = status?.state === "NoSelectedPO";
-  const canStart = !isRunning && status?.hasPO === true && !!selectedPO;
+  const isInsufficientCodes = status?.state === "InsufficientCodes";
+  const canStart = !isRunning && status?.hasPO === true && !!selectedPO && !isInsufficientCodes;
   const canStop = isRunning;
   const canReset = status?.hasPO === true;
 
@@ -534,6 +577,7 @@ const productionConnected = healthOk;
     Error: { label: "ERROR", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500 animate-pulse", icon: "" },
     CheckingQueue: { label: "CHECKING QUEUE", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500 animate-pulse", icon: "" },
     Saving: { label: "SAVING", bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500 animate-pulse", icon: "" },
+    InsufficientCodes: { label: "KHÔNG ĐỦ MÃ", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500 animate-pulse", icon: "" },
   };
 
   const state = status?.state || "Checking";
@@ -774,7 +818,7 @@ const productionConnected = healthOk;
                   Đổi PO
                 </button>
 
-                {/* Cai Lenh - cai dat PO tu Editing */}
+                {/* Cài Lệnh - cài đặt PO từ Editing */}
                 <button
                   onClick={handleSetPO}
                   disabled={isStarting || isStopping || isResetting || !isEditing || !selectedPO}
@@ -787,13 +831,50 @@ const productionConnected = healthOk;
                   <CheckCircle2 className="w-4 h-4" />
                   Cài Lệnh
                 </button>
+
+                {/* Retry - khi InsufficientCodes */}
+                {isInsufficientCodes && (
+                  <button
+                    onClick={handleRetryProduction}
+                    disabled={isRetrying}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20"
+                  >
+                    {isRetrying ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )}
+                    {isRetrying ? "Đang kiểm tra..." : "Thử lại"}
+                  </button>
+                )}
               </div>
 
               {/* Info text */}
               <div className="text-xs text-slate-400 flex items-center gap-2">
                 <AlertCircle className="w-3.5 h-3.5" />
-                {isEditing ? "Chọn PO → Nhấn Cài Lệnh để thiết lập. Start để bắt đầu sản xuất." : "Chọn PO → Start để bắt đầu. Đổi PO để thay đổi lệnh sản xuất."}
+                {isInsufficientCodes 
+                  ? `Không đủ mã! Pool còn ${retryResult?.availableCodes || 0} mã, cần ${retryResult?.orderQty || status?.orderQty || 0} mã. Vui lòng thêm mã vào pool rồi nhấn "Thử lại".` 
+                  : isEditing 
+                    ? "Chọn PO → Nhấn Cài Lệnh để thiết lập. Start để bắt đầu sản xuất." 
+                    : "Chọn PO → Start để bắt đầu. Đổi PO để thay đổi lệnh sản xuất."}
               </div>
+
+              {/* InsufficientCodes Warning Banner */}
+              {isInsufficientCodes && (
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+                  <AlertTriangle className="w-6 h-6 text-red-600 shrink-0" />
+                  <div className="flex-1">
+                    <div className="text-sm font-bold text-red-700">
+                      Không đủ mã để chạy sản xuất
+                    </div>
+                    <div className="text-xs text-red-600 mt-0.5">
+                      Pool còn: <span className="font-semibold">{retryResult?.availableCodes || 0}</span> mã |
+                      Cần: <span className="font-semibold">{retryResult?.orderQty || status?.orderQty || 0}</span> mã |
+                      Còn thiếu: <span className="font-semibold">{retryResult?.neededCodes || Math.max(0, (retryResult?.orderQty || status?.orderQty || 0) - (retryResult?.availableCodes || 0))}</span> mã
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

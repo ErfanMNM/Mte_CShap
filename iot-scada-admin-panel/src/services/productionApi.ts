@@ -4,6 +4,7 @@ import type {
   ProductionControlResponse,
   ProductionStatusResponse,
   UpdateProductionDateRequest,
+  RetryRunResponse,
 } from "../types/production";
 
 const PO_API_BASE_URL =
@@ -85,6 +86,14 @@ export const productionApi = {
       `/api/po/${orderNo}/production-date`,
       { productionDate } as UpdateProductionDateRequest,
       { headers: { "X-User-Name": userName } }
+    );
+    return response.data;
+  },
+
+  /** Retry production after adding codes to pool (only works when state = InsufficientCodes) */
+  async retryProduction(): Promise<RetryRunResponse> {
+    const response = await apiClient.post<RetryRunResponse>(
+      "/api/production/retry"
     );
     return response.data;
   },

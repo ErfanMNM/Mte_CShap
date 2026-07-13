@@ -184,6 +184,7 @@ public class GProjectApiServer : IDisposable
         _app.MapPost("/api/production/stop", (Delegate)HandleProductionStop);
         _app.MapPost("/api/production/reset", (Delegate)HandleProductionReset);
         _app.MapGet("/api/production/ping", (Delegate)HandleProductionPing);
+        _app.MapPost("/api/production/retry", (Delegate)HandleProductionRetry);
 
         // Device status (aggregates Camera, PLC, Production states)
         _app.MapGet("/api/devices/status", HandleGetDevicesStatus);
@@ -1070,6 +1071,45 @@ public class GProjectApiServer : IDisposable
             await Task.CompletedTask;
             return Results.Json(new { success = true, at = DateTime.UtcNow });
         }
+
+    /// <summary>
+    /// Retry kiểm tra và chạy sản xuất sau khi đã thêm mã vào pool
+    /// Chỉ hoạt động khi đang ở trạng thái InsufficientCodes
+    /// </summary>
+    private async Task<IResult> HandleProductionRetry(HttpContext context)
+    {
+        try
+        {
+            var sm = ProductionStateMachine.Instance;
+            if (sm.CurrentState != e_ProductionState.InsufficientCodes)
+            {
+                return Results.Json(new RetryRunResponse
+                {   
+                    Success = false,
+                    Message = $"Chi co the retry khi o trang thai InsufficientCodes. State hien tai: {sm.CurrentState}"
+                }, statusCode: 400);
+            }
+
+            var result = sm.RetryRunProduction();
+            return Results.Json(new RetryRunResponse
+            {
+                Success = result.success,
+                Message = result.message,
+                AvailableCodes = result.availableCodes,
+                OrderQty = ProductionStateMachine.ProductionData?.OrderQty ?? 0,
+                NeededCodes = Math.Max(0, (ProductionStateMachine.ProductionData?.OrderQty ?? 0) - result.availableCodes)
+            }, statusCode: result.success ? 200 : 400);
+        }
+        catch (Exception ex)
+        {
+            LogError("GProjectApiServer", $"Error in HandleProductionRetry: {ex.Message}", ex);
+            return Results.Json(new RetryRunResponse
+            {
+                Success = false,
+                Message = ex.Message
+            }, statusCode: 500);
+        }
+    }
 
     /// <summary>
     /// Trả về trạng thái tất cả thiết bị: Camera, PLC, Production.
