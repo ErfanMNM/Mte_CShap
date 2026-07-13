@@ -31,6 +31,7 @@ import {
   PlugZap,
   Package,
   LogOut,
+  ScrollText,
 } from "lucide-react";
 
 import ReactECharts from "echarts-for-react";
@@ -42,6 +43,7 @@ import POManagerView from "./components/pomanager/POManagerView";
 import DataPoolView from "./components/datapool/DataPoolView";
 import ProductionView from "./components/production/ProductionView";
 import { PLCSettingsView } from "./components/plcsetting/PLCSettingsView";
+import LogsView from "./components/logs/LogsView";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LoginScreen } from "./components/LoginScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -1384,7 +1386,7 @@ const AdminPanelContent = ({ user, onLogout }: { user: any; onLogout: () => void
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isOpen } = useVirtualKeyboard();
 
-  const navigation = [
+  const baseNavigation = [
     { id: "monitor", title: "Giám sát SCADA", icon: LayoutDashboard },
     { id: "production", title: "Điều khiển SX", icon: Factory },
     { id: "plcsetting", title: "PLC Setting", icon: Cpu },
@@ -1394,6 +1396,15 @@ const AdminPanelContent = ({ user, onLogout }: { user: any; onLogout: () => void
     { id: "users", title: "Quản lý tài khoản", icon: Users },
     { id: "settings", title: "Cấu hình hệ thống", icon: Settings },
   ];
+
+  const isSAdmin = user?.role === "SAdmin";
+  const navigation = isSAdmin
+    ? [
+        ...baseNavigation.slice(0, 6),
+        { id: "logs", title: "Logs hệ thống", icon: ScrollText },
+        ...baseNavigation.slice(6),
+      ]
+    : baseNavigation;
 
   return (
     <div className="flex h-screen bg-[#F6F8FA] overflow-hidden font-sans text-slate-900">
@@ -1508,13 +1519,20 @@ const AdminPanelContent = ({ user, onLogout }: { user: any; onLogout: () => void
             {activeRoute === "batches" && <POManagerView />}
             {activeRoute === "datapool" && <DataPoolView />}
             {activeRoute === "plcsetting" && <PLCSettingsView />}
+            {activeRoute === "logs" &&
+              (isSAdmin ? (
+                <LogsView />
+              ) : (
+                <PlaceholderView title="Logs hệ thống — không có quyền" />
+              ))}
             {activeRoute !== "monitor" &&
               activeRoute !== "production" &&
               activeRoute !== "history" &&
               activeRoute !== "settings" &&
               activeRoute !== "batches" &&
               activeRoute !== "datapool" &&
-              activeRoute !== "plcsetting" && (
+              activeRoute !== "plcsetting" &&
+              activeRoute !== "logs" && (
                 <PlaceholderView
                   title={
                     navigation.find((n) => n.id === activeRoute)?.title ||
