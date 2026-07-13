@@ -14,6 +14,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = "gauth_user";
+const LOGIN_TS_KEY = "gauth_login_ts";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     setUser(currentUser);
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentUser));
+    localStorage.setItem(LOGIN_TS_KEY, String(Date.now()));
   };
 
   const logout = async () => {
@@ -68,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setUser(null);
       localStorage.removeItem(AUTH_STORAGE_KEY);
+      localStorage.removeItem(LOGIN_TS_KEY);
     }
   };
 

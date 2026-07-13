@@ -11,6 +11,8 @@ import {
   X,
   Edit3,
   Settings2,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import plcApi from "../../services/plcApi";
 import type {
@@ -55,6 +57,16 @@ const RecipeRegistersEditor: React.FC<Props> = ({ recipeId, pollIntervalMs = POL
   const [pollOn, setPollOn] = useState(true);
   const [toast, setToast] = useState<Toast | null>(null);
   const [editingNameId, setEditingNameId] = useState<number | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+  const toggleRow = (idx: number) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
 
   const showToast = (type: Toast["type"], text: string) => {
     setToast({ type, text });
@@ -292,13 +304,13 @@ const RecipeRegistersEditor: React.FC<Props> = ({ recipeId, pollIntervalMs = POL
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-slate-50/70 text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-100">
-                <th className="px-3 py-2 text-left font-bold">#</th>
-                <th className="px-3 py-2 text-left font-bold">Tên</th>
-                <th className="px-3 py-2 text-left font-bold">Ô nhớ</th>
-                <th className="px-3 py-2 text-left font-bold">Kiểu</th>
+                <th className="w-8 px-2 py-2"></th>
+                <th className="px-3 py-2 text-left font-bold w-8">#</th>
+                <th className="px-3 py-2 text-left font-bold min-w-[180px] xl:min-w-[220px]">
+                  Tên
+                </th>
                 <th className="px-3 py-2 text-left font-bold">Giá trị cài</th>
                 <th className="px-3 py-2 text-left font-bold">Đơn vị</th>
-                <th className="px-3 py-2 text-left font-bold">Ghi chú</th>
                 <th className="px-3 py-2 text-center font-bold min-w-[120px]">
                   Đọc từ PLC
                 </th>
@@ -311,152 +323,185 @@ const RecipeRegistersEditor: React.FC<Props> = ({ recipeId, pollIntervalMs = POL
                 const diff =
                   liveVal?.ok &&
                   String(liveVal.value) !== String(row.defaultValue);
+                const isExpanded = expandedRows.has(idx);
 
                 return (
-                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                    {/* Index */}
-                    <td className="px-3 py-2 text-slate-400 font-mono">
-                      {idx + 1}
-                    </td>
+                  <React.Fragment key={idx}>
+                    <tr className="hover:bg-slate-50/50 transition-colors">
+                      {/* Chevron toggle */}
+                      <td className="px-2 py-2">
+                        <button
+                          onClick={() => toggleRow(idx)}
+                          className="p-1 rounded-md hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition-colors"
+                          title={isExpanded ? "Ẩn chi tiết" : "Hiện chi tiết"}
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </td>
 
-                    {/* Name */}
-                    <td className="px-3 py-2">
-                      <CellInput
-                        value={row.name}
-                        onChange={(v) => updateRow(idx, { name: v })}
-                        onOpenKb={() =>
-                          openKb(row.name, "default", (v) =>
-                            updateRow(idx, { name: v }),
+                      {/* Index */}
+                      <td className="px-3 py-2 text-slate-400 font-mono">
+                        {idx + 1}
+                      </td>
+
+                      {/* Name */}
+                      <td className="px-3 py-2 min-w-[180px] xl:min-w-[220px]">
+                        <CellInput
+                          value={row.name}
+                          onChange={(v) => updateRow(idx, { name: v })}
+                          onOpenKb={() =>
+                            openKb(row.name, "default", (v) =>
+                              updateRow(idx, { name: v }),
+                            )
+                          }
+                          editing={editingNameId === idx}
+                          setEditing={(b) => setEditingNameId(b ? idx : null)}
+                          placeholder="VD: DelayA"
+                          className="font-semibold text-slate-800"
+                        />
+                      </td>
+
+                      {/* Default value */}
+                      <td className="px-3 py-2">
+                        <CellInput
+                          value={row.defaultValue}
+                          onChange={(v) => updateRow(idx, { defaultValue: v })}
+                          onOpenKb={() =>
+                            openKb(
+                              row.defaultValue,
+                              row.dataType === "string" ? "default" : "numeric",
+                              (v) => updateRow(idx, { defaultValue: v }),
+                            )
+                          }
+                          className="font-mono font-bold text-indigo-700 text-sm"
+                          placeholder="0"
+                        />
+                      </td>
+
+                      {/* Unit */}
+                      <td className="px-3 py-2">
+                        <CellInput
+                          value={row.unit}
+                          onChange={(v) => updateRow(idx, { unit: v })}
+                          onOpenKb={() =>
+                            openKb(row.unit, "default", (v) =>
+                              updateRow(idx, { unit: v }),
+                            )
+                          }
+                          placeholder="ms"
+                          className="text-slate-500"
+                        />
+                      </td>
+
+                      {/* Live */}
+                      <td className="px-3 py-2 text-center min-w-[120px]">
+                        {liveVal ? (
+                          liveVal.ok ? (
+                            <div className="flex flex-col items-center">
+                              <span
+                                className={`font-mono font-bold ${
+                                  diff ? "text-amber-600" : "text-green-700"
+                                }`}
+                              >
+                                {liveVal.value || "(trống)"}
+                              </span>
+                              <span
+                                className={`text-[9px] font-bold ${
+                                  diff ? "text-amber-500" : "text-green-500"
+                                }`}
+                              >
+                                {diff ? "LỆCH" : "KHỚP"}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="text-red-500 text-[10px]" title={liveVal.error}>
+                              ERR
+                              <X className="w-3 h-3 inline ml-0.5" />
+                            </div>
                           )
-                        }
-                        editing={editingNameId === idx}
-                        setEditing={(b) => setEditingNameId(b ? idx : null)}
-                        placeholder="VD: DelayA"
-                        className="font-semibold text-slate-800"
-                      />
-                    </td>
-
-                    {/* Address */}
-                    <td className="px-3 py-2">
-                      <CellInput
-                        value={row.address}
-                        onChange={(v) => updateRow(idx, { address: v })}
-                        onOpenKb={() =>
-                          openKb(row.address, "default", (v) =>
-                            updateRow(idx, { address: v }),
-                          )
-                        }
-                        placeholder="D100"
-                        className="font-mono text-slate-600"
-                      />
-                    </td>
-
-                    {/* Data type */}
-                    <td className="px-3 py-2">
-                      <select
-                        value={row.dataType}
-                        onChange={(e) =>
-                          updateRow(idx, { dataType: e.target.value as PlcDataType })
-                        }
-                        className="bg-white border border-slate-200 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-indigo-500"
-                      >
-                        {DATA_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-
-                    {/* Default value */}
-                    <td className="px-3 py-2">
-                      <CellInput
-                        value={row.defaultValue}
-                        onChange={(v) => updateRow(idx, { defaultValue: v })}
-                        onOpenKb={() =>
-                          openKb(
-                            row.defaultValue,
-                            row.dataType === "string" ? "default" : "numeric",
-                            (v) => updateRow(idx, { defaultValue: v }),
-                          )
-                        }
-                        className="font-mono font-bold text-indigo-700 text-sm"
-                        placeholder="0"
-                      />
-                    </td>
-
-                    {/* Unit */}
-                    <td className="px-3 py-2">
-                      <CellInput
-                        value={row.unit}
-                        onChange={(v) => updateRow(idx, { unit: v })}
-                        onOpenKb={() =>
-                          openKb(row.unit, "default", (v) =>
-                            updateRow(idx, { unit: v }),
-                          )
-                        }
-                        placeholder="ms"
-                        className="text-slate-500"
-                      />
-                    </td>
-
-                    {/* Note */}
-                    <td className="px-3 py-2">
-                      <CellInput
-                        value={row.note}
-                        onChange={(v) => updateRow(idx, { note: v })}
-                        onOpenKb={() =>
-                          openKb(row.note, "default", (v) =>
-                            updateRow(idx, { note: v }),
-                          )
-                        }
-                        placeholder="..."
-                        className="text-slate-500 italic"
-                      />
-                    </td>
-
-                    {/* Live */}
-                    <td className="px-3 py-2 text-center min-w-[120px]">
-                      {liveVal ? (
-                        liveVal.ok ? (
-                          <div className="flex flex-col items-center">
-                            <span
-                              className={`font-mono font-bold ${
-                                diff ? "text-amber-600" : "text-green-700"
-                              }`}
-                            >
-                              {liveVal.value || "(trống)"}
-                            </span>
-                            <span
-                              className={`text-[9px] font-bold ${
-                                diff ? "text-amber-500" : "text-green-500"
-                              }`}
-                            >
-                              {diff ? "LỆCH" : "KHỚP"}
-                            </span>
-                          </div>
                         ) : (
-                          <div className="text-red-500 text-[10px]" title={liveVal.error}>
-                            ERR
-                            <X className="w-3 h-3 inline ml-0.5" />
-                          </div>
-                        )
-                      ) : (
-                        <span className="text-slate-300 text-[10px]">—</span>
-                      )}
-                    </td>
+                          <span className="text-slate-300 text-[10px]">—</span>
+                        )}
+                      </td>
 
-                    {/* Delete */}
-                    <td className="px-3 py-2 text-right">
-                      <button
-                        onClick={() => removeRow(idx)}
-                        className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-md transition-colors"
-                        title="Xóa hàng"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
+                      {/* Delete */}
+                      <td className="px-3 py-2 text-right">
+                        <button
+                          onClick={() => removeRow(idx)}
+                          className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-md transition-colors"
+                          title="Xóa hàng"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+
+                    {/* Expanded details row */}
+                    {isExpanded && (
+                      <tr className="bg-slate-50/40 border-b border-slate-100">
+                        <td colSpan={7} className="px-3 py-3">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pl-8">
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                Ô nhớ (Address)
+                              </label>
+                              <CellInput
+                                value={row.address}
+                                onChange={(v) => updateRow(idx, { address: v })}
+                                onOpenKb={() =>
+                                  openKb(row.address, "default", (v) =>
+                                    updateRow(idx, { address: v }),
+                                  )
+                                }
+                                placeholder="D100"
+                                className="font-mono text-slate-600"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                Kiểu dữ liệu
+                              </label>
+                              <select
+                                value={row.dataType}
+                                onChange={(e) =>
+                                  updateRow(idx, {
+                                    dataType: e.target.value as PlcDataType,
+                                  })
+                                }
+                                className="w-full bg-white border border-slate-200 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                              >
+                                {DATA_TYPES.map((t) => (
+                                  <option key={t} value={t}>
+                                    {t}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                Ghi chú
+                              </label>
+                              <CellInput
+                                value={row.note}
+                                onChange={(v) => updateRow(idx, { note: v })}
+                                onOpenKb={() =>
+                                  openKb(row.note, "default", (v) =>
+                                    updateRow(idx, { note: v }),
+                                  )
+                                }
+                                placeholder="..."
+                                className="text-slate-500 italic"
+                              />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>

@@ -211,9 +211,10 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
 
         /// <summary>
         /// Đồng bộ PO Database với DataPool khi bắt đầu Run PO
-        /// - Mã có trong Pool nhưng không trong PO => Thêm vào PO (Status=0)
-        /// - Mã có trong PO nhưng không trong Pool => Đánh dấu Status=1 trong Pool
-        /// - Kiểm tra số mã còn lại trong Pool >= orderQty
+        /// - Load codesInPool CHỈ lấy Status=0 (chưa dùng) để tránh đẩy mã đã used vào PO
+        /// - Mã ĐÃ ACTIVATE trong PO (Status=1) => Đánh dấu Status=1 trong Pool (phục hồi sau restart)
+        /// - Mã có trong Pool (Status=0) nhưng không trong PO => Thêm vào PO (Status=0)
+        /// - Kiểm tra số mã còn lại trong Pool (Status=0) >= orderQty
         /// </summary>
         public (bool success, string message, int availableCodes) SyncPoolWithPO()
         {
@@ -242,43 +243,47 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     while (rd.Read()) codesInPO.Add(rd.GetString(0));
                 }
 
-                // Load mã từ DataPool
+                // Load mã từ DataPool - CHỈ lấy Status=0 (chưa dùng) để tránh đẩy mã đã used vào PO
                 HashSet<string> codesInPool = new(StringComparer.OrdinalIgnoreCase);
                 using (var conPool = new SqliteConnection($"Data Source={dbPoolPath}"))
                 {
                     conPool.Open();
-                    using var cmd = new SqliteCommand("SELECT Code FROM Codes;", conPool);
+                    using var cmd = new SqliteCommand("SELECT Code FROM Codes WHERE Status = 0;", conPool);
                     using var rd = cmd.ExecuteReader();
                     while (rd.Read()) codesInPool.Add(rd.GetString(0));
                 }
 
-                // Mã có trong PO nhưng không trong Pool -> Đánh dấu Status=1 trong Pool
-                foreach (var code in codesInPO)
+                // Mã ĐÃ ACTIVATE trong PO (Status=1) => Đánh dấu Status=1 trong Pool.
+                // Chỉ áp dụng cho mã đã activate thật, tránh đánh Used oan khi PO mới nạp mã chưa chạy
+                // (trước đây đánh cho MỌI mã có trong PO - sai).
+                using (var conPO2 = new SqliteConnection($"Data Source={dbPOPath}"))
                 {
-                    if (!codesInPool.Contains(code))
+                    conPO2.Open();
+                    using var cmd = new SqliteCommand("SELECT Code FROM UniqueCodes WHERE Status = 1;", conPO2);
+                    using var rd = cmd.ExecuteReader();
+                    while (rd.Read())
                     {
-                        // Mã có trong PO nhưng không tồn tại trong Pool
-                        // Không cần làm gì vì mã không có trong Pool
-                        continue;
+                        var code = rd.GetString(0);
+                        if (codesInPool.Contains(code))
+                            DataPoolHelper.DataPoolStatic.MarkUsedSimple(gtin, code);
                     }
-                    // Mã này đã được activate (có trong PO) nên đánh dấu Used trong Pool
-                    DataPoolHelper.DataPoolStatic.MarkUsedSimple(gtin, code);
                 }
 
-                // Mã có trong Pool nhưng không trong PO -> Thêm vào PO
+                // Mã có trong Pool (Status=0) nhưng không trong PO -> Thêm vào PO (Status=0)
                 int addedCount = 0;
-                if (codesInPool.Count > codesInPO.Count)
+                if (codesInPool.Count > 0)
                 {
-                    using var conPO2 = new SqliteConnection($"Data Source={dbPOPath}");
-                    conPO2.Open();
-                    using var tx = conPO2.BeginTransaction();
+                    using var conPO3 = new SqliteConnection($"Data Source={dbPOPath}");
+                    conPO3.Open();
+                    using var tx = conPO3.BeginTransaction();
 
-                    var codesToAdd = codesInPool.Except(codesInPO, StringComparer.OrdinalIgnoreCase);
-                    foreach (var code in codesToAdd)
+                    foreach (var code in codesInPool)
                     {
-                        using var cmd = conPO2.CreateCommand();
+                        if (codesInPO.Contains(code)) continue;
+
+                        using var cmd = conPO3.CreateCommand();
                         cmd.Transaction = tx;
-                        cmd.CommandText = @"INSERT OR IGNORE INTO UniqueCodes (Code, Status, ProductionDate) 
+                        cmd.CommandText = @"INSERT OR IGNORE INTO UniqueCodes (Code, Status, ProductionDate)
                                            VALUES ($code, 0, $prodDate)";
                         cmd.Parameters.AddWithValue("$code", code);
                         cmd.Parameters.AddWithValue("$prodDate", ProductionData.ProductionDate ?? "");

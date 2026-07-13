@@ -280,15 +280,27 @@ namespace GProject.ProductionOrderHelpers
                     }
                 }
 
-                // Kiểm tra kết quả cuối cùng
+                // Kiểm tra kết quả cuối cùng.
+                // Lưu ý: "PO ready" nghĩa là files + cartons đã sẵn sàng.
+                // Việc pool có đủ mã cho orderQty hay không là điều kiện dữ liệu,
+                // do SyncPoolWithPO() kiểm tra ở PushDataToDic (set InsufficientCodes).
+                // Nếu fail ở đây vì code shortage thì flow sẽ bị chặn ở Error thay vì
+                // chạy tiếp LoadPO -> Ready -> user click Start -> PushDataToDic.
                 var finalStatus = CheckPODatabaseStatus(orderNo, orderQty, cartonCapacity);
-                if (finalStatus.IsFullyInitialized)
+                bool filesOk = finalStatus.Files.All(f => f.Exists);
+                bool cartonsOk = finalStatus.RequiredCartons == 0
+                                 || finalStatus.CreatedCartons >= finalStatus.RequiredCartons;
+
+                if (filesOk && cartonsOk)
                 {
-                    return (true, $"PO ready. Loaded {codesLoaded} codes, {cartonsCreated} cartons.", codesLoaded, cartonsCreated);
+                    string warning = finalStatus.LoadedCodes < finalStatus.TotalCodes
+                        ? $" Warning: pool chi con {finalStatus.LoadedCodes}/{finalStatus.TotalCodes} codes, can them vao pool truoc khi start."
+                        : "";
+                    return (true, $"PO ready. Loaded {codesLoaded} codes, {cartonsCreated} cartons.{warning}", codesLoaded, cartonsCreated);
                 }
                 else
                 {
-                    return (false, $"PO partially ready. {finalStatus.Message}", codesLoaded, cartonsCreated);
+                    return (false, $"PO not ready: {finalStatus.Message}", codesLoaded, cartonsCreated);
                 }
             }
             catch (Exception ex)

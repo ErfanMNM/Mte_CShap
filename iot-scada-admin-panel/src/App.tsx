@@ -1556,11 +1556,18 @@ const AdminPanelWithAuth = () => {
   const prodState = useDeviceStore((s) => s.production?.state ?? "Unknown");
   const prodConnected = useDeviceStore((s) => s.productionConnected);
 
-  // Auto logout when production state = NeedLogin and user is authenticated
+  // Auto logout when production state = NeedLogin, but only if user has been
+  // authenticated for more than 5 seconds. This avoids a race where the very
+  // first device poll (triggered right after login) returns the stale
+  // "NeedLogin" state from the PLC and kicks the user back to the login screen.
   useEffect(() => {
-    if (prodState === "NeedLogin" && isAuthenticated) {
-      logout();
-    }
+    if (prodState !== "NeedLogin" || !isAuthenticated) return;
+    const loginTsRaw = localStorage.getItem("gauth_login_ts");
+    const loginTs = loginTsRaw ? Number(loginTsRaw) : 0;
+    if (!loginTs) return;
+    const elapsed = Date.now() - loginTs;
+    if (elapsed < 5000) return;
+    logout();
   }, [prodState, isAuthenticated, logout]);
 
   if (isLoading) {

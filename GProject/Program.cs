@@ -3,7 +3,9 @@ using GProject.DataPoolHelper;
 using GProject.Auth;
 using GProject.Production;
 using GProject.ProductionOrderHelpers;
+using Raycoon.Serilog.Sinks.SQLite.Options;
 using Serilog;
+using Serilog.Events;
 
 namespace GProject
 {
@@ -27,6 +29,17 @@ namespace GProject
                     outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
                     retainedFileCountLimit: 30
                 )
+                .WriteTo.SQLite(@"C:\GProject\Logs\gproject.db", options =>
+                {
+                    options.TableName = "Logs";
+                    options.StoreTimestampInUtc = true;
+                    options.StorePropertiesAsJson = true;
+                    options.StoreExceptionDetails = true;
+                    options.JournalMode = SQLiteJournalMode.Wal;
+                    options.SynchronousMode = SQLiteSynchronousMode.Normal;
+                    options.BatchSizeLimit = 100;
+                    options.BatchPeriod = TimeSpan.FromSeconds(1);
+                })
                 .CreateLogger();
 
             Log.Information("========================================");
