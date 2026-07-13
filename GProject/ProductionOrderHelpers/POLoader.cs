@@ -422,15 +422,13 @@ namespace GProject.ProductionOrderHelpers
                     while (rd.Read()) existingCodes.Add(rd.GetString(0));
                 }
 
-                // Insert vào PO + update DataPool
-                using var conPool2 = new SqliteConnection($"Data Source={dbPoolPath}");
+                // Insert vào PO (KHÔNG đánh dấu Status=1 trong DataPool)
+                // Status=1 trong DataPool sẽ được đánh dấu khi mã được ACTIVATE thành công
                 using var conPO2 = new SqliteConnection($"Data Source={dbPOPath}");
-                conPool2.Open();
                 conPO2.Open();
                 using var tx = conPO2.BeginTransaction();
 
                 const string insertPO = @"INSERT OR IGNORE INTO UniqueCodes (Code, Status, ProductionDate) VALUES (@Code, 0, @ProductionDate);";
-                const string updatePool = "UPDATE Codes SET Status = 1 WHERE Code = @Code;";
 
                 // Lấy TẤT CẢ mã chưa dùng trong pool, không giới hạn bởi orderQty
                 foreach (var code in availableCodes)
@@ -444,14 +442,10 @@ namespace GProject.ProductionOrderHelpers
                         cmdInsert.ExecuteNonQuery();
                         loadedCount++;
                     }
-                    using (var cmdUpdate = new SqliteCommand(updatePool, conPool2))
-                    {
-                        cmdUpdate.Parameters.AddWithValue("@Code", code);
-                        cmdUpdate.ExecuteNonQuery();
-                    }
+                    // KHONG con updatePool nua - Status=1 se duoc danh dau khi activate
                 }
                 tx.Commit();
-                return (true, $"Nạp {loadedCount} mã thành công (lấy từ tổng {availableCodes.Count} mã chưa dùng trong pool).", loadedCount);
+                return (true, $"Nap {loadedCount} ma thanh cong (lay tu tong {availableCodes.Count} ma chua dung trong pool).", loadedCount);
             }
             catch (Exception ex)
             {

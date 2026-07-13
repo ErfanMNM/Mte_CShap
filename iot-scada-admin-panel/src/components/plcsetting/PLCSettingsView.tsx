@@ -3,9 +3,9 @@ import { Cpu } from "lucide-react";
 import CameraIframe from "./CameraIframe";
 import PLCRecipeForm from "./PLCRecipeForm";
 
-const PLCSettingsView: React.FC = () => {
+export const PLCSettingsView: React.FC<{ className?: string }> = ({ className = "" }) => {
   return (
-    <div className="flex flex-col gap-4 h-full min-h-0 w-full animate-in fade-in duration-500 overflow-auto scrollbar-hide pb-6">
+    <div className={`flex flex-col gap-4 h-full min-h-0 w-full animate-in fade-in duration-500 overflow-hidden ${className}`}>
       {/* Header */}
       <div className="flex items-center gap-3 px-1 shrink-0">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -23,12 +23,10 @@ const PLCSettingsView: React.FC = () => {
       </div>
 
       {/* 2-column layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 2xl:gap-5 items-stretch">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 2xl:gap-5 items-stretch flex-1 min-h-0">
         <CameraIframe />
         <PLCRecipeForm />
       </div>
     </div>
   );
 };
-
-export default PLCSettingsView;

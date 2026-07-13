@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Save,
   RefreshCw,
@@ -10,14 +10,9 @@ import {
   X,
   Trash2,
   Star,
-  RotateCcw,
-  Eye,
-  Keyboard as KeyboardIcon,
-  CircleDot,
 } from "lucide-react";
 import plcApi from "../../services/plcApi";
 import type { PLCRecipe } from "../../types/plc";
-import { useVirtualKeyboard } from "../../App";
 import RecipeRegistersEditor from "./RecipeRegistersEditor";
 
 const EMPTY_RECIPE: PLCRecipe = {
@@ -34,26 +29,9 @@ interface Toast {
   text: string;
 }
 
-interface LiveValues {
-  delayCamera: number | null;
-  delayReject: number | null;
-  rejectStreng: number | null;
-  at: number | null;
-  error?: string;
-}
-
-const POLL_INTERVAL_MS = 3000;
-
 export const PLCRecipeForm: React.FC = () => {
-  const { openKeyboard, isOpen } = useVirtualKeyboard();
   const [allRecipes, setAllRecipes] = useState<PLCRecipe[]>([]);
   const [recipe, setRecipe] = useState<PLCRecipe>(EMPTY_RECIPE);
-  const [live, setLive] = useState<LiveValues>({
-    delayCamera: null,
-    delayReject: null,
-    rejectStreng: null,
-    at: null,
-  });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [settingActive, setSettingActive] = useState(false);
@@ -61,7 +39,6 @@ export const PLCRecipeForm: React.FC = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [toast, setToast] = useState<Toast | null>(null);
-  const pollRef = useRef<number | null>(null);
 
   const showToast = (type: Toast["type"], text: string) => {
     setToast({ type, text });
@@ -82,50 +59,14 @@ export const PLCRecipeForm: React.FC = () => {
     }
   };
 
-  // Live polling giá trị từ PLC
-  const pollLive = async () => {
-    try {
-      const r = await plcApi.getRecipeFromPlc();
-      if (r) {
-        setLive({
-          delayCamera: r.delayCamera,
-          delayReject: r.delayReject,
-          rejectStreng: r.rejectStreng,
-          at: Date.now(),
-          error: undefined,
-        });
-      }
-    } catch (err: any) {
-      setLive((prev) => ({
-        ...prev,
-        at: Date.now(),
-        error: err?.message || "Không đọc được PLC",
-      }));
-    }
-  };
-
   useEffect(() => {
     loadAll();
-    pollLive();
-    pollRef.current = window.setInterval(pollLive, POLL_INTERVAL_MS);
-    return () => {
-      if (pollRef.current) window.clearInterval(pollRef.current);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const save = async () => {
     if (!recipe.recipeName.trim()) {
       showToast("err", "Vui lòng nhập tên recipe.");
-      return;
-    }
-    if (
-      recipe.delayCamera < 0 ||
-      recipe.delayReject < 0 ||
-      recipe.rejectStreng < 0 ||
-      recipe.rejectStreng > 100
-    ) {
-      showToast("err", "RejectStreng phải 0-100. Delay phải >= 0.");
       return;
     }
     setSaving(true);
@@ -154,7 +95,6 @@ export const PLCRecipeForm: React.FC = () => {
       await plcApi.setActiveRecipe(recipe.id);
       showToast("ok", "Đã đặt active và ghi xuống PLC.");
       await loadAll();
-      pollLive();
     } catch (err: any) {
       showToast("err", err?.message || "Đặt active thất bại.");
     } finally {
@@ -235,7 +175,6 @@ export const PLCRecipeForm: React.FC = () => {
           <button
             onClick={() => {
               loadAll();
-              pollLive();
             }}
             disabled={loading}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-700 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"
@@ -277,31 +216,7 @@ export const PLCRecipeForm: React.FC = () => {
       )}
 
       {/* Body */}
-      <div className="p-4 xl:p-6 flex-1 overflow-auto space-y-3">
-        {/* Live PLC status */}
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold text-slate-500">
-          <CircleDot
-            className={`w-3.5 h-3.5 ${live.error ? "text-red-500" : "text-green-500"}`}
-          />
-          <span>PLC Live</span>
-          <span
-            className={`font-mono normal-case text-slate-600 ${live.error ? "text-red-600" : ""}`}
-          >
-            {live.error
-              ? `Mất kết nối: ${live.error}`
-              : live.at
-                ? `Cập nhật ${Math.max(1, Math.floor((Date.now() - live.at) / 1000))}s trước`
-                : "Chờ đọc..."}
-          </span>
-          <button
-            onClick={pollLive}
-            className="ml-1 p-1 hover:bg-slate-100 rounded-lg text-slate-500"
-            title="Đọc ngay"
-          >
-            <Eye className="w-3 h-3" />
-          </button>
-        </div>
-
+      <div className="p-4 xl:p-6 flex-1 flex flex-col gap-4 min-h-0">
         {/* Recipe dropdown */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
@@ -368,11 +283,6 @@ export const PLCRecipeForm: React.FC = () => {
             type="text"
             value={recipe.recipeName}
             onChange={(e) => setRecipe({ ...recipe, recipeName: e.target.value })}
-            onFocus={() =>
-              openKeyboard(recipe.recipeName, "default", (v) =>
-                setRecipe((prev) => ({ ...prev, recipeName: v })),
-              )
-            }
             disabled={isDefault}
             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed"
           />
@@ -383,98 +293,29 @@ export const PLCRecipeForm: React.FC = () => {
           )}
         </div>
 
-        {/* 3 number fields - dual value (Setting + Live from PLC) */}
-        <div className="grid grid-cols-1 gap-2">
-          <DualNumberField
-            label="DelayCamera"
-            unit="ms"
-            settingValue={recipe.delayCamera}
-            liveValue={live.delayCamera}
-            color="blue"
-            min={0}
-            onChangeSetting={(v) =>
-              setRecipe((prev) => ({ ...prev, delayCamera: v }))
-            }
-            openKb={(cur, apply) =>
-              openKeyboard(String(cur), "numeric", (s) =>
-                apply(Number.isFinite(Number(s)) ? Number(s) : 0),
-              )
-            }
-            kbOpen={isOpen}
-          />
-          <DualNumberField
-            label="DelayReject"
-            unit="ms"
-            settingValue={recipe.delayReject}
-            liveValue={live.delayReject}
-            color="amber"
-            min={0}
-            onChangeSetting={(v) =>
-              setRecipe((prev) => ({ ...prev, delayReject: v }))
-            }
-            openKb={(cur, apply) =>
-              openKeyboard(String(cur), "numeric", (s) =>
-                apply(Number.isFinite(Number(s)) ? Number(s) : 0),
-              )
-            }
-            kbOpen={isOpen}
-          />
-          <DualNumberField
-            label="RejectStreng"
-            unit="0-100"
-            settingValue={recipe.rejectStreng}
-            liveValue={live.rejectStreng}
-            color="purple"
-            min={0}
-            max={100}
-            onChangeSetting={(v) =>
-              setRecipe((prev) => ({ ...prev, rejectStreng: v }))
-            }
-            openKb={(cur, apply) =>
-              openKeyboard(String(cur), "numeric", (s) =>
-                apply(Number.isFinite(Number(s)) ? Number(s) : 0),
-              )
-            }
-            kbOpen={isOpen}
-          />
-        </div>
-
-        {/* Custom Registers (per recipe) */}
-        <div className="border-t border-slate-100 pt-4 mt-2">
+        {/* Custom Registers (per recipe) - scrollable */}
+        <div className="border-t border-slate-100 pt-4 flex-1 min-h-0 overflow-auto scrollbar-hide">
           <RecipeRegistersEditor recipeId={recipe.id ?? null} />
         </div>
 
         {/* Bottom actions */}
-        <div className="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-            {recipe.id
-              ? `ID: ${recipe.id}`
-              : "Recipe mới — bấm Lưu để tạo"}
+        <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2 text-[11px] text-slate-500">
+            {recipe.id ? (
+              <>
+                <span className="font-mono bg-slate-100 px-2 py-1 rounded-lg">ID: {recipe.id}</span>
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-400">{recipe.recipeName}</span>
+              </>
+            ) : (
+              <span className="text-amber-600">Recipe mới — bấm Lưu để tạo</span>
+            )}
           </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setRecipe({ ...EMPTY_RECIPE })}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"
-              title="Reset form"
-            >
-              <RotateCcw className="w-3.5 h-3.5" /> Reset
-            </button>
-            <button
-              onClick={setActive}
-              disabled={!recipe.id || isActive || settingActive}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {settingActive ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Star className="w-3.5 h-3.5" />
-              )}
-              Đặt active & ghi PLC
-            </button>
+          <div className="flex items-center gap-2">
             <button
               onClick={deleteRecipe}
               disabled={!canDelete || deleting}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all shadow-sm shadow-red-500/20 disabled:opacity-30 disabled:shadow-none"
               title={
                 isDefault
                   ? "Không thể xóa Default"
@@ -492,205 +333,9 @@ export const PLCRecipeForm: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {recipe.id && (
-          <p className="text-[10px] text-slate-400">
-            Tạo bởi <span className="font-semibold">{recipe.createdBy || "Operator"}</span> • Cập nhật:{" "}
-            <span className="font-mono">
-              {recipe.updatedAt
-                ? new Date(recipe.updatedAt).toLocaleString("vi-VN")
-                : "—"}
-            </span>
-          </p>
-        )}
       </div>
     </div>
   );
 };
 
 export default PLCRecipeForm;
-interface DualNumberFieldProps {
-  label: string;
-  unit: string;
-  settingValue: number;
-  liveValue: number | null;
-  color: "blue" | "amber" | "purple";
-  min?: number;
-  max?: number;
-  onChangeSetting: (v: number) => void;
-  openKb: (
-    cur: number,
-    apply: (v: number) => void,
-  ) => void;
-  kbOpen: boolean;
-}
-
-const COLOR_RING: Record<DualNumberFieldProps["color"], string> = {
-  blue: "focus-within:ring-blue-500/40 border-blue-200 bg-blue-50/40",
-  amber: "focus-within:ring-amber-500/40 border-amber-200 bg-amber-50/40",
-  purple: "focus-within:ring-purple-500/40 border-purple-200 bg-purple-50/40",
-};
-const COLOR_TEXT: Record<DualNumberFieldProps["color"], string> = {
-  blue: "text-blue-700",
-  amber: "text-amber-700",
-  purple: "text-purple-700",
-};
-const COLOR_BUTTON: Record<DualNumberFieldProps["color"], string> = {
-  blue: "bg-blue-600 hover:bg-blue-700",
-  amber: "bg-amber-600 hover:bg-amber-700",
-  purple: "bg-purple-600 hover:bg-purple-700",
-};
-
-const DualNumberField: React.FC<DualNumberFieldProps> = ({
-  label,
-  unit,
-  settingValue,
-  liveValue,
-  color,
-  min,
-  max,
-  onChangeSetting,
-  openKb,
-  kbOpen,
-}) => {
-  const handleKb = () => openKb(settingValue, onChangeSetting);
-
-  // Đánh dấu chênh lệch giữa setting vs live
-  const differs =
-    liveValue !== null &&
-    liveValue !== undefined &&
-    settingValue !== liveValue;
-
-  const matchColor = differs ? "text-amber-600" : "text-green-600";
-  const matchBg = differs ? "bg-amber-50 border-amber-200" : "bg-green-50 border-green-200";
-
-  return (
-    <div className={`rounded-xl border ${COLOR_RING[color]} p-2 ring-1 ring-transparent transition-all`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-1">
-        <label className={`text-[11px] font-bold ${COLOR_TEXT[color]} flex items-center gap-1.5`}>
-          <span>{label}</span>
-          <span className="text-[9px] font-mono text-slate-400 font-normal">({unit})</span>
-        </label>
-        {liveValue !== null && liveValue !== undefined && (
-          <span
-            className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 rounded-full border ${matchBg} ${matchColor}`}
-            title={differs ? "Giá trị cài đặt khác giá trị PLC" : "Khớp"}
-          >
-            {differs ? "Lệch" : "Khớp"}
-          </span>
-        )}
-      </div>
-
-      {/* Two columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-        {/* Setting */}
-        <button
-          type="button"
-          onClick={handleKb}
-          className={`text-left rounded-md px-2 py-1 border-2 transition-all ${
-            kbOpen
-              ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500/30"
-              : "border-slate-200 bg-white hover:border-slate-300"
-          }`}
-        >
-          <div className="flex items-center justify-between gap-1 mb-0">
-            <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500">
-              Cài đặt
-            </span>
-            <KeyboardIcon className="w-2.5 h-2.5 text-slate-400" />
-          </div>
-          <div className="text-base font-black text-slate-800 font-mono leading-tight">
-            {settingValue}
-          </div>
-        </button>
-
-        {/* Live from PLC */}
-        <div className="rounded-md px-2 py-1 border-2 border-slate-200 bg-slate-50">
-          <div className="flex items-center justify-between gap-1 mb-0">
-            <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500">
-              Đọc từ PLC
-            </span>
-            <Eye className="w-2.5 h-2.5 text-slate-400" />
-          </div>
-          <div
-            className={`text-base font-black font-mono leading-tight ${
-              liveValue === null ? "text-slate-300" : "text-slate-700"
-            }`}
-          >
-            {liveValue === null ? "—" : liveValue}
-          </div>
-          {min !== undefined || max !== undefined ? (
-            <div className="text-[8px] text-slate-400 mt-0">
-              {min !== undefined ? `min ${min}` : ""}
-              {min !== undefined && max !== undefined ? " • " : ""}
-              {max !== undefined ? `max ${max}` : ""}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {/* Sync hint */}
-      {differs && liveValue !== null && (
-        <div className="mt-1 flex items-center justify-between gap-1 text-[9px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
-          <span>
-            Đã lưu DB nhưng chưa ghi xuống PLC. Bấm{" "}
-            <span className="font-bold">"Đặt active & ghi PLC"</span> hoặc "Lưu vào DB" (nếu đang active).
-          </span>
-        </div>
-      )}
-
-      {/* Quick adjust row */}
-      <div className="mt-1 flex items-center justify-between gap-1">
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            onClick={() =>
-              onChangeSetting(Math.max(min ?? -Infinity, settingValue - 10))
-            }
-            className={`text-[10px] font-bold w-7 h-6 rounded text-white ${COLOR_BUTTON[color]} transition-colors`}
-            title="Giảm 10"
-          >
-            -10
-          </button>
-          <button
-            type="button"
-            onClick={() => onChangeSetting(settingValue - 1)}
-            className="text-[11px] font-bold w-6 h-6 rounded bg-white border border-slate-300 hover:bg-slate-100 transition-colors"
-            title="Giảm 1"
-          >
-            -
-          </button>
-          <button
-            type="button"
-            onClick={() => onChangeSetting(settingValue + 1)}
-            className="text-[11px] font-bold w-6 h-6 rounded bg-white border border-slate-300 hover:bg-slate-100 transition-colors"
-            title="Tăng 1"
-          >
-            +
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              onChangeSetting(
-                Math.min(max ?? Infinity, settingValue + 10),
-              )
-            }
-            className={`text-[10px] font-bold w-7 h-6 rounded text-white ${COLOR_BUTTON[color]} transition-colors`}
-            title="Tăng 10"
-          >
-            +10
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={handleKb}
-          className="flex items-center gap-0.5 text-[9px] font-semibold text-slate-500 hover:text-indigo-600 transition-colors"
-        >
-          <KeyboardIcon className="w-2.5 h-2.5" /> Bàn phím số
-        </button>
-      </div>
-    </div>
-  );
-};
-

@@ -18,7 +18,7 @@ import type {
   RecipeRegister,
   RecipeRegisterLive,
 } from "../../types/plc";
-import { useVirtualKeyboard } from "../../App";
+import { useVirtualKeyboard } from "../../hooks/useVirtualKeyboard";
 
 interface Props {
   recipeId: number | null;

@@ -98,7 +98,12 @@ namespace GProject.ProductionOrderHelpers
         ///<summary>
         ///Chưa có mã thùng
         ///</summary>
-        WaitCartonCode = 16
+        WaitCartonCode = 16,
+
+        /// <summary>
+        /// Không đủ mã trong pool để chạy PO (số mã trong pool < orderQty)
+        /// </summary>
+        InsufficientCodes = 17
     }
 
     /// <summary>
