@@ -6,6 +6,7 @@ using GProject.ProductionOrderHelpers;
 using Raycoon.Serilog.Sinks.SQLite.Options;
 using Serilog;
 using Serilog.Events;
+using GProject.Config;
 
 namespace GProject
 {
@@ -14,9 +15,10 @@ namespace GProject
     private static OmronCodeReader? _CR_Camera;
     private static PLCMonitor? _plcMonitor;
     private static GProjectApiServer? _apiServer;
+    public static AppConfig? _config;
 
-    /// <summary>Exposes the PLC monitor instance for API endpoints.</summary>
-    public static PLCMonitor? GetPLCMonitor() => _plcMonitor;
+        /// <summary>Exposes the PLC monitor instance for API endpoints.</summary>
+        public static PLCMonitor? GetPLCMonitor() => _plcMonitor;
 
         static async Task Main(string[] args)
         {
@@ -46,6 +48,11 @@ namespace GProject
             Log.Information("  GProject - Starting...");
             Log.Information("========================================");
 
+            //Tải cấu hình
+            _config = ConfigStorage.Load<AppConfig>() ?? new AppConfig();
+           // _config.SetDefault();
+            //ConfigStorage.Save(_config);
+
             // Initialize Auth database
             AuthDb.EnsureCreated();
             Log.Information("  Auth database initialized.");
@@ -59,9 +66,10 @@ namespace GProject
             RecipeRegisterDb.EnsureCreated();
             Log.Information("  PLC recipe & registers database initialized.");
 
+
             DataPoolStatic.DataPath = DataPool.DefaultDataPath;
 
-            _apiServer = new GProjectApiServer(9999, "0.0.0.0", (src, msg) =>
+            _apiServer = new GProjectApiServer(_config.API_Port, _config.API_HostIP, (src, msg) =>
             {
                 Log.Information("[{Source}] {Message}", src, msg);
             });
@@ -69,16 +77,6 @@ namespace GProject
             try
             {
                 await _apiServer.StartAsync();
-                Log.Information("");
-                Log.Information("  REST API Server: http://localhost:9999");
-                Log.Information("  Health Check:    http://localhost:9999/api/health");
-                Log.Information("  Device Status:   http://localhost:9999/api/devices/status");
-                Log.Information("  DataPool API:    http://localhost:9999/api/datapool/pools");
-                Log.Information("  Production:      http://localhost:9999/api/production/state");
-                Log.Information("");
-                Log.Information("  Waiting for requests...");
-                Log.Information("========================================");
-                Log.Information("");
 
                 // Khởi động State Machine loop
                 ProductionStateMachine? stateMachine = ProductionStateMachine.Instance;
@@ -92,8 +90,7 @@ namespace GProject
                 _CR_Camera.Connect();
                 Log.Information("[Main] Camera initialized: camera=127.0.0.1:9001");
 
-                // Khoi tao PLC Monitor (Omron FINS/UDP) - heartbeat + counter polling.
-                // Broadcasts connection state to FE via /ws/plc.
+                //khởi tạo heartbeat monitor cho PLC
                 _plcMonitor = new PLCMonitor();
                 _plcMonitor.StateChanged += (_, args) =>
                 {

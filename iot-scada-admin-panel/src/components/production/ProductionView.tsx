@@ -51,7 +51,6 @@ const getPlcStatusFromStore = (state: string | undefined, connected: boolean): C
 };
 
 const ProductionView: React.FC = () => {
-  const [status, setStatus] = useState<ProductionStatusResponse | null>(null);
   const [poList, setPoList] = useState<POListItem[]>([]);
   const [selectedPO, setSelectedPO] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -67,7 +66,6 @@ const ProductionView: React.FC = () => {
   const isRefreshingPORef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [healthOk, setHealthOk] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryResult, setRetryResult] = useState<RetryRunResponse | null>(null);
 
@@ -128,29 +126,20 @@ const ProductionView: React.FC = () => {
     return key;
   };
 
-  const statusRef = useRef<ProductionStatusResponse | null>(null);
-  useEffect(() => {
-    statusRef.current = status;
-  }, [status]);
-
+  const manualPoll = useDeviceStore((s) => s.manualPoll);
   const fetchStatus = useCallback(async () => {
     if (isRefreshingPORef.current) return;
     isRefreshingPORef.current = true;
     setIsRefreshingPO(true);
     try {
-      const data = await productionApi.getStatus();
-      setStatus(data);
-      setHealthOk(true);
-    } catch {
-      setHealthOk(false);
+      await manualPoll();
     } finally {
-      // Debounce: không cho gọi lại trong 2 giây sau khi hoàn thành
       setTimeout(() => {
         isRefreshingPORef.current = false;
         setIsRefreshingPO(false);
       }, 2000);
     }
-  }, []);
+  }, [manualPoll]);
 
   const fetchPOList = useCallback(async () => {
     setIsLoading(true);
@@ -188,29 +177,15 @@ const ProductionView: React.FC = () => {
     return () => clearInterval(id);
   }, [cooldownUntil]);
 
-  // Auto-select PO when backend has a running PO and PO list is loaded
-  useEffect(() => {
-    if (!status || poList.length === 0) return;
-    if (status.hasPO && status.orderNo && selectedPO !== status.orderNo) {
-      const exists = poList.some((po) => po.orderNo === status.orderNo);
-      if (exists) {
-        setSelectedPO(status.orderNo);
-      }
-    }
-  }, [status, poList, selectedPO]);
-
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    fetchStatus();
     fetchPOList();
-    const interval = setInterval(fetchStatus, 1000);
     return () => {
-      clearInterval(interval);
       initializedRef.current = false;
     };
-  }, [fetchStatus, fetchPOList]);
+  }, [fetchPOList]);
 
   // Auto-dismiss messages
   useEffect(() => {
@@ -227,17 +202,66 @@ const ProductionView: React.FC = () => {
     }
   }, [error]);
 
-  // Get device status from centralized store
+  // Get device status from centralized store (single polling source — 1s)
   const cameraStatus = useDeviceStore((s) => s.camera);
   const plcStatus = useDeviceStore((s) => s.plc);
   const productionStatus = useDeviceStore((s) => s.production);
+  const apiStatus = useDeviceStore((s) => s.apiStatus);
+
+  // Adapter: chuyển ProductionStateResponse (từ store, polling 1s) sang shape ProductionStatusResponse
+  // để các StatCard/UI cũ không cần đổi signature. Cùng BE đọc, không còn 2 nguồn.
+  const status: ProductionStatusResponse | null = useMemo(() => {
+    const p = productionStatus;
+    if (!p) return null;
+    return {
+      success: true,
+      state: p.state,
+      hasPO: p.hasPO ?? !!p.orderNo,
+      orderNo: p.orderNo,
+      productName: p.productName,
+      productionDate: p.productionDate ?? null,
+      orderQty: p.orderQty,
+      totalCount: p.activeCounter.TotalCount,
+      passCount: p.activeCounter.PassTotal,
+      passTotal: p.activeCounter.PassTotal,
+      failCount: p.activeCounter.FailTotal,
+      failTotal: p.activeCounter.FailTotal,
+      duplicateCount: p.activeCounter.DuplicateCount,
+      notFoundCount: p.activeCounter.NotFoundCount,
+      readFailCount: p.activeCounter.ReadFailCount,
+      errorCount: p.activeCounter.ErrorCount,
+      timeoutCount: p.activeCounter.TimeoutCount,
+      cartonCount: p.cartonCount,
+      cartonClosedCount: p.cartonClosedCount,
+      currentCartonId: p.activeCounter.CartonID,
+      currentCartonCode: p.activeCounter.CartonCode,
+      itemsInCarton: p.itemsInCarton,
+      cartonCapacity: p.cartonCapacity,
+      progressPercent: p.progressPercent,
+    };
+  }, [productionStatus]);
 
   // REST polling for device status (Camera, PLC, Production state)
-  useDevicePolling({ intervalMs: 2000 });
+  useDevicePolling({ intervalMs: 1000 });
+
+  // Auto-select PO when backend has a running PO and PO list is loaded
+  useEffect(() => {
+    if (!status || poList.length === 0) return;
+    if (status.hasPO && status.orderNo && selectedPO !== status.orderNo) {
+      const exists = poList.some((po) => po.orderNo === status.orderNo);
+      if (exists) {
+        setSelectedPO(status.orderNo);
+      }
+    }
+  }, [status, poList, selectedPO]);
 
   // Camera WebSocket - auto addFromReader khi nhận Received từ camera (logs only, store sync handled by App.tsx)
   const cameraWsUrl =
     import.meta.env.VITE_CAMERA_WS_URL || "ws://localhost:9999/ws/camera";
+  const statusRef = useRef<ProductionStatusResponse | null>(status);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
   const { lastScan } = useCameraSocket({
     url: cameraWsUrl,
     onEvent: async (msg) => {
@@ -259,8 +283,9 @@ const ProductionView: React.FC = () => {
   });
 
 // PLC state from store (updated via REST polling)
-// Treat healthOk as the production connection signal: BE down => request fails => banner red.
-const productionConnected = healthOk;
+// Treat apiStatus.error as the production connection signal: BE down => request fails => banner red.
+const productionConnected = !apiStatus.error;
+const healthOk = !apiStatus.error;
 
   const handleStartProduction = async () => {
     if (!selectedPO) {
@@ -941,11 +966,17 @@ const productionConnected = healthOk;
                       <StatCard label="SL Order" value={status.orderQty.toLocaleString()} />
                       <StatCard label="Tiến độ" value={`${status.progressPercent.toFixed(1)}%`} color="blue" />
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                       <StatCard label="Tổng đếm" value={status.totalCount.toLocaleString()} color="slate" />
-                      <StatCard label="Pass ✓" value={status.passCount.toLocaleString()} color="green" />
-                      <StatCard label="Fail ✗" value={status.failCount.toLocaleString()} color="red" />
+                      <StatCard label="Pass ✓" value={status.passTotal.toLocaleString()} color="green" />
+                      <StatCard label="Fail ✗" value={status.failTotal.toLocaleString()} color="red" />
                       <StatCard label="Trùng ⚡" value={status.duplicateCount.toLocaleString()} color="amber" />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <StatCard label="Không tìm" value={status.notFoundCount.toLocaleString()} color="slate" />
+                      <StatCard label="Không đọc" value={status.readFailCount.toLocaleString()} color="slate" />
+                      <StatCard label="Lỗi thùng" value={status.errorCount.toLocaleString()} color="red" />
+                      <StatCard label="Timeout" value={status.timeoutCount.toLocaleString()} color="red" />
                     </div>
                   </>
                 ) : isLoadingPODetail && !poDetail ? (

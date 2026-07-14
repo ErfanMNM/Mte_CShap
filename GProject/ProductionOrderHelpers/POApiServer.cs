@@ -71,8 +71,14 @@ namespace GProject.ProductionOrderHelpers
         [JsonPropertyName("progressPercent")] public double ProgressPercent { get; set; }
         [JsonPropertyName("totalCount")] public int TotalCount { get; set; }
         [JsonPropertyName("passCount")] public int PassCount { get; set; }
+        [JsonPropertyName("passTotal")] public int PassTotal { get; set; }
         [JsonPropertyName("failCount")] public int FailCount { get; set; }
+        [JsonPropertyName("failTotal")] public int FailTotal { get; set; }
         [JsonPropertyName("duplicateCount")] public int DuplicateCount { get; set; }
+        [JsonPropertyName("notFoundCount")] public int NotFoundCount { get; set; }
+        [JsonPropertyName("readFailCount")] public int ReadFailCount { get; set; }
+        [JsonPropertyName("errorCount")] public int ErrorCount { get; set; }
+        [JsonPropertyName("timeoutCount")] public int TimeoutCount { get; set; }
         [JsonPropertyName("currentCartonId")] public int CurrentCartonId { get; set; }
         [JsonPropertyName("currentCartonCode")] public string CurrentCartonCode { get; set; } = "";
         [JsonPropertyName("itemsInCarton")] public int ItemsInCarton { get; set; }
@@ -704,14 +710,20 @@ namespace GProject.ProductionOrderHelpers
                     ProductionDate = ProductionStateMachine.ProductionData?.ProductionDate ?? "",
                     OrderQty = orderQty,
                     TotalCount = sm.ActiveCounter.TotalCount,
-                    PassCount = sm.ActiveCounter.PassCount,
-                    FailCount = sm.ActiveCounter.FailCount,
+                    PassCount = sm.ActiveCounter.PassTotal,
+                    PassTotal = sm.ActiveCounter.PassTotal,
+                    FailCount = sm.ActiveCounter.FailTotal,
+                    FailTotal = sm.ActiveCounter.FailTotal,
                     DuplicateCount = sm.ActiveCounter.DuplicateCount,
+                    NotFoundCount = sm.ActiveCounter.NotFoundCount,
+                    ReadFailCount = sm.ActiveCounter.ReadFailCount,
+                    ErrorCount = sm.ActiveCounter.ErrorCount,
+                    TimeoutCount = sm.ActiveCounter.TimeoutCount,
                     CartonCount = cartonCount,
                     ClosedCartonCount = closedCartons,
                     CurrentCartonId = sm.ActiveCounter.CartonID,
                     CurrentCartonCode = sm.ActiveCounter.CartonCode,
-                    ItemsInCarton = sm.PackageCounter.PassCount,
+                    ItemsInCarton = sm.PackageCounter.PassTotal,
                     CartonCapacity = sm.ActiveCounter.CartonCapacity,
                     ProgressPercent = orderQty > 0 ? Math.Round((double)packedCodes / orderQty * 100, 2) : 0
                 }));

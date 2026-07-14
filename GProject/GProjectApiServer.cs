@@ -788,15 +788,16 @@ public class GProjectApiServer : IDisposable
                 orderQty = ProductionStateMachine.ProductionData?.OrderQty ?? 0,
                 activeCounter = new
                 {
-                    sm.ActiveCounter.PassCount,
-                    sm.ActiveCounter.FailCount,
-                    sm.ActiveCounter.DuplicateCount,
-                    sm.ActiveCounter.NotFoundCount,
-                    sm.ActiveCounter.ReadFailCount,
-                    sm.ActiveCounter.ErrorCount,
-                    sm.ActiveCounter.TimeoutCount,
-                    sm.ActiveCounter.CartonID,
-                    sm.ActiveCounter.CartonCode
+                    PassTotal = sm.ActiveCounter.PassTotal,
+                    FailTotal = sm.ActiveCounter.FailTotal,
+                    DuplicateCount = sm.ActiveCounter.DuplicateCount,
+                    NotFoundCount = sm.ActiveCounter.NotFoundCount,
+                    ReadFailCount = sm.ActiveCounter.ReadFailCount,
+                    ErrorCount = sm.ActiveCounter.ErrorCount,
+                    TimeoutCount = sm.ActiveCounter.TimeoutCount,
+                    TotalCount = sm.ActiveCounter.TotalCount,
+                    CartonID = sm.ActiveCounter.CartonID,
+                    CartonCode = sm.ActiveCounter.CartonCode
                 },
                 codesCount = sm.Dictionary_Codes.Count,
                 cartonsCount = sm.Dictionary_Cartons.Count,
@@ -1167,6 +1168,16 @@ public class GProjectApiServer : IDisposable
             // --- Production ---
             var sm = ProductionStateMachine.Instance;
 
+            int _packedCodes = 0;
+            int _cartonCount = 0, _closedCartons = 0;
+            if (ProductionStateMachine.ProductionData != null)
+            {
+                _packedCodes = GProduction.PORecordHelper.GetPackedCount(ProductionStateMachine.ProductionData.OrderNo);
+                _cartonCount = GProduction.POCarton.GetTotalCartonCount(ProductionStateMachine.ProductionData.OrderNo);
+                _closedCartons = GProduction.POCarton.GetClosedCartonCount(ProductionStateMachine.ProductionData.OrderNo);
+            }
+            int _orderQtySnap = ProductionStateMachine.ProductionData?.OrderQty ?? 0;
+
             return Results.Json(new
             {
                 success = true,
@@ -1202,19 +1213,27 @@ public class GProjectApiServer : IDisposable
                     previousState = sm.PreviousState.ToString(),
                     orderNo = ProductionStateMachine.ProductionData?.OrderNo ?? "",
                     productName = ProductionStateMachine.ProductionData?.ProductName ?? "",
-                    orderQty = ProductionStateMachine.ProductionData?.OrderQty ?? 0,
+                    productionDate = ProductionStateMachine.ProductionData?.ProductionDate ?? "",
+                    orderQty = _orderQtySnap,
                     activeCounter = new
                     {
-                        sm.ActiveCounter.PassCount,
-                        sm.ActiveCounter.FailCount,
-                        sm.ActiveCounter.DuplicateCount,
-                        sm.ActiveCounter.NotFoundCount,
-                        sm.ActiveCounter.ReadFailCount,
-                        sm.ActiveCounter.ErrorCount,
-                        sm.ActiveCounter.TimeoutCount,
-                        sm.ActiveCounter.CartonID,
-                        sm.ActiveCounter.CartonCode
+                        PassTotal = sm.ActiveCounter.PassTotal,
+                        FailTotal = sm.ActiveCounter.FailTotal,
+                        DuplicateCount = sm.ActiveCounter.DuplicateCount,
+                        NotFoundCount = sm.ActiveCounter.NotFoundCount,
+                        ReadFailCount = sm.ActiveCounter.ReadFailCount,
+                        ErrorCount = sm.ActiveCounter.ErrorCount,
+                        TimeoutCount = sm.ActiveCounter.TimeoutCount,
+                        TotalCount = sm.ActiveCounter.TotalCount,
+                        CartonID = sm.ActiveCounter.CartonID,
+                        CartonCode = sm.ActiveCounter.CartonCode
                     },
+                    cartonCount = _cartonCount,
+                    cartonClosedCount = _closedCartons,
+                    itemsInCarton = sm.PackageCounter.PassTotal,
+                    cartonCapacity = sm.ActiveCounter.CartonCapacity,
+                    progressPercent = _orderQtySnap > 0 ? Math.Round((double)_packedCodes / _orderQtySnap * 100, 2) : 0,
+                    hasPO = ProductionStateMachine.ProductionData != null,
                     codesCount = sm.Dictionary_Codes.Count,
                     cartonsCount = sm.Dictionary_Cartons.Count,
                     lastWarning = sm.LastWarning,
