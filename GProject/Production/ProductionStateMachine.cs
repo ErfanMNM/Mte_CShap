@@ -652,18 +652,18 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
         /// Trả về CameraReadResult để Caller broadcast CodeScanned + push history.
         /// Trả về null khi state không phải Running (không phát badge scan cho FE).
         /// </summary>
-        public static void HandleCodeFromCamera(string? rawCode, string camera = "camera")
+        public void HandleCodeFromCamera(string? rawCode, string camera = "camera")
         {
             string[] ArawCode = rawCode?.Split("|") ?? Array.Empty<string>();
             string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             var at = DateTime.UtcNow;
             var cam = string.IsNullOrEmpty(camera) ? "camera" : camera;
             //tăng 1 counter tổng
+            ActiveCounter.TotalCount++;
             // Nhánh 1: mã rỗng -> ReadFail
             if (string.IsNullOrEmpty(rawCode))
             {
-                lock (_stateLock)
-                {
+
                     ActiveCounter.ReadFailCount++;
                     ActiveCounter.FailTotal++;
                     RecordQueue.Enqueue(new RecordData
@@ -676,10 +676,6 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     });
                 }
                 Log.Warning("[Camera] Empty code");
-
-                return WithPLCWrite(
-                    new CameraReadResult(cam, "", e_Production_Status.ReadFail, false, null, null, at),
-                    e_Production_Status.ReadFail, null, code: "");
             }
 
             // Kiểm tra xem có đúng cấu trúc hay không (có 2 phần tách bởi |)
