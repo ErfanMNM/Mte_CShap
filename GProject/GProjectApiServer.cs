@@ -1297,11 +1297,7 @@ public class GProjectApiServer : IDisposable
     {
         try
         {
-            var plc = Program.GetPLCMonitor();
-            if (plc == null)
-                return Results.Json(new ApiResponse { Success = false, Message = "PLC monitor chưa khởi tạo." }, statusCode: 503);
-
-            var r = plc.ReadRecipe();
+            var r = Program.GetPLCMonitor().ReadRecipe();
             if (!r.Success)
                 return Results.Json(new { success = false, message = r.Error, data = (object?)null });
 
@@ -1357,14 +1353,8 @@ public class GProjectApiServer : IDisposable
             string plcWriteMsg = "";
             if (saved.IsActive)
             {
-                var plc = Program.GetPLCMonitor();
-                if (plc == null)
-                    plcWriteMsg = "PLC chưa kết nối; chỉ lưu DB.";
-                else
-                {
-                    var err = plc.WriteRecipe(saved.DelayCamera, saved.DelayReject, saved.RejectStreng);
-                    plcWriteMsg = string.IsNullOrEmpty(err) ? "Đã ghi xuống PLC." : $"Lỗi ghi PLC: {err}";
-                }
+                var err = Program.GetPLCMonitor().WriteRecipe(saved.DelayCamera, saved.DelayReject, saved.RejectStreng);
+                plcWriteMsg = string.IsNullOrEmpty(err) ? "Đã ghi xuống PLC." : $"Lỗi ghi PLC: {err}";
             }
 
             await context.Response.WriteAsJsonAsync(new
@@ -1409,12 +1399,8 @@ public class GProjectApiServer : IDisposable
             string plcWriteMsg = "";
             if (r != null)
             {
-                var plc = Program.GetPLCMonitor();
-                if (plc != null)
-                {
-                    var err = plc.WriteRecipe(r.DelayCamera, r.DelayReject, r.RejectStreng);
-                    plcWriteMsg = string.IsNullOrEmpty(err) ? "Đã ghi xuống PLC." : $"Lỗi ghi PLC: {err}";
-                }
+                var err = Program.GetPLCMonitor().WriteRecipe(r.DelayCamera, r.DelayReject, r.RejectStreng);
+                plcWriteMsg = string.IsNullOrEmpty(err) ? "Đã ghi xuống PLC." : $"Lỗi ghi PLC: {err}";
             }
 
             await context.Response.WriteAsJsonAsync(new
@@ -1513,12 +1499,6 @@ public class GProjectApiServer : IDisposable
         try
         {
             var plc = Program.GetPLCMonitor();
-            if (plc == null)
-            {
-                context.Response.StatusCode = 503;
-                await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = "PLC chưa khởi tạo." });
-                return;
-            }
             var regs = RecipeRegisterDb.GetByRecipe(recipeId);
             var reads = new List<object>();
             foreach (var r in regs)
@@ -1550,12 +1530,6 @@ public class GProjectApiServer : IDisposable
         try
         {
             var plc = Program.GetPLCMonitor();
-            if (plc == null)
-            {
-                context.Response.StatusCode = 503;
-                await context.Response.WriteAsJsonAsync(new ApiResponse { Success = false, Message = "PLC chưa khởi tạo." });
-                return;
-            }
             var body = await JsonSerializer.DeserializeAsync<RegistersWritePayload>(
                 context.Request.Body,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });

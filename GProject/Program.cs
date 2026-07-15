@@ -30,7 +30,7 @@ namespace GProject
         private static readonly SemaphoreSlim _cameraGate = new(1, 1);
 
         /// <summary>Exposes the PLC monitor instance for API endpoints.</summary>
-        public static PLCMonitorLite? GetPLCMonitor() => PLCMonitorLite.Instance;
+        public static PLCMonitorLite GetPLCMonitor() => PLCMonitorLite.Instance;
 
         /// <summary>Khởi tạo AWS IoT từ config</summary>
         private static void InitAWS()
@@ -166,7 +166,7 @@ namespace GProject
                 Log.Information("[Main] PLC initialized: {IP}:{Port}", Global.omronPLC.PLC_IP, Global.omronPLC.PLC_PORT);
 
                 // Khởi tạo wrapper PLCMonitorLite cho API recipe/register endpoints.
-                PLCMonitorLite.Initialize();
+                // PLCMonitorLite.Instance được khởi tạo lazy qua static readonly.
 
                 // Apply ACK V2 config từ AppConfig xuống state machine.
                 ProductionStateMachine.Instance.ApplyAckConfig(
