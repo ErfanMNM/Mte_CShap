@@ -7,20 +7,26 @@ using GProject.ProductionOrderHelpers;
 using GProject.Infrastructure;
 using Raycoon.Serilog.Sinks.SQLite.Options;
 using Serilog;
-using Serilog.Events;
 using GProject.Config;
+using Glib.PLCHelpers;
+using System.ComponentModel;
+using HslCommunication;
 
 namespace GProject
 {
+    public class Global
+    {
+        public static OmronPLC_Hsl? omronPLC;
+        public static OmronPLC_Hsl.PLCStatus PLC_STATUS = OmronPLC_Hsl.PLCStatus.Disconnect;
+    }
     public class Program
     {
     private static OmronCodeReader? _CR_Camera;
-    private static PLCMonitor? _plcMonitor;
     private static GProjectApiServer? _apiServer;
     public static AppConfig? _config;
+    public static BackgroundWorker? _cameraWK;
 
         /// <summary>Exposes the PLC monitor instance for API endpoints.</summary>
-        public static PLCMonitor? GetPLCMonitor() => _plcMonitor;
 
         /// <summary>Khởi tạo AWS IoT từ config</summary>
         private static void InitAWS()
@@ -63,8 +69,18 @@ namespace GProject
             }
         }
 
+        #region PLC DEVICE CONFIG
+
+        #endregion
+
         static async Task Main(string[] args)
         {
+
+            //khởi động background service để xử lý camera
+
+            _cameraWK = new BackgroundWorker() { WorkerSupportsCancellation = true };
+            _cameraWK.DoWork += _cameraWK_DoWork;
+
             // Configure Serilog file logging
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
@@ -110,6 +126,7 @@ namespace GProject
             Log.Information("  PLC recipe & registers database initialized.");
 
 
+
             DataPoolStatic.DataPath = DataPool.DefaultDataPath;
 
             _apiServer = new GProjectApiServer(_config.API_Port, _config.API_HostIP, (src, msg) =>
@@ -129,18 +146,13 @@ namespace GProject
 
                 // Khởi tạo AWS IoT nếu được bật
                 InitAWS();
-
                 // Khởi tạo 1 camera duy nhất (vừa active vừa phân làn)
                 _CR_Camera = new OmronCodeReader(OmronCodeReader.e_CodeReaderModel.V430, "127.0.0.1", 9001);
                 _CR_Camera.ClientCallback += (state, data) => OnCameraEvent("camera", state, data);
                 _CR_Camera.Connect();
                 Log.Information("[Main] Camera initialized: camera=127.0.0.1:9001");
 
-                // Khoi tao PLC Monitor (Omron FINS/UDP) - heartbeat + counter polling.
-                // Broadcasts connection state to FE via /ws/plc.
-
-                // Load map địa chỉ PLC từ Google Sheet tab 'VINA CF' (cùng spreadsheet MasanQR mà TApp dùng).
-                // Helper sẽ tự fallback về cache local nếu Sheet không truy cập được.
+                // Khởi tạo và cấu hình PLC
                 const string spreadsheetId = "1V2xjY6AA4URrtcwUorQE54Ud5KyI7Ev2hpDPMMcXVTI";
                 bool sheetLoaded = PLCAddressWithGoogleSheetHelper.Init(
                     spreadsheetId,
@@ -149,22 +161,12 @@ namespace GProject
                     sheetLoaded ? "Google Sheet" : "local cache",
                     PLCAddressWithGoogleSheetHelper.AddressMap.Count);
 
-                _plcMonitor = new PLCMonitor();
-                _plcMonitor.StateChanged += (_, args) =>
-                {
-                    var (state, message) = args;
-                    var stateStr = state switch
-                    {
-                        PLCConnectionState.Connected => "Connected",
-                        PLCConnectionState.Reconnecting => "Reconnecting",
-                        _ => "Disconnected",
-                    };
-                    Log.Information("[PLC] {State} - {Message}", stateStr, message);
-                    ProductionStateMachine.Instance.OnDeviceStateChanged("PLC", state == PLCConnectionState.Connected, message);
-                    _ = PLCHub.Instance.BroadcastStateAsync(stateStr, message);
-                };
-                _plcMonitor.Start();
-                ProductionStateMachine.Instance.PLCMonitor = _plcMonitor;
+                Global.omronPLC.PLC_Ready_DM = PLCAddressWithGoogleSheetHelper.Get("PLC2_Ready_DM") ?? "D16";
+                Global.omronPLC.PLC_IP = _config.PLC_IP ?? "127.0.0.1";
+                Global.omronPLC.PLC_PORT = _config.PLC_Port > 0 ? _config.PLC_Port : 9600;
+                Global.omronPLC.InitPLC();
+
+                Global.omronPLC.PLCStatus_OnChange += OmronPLC_PLCStatus_OnChange;
 
                 await Task.Delay(Timeout.Infinite);
             }
@@ -178,16 +180,48 @@ namespace GProject
                 try { _CR_Camera?.Disconnect(); }
                 catch (Exception ex) { Log.Warning(ex, "[Main] Lỗi khi dừng camera"); }
 
-                // Dừng PLC monitor
-                try { _plcMonitor?.Dispose(); }
-                catch (Exception ex) { Log.Warning(ex, "[Main] Lỗi khi dừng PLCMonitor"); }
-
                 // Dừng state machine
                 try { await ProductionStateMachine.Instance.StopAsync(); }
                 catch (Exception ex) { Log.Warning(ex, "[Main] Lỗi khi dừng StateMachine"); }
 
                 Log.Information("GProject stopped.");
                 Log.CloseAndFlush();
+            }
+        }
+
+        private static void _cameraWK_DoWork(object? sender, DoWorkEventArgs e)
+        {
+            string rawcode = e.Argument as string ?? "";
+            ProductionStateMachine.HandleCodeFromCamera(rawcode);
+        }
+
+        private static void OmronPLC_PLCStatus_OnChange(object? sender, OmronPLC_Hsl.PLCStatusEventArgs e)
+        {
+            switch (e.Status)
+            {
+                case OmronPLC_Hsl.PLCStatus.Connected:
+                    if (Global.PLC_STATUS != OmronPLC_Hsl.PLCStatus.Connected)
+                    {
+                        Global.PLC_STATUS = OmronPLC_Hsl.PLCStatus.Connected;
+                    }
+                    Log.Information("[PLC] Connected: {Message}", e.Message);
+                    ProductionStateMachine.Instance.OnDeviceStateChanged("PLC", true, e.Message);
+                    break;
+                case OmronPLC_Hsl.PLCStatus.Disconnect:
+                    if (Global.PLC_STATUS != OmronPLC_Hsl.PLCStatus.Disconnect)
+                    {
+                        Global.PLC_STATUS = OmronPLC_Hsl.PLCStatus.Disconnect;
+                    }
+                    Log.Warning("[PLC] Disconnected: {Message}", e.Message);
+                    ProductionStateMachine.Instance.OnDeviceStateChanged("PLC", false, e.Message);
+                    break;
+                default:
+                    if (Global.PLC_STATUS != OmronPLC_Hsl.PLCStatus.Disconnect)
+                    {
+                        Global.PLC_STATUS = OmronPLC_Hsl.PLCStatus.Disconnect;
+                    }
+                    Log.Information("[PLC] Status changed: {Status} - {Message}", e.Status, e.Message);
+                    break;
             }
         }
 
@@ -206,19 +240,25 @@ namespace GProject
                     break;
 
                 case eOmronCodeReaderState.Received:
-                    // Chỉ xử lý đầy đủ khi đang Running.
-                    // Ngược lại: vẫn ghi 0 xuống PLC để PLC biết "bỏ qua" mã này,
-                    // KHÔNG ghi DB, KHÔNG tăng counter, KHÔNG broadcast (lát thả lại mã sau).
-                    if (ProductionStateMachine.Instance.CurrentState != e_ProductionState.Running)
+
+                    if (ProductionStateMachine.Instance.CurrentState == e_ProductionState.Running || ProductionStateMachine.Instance.CurrentState == e_ProductionState.WaitingStop)
                     {
-                        ProductionStateMachine.Instance.WritePLCResponseSkip();
-                        return;
+                        if (_cameraWK.IsBusy)
+                        {
+                            Log.Debug("[Camera:{Camera}] Bận xử lý, reject mã: {Data}", camera, data);
+                            OperateResult result = Global.omronPLC.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Reject_DM"), 0); // Ghi 0 xuống PLC
+                        }
+                        else
+                        {
+                            _cameraWK.RunWorkerAsync(data);
+                        }
+                        
                     }
-                    var result = ProductionStateMachine.Instance.HandleCodeFromCamera(data, camera);
-                    if (result != null)
+                    else
                     {
-                        CameraHub.Instance.RecordHistory(result);
-                        _ = CameraHub.Instance.BroadcastCodeStatus(result);
+                        //trả trạng thái cho ws (fe)
+                        Log.Debug("[Camera:{Camera}] State is not Running or WaitingStop, reject code: {Data}", camera, data);
+                        OperateResult result = Global.omronPLC.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Reject_DM"), 0); // Ghi 0 xuống PLC
                     }
                     break;
 
@@ -226,5 +266,8 @@ namespace GProject
                     break;
             }
         }
+
+
+
     }
 }

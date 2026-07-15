@@ -197,6 +197,7 @@ namespace GProject.ProductionOrderHelpers
         // Chi tiết (breakdown cho UI/debug)
         public int NotFoundCount { get; set; }
         public int ReadFailCount { get; set; }
+        public int FormatFailCount { get; set; }
         public int ErrorCount { get; set; }
         public int TimeoutCount { get; set; }
 

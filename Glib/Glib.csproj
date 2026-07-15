@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="HslCommunication" Version="12.9.1" />
+  </ItemGroup>
+
 </Project>

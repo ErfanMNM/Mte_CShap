@@ -16,6 +16,7 @@ public enum e_Production_Status
     Fail,
     Duplicate,
     NotFound,
+    FormatError,
     Error,
     ReadFail,
     Timeout

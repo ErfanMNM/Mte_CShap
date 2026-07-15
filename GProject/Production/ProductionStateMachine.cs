@@ -62,15 +62,6 @@ namespace GProject.Production
         }
         public ProductCounter PackageCounter { get; private set; } = new();
 
-        // PLC monitor reference (injected by Program.cs after Start)
-        private PLCMonitor? _plcMonitor;
-
-        /// <summary>Program.cs inject sau khi _plcMonitor.Start().</summary>
-        public PLCMonitor? PLCMonitor
-        {
-            set => _plcMonitor = value;
-        }
-
         // Cờ trạng thái thiết bị
         public bool IsAppReady { get; set; }
         public bool IsDeviceReady { get; set; }
@@ -80,6 +71,11 @@ namespace GProject.Production
         public bool IsPLCConnected { get; private set; }
         public bool IsCameraConnected { get; private set; }
         public string DeviceDisconnectReason { get; private set; } = "";
+
+        // Cờ đánh dấu đang xử lý mã từ camera (để tránh race condition khi camera gửi liên tục)
+        private volatile bool _isProcessingCameraCode = false;
+        public bool IsProcessingCameraCode => _isProcessingCameraCode;
+        public void SetProcessingCameraCode(bool value) => _isProcessingCameraCode = value;
 
         // Cấu hình
         public int CartonWarning { get; set; } = 3;
@@ -464,7 +460,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     {
                         var code = rd.GetString(0);
                         if (codesInPool.Contains(code))
-                            DataPoolHelper.DataPoolStatic.MarkUsedSimple(gtin, code);
+                            DataPoolStatic.MarkUsedSimple(gtin, code);
                     }
                 }
 
@@ -656,23 +652,15 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
         /// Trả về CameraReadResult để Caller broadcast CodeScanned + push history.
         /// Trả về null khi state không phải Running (không phát badge scan cho FE).
         /// </summary>
-        public CameraReadResult? HandleCodeFromCamera(string? rawCode, string camera = "camera")
+        public static void HandleCodeFromCamera(string? rawCode, string camera = "camera")
         {
-            string code = rawCode?.Trim() ?? "";
+            string[] ArawCode = rawCode?.Split("|") ?? Array.Empty<string>();
             string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             var at = DateTime.UtcNow;
             var cam = string.IsNullOrEmpty(camera) ? "camera" : camera;
-
-            // Tăng TotalCount cho MỌI call từ camera (kể cả empty/marker).
-            // Đặt NGOÀI các early-return để "Tổng đếm" phản ánh số lần camera quét,
-            // độc lập với việc mã có hợp lệ hay không.
-            lock (_stateLock)
-            {
-                ActiveCounter.TotalCount++;
-            }
-
+            //tăng 1 counter tổng
             // Nhánh 1: mã rỗng -> ReadFail
-            if (string.IsNullOrEmpty(code))
+            if (string.IsNullOrEmpty(rawCode))
             {
                 lock (_stateLock)
                 {
@@ -688,32 +676,120 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     });
                 }
                 Log.Warning("[Camera] Empty code");
+
                 return WithPLCWrite(
                     new CameraReadResult(cam, "", e_Production_Status.ReadFail, false, null, null, at),
                     e_Production_Status.ReadFail, null, code: "");
             }
 
-            // Nhánh 2: marker Omron <GS>/<RS>/<US> -> ReadFail
-            if (code.Contains("<GS>") || code.Contains("<RS>") || code.Contains("<US>"))
+            // Kiểm tra xem có đúng cấu trúc hay không (có 2 phần tách bởi |)
+            if (ArawCode.Length != 2)
             {
-                lock (_stateLock)
+
+                Log.Warning("[Camera] Invalid code format: {RawCode}", rawCode);
+                RecordQueue.Enqueue(new RecordData
                 {
-                    ActiveCounter.ReadFailCount++;
-                    ActiveCounter.FailTotal++;
+                    Code = "FAIL",
+                    Status = e_Production_Status.FormatError.ToString(),
+                    PLCStatus = "FAIL",
+                    ActivateDate = now,
+                    ActivateUser = "<API>"
+                });
+                return WithPLCWrite(
+                    new CameraReadResult(cam, rawCode ?? "", e_Production_Status.FormatError, false, null, null, at),
+                    e_Production_Status.FormatError, null, code: rawCode ?? "");
+            }
+            string code = ArawCode[0];
+            string status = ArawCode[1];
+
+            switch (status)
+            {
+                case "OK":
+                    // Tiếp tục xử lý bình thường (lookup Dictionary, activate...)
+                    break;
+
+                case "REJECT":
+                    // REJECT = FormatFail, ghi DB, gửi PLC FAIL, tăng counter
+                    lock (_stateLock)
+                    {
+                        ActiveCounter.FailTotal++;
+                        ActiveCounter.FormatFailCount++;
+                        RecordQueue.Enqueue(new RecordData
+                        {
+                            Code = code,
+                            Status = "FormatFail",
+                            PLCStatus = "FAIL",
+                            ActivateDate = now,
+                            ActivateUser = "<API>"
+                        });
+                    }
+                    Log.Warning("[Camera] REJECT: {Code}", code);
+                    return WithPLCWrite(
+                        new CameraReadResult(cam, code, e_Production_Status.FormatError, false, null, null, at),
+                        e_Production_Status.FormatError, null, code: code);
+
+                case "NO_READ":
+                    // NO_READ = ReadFail, ghi DB, gửi PLC FAIL, tăng counter
+                    lock (_stateLock)
+                    {
+                        ActiveCounter.ReadFailCount++;
+                        ActiveCounter.FailTotal++;
+                        RecordQueue.Enqueue(new RecordData
+                        {
+                            Code = "FAIL",
+                            Status = "ReadFail",
+                            PLCStatus = "FAIL",
+                            ActivateDate = now,
+                            ActivateUser = "<API>"
+                        });
+                    }
+                    Log.Warning("[Camera] NO_READ");
+                    return WithPLCWrite(
+                        new CameraReadResult(cam, "NO_READ", e_Production_Status.ReadFail, false, null, null, at),
+                        e_Production_Status.ReadFail, null, code: "NO_READ");
+
+                default:
+                    Log.Warning("[Camera] Unknown status: {Status}", status);
                     RecordQueue.Enqueue(new RecordData
                     {
                         Code = code,
-                        Status = "ReadFail",
+                        Status = e_Production_Status.FormatError.ToString(),
                         PLCStatus = "FAIL",
                         ActivateDate = now,
                         ActivateUser = "<API>"
                     });
-                }
-                Log.Warning("[Camera] Code contains special marker: {Code}", code);
-                return WithPLCWrite(
-                    new CameraReadResult(cam, code, e_Production_Status.ReadFail, false, null, null, at),
-                    e_Production_Status.ReadFail, null, code: code);
+                    return WithPLCWrite(
+                        new CameraReadResult(cam, code, e_Production_Status.FormatError, false, null, null, at),
+                        e_Production_Status.FormatError, null, code: code);
             }
+
+            
+
+            //Mã đọc fail, không đọc được
+
+           // if()
+
+            // Nhánh 2: marker Omron <GS>/<RS>/<US> -> ReadFail
+            //if (code.Contains("<GS>") || code.Contains("<RS>") || code.Contains("<US>"))
+            //{
+            //    lock (_stateLock)
+            //    {
+            //        ActiveCounter.ReadFailCount++;
+            //        ActiveCounter.FailTotal++;
+            //        RecordQueue.Enqueue(new RecordData
+            //        {
+            //            Code = code,
+            //            Status = "ReadFail",
+            //            PLCStatus = "FAIL",
+            //            ActivateDate = now,
+            //            ActivateUser = "<API>"
+            //        });
+            //    }
+            //    Log.Warning("[Camera] Code contains special marker: {Code}", code);
+            //    return WithPLCWrite(
+            //        new CameraReadResult(cam, code, e_Production_Status.ReadFail, false, null, null, at),
+            //        e_Production_Status.ReadFail, null, code: code);
+            //}
 
             // Nhánh 3: chỉ xử lý khi đang Running; ngược lại bỏ qua (không phát badge)
             if (CurrentState != e_ProductionState.Running)
@@ -728,11 +804,11 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
             }
 
             // Trim marker ASCII thành ký tự control (giống FDashboard.cs:529)
-            code = code.Replace("<GS>", "\u001D")
-                       .Replace("<RS>", "\u001E")
-                       .Replace("<US>", "\u001F");
+            //code = code.Replace("<GS>", "\u001D")
+            //           .Replace("<RS>", "\u001E")
+                       //.Replace("<US>", "\u001F");
 
-            // Biến capture NGOÀI lock (gán giá trị bên trong lock scope 1)
+            // Biến capture NGOÀI lock (gán giá trị bên trong lock scope 1) ==> Khúc này là kiểm tra có tồn tại hay không.
             string currentCartonCode = "0";
             CodeInfo infoSnapshot = default!;
             int activeCartonId = 0;
@@ -1596,133 +1672,5 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
             };
         }
 
-        private void WritePLCResponse(e_Production_Status status, int? cartonId, string code)
-        {
-            if (status == e_Production_Status.Timeout) return; // PLC tự trả lời, không ghi đè
-            int id = cartonId ?? 0;
-            short value = MapResultForPLC(status, id);
-            try
-            {
-                _plcMonitor?.WriteResultFireAndForget(value);
-                Log.Debug("[Camera] PLC write {Value} code={Code} status={Status} cartonId={Id}",
-                          value, code, status, id);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "[Camera] WritePLCResponse failed");
-            }
-        }
-
-        /// <summary>
-        /// Ghi 0 xuống PLC khi bỏ qua mã camera (state != Running).
-        /// PLC sẽ tự reject mã này, phần mềm KHÔNG xử lý DB / counter.
-        /// Dùng khi muốn "thả lại" mã về sau.
-        /// </summary>
-        public void WritePLCResponseSkip()
-        {
-            try
-            {
-                _plcMonitor?.WriteResultFireAndForget(0);
-                Log.Debug("[Camera] PLC skip (state != Running) — wrote 0");
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "[Camera] WritePLCResponseSkip failed");
-            }
-        }
-
-        private CameraReadResult WithPLCWrite(
-            CameraReadResult result,
-            e_Production_Status status,
-            int? cartonId,
-            string code)
-        {
-            WritePLCResponse(status, cartonId, code);
-            return result;
-        }
-
-        /// <summary>
-        /// Poll D200 (ID) + D202 (status) của PLC để đồng bộ kết quả sau khi ghi phân làn.
-        /// Nguyên lý (tham chiếu CameraSubPlcSyncV2Helper.WaitAndResolve):
-        ///   - PLC giữ D200 = ID sản phẩm đang xử lý (int32, tăng dần).
-        ///   - D202 = status: 5 = idle, 0/1/2 = kết quả (1/2 = pass), 3 = reject.
-        ///   - Khi ghi D300 (1 hoặc 2), PLC xử lý rồi cập nhật D202. Nếu D202 đổi
-        ///     khỏi giá trị snapshot → đó là kết quả thật. Nếu D200 nhảy (currentId >
-        ///     snapshotId) trước khi D202 đổi → ID đã chuyển sang chai khác, tính timeout.
-        /// </summary>
-        public e_TimeoutCheckResult CheckTimeoutV2(string code, int? timeoutMs = null, int? pollMs = null)
-        {
-            if (_plcMonitor is null) return e_TimeoutCheckResult.PlcUnavailable;
-            if (string.IsNullOrEmpty(code)) return e_TimeoutCheckResult.Error;
-
-            int ms = timeoutMs
-                ?? (int.TryParse(Environment.GetEnvironmentVariable("PLC_TIMEOUT_MS"), out var t) ? t : 5000);
-            int poll = pollMs
-                ?? (int.TryParse(Environment.GetEnvironmentVariable("PLC_TIMEOUT_POLL_MS"), out var p) ? p : 50);
-
-            var idDm = Environment.GetEnvironmentVariable("PLC_TIMEOUT_ID_DM")
-                       ?? PLCMonitor.DefaultTimeoutIdDm;
-            var statusDm = Environment.GetEnvironmentVariable("PLC_TIMEOUT_STATUS_DM")
-                           ?? PLCMonitor.DefaultTimeoutStatusDm;
-
-            try
-            {
-                var snapIdR = _plcMonitor.ReadInt32Safe(idDm, 1);
-                var snapStatusR = _plcMonitor.ReadInt32Safe(statusDm, 1);
-                if (!snapIdR.Success || !snapStatusR.Success
-                    || snapIdR.Value.Length == 0 || snapStatusR.Value.Length == 0)
-                {
-                    Log.Warning("[Camera] CheckTimeoutV2: cannot snapshot D200/D202");
-                    return e_TimeoutCheckResult.PlcUnavailable;
-                }
-
-                int expectedId = snapIdR.Value[0];
-                int prevStatus = snapStatusR.Value[0];
-
-                var deadline = DateTime.UtcNow.AddMilliseconds(ms);
-                while (DateTime.UtcNow < deadline)
-                {
-                    var curIdR = _plcMonitor.ReadInt32Safe(idDm, 1);
-                    if (!curIdR.Success || curIdR.Value.Length == 0)
-                    {
-                        Thread.Sleep(poll);
-                        continue;
-                    }
-                    int currentId = curIdR.Value[0];
-
-                    if (currentId > expectedId)
-                    {
-                        Log.Warning("[Camera] CheckTimeoutV2: ID jumped {Exp}->{Cur} for {Code}",
-                                    expectedId, currentId, code);
-                        return e_TimeoutCheckResult.Timeout;
-                    }
-
-                    if (currentId == expectedId)
-                    {
-                        var curStatusR = _plcMonitor.ReadInt32Safe(statusDm, 1);
-                        if (curStatusR.Success && curStatusR.Value.Length > 0)
-                        {
-                            int currentStatus = curStatusR.Value[0];
-                            if (currentStatus != prevStatus)
-                            {
-                                if (currentStatus == 1 || currentStatus == 2)
-                                    return e_TimeoutCheckResult.Pass;
-                                return e_TimeoutCheckResult.Timeout;
-                            }
-                        }
-                    }
-
-                    Thread.Sleep(poll);
-                }
-
-                Log.Warning("[Camera] CheckTimeoutV2: timeout {Ms}ms for {Code}", ms, code);
-                return e_TimeoutCheckResult.Timeout;
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "[Camera] CheckTimeoutV2 failed");
-                return e_TimeoutCheckResult.Error;
-            }
-        }
     }
 }
