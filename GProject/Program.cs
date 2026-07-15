@@ -1,8 +1,10 @@
 ﻿using Glib.Omron;
 using GProject.DataPoolHelper;
 using GProject.Auth;
+using GProject.PLCHelpers;
 using GProject.Production;
 using GProject.ProductionOrderHelpers;
+using GProject.Infrastructure;
 using Raycoon.Serilog.Sinks.SQLite.Options;
 using Serilog;
 using Serilog.Events;
@@ -11,12 +13,53 @@ namespace GProject
 {
     public class Program
     {
-    private static OmronCodeReader? _CR_Camera;
-    private static PLCMonitor? _plcMonitor;
-    private static GProjectApiServer? _apiServer;
+        private static OmronCodeReader? _CR_Camera;
+        private static PLCMonitor? _plcMonitor;
+        private static GProjectApiServer? _apiServer;
 
-    /// <summary>Exposes the PLC monitor instance for API endpoints.</summary>
-    public static PLCMonitor? GetPLCMonitor() => _plcMonitor;
+        /// <summary>Exposes the PLC monitor instance for API endpoints.</summary>
+        public static PLCMonitor? GetPLCMonitor() => _plcMonitor;
+
+        /// <summary>Khởi tạo AWS IoT từ config</summary>
+        private static void InitAWS()
+        {
+            // Load config from environment variables hoặc config file
+            var config = new AWSIoTConfig
+            {
+                Enabled = Environment.GetEnvironmentVariable("AWS_ENABLED")?.ToLower() == "true",
+                DevMode = Environment.GetEnvironmentVariable("AWS_DEV_MODE")?.ToLower() == "true",
+                Endpoint = Environment.GetEnvironmentVariable("AWS_ENDPOINT") ?? "",
+                ClientId = Environment.GetEnvironmentVariable("AWS_CLIENT_ID") ?? "GProject",
+                RootCAPath = Environment.GetEnvironmentVariable("AWS_ROOT_CA_PATH") ?? "",
+                ClientCertPath = Environment.GetEnvironmentVariable("AWS_CLIENT_CERT_PATH") ?? "",
+                ClientCertPassword = Environment.GetEnvironmentVariable("AWS_CLIENT_CERT_PASSWORD") ?? "",
+                AutoSend = Environment.GetEnvironmentVariable("AWS_AUTO_SEND")?.ToLower() == "true",
+                ThingName = Environment.GetEnvironmentVariable("AWS_THING_NAME") ?? "GProject"
+            };
+
+            G.AWS = config;
+
+            if (config.Enabled)
+            {
+                ProductionStateMachine.Instance.InitAWS(config);
+                Log.Information("[AWS] AWS IoT initialized. Endpoint: {Endpoint}, ClientId: {ClientId}",
+                    config.Endpoint, config.ClientId);
+
+                // Auto connect nếu được bật
+                if (config.AutoSend)
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(2000); // Đợi app khởi động xong
+                        await ProductionStateMachine.Instance.ConnectAWSAsync();
+                    });
+                }
+            }
+            else
+            {
+                Log.Information("[AWS] AWS IoT is disabled");
+            }
+        }
 
         static async Task Main(string[] args)
         {
@@ -86,6 +129,9 @@ namespace GProject
                 Log.Information("[Main] ProductionStateMachine started. Initial state: {State}",
                     stateMachine.CurrentState);
 
+                // Khởi tạo AWS IoT nếu được bật
+                InitAWS();
+
                 // Khởi tạo 1 camera duy nhất (vừa active vừa phân làn)
                 _CR_Camera = new OmronCodeReader(OmronCodeReader.e_CodeReaderModel.V430, "127.0.0.1", 9001);
                 _CR_Camera.ClientCallback += (state, data) => OnCameraEvent("camera", state, data);
@@ -94,6 +140,17 @@ namespace GProject
 
                 // Khoi tao PLC Monitor (Omron FINS/UDP) - heartbeat + counter polling.
                 // Broadcasts connection state to FE via /ws/plc.
+
+                // Load map địa chỉ PLC từ Google Sheet tab 'VINA CF' (cùng spreadsheet MasanQR mà TApp dùng).
+                // Helper sẽ tự fallback về cache local nếu Sheet không truy cập được.
+                const string spreadsheetId = "1V2xjY6AA4URrtcwUorQE54Ud5KyI7Ev2hpDPMMcXVTI";
+                bool sheetLoaded = PLCAddressWithGoogleSheetHelper.Init(
+                    spreadsheetId,
+                    Environment.GetEnvironmentVariable("PLC_GOOGLE_SHEET_RANGE") ?? "VINA CF!A1:D100");
+                Log.Information("[PLC] Address map loaded from {Source}, keys: {Count}",
+                    sheetLoaded ? "Google Sheet" : "local cache",
+                    PLCAddressWithGoogleSheetHelper.AddressMap.Count);
+
                 _plcMonitor = new PLCMonitor();
                 _plcMonitor.StateChanged += (_, args) =>
                 {

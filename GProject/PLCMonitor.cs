@@ -1,5 +1,6 @@
 using HslCommunication;
 using HslCommunication.Profinet.Omron;
+using GProject.PLCHelpers;
 using GProject.ProductionOrderHelpers;
 using Serilog;
 
@@ -63,9 +64,9 @@ public class PLCMonitor : IDisposable
 
     private void PollLoop(CancellationToken ct)
     {
-        var readyDm = Environment.GetEnvironmentVariable("PLC_READY_DM") ?? "D16";
-        var counterDm = Environment.GetEnvironmentVariable("PLC_TOTAL_COUNT_DM") ?? "D100";
-        var deactiveDm = Environment.GetEnvironmentVariable("PLC_DEACTIVE_DM") ?? "D200";
+        var readyDm = Resolve("PLC_READY_DM", "PLC_Ready_DM", "D16");
+        var counterDm = Resolve("PLC_TOTAL_COUNT_DM", "PLC_Total_Count_DM", "D100");
+        var deactiveDm = Resolve("PLC_DEACTIVE_DM", "PLC_Deactive_DM", "D200");
 
         int consecutiveFailures = 0;
 
@@ -143,7 +144,7 @@ public class PLCMonitor : IDisposable
     /// </summary>
     public void WriteResultFireAndForget(short value)
     {
-        var dm = Environment.GetEnvironmentVariable("PLC_RESULT_DM") ?? DefaultResultDm;
+        var dm = Resolve("PLC_RESULT_DM", "PLC_Result_DM", DefaultResultDm);
         try
         {
             var r = _plc.Write(dm, value);
@@ -176,7 +177,7 @@ public class PLCMonitor : IDisposable
     /// <summary>Đọc recipe (3 int32) từ DM. KHÔNG throw. Returns default zeros nếu lỗi.</summary>
     public PlcReadResult ReadRecipe()
     {
-        var dm = Environment.GetEnvironmentVariable("PLC_RECIPE_DM") ?? DefaultRecipeDm;
+        var dm = Resolve("PLC_RECIPE_DM", "PLC_Recipe_DM", DefaultRecipeDm);
         var r = ReadInt32Safe(dm, 3);
         if (!r.Success || r.Value.Length < 3)
             return new PlcReadResult(false, new int[] { -1, -1, -1 }, r.Error);
@@ -186,7 +187,7 @@ public class PLCMonitor : IDisposable
     /// <summary>Ghi 3 int32 xuống DM recipe. Returns success/error.</summary>
     public string WriteRecipe(int delayCamera, int delayReject, int rejectStreng)
     {
-        var dm = Environment.GetEnvironmentVariable("PLC_RECIPE_DM") ?? DefaultRecipeDm;
+        var dm = Resolve("PLC_RECIPE_DM", "PLC_Recipe_DM", DefaultRecipeDm);
         try
         {
             var r = _plc.Write(dm, new int[] { delayCamera, delayReject, rejectStreng });
@@ -208,34 +209,34 @@ public class PLCMonitor : IDisposable
             switch (t)
             {
                 case PlcDataType.Int16:
-                {
-                    var r = _plc.ReadInt16(address, 1);
-                    return new PlcReadAnyResult(r.IsSuccess, PlcDataType.Int16,
-                                                r.IsSuccess ? r.Content[0].ToString() : "",
-                                                r.IsSuccess ? "" : r.Message);
-                }
+                    {
+                        var r = _plc.ReadInt16(address, 1);
+                        return new PlcReadAnyResult(r.IsSuccess, PlcDataType.Int16,
+                                                    r.IsSuccess ? r.Content[0].ToString() : "",
+                                                    r.IsSuccess ? "" : r.Message);
+                    }
                 case PlcDataType.Int32:
-                {
-                    var r = _plc.ReadInt32(address, 1);
-                    return new PlcReadAnyResult(r.IsSuccess, PlcDataType.Int32,
-                                                r.IsSuccess ? r.Content[0].ToString() : "",
-                                                r.IsSuccess ? "" : r.Message);
-                }
+                    {
+                        var r = _plc.ReadInt32(address, 1);
+                        return new PlcReadAnyResult(r.IsSuccess, PlcDataType.Int32,
+                                                    r.IsSuccess ? r.Content[0].ToString() : "",
+                                                    r.IsSuccess ? "" : r.Message);
+                    }
                 case PlcDataType.Float:
-                {
-                    var r = _plc.ReadFloat(address, 1);
-                    return new PlcReadAnyResult(r.IsSuccess, PlcDataType.Float,
-                                                r.IsSuccess ? r.Content[0].ToString(System.Globalization.CultureInfo.InvariantCulture) : "",
-                                                r.IsSuccess ? "" : r.Message);
-                }
+                    {
+                        var r = _plc.ReadFloat(address, 1);
+                        return new PlcReadAnyResult(r.IsSuccess, PlcDataType.Float,
+                                                    r.IsSuccess ? r.Content[0].ToString(System.Globalization.CultureInfo.InvariantCulture) : "",
+                                                    r.IsSuccess ? "" : r.Message);
+                    }
                 case PlcDataType.String:
-                {
-                    // Đọc tối đa 32 word (64 char) cho string.
-                    var r = _plc.ReadString(address, 64);
-                    return new PlcReadAnyResult(r.IsSuccess, PlcDataType.String,
-                                                r.IsSuccess ? r.Content : "",
-                                                r.IsSuccess ? "" : r.Message);
-                }
+                    {
+                        // Đọc tối đa 32 word (64 char) cho string.
+                        var r = _plc.ReadString(address, 64);
+                        return new PlcReadAnyResult(r.IsSuccess, PlcDataType.String,
+                                                    r.IsSuccess ? r.Content : "",
+                                                    r.IsSuccess ? "" : r.Message);
+                    }
             }
         }
         catch (Exception ex)
@@ -254,29 +255,29 @@ public class PLCMonitor : IDisposable
             switch (t)
             {
                 case PlcDataType.Int16:
-                {
-                    if (!short.TryParse(value, out var s)) return $"Không parse được int16: {value}";
-                    var r = _plc.Write(address, s);
-                    return r.IsSuccess ? "" : (r.Message ?? "Write failed");
-                }
+                    {
+                        if (!short.TryParse(value, out var s)) return $"Không parse được int16: {value}";
+                        var r = _plc.Write(address, s);
+                        return r.IsSuccess ? "" : (r.Message ?? "Write failed");
+                    }
                 case PlcDataType.Int32:
-                {
-                    if (!int.TryParse(value, out var s)) return $"Không parse được int32: {value}";
-                    var r = _plc.Write(address, s);
-                    return r.IsSuccess ? "" : (r.Message ?? "Write failed");
-                }
+                    {
+                        if (!int.TryParse(value, out var s)) return $"Không parse được int32: {value}";
+                        var r = _plc.Write(address, s);
+                        return r.IsSuccess ? "" : (r.Message ?? "Write failed");
+                    }
                 case PlcDataType.Float:
-                {
-                    if (!float.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
-                        return $"Không parse được float: {value}";
-                    var r = _plc.Write(address, f);
-                    return r.IsSuccess ? "" : (r.Message ?? "Write failed");
-                }
+                    {
+                        if (!float.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                            return $"Không parse được float: {value}";
+                        var r = _plc.Write(address, f);
+                        return r.IsSuccess ? "" : (r.Message ?? "Write failed");
+                    }
                 case PlcDataType.String:
-                {
-                    var r = _plc.Write(address, value ?? "");
-                    return r.IsSuccess ? "" : (r.Message ?? "Write failed");
-                }
+                    {
+                        var r = _plc.Write(address, value ?? "");
+                        return r.IsSuccess ? "" : (r.Message ?? "Write failed");
+                    }
             }
             return "Unknown type";
         }
@@ -290,6 +291,27 @@ public class PLCMonitor : IDisposable
     {
         _running = false;
         try { _cts.Cancel(); } catch { }
+    }
+
+    /// <summary>
+    /// Ưu tiên env var, sau đó Google Sheet (PLCAddressWithGoogleSheetHelper),
+    /// cuối cùng fallback về hard-code. Không throw — đảm bảo poll loop không crash
+    /// khi helper chưa Init hoặc sheet thiếu key.
+    /// </summary>
+    private static string Resolve(string envName, string sheetKey, string fallback)
+    {
+        var env = Environment.GetEnvironmentVariable(envName);
+        if (!string.IsNullOrEmpty(env)) return env;
+        try
+        {
+            return PLCAddressWithGoogleSheetHelper.Get(sheetKey);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning("[PLCMonitor] Address key '{Key}' missing in Google Sheet, fallback to {Fallback}: {Ex}",
+                        sheetKey, fallback, ex.Message);
+            return fallback;
+        }
     }
 
     public void Dispose()

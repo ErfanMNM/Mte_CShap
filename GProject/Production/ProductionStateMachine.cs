@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Microsoft.Data.Sqlite;
 using GProject.ProductionOrderHelpers;
 using GProject.DataPoolHelper;
+using GProject.IoT;
 using Serilog;
 using GProject.Infrastructure;
 
@@ -82,6 +83,198 @@ namespace GProject.Production
         // Cấu hình
         public int CartonWarning { get; set; } = 3;
         public int CartonOffset { get; set; } = 1;
+
+        // AWS IoT
+        private AWSIoTClient? _awsClient;
+
+        /// <summary>Khởi tạo AWS IoT client</summary>
+        public void InitAWS(AWSIoTConfig config)
+        {
+            if (!config.Enabled)
+            {
+                Log.Information("[AWS] AWS IoT disabled");
+                return;
+            }
+
+            try
+            {
+                _awsClient = new AWSIoTClient(config.ToAWSConfig());
+                _awsClient.OnStatusChanged += (s, e) =>
+                {
+                    Log.Information("[AWS] Status: {Status} - {Message}", e.Status, e.Message);
+                };
+                _awsClient.OnMessageReceived += (s, e) =>
+                {
+                    Log.Information("[AWS] Received on {Topic}: {Payload}", e.Topic, e.Payload);
+                    HandleAWSMessage(e.Topic, e.Payload);
+                };
+                _awsClient.OnMessageSent += (s, e) =>
+                {
+                    if (e.Success)
+                        Log.Debug("[AWS] Sent to {Topic}: {Payload}", e.Topic, e.Payload);
+                    else
+                        Log.Warning("[AWS] Send failed to {Topic}: {Message}", e.Topic, e.Message);
+                };
+                Log.Information("[AWS] AWS IoT client initialized with endpoint: {Endpoint}", config.Endpoint);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[AWS] Failed to initialize AWS IoT client");
+            }
+        }
+
+        /// <summary>Kết nối AWS IoT</summary>
+        public async Task<bool> ConnectAWSAsync()
+        {
+            if (_awsClient == null)
+            {
+                Log.Warning("[AWS] AWS client not initialized");
+                return false;
+            }
+
+            var success = await _awsClient.ConnectAsync();
+            if (success)
+            {
+                // Subscribe to response and command topics
+                var config = G.AWS;
+                await _awsClient.SubscribeAsync(config.ResponseTopic);
+                await _awsClient.SubscribeAsync(config.CommandTopic);
+                Log.Information("[AWS] Connected and subscribed to topics");
+            }
+            return success;
+        }
+
+        /// <summary>Ngắt kết nối AWS</summary>
+        public async Task DisconnectAWSAsync()
+        {
+            if (_awsClient != null)
+            {
+                await _awsClient.DisconnectAsync();
+            }
+        }
+
+        /// <summary>Gửi dữ liệu mã lên AWS</summary>
+        public void SendCodeToAWS(string code, string status, string activateDate, string cartonCode)
+        {
+            if (_awsClient == null || !_awsClient.IsConnected)
+            {
+                Log.Debug("[AWS] Skipping send - not connected");
+                return;
+            }
+
+            if (ProductionData == null)
+            {
+                Log.Debug("[AWS] Skipping send - no ProductionData");
+                return;
+            }
+
+            var payload = new AWSSendPayload
+            {
+                message_id = $"{Guid.NewGuid():N}-{ProductionData.OrderNo}-{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ss.fffZ}",
+                orderNo = ProductionData.OrderNo,
+                uniqueCode = code,
+                gtin = ProductionData.Gtin ?? "",
+                cartonCode = cartonCode,
+                status = status == "Pass" ? 1 : 0,
+                activate_datetime = activateDate,
+                production_date = ProductionData.ProductionDate ?? "",
+                thing_name = G.AWS.ThingName
+            };
+
+            _awsClient.PublishPayload(G.AWS.PublishTopic, payload);
+            Log.Debug("[AWS] Queued code {Code} for send", code);
+        }
+
+        /// <summary>Gửi thông tin thùng hoàn thành lên AWS</summary>
+        public void SendCartonToAWS(string cartonCode, string cartonId, int itemCount, string completedDatetime, string user)
+        {
+            if (_awsClient == null || !_awsClient.IsConnected)
+            {
+                Log.Debug("[AWS] Skipping carton send - not connected");
+                return;
+            }
+
+            if (ProductionData == null) return;
+
+            var payload = new AWSCartonPayload
+            {
+                message_id = $"{Guid.NewGuid():N}-{ProductionData.OrderNo}-CARTON-{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ss.fffZ}",
+                orderNo = ProductionData.OrderNo,
+                cartonCode = cartonCode,
+                cartonId = cartonId,
+                itemCount = itemCount,
+                completed_datetime = completedDatetime,
+                activateUser = user,
+                thing_name = G.AWS.ThingName
+            };
+
+            _awsClient.PublishCartonPayload("CZ/carton", payload);
+            Log.Debug("[AWS] Queued carton {CartonCode} for send", cartonCode);
+        }
+
+        /// <summary>Gửi thông tin PO started/completed lên AWS</summary>
+        public void SendPOEventToAWS(string eventType)
+        {
+            if (_awsClient == null || !_awsClient.IsConnected)
+            {
+                Log.Debug("[AWS] Skipping PO event - not connected");
+                return;
+            }
+
+            if (ProductionData == null) return;
+
+            var payload = new AWSPOPayload
+            {
+                message_id = $"{Guid.NewGuid():N}-{ProductionData.OrderNo}-{eventType.ToUpper()}-{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ss.fffZ}",
+                orderNo = ProductionData.OrderNo,
+                event_type = eventType,
+                gtin = ProductionData.Gtin ?? "",
+                orderQty = ProductionData.OrderQty,
+                productionDate = ProductionData.ProductionDate ?? "",
+                line = ProductionData.ProductionLine ?? "",
+                user = G.AWS.ThingName,
+                thing_name = G.AWS.ThingName
+            };
+
+            _awsClient.PublishPOPayload($"CZ/po/{eventType}", payload);
+            Log.Information("[AWS] Queued PO {EventType} for order {OrderNo}", eventType, ProductionData.OrderNo);
+        }
+
+        /// <summary>Xử lý message nhận từ AWS</summary>
+        private void HandleAWSMessage(string topic, string payload)
+        {
+            try
+            {
+                if (topic.Contains("/command"))
+                {
+                    // Xử lý command từ cloud
+                    Log.Information("[AWS] Received command: {Payload}", payload);
+                    // TODO: Implement command handling (e.g., start/stop production)
+                }
+                else if (topic.Contains("/response"))
+                {
+                    // Xử lý response
+                    var response = System.Text.Json.JsonSerializer.Deserialize<AWSResponse>(payload);
+                    if (response != null)
+                    {
+                        Log.Information("[AWS] Response for {MessageId}: {Status}", response.message_id, response.status);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning("[AWS] Error handling message: {Error}", ex.Message);
+            }
+        }
+
+        /// <summary>Trạng thái AWS IoT</summary>
+        public AWSIoTStatus AWSStatus => _awsClient?.Status ?? AWSIoTStatus.Disconnected;
+
+        /// <summary>Internal reference to AWS client for API access</summary>
+        public AWSIoTClient? AWSClientInternal => _awsClient;
+
+        /// <summary>Số message đang chờ gửi</summary>
+        public int AWSPendingCount => _awsClient?.PendingCount ?? 0;
 
         public e_ProductionState CurrentState
         {
@@ -414,6 +607,20 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                                 cartUpd.OrderNo, cartUpd.CartonId, cartUpd.ActivateUser);
                             if (!result.IsSuccess)
                                 Log.Warning("[DB Writer] CompleteCarton lỗi: {Msg}", result.Message);
+                            else
+                            {
+                                // Lấy thông tin thùng để gửi AWS
+                                if (Dictionary_Cartons.TryGetValue(cartUpd.CartonId, out var carton))
+                                {
+                                    SendCartonToAWS(
+                                        carton.CartonCode,
+                                        cartUpd.CartonId.ToString(),
+                                        ActiveCounter.CartonCapacity,
+                                        carton.CompletedDatetime ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                                        cartUpd.ActivateUser
+                                    );
+                                }
+                            }
 
                             // Sau khi đóng thùng hiện tại, tự động start thùng kế tiếp nếu có
                             var startResult = GProduction.POCarton.StartCarton(
@@ -638,6 +845,9 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                         ProductionDate = ProductionData.ProductionDate
                     });
 
+                    // Gửi lên AWS IoT
+                    //SendCodeToAWS(code, "Pass", now, currentCartonCode);
+
                     // Tăng bộ đếm
                     ActiveCounter.PassCount++;
                     PackageCounter.PassCount++;
@@ -646,7 +856,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     // Đánh dấu Status=1 trong DataPool khi activate thành công
                     if (!string.IsNullOrEmpty(ProductionData?.Gtin))
                     {
-                        DataPoolHelper.DataPoolStatic.MarkUsedSimple(ProductionData.Gtin, code);
+                        DataPoolStatic.MarkUsedSimple(ProductionData.Gtin, code);
                     }
 
                     // Đủ carton -> enqueue CompleteCarton + next carton
@@ -1210,6 +1420,8 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 }
 
                 SetState(e_ProductionState.Running, "data pushed to dic");
+                // Gửi PO started event lên AWS
+                SendPOEventToAWS("start");
             }
             catch (Exception ex)
             {
@@ -1332,6 +1544,8 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 {
                     GProduction.POHistoryManager.RecordEnd(ProductionData.OrderNo);
                     SetState(e_ProductionState.Completed, "all cartons closed");
+                    // Gửi PO completed event lên AWS
+                    SendPOEventToAWS("complete");
                 }
             }
             catch (Exception ex)

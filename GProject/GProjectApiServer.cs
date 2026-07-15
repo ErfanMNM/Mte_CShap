@@ -6,6 +6,8 @@ using GProject.DataPoolHelper;
 using GProject.ProductionOrderHelpers;
 using GProject.Production;
 using GProject.Auth;
+using GProject.Infrastructure;
+using GProject.IoT;
 using Serilog;
 
 namespace GProject;
@@ -208,6 +210,14 @@ public class GProjectApiServer : IDisposable
         _app.MapPost("/api/plc/recipe/{recipeId:int}/registers", (Delegate)HandlePlcSaveRegisters);
         _app.MapPost("/api/plc/recipe/{recipeId:int}/registers/read", (Delegate)HandlePlcReadRegistersFromDevice);
         _app.MapPost("/api/plc/recipe/{recipeId:int}/registers/write", (Delegate)HandlePlcWriteRegistersToDevice);
+
+        // AWS IoT endpoints
+        _app.MapGet("/api/aws/status", HandleGetAWSStatus);
+        _app.MapPost("/api/aws/connect", HandleAWConnect);
+        _app.MapPost("/api/aws/disconnect", HandleAWSDisconnect);
+        _app.MapPut("/api/aws/config", HandleAWSUpdateConfig);
+        _app.MapGet("/api/aws/config", HandleAWSGetConfig);
+        _app.MapPost("/api/aws/test", HandleAWSTestPublish);
 
         // Initialize PO database
         POApiServer.Initialize();
@@ -1573,6 +1583,171 @@ public class GProjectApiServer : IDisposable
     {
         public Dictionary<string, string>? Values { get; set; }
     }
+    #endregion
+
+    #region AWS IoT Handlers
+
+    /// <summary>Lấy trạng thái AWS IoT</summary>
+    private IResult HandleGetAWSStatus(HttpContext context)
+    {
+        var stateMachine = ProductionStateMachine.Instance;
+        return Results.Json(new
+        {
+            success = true,
+            status = stateMachine.AWSStatus.ToString(),
+            pendingCount = stateMachine.AWSPendingCount,
+            isEnabled = G.AWS.Enabled,
+            endpoint = G.AWS.Enabled ? G.AWS.Endpoint : null
+        });
+    }
+
+    /// <summary>Kết nối AWS IoT</summary>
+    private async Task<IResult> HandleAWConnect(HttpContext context)
+    {
+        try
+        {
+            var stateMachine = ProductionStateMachine.Instance;
+            var success = await stateMachine.ConnectAWSAsync();
+            return Results.Json(new
+            {
+                success,
+                message = success ? "Kết nối AWS IoT thành công" : "Kết nối AWS IoT thất bại",
+                status = stateMachine.AWSStatus.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "[AWS] Lỗi kết nối");
+            return Results.Json(new { success = false, message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    /// <summary>Ngắt kết nối AWS IoT</summary>
+    private async Task<IResult> HandleAWSDisconnect(HttpContext context)
+    {
+        try
+        {
+            var stateMachine = ProductionStateMachine.Instance;
+            await stateMachine.DisconnectAWSAsync();
+            return Results.Json(new
+            {
+                success = true,
+                message = "Đã ngắt kết nối AWS IoT",
+                status = stateMachine.AWSStatus.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "[AWS] Lỗi ngắt kết nối");
+            return Results.Json(new { success = false, message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    /// <summary>Cập nhật cấu hình AWS</summary>
+    private IResult HandleAWSUpdateConfig(HttpContext context)
+    {
+        try
+        {
+            var config = context.Request.ReadFromJsonAsync<AWSIoTConfig>().GetAwaiter().GetResult();
+            if (config == null)
+                return Results.Json(new { success = false, message = "Invalid config" }, statusCode: 400);
+
+            G.AWS = config;
+
+            // Reinitialize AWS client nếu cần
+            var stateMachine = ProductionStateMachine.Instance;
+            if (G.AWS.Enabled)
+            {
+                stateMachine.InitAWS(config);
+            }
+
+            return Results.Json(new
+            {
+                success = true,
+                message = "Đã cập nhật cấu hình AWS",
+                config = new
+                {
+                    enabled = G.AWS.Enabled,
+                    devMode = G.AWS.DevMode,
+                    endpoint = G.AWS.Endpoint,
+                    clientId = G.AWS.ClientId,
+                    thingName = G.AWS.ThingName,
+                    autoSend = G.AWS.AutoSend
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "[AWS] Lỗi cập nhật config");
+            return Results.Json(new { success = false, message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    /// <summary>Lấy cấu hình AWS</summary>
+    private IResult HandleAWSGetConfig(HttpContext context)
+    {
+        return Results.Json(new
+        {
+            success = true,
+            config = new
+            {
+                enabled = G.AWS.Enabled,
+                devMode = G.AWS.DevMode,
+                endpoint = G.AWS.Endpoint,
+                clientId = G.AWS.ClientId,
+                thingName = G.AWS.ThingName,
+                autoSend = G.AWS.AutoSend,
+                // Không trả về certificate paths/password vì bảo mật
+                hasRootCAPath = !string.IsNullOrEmpty(G.AWS.RootCAPath),
+                hasClientCertPath = !string.IsNullOrEmpty(G.AWS.ClientCertPath)
+            }
+        });
+    }
+
+    /// <summary>Test publish message lên AWS</summary>
+    private async Task<IResult> HandleAWSTestPublish(HttpContext context)
+    {
+        try
+        {
+            var stateMachine = ProductionStateMachine.Instance;
+            if (stateMachine.AWSStatus != AWSIoTStatus.Connected)
+            {
+                return Results.Json(new { success = false, message = "Chưa kết nối AWS IoT" }, statusCode: 400);
+            }
+
+            var testPayload = new AWSSendPayload
+            {
+                message_id = $"TEST-{Guid.NewGuid():N}",
+                orderNo = "TEST",
+                uniqueCode = "TEST-CODE-001",
+                gtin = "1234567890123",
+                cartonCode = "TEST-CTN-001",
+                status = 1,
+                activate_datetime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                production_date = DateTime.UtcNow.ToString("yyyy-MM-dd"),
+                thing_name = G.AWS.ThingName
+            };
+
+            // Publish trực tiếp qua AWS client
+            var (success, message) = await stateMachine.AWSClientInternal!.PublishAsync(
+                G.AWS.PublishTopic,
+                System.Text.Json.JsonSerializer.Serialize(testPayload)
+            );
+
+            return Results.Json(new
+            {
+                success,
+                message = message,
+                payload = testPayload
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "[AWS] Lỗi test publish");
+            return Results.Json(new { success = false, message = ex.Message }, statusCode: 500);
+        }
+    }
+
     #endregion
 
     private void LogInfo(string source, string message)
