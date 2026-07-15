@@ -190,13 +190,19 @@ namespace GProject.ProductionOrderHelpers
     /// </summary>
     public class ProductCounter
     {
-        public int PassCount { get; set; }
-        public int FailCount { get; set; }
-        public int DuplicateCount { get; set; }
-        public int ReadFailCount { get; set; }
+        // Tổng cuối cùng (single source of truth)
+        public int PassTotal { get; set; }
+        public int FailTotal { get; set; }
+
+        // Chi tiết (breakdown cho UI/debug)
         public int NotFoundCount { get; set; }
+        public int ReadFailCount { get; set; }
         public int ErrorCount { get; set; }
         public int TimeoutCount { get; set; }
+
+        // Tách riêng — Duplicate KHÔNG tính FailTotal (mã tốt đã active từ trước, PLC vẫn PASS)
+        public int DuplicateCount { get; set; }
+
         public int TotalCount { get; set; }
         public int TotalCartonCount { get; set; }
         public int ActivatedCartonCount { get; set; }
@@ -207,19 +213,20 @@ namespace GProject.ProductionOrderHelpers
 
         public void Reset()
         {
-            PassCount = 0;
-            FailCount = 0;
-            DuplicateCount = 0;
-            ReadFailCount = 0;
+            PassTotal = 0;
+            FailTotal = 0;
             NotFoundCount = 0;
+            ReadFailCount = 0;
             ErrorCount = 0;
             TimeoutCount = 0;
+            DuplicateCount = 0;
             TotalCount = 0;
             TotalCartonCount = 0;
             ActivatedCartonCount = 0;
             ErrorCartonCount = 0;
             CartonID = 1;
             CartonCode = "";
+            CartonCapacity = 24;
         }
     }
 

@@ -56,7 +56,8 @@ namespace GProject.Production
         {
             lock (_stateLock)
             {
-                ActiveCounter.TotalCount = totalCount;
+                if (totalCount > ActiveCounter.TotalCount)
+                    ActiveCounter.TotalCount = totalCount;
             }
         }
         public ProductCounter PackageCounter { get; private set; } = new();
@@ -601,6 +602,9 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     }
                     else if (CartonUpdateQueue.TryDequeue(out var cartUpd))
                     {
+                        //đọc ngược lại db chính xem trong db id thùng đó có thực sự có số lượng sản phẩm đúng hay không.
+                        //Nếu sai dừng lại và báo lỗi => Thêm trạng thái lỗi Kiểm chéo đóng gói
+                        //Kiểm tra lại luôn thùng trước đó để dừng lại kịp thời trước khi lỗi đi quá xa.
                         if (cartUpd.Type == CartonUpdateType.Complete)
                         {
                             var result = GProduction.POCarton.CompleteCarton(
@@ -659,12 +663,21 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
             var at = DateTime.UtcNow;
             var cam = string.IsNullOrEmpty(camera) ? "camera" : camera;
 
+            // Tăng TotalCount cho MỌI call từ camera (kể cả empty/marker).
+            // Đặt NGOÀI các early-return để "Tổng đếm" phản ánh số lần camera quét,
+            // độc lập với việc mã có hợp lệ hay không.
+            lock (_stateLock)
+            {
+                ActiveCounter.TotalCount++;
+            }
+
             // Nhánh 1: mã rỗng -> ReadFail
             if (string.IsNullOrEmpty(code))
             {
                 lock (_stateLock)
                 {
                     ActiveCounter.ReadFailCount++;
+                    ActiveCounter.FailTotal++;
                     RecordQueue.Enqueue(new RecordData
                     {
                         Code = "FAIL",
@@ -686,6 +699,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 lock (_stateLock)
                 {
                     ActiveCounter.ReadFailCount++;
+                    ActiveCounter.FailTotal++;
                     RecordQueue.Enqueue(new RecordData
                     {
                         Code = code,
@@ -725,12 +739,11 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
 
             lock (_stateLock)
             {
-                ActiveCounter.TotalCount++;
-
                 // Nhánh 4: NotFound
                 if (!Dictionary_Codes.TryGetValue(code, out var info))
                 {
                     ActiveCounter.NotFoundCount++;
+                    ActiveCounter.FailTotal++;
                     RecordQueue.Enqueue(new RecordData
                     {
                         Code = code,
@@ -746,10 +759,12 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                         e_Production_Status.NotFound, ActiveCounter.CartonID, code: code);
                 }
 
-                // Nhánh 5: Duplicate (đã active từ trước)
+                // Nhánh 5: Duplicate (đã active từ trước) — PLC vẫn PASS nhưng quét lại
+                // là 1 lần sai nghiệp vụ, tính vào FailTotal để khớp semantic "tổng !Pass".
                 if (info.Status == 1)
                 {
                     ActiveCounter.DuplicateCount++;
+                    ActiveCounter.FailTotal++;
                     RecordQueue.Enqueue(new RecordData
                     {
                         Code = code,
@@ -774,7 +789,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 // Nhánh 6: thùng hiện tại chưa có mã -> Error + Pause
                 if (currentCartonCode == "0" || string.IsNullOrEmpty(currentCartonCode))
                 {
-                    ActiveCounter.FailCount++;
+                    ActiveCounter.FailTotal++;
                     ActiveCounter.ErrorCount++;
                     RecordQueue.Enqueue(new RecordData
                     {
@@ -849,8 +864,8 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     //SendCodeToAWS(code, "Pass", now, currentCartonCode);
 
                     // Tăng bộ đếm
-                    ActiveCounter.PassCount++;
-                    PackageCounter.PassCount++;
+                    ActiveCounter.PassTotal++;
+                    PackageCounter.PassTotal++;
                     ActiveCounter.CartonCode = currentCartonCode;
 
                     // Đánh dấu Status=1 trong DataPool khi activate thành công
@@ -860,7 +875,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     }
 
                     // Đủ carton -> enqueue CompleteCarton + next carton
-                    if (PackageCounter.PassCount >= ActiveCounter.CartonCapacity)
+                    if (PackageCounter.PassTotal >= ActiveCounter.CartonCapacity)
                     {
                         int currentCartonID = ActiveCounter.CartonID;
                         CartonUpdateQueue.Enqueue(new CartonUpdateItem
@@ -875,7 +890,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                             closedCarton.CompletedDatetime = now;
 
                         ActiveCounter.CartonID++;
-                        PackageCounter.PassCount = 0;
+                        PackageCounter.PassTotal = 0;
 
                         if (Dictionary_Cartons.TryGetValue(ActiveCounter.CartonID, out var nextCarton))
                         {
@@ -897,7 +912,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     }
 
                     // Đạt orderQty -> WaitingStop
-                    if (ActiveCounter.PassCount >= ProductionData.OrderQty)
+                    if (ActiveCounter.PassTotal >= ProductionData.OrderQty)
                     {
                         SetState(e_ProductionState.WaitingStop, $"orderQty {ProductionData.OrderQty} reached");
                     }
@@ -913,6 +928,8 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 // lần sau còn quét lại được).
                 lock (_stateLock)
                 {
+                    ActiveCounter.TimeoutCount++;
+                    ActiveCounter.FailTotal++;
                     RecordQueue.Enqueue(new RecordData
                     {
                         Code = code,
@@ -1247,26 +1264,17 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     return;
                 }
 
-                var codesResult = GProduction.POLoader.GetCodes(ProductionData.OrderNo);
-                if (codesResult.IsSuccess && codesResult.Data != null)
+                var tempCodes = new Dictionary<string, CodeInfo>();
+                GProduction.CodeDictionaryLoader.LoadAllCodesToDictionary(
+                    ProductionData.OrderNo, tempCodes);
+
+                Dictionary_Codes.Clear();
+                foreach (var kv in tempCodes)
                 {
-                    Dictionary_Codes.Clear();
-                    foreach (System.Data.DataRow row in codesResult.Data.Rows)
-                    {
-                        var info = new CodeInfo
-                        {
-                            Code = row["Code"]?.ToString() ?? "",
-                            OrderNo = ProductionData.OrderNo,
-                            Status = Convert.ToInt32(row["Status"] ?? 0),
-                            CartonCode = row["cartonCode"]?.ToString() ?? "0",
-                            ActivateDate = row["ActivateDate"]?.ToString() ?? "0",
-                            ProductionDate = row["ProductionDate"]?.ToString() ?? "0",
-                            ActivateUser = row["ActivateUser"]?.ToString() ?? "",
-                            PackingDate = row["PackingDate"]?.ToString() ?? "0"
-                        };
-                        Dictionary_Codes[info.Code] = info;
-                    }
+                    Dictionary_Codes[kv.Key] = kv.Value;
                 }
+                Log.Information("[StateMachine] Dictionary_Codes loaded: {Count} codes (PO={OrderNo})",
+                    Dictionary_Codes.Count, ProductionData.OrderNo);
 
                 var cartonsResult = GProduction.POCarton.GetAll(ProductionData.OrderNo);
                 if (cartonsResult.IsSuccess && cartonsResult.Data != null && cartonsResult.Data.Rows.Count > 0)
@@ -1308,20 +1316,20 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                         ActiveCounter.CartonCode = firstOpen?.CartonCode ?? "";
                     }
 
-                    // 2) Tính lại PackageCounter.PassCount = số mã đã pack trong carton hiện tại
+                    // 2) Tính lại PackageCounter.PassTotal = số mã đã pack trong carton hiện tại
                     if (Dictionary_Cartons.TryGetValue(ActiveCounter.CartonID, out var curCarton)
                         && curCarton.CartonCode != "0")
                     {
-                        PackageCounter.PassCount = GProduction.PORecordHelper.GetCodeCountInCarton(
+                        PackageCounter.PassTotal = GProduction.PORecordHelper.GetCodeCountInCarton(
                             ProductionData.OrderNo, curCarton.CartonCode);
                     }
                     else
                     {
-                        PackageCounter.PassCount = 0;
+                        PackageCounter.PassTotal = 0;
                     }
 
-                    // 3) Tính lại ActiveCounter.PassCount = tổng mã đã active trong PO
-                    ActiveCounter.PassCount = GProduction.PORecordHelper.GetActiveCount(ProductionData.OrderNo);
+                    // 3) Tính lại ActiveCounter.PassTotal = tổng mã đã active trong PO
+                    ActiveCounter.PassTotal = GProduction.PORecordHelper.GetActiveCount(ProductionData.OrderNo);
 
                     // 4) Đồng bộ PO với DataPool và kiểm tra đủ mã
                     var syncResult = SyncPoolWithPO();
@@ -1333,7 +1341,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     }
 
                     Log.Information("[StateMachine] Reload state: cartonID={CartonId}, cartonCode={CartonCode}, packed={Packed}, totalActive={Active}",
-                        ActiveCounter.CartonID, ActiveCounter.CartonCode, PackageCounter.PassCount, ActiveCounter.PassCount);
+                        ActiveCounter.CartonID, ActiveCounter.CartonCode, PackageCounter.PassTotal, ActiveCounter.PassTotal);
                 }
                 else
                 {
@@ -1362,7 +1370,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     if (!cartonsResult.IsSuccess || cartonsResult.Data == null || cartonsResult.Data.Rows.Count == 0)
                     {
                         SetState(e_ProductionState.Error,
-                            $"Carton DB not loadable sau auto-recover. File: {Config.GetCartonPath(ProductionData.OrderNo)}");
+                            $"Carton DB not loadable sau auto-recover. File: {ProductionOrderHelpers.Config.GetCartonPath(ProductionData.OrderNo)}");
                         return;
                     }
 
@@ -1378,6 +1386,19 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                         };
                         Dictionary_Cartons[info.Id] = info;
                     }
+
+                    // Nạp lại Dictionary_Codes cùng cách nhánh chính để tránh giới hạn 100
+                    var tempCodesRecover = new Dictionary<string, CodeInfo>();
+                    GProduction.CodeDictionaryLoader.LoadAllCodesToDictionary(
+                        ProductionData.OrderNo, tempCodesRecover);
+
+                    Dictionary_Codes.Clear();
+                    foreach (var kv in tempCodesRecover)
+                    {
+                        Dictionary_Codes[kv.Key] = kv.Value;
+                    }
+                    Log.Information("[StateMachine] Auto-recover: Dictionary_Codes loaded {Count} codes",
+                        Dictionary_Codes.Count);
 
                     var lastRunningAfterRecover = Dictionary_Cartons.Values
                         .Where(c => c.StartDatetime != "0" && c.CompletedDatetime == "0")
@@ -1399,13 +1420,13 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                         ActiveCounter.CartonCode = firstOpenAfterRecover?.CartonCode ?? "";
                     }
 
-                    PackageCounter.PassCount = (Dictionary_Cartons.TryGetValue(ActiveCounter.CartonID, out var curCartonAfter)
+                    PackageCounter.PassTotal = (Dictionary_Cartons.TryGetValue(ActiveCounter.CartonID, out var curCartonAfter)
                             && curCartonAfter.CartonCode != "0")
                         ? GProduction.PORecordHelper.GetCodeCountInCarton(
                             ProductionData.OrderNo, curCartonAfter.CartonCode)
                         : 0;
 
-                    ActiveCounter.PassCount = GProduction.PORecordHelper.GetActiveCount(ProductionData.OrderNo);
+                    ActiveCounter.PassTotal = GProduction.PORecordHelper.GetActiveCount(ProductionData.OrderNo);
 
                     var syncResultAfter = SyncPoolWithPO();
                     if (!syncResultAfter.success)
@@ -1416,7 +1437,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     }
 
                     Log.Information("[StateMachine] Auto-recover OK: cartonID={CartonId}, cartonCode={CartonCode}, packed={Packed}, totalActive={Active}",
-                        ActiveCounter.CartonID, ActiveCounter.CartonCode, PackageCounter.PassCount, ActiveCounter.PassCount);
+                        ActiveCounter.CartonID, ActiveCounter.CartonCode, PackageCounter.PassTotal, ActiveCounter.PassTotal);
                 }
 
                 SetState(e_ProductionState.Running, "data pushed to dic");
@@ -1444,7 +1465,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
             }
 
             int currentCartonId = ActiveCounter.CartonID;
-            int packedCount = PackageCounter.PassCount;
+            int packedCount = PackageCounter.PassTotal;
 
             // Kiểm tra thùng hiện tại
             if (Dictionary_Cartons.TryGetValue(currentCartonId, out var currentCarton))
@@ -1517,7 +1538,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
             // Nếu thùng sắp tới đã có mã -> về Running
             if (Dictionary_Cartons.TryGetValue(currentCartonId + 1, out var nextCarton)
                 && nextCarton.CartonCode != "0"
-                && PackageCounter.PassCount < (ActiveCounter.CartonCapacity - CartonOffset))
+                && PackageCounter.PassTotal < (ActiveCounter.CartonCapacity - CartonOffset))
             {
                 SetState(e_ProductionState.Running, "next carton có mã");
                 return;

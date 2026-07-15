@@ -54,18 +54,26 @@ export interface DeviceStatusResponse {
     previousState: string;
     orderNo: string;
     productName: string;
+    productionDate: string;
     orderQty: number;
     activeCounter: {
-      PassCount: number;
-      FailCount: number;
+      PassTotal: number;
+      FailTotal: number;
       DuplicateCount: number;
       NotFoundCount: number;
       ReadFailCount: number;
       ErrorCount: number;
       TimeoutCount: number;
+      TotalCount: number;
       CartonID: number;
       CartonCode: string;
     };
+    cartonCount: number;
+    cartonClosedCount: number;
+    itemsInCarton: number;
+    cartonCapacity: number;
+    progressPercent: number;
+    hasPO: boolean;
     codesCount: number;
     cartonsCount: number;
     lastWarning: string;
@@ -151,8 +159,15 @@ export function useDevicePolling(options: UseDevicePollingOptions = {}) {
               previousState: data.production.previousState,
               orderNo: data.production.orderNo,
               productName: data.production.productName,
+              productionDate: data.production.productionDate,
               orderQty: data.production.orderQty,
               activeCounter: data.production.activeCounter,
+              cartonCount: data.production.cartonCount,
+              cartonClosedCount: data.production.cartonClosedCount,
+              itemsInCarton: data.production.itemsInCarton,
+              cartonCapacity: data.production.cartonCapacity,
+              progressPercent: data.production.progressPercent,
+              hasPO: data.production.hasPO,
               codesCount: data.production.codesCount,
               cartonsCount: data.production.cartonsCount,
               lastWarning: data.production.lastWarning,
