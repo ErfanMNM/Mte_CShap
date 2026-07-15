@@ -38,6 +38,7 @@ export interface ProductionStatusResponse {
   duplicateCount: number;
   notFoundCount: number;
   readFailCount: number;
+  formatFailCount: number;
   errorCount: number;
   timeoutCount: number;
   cartonCount: number;
@@ -55,6 +56,7 @@ export interface ActiveCounterSnapshot {
   DuplicateCount: number;
   NotFoundCount: number;
   ReadFailCount: number;
+  FormatFailCount: number;
   ErrorCount: number;
   TimeoutCount: number;
   TotalCount: number;

@@ -17,6 +17,7 @@ export type ProductionStatus =
   | "Fail"
   | "Duplicate"
   | "NotFound"
+  | "FormatError"
   | "Error"
   | "ReadFail"
   | "Timeout";

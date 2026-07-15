@@ -24,9 +24,13 @@ namespace GProject
     private static OmronCodeReader? _CR_Camera;
     private static GProjectApiServer? _apiServer;
     public static AppConfig? _config;
-    public static BackgroundWorker? _cameraWK;
+
+        // Single shared gate so only one camera payload can run the pipeline at a time.
+        // Replaces BackgroundWorker.IsBusy which was racy across the TCP callback thread.
+        private static readonly SemaphoreSlim _cameraGate = new(1, 1);
 
         /// <summary>Exposes the PLC monitor instance for API endpoints.</summary>
+        public static PLCMonitorLite? GetPLCMonitor() => PLCMonitorLite.Instance;
 
         /// <summary>Khởi tạo AWS IoT từ config</summary>
         private static void InitAWS()
@@ -75,11 +79,6 @@ namespace GProject
 
         static async Task Main(string[] args)
         {
-
-            //khởi động background service để xử lý camera
-
-            _cameraWK = new BackgroundWorker() { WorkerSupportsCancellation = true };
-            _cameraWK.DoWork += _cameraWK_DoWork;
 
             // Configure Serilog file logging
             Log.Logger = new LoggerConfiguration()
@@ -146,13 +145,10 @@ namespace GProject
 
                 // Khởi tạo AWS IoT nếu được bật
                 InitAWS();
-                // Khởi tạo 1 camera duy nhất (vừa active vừa phân làn)
-                _CR_Camera = new OmronCodeReader(OmronCodeReader.e_CodeReaderModel.V430, "127.0.0.1", 9001);
-                _CR_Camera.ClientCallback += (state, data) => OnCameraEvent("camera", state, data);
-                _CR_Camera.Connect();
-                Log.Information("[Main] Camera initialized: camera=127.0.0.1:9001");
 
-                // Khởi tạo và cấu hình PLC
+                // Khởi tạo và cấu hình PLC TRƯỚC camera — backend chỉ dùng 1 kết nối PLC
+                // duy nhất (Global.omronPLC), toàn bộ code (camera pipeline, API) cùng
+                // chia sẻ instance này để tránh 2 kết nối song song.
                 const string spreadsheetId = "1V2xjY6AA4URrtcwUorQE54Ud5KyI7Ev2hpDPMMcXVTI";
                 bool sheetLoaded = PLCAddressWithGoogleSheetHelper.Init(
                     spreadsheetId,
@@ -161,12 +157,30 @@ namespace GProject
                     sheetLoaded ? "Google Sheet" : "local cache",
                     PLCAddressWithGoogleSheetHelper.AddressMap.Count);
 
+                Global.omronPLC = new OmronPLC_Hsl();
                 Global.omronPLC.PLC_Ready_DM = PLCAddressWithGoogleSheetHelper.Get("PLC2_Ready_DM") ?? "D16";
                 Global.omronPLC.PLC_IP = _config.PLC_IP ?? "127.0.0.1";
                 Global.omronPLC.PLC_PORT = _config.PLC_Port > 0 ? _config.PLC_Port : 9600;
                 Global.omronPLC.InitPLC();
-
                 Global.omronPLC.PLCStatus_OnChange += OmronPLC_PLCStatus_OnChange;
+                Log.Information("[Main] PLC initialized: {IP}:{Port}", Global.omronPLC.PLC_IP, Global.omronPLC.PLC_PORT);
+
+                // Khởi tạo wrapper PLCMonitorLite cho API recipe/register endpoints.
+                PLCMonitorLite.Initialize();
+
+                // Apply ACK V2 config từ AppConfig xuống state machine.
+                ProductionStateMachine.Instance.ApplyAckConfig(
+                    _config.CameraAckTimeoutMs, _config.CameraAckPollIntervalMs);
+
+                // Khởi tạo 1 camera duy nhất (vừa active vừa phân làn)
+                string cameraIp = _config.Camera_Ip ?? Environment.GetEnvironmentVariable("CAMERA_IP") ?? "127.0.0.1";
+                int cameraPort = _config.Camera_Port > 0
+                    ? _config.Camera_Port
+                    : (int.TryParse(Environment.GetEnvironmentVariable("CAMERA_PORT"), out var cp) ? cp : 9001);
+                _CR_Camera = new OmronCodeReader(OmronCodeReader.e_CodeReaderModel.V430, cameraIp, cameraPort);
+                _CR_Camera.ClientCallback += (state, data) => OnCameraEvent("camera", state, data);
+                _CR_Camera.Connect();
+                Log.Information("[Main] Camera initialized: camera={IP}:{Port}", cameraIp, cameraPort);
 
                 await Task.Delay(Timeout.Infinite);
             }
@@ -189,10 +203,164 @@ namespace GProject
             }
         }
 
-        private static void _cameraWK_DoWork(object? sender, DoWorkEventArgs e)
+        /// <summary>
+        /// Camera callback — không bao giờ block thread TCP. Mọi quyết định xử lý phải đi qua
+        /// atomic gate + background worker để tránh race giữa check busy và start worker.
+        /// - Nếu gate bận / state không cho phép xử lý: ghi 0 xuống PLC NGAY rồi bỏ qua,
+        ///   KHÔNG lookup, KHÔNG activate, KHÔNG enqueue DB cho mã này.
+        /// - Nếu gate rảnh + state hợp lệ: đẩy payload vào worker tuần tự.
+        /// </summary>
+        private static void OnCameraEvent(string camera, eOmronCodeReaderState state, string data)
         {
-            string rawcode = e.Argument as string ?? "";
-            ProductionStateMachine.HandleCodeFromCamera(rawcode);
+            Log.Information("[Camera:{Camera}] [{State}] {Data}", camera, state, data);
+
+            // Connection-state events: chỉ broadcast + đẩy trạng thái xuống state machine.
+            switch (state)
+            {
+                case eOmronCodeReaderState.Connected:
+                case eOmronCodeReaderState.Disconnected:
+                case eOmronCodeReaderState.Reconnecting:
+                    _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
+                    ProductionStateMachine.Instance.OnDeviceStateChanged(
+                        "Camera", state == eOmronCodeReaderState.Connected, data);
+                    return;
+
+                case eOmronCodeReaderState.Received:
+                    HandleCameraReceived(camera, data);
+                    return;
+
+                default:
+                    break;
+            }
+        }
+
+        private static void HandleCameraReceived(string camera, string data)
+        {
+            if (data == null) return;
+
+            var stateMachine = ProductionStateMachine.Instance;
+            bool canProcess = stateMachine.CurrentState == e_ProductionState.Running
+                              || stateMachine.CurrentState == e_ProductionState.WaitingStop;
+
+            // Atomic try-enter gate. Nếu đang bận (gate không nhận) → ghi 0 xuống PLC NGAY,
+            // vẫn phát history + CodeScanned cho FE để dashboard thấy mã bị loại do bận.
+            if (!_cameraGate.Wait(0))
+            {
+                Log.Debug("[Camera:{Camera}] Gate bận, reject mã: {Data}", camera, data);
+                EmitBusyResult(camera, data);
+                return;
+            }
+
+            if (!canProcess)
+            {
+                _cameraGate.Release();
+                Log.Debug("[Camera:{Camera}] State={State}, reject mã: {Data}", camera, stateMachine.CurrentState, data);
+                EmitBusyResult(camera, data);
+                return;
+            }
+
+            // Gate đã giữ — release ngay để các payload kế tiếp có thể ghi 0 NGAY nếu worker
+            // chưa xong (gate chỉ đảm bảo không 2 worker chạy pipeline cùng lúc; quyết định
+            // "có xử lý hay bận" vẫn dựa trên atomic try-enter ở đây).
+            // Lưu ý: để tránh 2 worker chạy song song, ta KHÔNG release ngay — worker sẽ release.
+            _ = DispatchCameraPayload(camera, data);
+        }
+
+        /// <summary>
+        /// Worker xử lý payload camera đã qua gate. Tách riêng để mọi nhánh đều giải phóng gate.
+        /// </summary>
+        private static async Task DispatchCameraPayload(string camera, string data)
+        {
+            try
+            {
+                var result = await Task.Run(
+                    () => ProductionStateMachine.Instance.HandleCodeFromCamera(data, camera));
+
+                if (result != null)
+                {
+                    CameraHub.Instance.RecordHistory(result);
+                    await CameraHub.Instance.BroadcastCodeStatus(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[Camera:{Camera}] Lỗi xử lý payload: {Data}", camera, data);
+            }
+            finally
+            {
+                _cameraGate.Release();
+            }
+        }
+
+        /// <summary>
+        /// Phát CodeScanned + ghi history cho mã bị reject vì gate bận hoặc state không cho phép.
+        /// PLC phải nhận 0 NGAY; mã này KHÔNG vào lookup/activate/DB queue.
+        /// </summary>
+        private static void EmitBusyResult(string camera, string data)
+        {
+            string codePart;
+            string statusPart;
+            var parts = data.Split('|');
+            if (parts.Length == 2)
+            {
+                codePart = parts[0];
+                statusPart = parts[1];
+            }
+            else
+            {
+                codePart = data;
+                statusPart = "NO_READ";
+            }
+
+            var at = DateTime.UtcNow;
+            var plcResult = WritePlcLane(0);
+            var status = statusPart switch
+            {
+                "REJECT" => e_Production_Status.FormatError,
+                "OK" => e_Production_Status.Error, // gate bận nhưng status OK → báo lỗi chứ không Pass
+                _ => e_Production_Status.ReadFail,
+            };
+
+            var record = new CameraReadResult(
+                camera, codePart, status, plcResult, null, null, at);
+
+            // Vẫn ghi audit để FE thấy mã bị loại + DB record queue có entry.
+            ProductionStateMachine.Instance.RecordBusyRejection(record, plcResult);
+
+            CameraHub.Instance.RecordHistory(record);
+            _ = CameraHub.Instance.BroadcastCodeStatus(record);
+        }
+
+        private static bool WritePlcLane(short value)
+        {
+            try
+            {
+                var plc = Global.omronPLC;
+                if (plc?.plc == null) return false;
+                string address = SafeGetAddress("PLC_Reject_DM_C1");
+                var op = plc.plc.Write(address, value);
+                if (!op.IsSuccess)
+                {
+                    Log.Warning("[PLC] Write {Addr}={Val} fail: {Msg}", address, value, op.Message);
+                    return false;
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[PLC] Write {Val} threw", value);
+                return false;
+            }
+        }
+
+        private static string SafeGetAddress(string key)
+        {
+            try { return PLCAddressWithGoogleSheetHelper.Get(key); }
+            catch { return key switch
+            {
+                "PLC_Reject_DM_C1" => "D200",
+                _ => "D200",
+            }; }
         }
 
         private static void OmronPLC_PLCStatus_OnChange(object? sender, OmronPLC_Hsl.PLCStatusEventArgs e)
@@ -220,54 +388,9 @@ namespace GProject
                     {
                         Global.PLC_STATUS = OmronPLC_Hsl.PLCStatus.Disconnect;
                     }
-                    Log.Information("[PLC] Status changed: {Status} - {Message}", e.Status, e.Message);
                     break;
             }
         }
-
-        private static void OnCameraEvent(string camera, eOmronCodeReaderState state, string data)
-        {
-            Log.Information("[Camera:{Camera}] [{State}] {Data}", camera, state, data);
-
-            switch (state)
-            {
-                case eOmronCodeReaderState.Connected:
-                case eOmronCodeReaderState.Disconnected:
-                case eOmronCodeReaderState.Reconnecting:
-                    _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
-                    ProductionStateMachine.Instance.OnDeviceStateChanged(
-                        "Camera", state == eOmronCodeReaderState.Connected, data);
-                    break;
-
-                case eOmronCodeReaderState.Received:
-
-                    if (ProductionStateMachine.Instance.CurrentState == e_ProductionState.Running || ProductionStateMachine.Instance.CurrentState == e_ProductionState.WaitingStop)
-                    {
-                        if (_cameraWK.IsBusy)
-                        {
-                            Log.Debug("[Camera:{Camera}] Bận xử lý, reject mã: {Data}", camera, data);
-                            OperateResult result = Global.omronPLC.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Reject_DM"), 0); // Ghi 0 xuống PLC
-                        }
-                        else
-                        {
-                            _cameraWK.RunWorkerAsync(data);
-                        }
-                        
-                    }
-                    else
-                    {
-                        //trả trạng thái cho ws (fe)
-                        Log.Debug("[Camera:{Camera}] State is not Running or WaitingStop, reject code: {Data}", camera, data);
-                        OperateResult result = Global.omronPLC.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Reject_DM"), 0); // Ghi 0 xuống PLC
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-        }
-
-
 
     }
 }

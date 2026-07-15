@@ -20,6 +20,10 @@ public class AppConfig
     // Application Settings
     public bool AutoStart { get; set; }
 
+    // PLC ACK V2 (camera pipeline) — chờ CurrentID/CurrentStatus confirm lane đã gửi
+    public int CameraAckTimeoutMs { get; set; } = 500;
+    public int CameraAckPollIntervalMs { get; set; } = 10;
+
     /// <summary>
     /// Sets all properties to their default values.
     /// </summary>
@@ -35,5 +39,8 @@ public class AppConfig
         API_Port = 9999;
 
         AutoStart = true;
+
+        CameraAckTimeoutMs = 500;
+        CameraAckPollIntervalMs = 10;
     }
 }

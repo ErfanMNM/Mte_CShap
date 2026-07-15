@@ -1163,12 +1163,12 @@ public class GProjectApiServer : IDisposable
             {
                 plcState = plc.State switch
                 {
-                    PLCConnectionState.Connected => "Connected",
-                    PLCConnectionState.Reconnecting => "Reconnecting",
+                    PLCMonitorLite.PLCConnectionState.Connected => "Connected",
+                    PLCMonitorLite.PLCConnectionState.Reconnecting => "Reconnecting",
                     _ => "Disconnected"
                 };
-                plcIp = Environment.GetEnvironmentVariable("PLC_IP") ?? "127.0.0.1";
-                plcPort = int.TryParse(Environment.GetEnvironmentVariable("PLC_PORT"), out var p) ? p : 9600;
+                plcIp = Global.omronPLC?.PLC_IP;
+                plcPort = Global.omronPLC?.PLC_PORT;
             }
             else
             {
@@ -1206,14 +1206,14 @@ public class GProjectApiServer : IDisposable
                     clientCount = cameraHub.ClientCount
                 },
 
-                // PLC: PLCMonitor state
+                // PLC: PLCMonitorLite state (Global.omronPLC la ket noi PLC duy nhat)
                 plc = new
                 {
                     state = plcState,
                     ip = plcIp,
                     port = plcPort,
-                    connected = plc?.State == PLCConnectionState.Connected,
-                    clientCount = PLCHub.Instance.ClientCount
+                    connected = plc?.State == PLCMonitorLite.PLCConnectionState.Connected,
+                    clientCount = 0
                 },
 
                 // Production: full state machine snapshot

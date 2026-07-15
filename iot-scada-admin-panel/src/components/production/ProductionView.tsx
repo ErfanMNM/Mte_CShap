@@ -30,7 +30,6 @@ import poApi from "../../services/poApi";
 import { useCameraSocket } from "../../hooks/useCameraSocket";
 import { useDevicePolling } from "../../hooks/useDevicePolling";
 import { useDeviceStore } from "../../store/useDeviceStore";
-import { handleActiveCodeScanned } from "../../services/cameraApi";
 import type { ProductionStatusResponse, RetryRunResponse } from "../../types/production";
 import type { POInfo, POListItem, POCarton } from "../../types/po";
 
@@ -229,6 +228,7 @@ const ProductionView: React.FC = () => {
       duplicateCount: p.activeCounter.DuplicateCount,
       notFoundCount: p.activeCounter.NotFoundCount,
       readFailCount: p.activeCounter.ReadFailCount,
+      formatFailCount: p.activeCounter.FormatFailCount ?? 0,
       errorCount: p.activeCounter.ErrorCount,
       timeoutCount: p.activeCounter.TimeoutCount,
       cartonCount: p.cartonCount,
@@ -255,28 +255,17 @@ const ProductionView: React.FC = () => {
     }
   }, [status, poList, selectedPO]);
 
-  // Camera WebSocket - auto addFromReader khi nhận Received từ camera (logs only, store sync handled by App.tsx)
+  // Camera WebSocket - chỉ LẮNG NGHE, không tự activate/update DataPool.
+  // ProductionStateMachine là nguồn duy nhất được phép activate và update DataPool,
+  // tránh ghi DB trước khi PLC ACK hoặc ghi 2 lần (FE + BE).
   const cameraWsUrl =
     import.meta.env.VITE_CAMERA_WS_URL || "ws://localhost:9999/ws/camera";
-  const statusRef = useRef<ProductionStatusResponse | null>(status);
-  useEffect(() => {
-    statusRef.current = status;
-  }, [status]);
   const { lastScan } = useCameraSocket({
     url: cameraWsUrl,
     onEvent: async (msg) => {
-      if (msg.state !== "Received" || msg.camera !== "camera") return;
-      if (!msg.data) return;
-
-      const currentOrderNo = statusRef.current?.orderNo ?? "";
-      const batchID = currentOrderNo || "default";
-      try {
-        await handleActiveCodeScanned(msg.data, "camera", batchID);
-        await fetchStatus();
-        setSuccess(`Đã quét: ${msg.data}`);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "NOTIF_ERR_SCAN";
-        setError(msg);
+      // Snapshot polling sẽ tự cập nhật counter/thùng; chỉ log nếu cần debug.
+      if (msg.state === "Received") {
+        // intentionally no-op: BE state machine đã xử lý mã này qua CodeScanned.
       }
     },
     syncToStore: false, // Store sync handled by App.tsx hooks
@@ -975,8 +964,14 @@ const healthOk = !apiStatus.error;
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <StatCard label="Không tìm" value={status.notFoundCount.toLocaleString()} color="slate" />
                       <StatCard label="Không đọc" value={status.readFailCount.toLocaleString()} color="slate" />
+                      <StatCard label="Sai định dạng" value={(status.formatFailCount ?? 0).toLocaleString()} color="red" />
                       <StatCard label="Lỗi thùng" value={status.errorCount.toLocaleString()} color="red" />
-                      <StatCard label="Timeout" value={status.timeoutCount.toLocaleString()} color="red" />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                      <StatCard label="Timeout ACK" value={status.timeoutCount.toLocaleString()} color="red" />
+                      <div className="hidden md:block" />
+                      <div className="hidden md:block" />
+                      <div className="hidden md:block" />
                     </div>
                   </>
                 ) : isLoadingPODetail && !poDetail ? (

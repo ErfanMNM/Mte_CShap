@@ -62,6 +62,7 @@ export interface DeviceStatusResponse {
       DuplicateCount: number;
       NotFoundCount: number;
       ReadFailCount: number;
+      FormatFailCount: number;
       ErrorCount: number;
       TimeoutCount: number;
       TotalCount: number;

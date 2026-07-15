@@ -86,7 +86,7 @@ export function useCameraSocket({
       };
 
       ws.onclose = () => {
-        const newSnapshot = {
+        const newSnapshot: CameraSnapshot = {
           ...initialSnapshot,
           connected: false,
           camera: { ...initialSnapshot.camera, state: "Disconnected" },

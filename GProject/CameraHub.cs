@@ -53,6 +53,15 @@ public class CameraHub
     private readonly ConcurrentDictionary<Guid, WebSocket> _clients = new();
     private readonly object _registerLock = new();
 
+    /// <summary>
+    /// Serialize WebSocket sends trên cùng 1 socket — busy result và worker
+    /// result không gọi SendAsync đồng thời vào 1 client.
+    /// </summary>
+    private readonly ConcurrentDictionary<WebSocket, SemaphoreSlim> _sendLocks = new();
+
+    private SemaphoreSlim GetSendLock(WebSocket ws)
+        => _sendLocks.GetOrAdd(ws, _ => new SemaphoreSlim(1, 1));
+
     private const int HistoryCapacity = 200;
     private readonly ConcurrentQueue<CameraHistoryEntry> _history = new();
     private long _historySeq;
@@ -88,6 +97,12 @@ public class CameraHub
             {
                 _clients.TryRemove(kv.Key, out _);
             }
+        }
+
+        // Dispose lock nếu còn — tránh leak semaphore cho socket đã đóng.
+        if (_sendLocks.TryRemove(ws, out var sem))
+        {
+            try { sem.Dispose(); } catch { /* ignore */ }
         }
     }
 
@@ -192,8 +207,11 @@ public class CameraHub
 
         foreach (var ws in openClients)
         {
+            var sendLock = GetSendLock(ws);
             try
             {
+                await sendLock.WaitAsync();
+                if (ws.State != WebSocketState.Open) continue;
                 await ws.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
             }
             catch
@@ -203,6 +221,14 @@ public class CameraHub
                 {
                     _clients.TryRemove(FindKey(ws), out _);
                 }
+                if (_sendLocks.TryRemove(ws, out var stale))
+                {
+                    try { stale.Dispose(); } catch { }
+                }
+            }
+            finally
+            {
+                try { sendLock.Release(); } catch { }
             }
         }
     }
