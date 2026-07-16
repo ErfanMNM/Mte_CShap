@@ -12,7 +12,7 @@ namespace GProject.PLCHelpers
     /// </summary>
     public static class PLCAddressWithGoogleSheetHelper
     {
-        public static string FilePath { get; set; } = Path.Combine($@"C:/GProject/Configs/GoogleSheet.json");
+        public static string FilePath { get; set; } = Path.Combine($@"C:/GProject/Configs/Google.json");
 
         private static string LocalCachePath =>
             Path.Combine(

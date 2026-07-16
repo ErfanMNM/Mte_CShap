@@ -10,7 +10,7 @@ namespace Glib.PLCHelpers
         public string PLC_IP { get; set; } = "127.0.0.1";
         public int PLC_PORT { get; set; } = 9600;
         public string PLC_Ready_DM { get; set; } = "D16";
-        public PLCStatus PLC_STATUS { get; set; } = PLCStatus.Disconnect;
+        public static PLCStatus plc_Status { get; set; } = PLCStatus.Disconnect;
         public int Ready { get; set; } = 0;
         public int Time_Update { get; set; } = 300;
         public OmronFinsUdp plc = new OmronFinsUdp();
@@ -49,25 +49,25 @@ namespace Glib.PLCHelpers
 
                 if (write.IsSuccess)
                 {
-                    if (PLC_STATUS == PLCStatus.Connected)
+                    if (plc_Status == PLCStatus.Connected)
                     {
 
                     }
                     else
                     {
-                        PLC_STATUS = PLCStatus.Connected;
+                        plc_Status = PLCStatus.Connected;
                         PLCStatus_OnChange?.Invoke(this, new PLCStatusEventArgs(PLCStatus.Connected, "PLC đã kết nối"));
                     }
                 }
                 else
                 {
-                    if (PLC_STATUS == PLCStatus.Disconnect)
+                    if (plc_Status == PLCStatus.Disconnect)
                     {
 
                     }
                     else
                     {
-                        PLC_STATUS = PLCStatus.Disconnect;
+                        plc_Status = PLCStatus.Disconnect;
                         PLCStatus_OnChange?.Invoke(this, new PLCStatusEventArgs(PLCStatus.Disconnect, "PLC mất kết nối"));
                     }
                 }

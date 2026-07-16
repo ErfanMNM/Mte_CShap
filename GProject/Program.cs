@@ -18,6 +18,7 @@ namespace GProject
     {
         public static OmronPLC_Hsl? omronPLC;
         public static OmronPLC_Hsl.PLCStatus PLC_STATUS = OmronPLC_Hsl.PLCStatus.Disconnect;
+        public static eOmronCodeReaderState Camera_STATUS = eOmronCodeReaderState.Disconnected;
     }
     public class Program
     {
@@ -108,8 +109,8 @@ namespace GProject
 
             //Tải cấu hình
             _config = ConfigStorage.Load<AppConfig>() ?? new AppConfig();
-           // _config.SetDefault();
-            //ConfigStorage.Save(_config);
+           _config.SetDefault();
+           ConfigStorage.Save(_config);
 
             // Initialize Auth database
             AuthDb.EnsureCreated();
@@ -158,7 +159,7 @@ namespace GProject
                     PLCAddressWithGoogleSheetHelper.AddressMap.Count);
 
                 Global.omronPLC = new OmronPLC_Hsl();
-                Global.omronPLC.PLC_Ready_DM = PLCAddressWithGoogleSheetHelper.Get("PLC2_Ready_DM") ?? "D16";
+                Global.omronPLC.PLC_Ready_DM = PLCAddressWithGoogleSheetHelper.Get("PLC_Ready_DM") ?? "D16";
                 Global.omronPLC.PLC_IP = _config.PLC_IP ?? "127.0.0.1";
                 Global.omronPLC.PLC_PORT = _config.PLC_Port > 0 ? _config.PLC_Port : 9600;
                 Global.omronPLC.InitPLC();
@@ -218,16 +219,41 @@ namespace GProject
             switch (state)
             {
                 case eOmronCodeReaderState.Connected:
+                    if(Global.Camera_STATUS != eOmronCodeReaderState.Connected)
+                    {
+                        Global.Camera_STATUS = eOmronCodeReaderState.Connected;
+                        _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
+                        ProductionStateMachine.Instance.OnDeviceStateChanged(
+                            "Camera", true, data);
+                    }
+                    
+                    break;
                 case eOmronCodeReaderState.Disconnected:
+                    if(Global.Camera_STATUS != eOmronCodeReaderState.Disconnected)
+                    {
+                        Global.Camera_STATUS = eOmronCodeReaderState.Disconnected;
+                        _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
+                        ProductionStateMachine.Instance.OnDeviceStateChanged(
+                            "Camera", false, data);
+                    }
+
+                    break;
                 case eOmronCodeReaderState.Reconnecting:
+                    if(Global.Camera_STATUS != eOmronCodeReaderState.Reconnecting)
+                    {
+                        Global.Camera_STATUS = eOmronCodeReaderState.Reconnecting;
+                        _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
+                        ProductionStateMachine.Instance.OnDeviceStateChanged(
+                            "Camera", false, data);
+                    }
                     _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
                     ProductionStateMachine.Instance.OnDeviceStateChanged(
                         "Camera", state == eOmronCodeReaderState.Connected, data);
-                    return;
+                    break;
 
                 case eOmronCodeReaderState.Received:
                     HandleCameraReceived(camera, data);
-                    return;
+                    break;
 
                 default:
                     break;
