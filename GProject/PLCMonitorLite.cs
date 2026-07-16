@@ -24,9 +24,7 @@ public class PLCMonitorLite
     {
         get
         {
-            var plc = Global.omronPLC;
-            if (plc == null) return PLCConnectionState.Disconnected;
-            return plc.PLC_STATUS == OmronPLC_Hsl.PLCStatus.Connected
+            return Global.PLC_STATUS == OmronPLC_Hsl.PLCStatus.Connected
                 ? PLCConnectionState.Connected
                 : PLCConnectionState.Disconnected;
         }

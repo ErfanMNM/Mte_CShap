@@ -4,6 +4,8 @@ using GProject.ProductionOrderHelpers;
 using GProject.DataPoolHelper;
 using GProject.IoT;
 using GProject.PLCHelpers;
+using Glib.Omron;
+using Glib.PLCHelpers;
 using Serilog;
 using GProject.Infrastructure;
 
@@ -68,10 +70,10 @@ namespace GProject.Production
         public bool IsDeviceReady { get; set; }
         public string LastWarning { get; set; } = "";
 
-        // Trạng thái kết nối thiết bị
-        public bool IsPLCConnected { get; private set; }
-        public bool IsCameraConnected { get; private set; }
-        public string DeviceDisconnectReason { get; private set; } = "";
+        // Trạng thái kết nối thiết bị - đọc từ Global (single source of truth)
+        public bool IsPLCConnected => Global.PLC_STATUS == OmronPLC_Hsl.PLCStatus.Connected;
+        public bool IsCameraConnected => Global.Camera_STATUS == eOmronCodeReaderState.Connected;
+        private string _deviceDisconnectReason = "";
 
         // Cờ đánh dấu đang xử lý mã từ camera (để tránh race condition khi camera gửi liên tục)
         private volatile bool _isProcessingCameraCode = false;
@@ -286,8 +288,7 @@ namespace GProject.Production
 
         private ProductionStateMachine()
         {
-            IsPLCConnected = true;
-            IsCameraConnected = true;
+            // Device status được đọc từ Global, không cần khởi tạo ở đây
         }
 
         /// <summary>
@@ -1166,9 +1167,9 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     break;
 
                 case e_ProductionState.DeviceError:
-                    if (!string.IsNullOrEmpty(DeviceDisconnectReason))
+                    if (!string.IsNullOrEmpty(_deviceDisconnectReason))
                     {
-                        Log.Error("[DeviceError] {Reason}", DeviceDisconnectReason);
+                        Log.Error("[DeviceError] {Reason}", _deviceDisconnectReason);
                     }
                     TryReconnectDevices();
                     break;
@@ -1179,33 +1180,36 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
         }
 
         /// <summary>
-        /// Xử lý thay đổi trạng thái thiết bị (PLC/Camera)
+        /// Xử lý thay đổi trạng thái thiết bị (PLC/Camera) - đọc trạng thái từ Global
         /// </summary>
-        public void OnDeviceStateChanged(string deviceName, bool isConnected, string message)
+        public void OnDeviceStateChanged(string deviceName, string message)
         {
             lock (_stateLock)
             {
+                bool isConnected;
                 if (deviceName == "PLC")
-                    IsPLCConnected = isConnected;
+                    isConnected = Global.PLC_STATUS == OmronPLC_Hsl.PLCStatus.Connected;
                 else if (deviceName == "Camera")
-                    IsCameraConnected = isConnected;
+                    isConnected = Global.Camera_STATUS == eOmronCodeReaderState.Connected;
+                else
+                    return;
 
                 if (!isConnected)
                 {
-                    DeviceDisconnectReason = $"{deviceName}: {message}";
+                    _deviceDisconnectReason = $"{deviceName}: {message}";
                     Log.Warning("[Device] {Device} disconnected: {Msg}", deviceName, message);
 
                     if (CurrentState == e_ProductionState.Running ||
                         CurrentState == e_ProductionState.Ready ||
                         CurrentState == e_ProductionState.Paused)
                     {
-                        SetState(e_ProductionState.DeviceError, DeviceDisconnectReason);
+                        SetState(e_ProductionState.DeviceError, _deviceDisconnectReason);
                     }
                 }
                 else
                 {
                     Log.Information("[Device] {Device} reconnected", deviceName);
-                    // Không xóa DeviceDisconnectReason ở đây - để TryReconnectDevices tự quyết định
+                    // Không xóa _deviceDisconnectReason ở đây - để TryReconnectDevices tự quyết định
                     // khi CẢ HAI thiết bị đều connected thì mới clear và resume.
                 }
             }
@@ -1216,10 +1220,13 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
         /// </summary>
         private void TryReconnectDevices()
         {
-            if (IsPLCConnected && IsCameraConnected && !string.IsNullOrEmpty(DeviceDisconnectReason))
+            bool plcConnected = Global.PLC_STATUS == OmronPLC_Hsl.PLCStatus.Connected;
+            bool cameraConnected = Global.Camera_STATUS == eOmronCodeReaderState.Connected;
+            
+            if (plcConnected && cameraConnected && !string.IsNullOrEmpty(_deviceDisconnectReason))
             {
                 Log.Information("[DeviceError] All devices reconnected, resuming...");
-                DeviceDisconnectReason = "";
+                _deviceDisconnectReason = "";
 
                 if (PreviousState == e_ProductionState.Running ||
                     PreviousState == e_ProductionState.Paused)

@@ -952,23 +952,23 @@ const healthOk = !apiStatus.error;
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                       <StatCard label="Mã PO" value={status.orderNo || "-"} mono />
                       <StatCard label="Sản phẩm" value={status.productName || "-"} />
-                      <StatCard label="SL Order" value={status.orderQty.toLocaleString()} />
-                      <StatCard label="Tiến độ" value={`${status.progressPercent.toFixed(1)}%`} color="blue" />
+                      <StatCard label="SL Order" value={(status.orderQty ?? 0).toLocaleString()} />
+                      <StatCard label="Tiến độ" value={`${(status.progressPercent ?? 0).toFixed(1)}%`} color="blue" />
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                      <StatCard label="Tổng đếm" value={status.totalCount.toLocaleString()} color="slate" />
-                      <StatCard label="Pass ✓" value={status.passTotal.toLocaleString()} color="green" />
-                      <StatCard label="Fail ✗" value={status.failTotal.toLocaleString()} color="red" />
-                      <StatCard label="Trùng ⚡" value={status.duplicateCount.toLocaleString()} color="amber" />
+                      <StatCard label="Tổng đếm" value={(status.totalCount ?? 0).toLocaleString()} color="slate" />
+                      <StatCard label="Pass ✓" value={(status.passTotal ?? 0).toLocaleString()} color="green" />
+                      <StatCard label="Fail ✗" value={(status.failTotal ?? 0).toLocaleString()} color="red" />
+                      <StatCard label="Trùng ⚡" value={(status.duplicateCount ?? 0).toLocaleString()} color="amber" />
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <StatCard label="Không tìm" value={status.notFoundCount.toLocaleString()} color="slate" />
-                      <StatCard label="Không đọc" value={status.readFailCount.toLocaleString()} color="slate" />
-                      <StatCard label="Sai định dạng" value={(status.formatFailCount ?? 0).toLocaleString()} color="red" />
-                      <StatCard label="Lỗi thùng" value={status.errorCount.toLocaleString()} color="red" />
+                      <StatCard label="Không tìm" value={(status.notFoundCount ?? 0).toLocaleString()} color="slate" />
+                      <StatCard label="Không đọc" value={(status.readFailCount ?? 0).toLocaleString()} color="slate" />
+                      <StatCard label="Sai định dạng" value={((status.formatFailCount) ?? 0).toLocaleString()} color="red" />
+                      <StatCard label="Lỗi thùng" value={(status.errorCount ?? 0).toLocaleString()} color="red" />
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-                      <StatCard label="Timeout ACK" value={status.timeoutCount.toLocaleString()} color="red" />
+                      <StatCard label="Timeout ACK" value={(status.timeoutCount ?? 0).toLocaleString()} color="red" />
                       <div className="hidden md:block" />
                       <div className="hidden md:block" />
                       <div className="hidden md:block" />
@@ -1008,110 +1008,6 @@ const healthOk = !apiStatus.error;
             </div>
           )}
 
-          {/* Production Date Section */}
-          {status?.hasPO && isReady && (
-            <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
-              <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
-                <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-blue-600" /> Ngày Sản Xuất
-                </h2>
-              </div>
-              <div className="p-4 xl:p-6">
-                {!isEditingDate ? (
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                        Ngày Sản Xuất hiện tại
-                      </div>
-                      <div className="text-xl font-black text-slate-800">
-                        {status.productionDate ? new Date(status.productionDate).toLocaleDateString('vi-VN', {
-                          year: 'numeric', month: '2-digit', day: '2-digit'
-                        }) : "—"}
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleEditProductionDate}
-                      disabled={!isReady || isSavingDate}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                        isReady
-                          ? "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                          : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                      }`}
-                    >
-                      <Edit3 className="w-4 h-4" />
-                      Sửa Ngày SX
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <div className="flex-1 min-w-[200px]">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">
-                          Chọn ngày mới
-                        </label>
-                        <input
-                          type="date"
-                          value={newProductionDate}
-                          onChange={(e) => setNewProductionDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        />
-                      </div>
-                      <div className="flex items-end gap-2">
-                        <button
-                          onClick={handleSaveProductionDate}
-                          disabled={isSavingDate || !newProductionDate}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                            isSavingDate || !newProductionDate
-                              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                              : "bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20"
-                          }`}
-                        >
-                          <Check className="w-4 h-4" />
-                          {isSavingDate ? "Đang lưu..." : "Lưu"}
-                        </button>
-                        <button
-                          onClick={handleCancelEditDate}
-                          disabled={isSavingDate}
-                          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all"
-                        >
-                          <XCircle className="w-4 h-4" />
-                          Hủy
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-xs text-amber-600 flex items-center gap-1">
-                      <AlertTriangle className="w-3.5 h-3.5" />
-                      Chỉ có thể sửa ngày khi đang ở trạng thái Ready. Ngày mới sẽ áp dụng cho các sản phẩm quét sau khi lưu.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Production Date info when not in Ready state */}
-          {status?.hasPO && !isReady && (
-            <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-slate-400" />
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    Ngày Sản Xuất
-                  </div>
-                  <div className="text-sm font-semibold text-slate-700">
-                    {status.productionDate ? new Date(status.productionDate).toLocaleDateString('vi-VN', {
-                      year: 'numeric', month: '2-digit', day: '2-digit'
-                    }) : "—"}
-                  </div>
-                </div>
-                {!isRunning && (
-                  <span className="ml-auto text-xs text-slate-400">
-                    Sửa ngày khi ở trạng thái Ready
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right Column: Carton Info */}
@@ -1372,6 +1268,111 @@ const healthOk = !apiStatus.error;
               </div>
             </div>
           </div>
+
+          {/* Production Date Section */}
+          {status?.hasPO && isReady && (
+            <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="bg-slate-50/80 border-b border-slate-100 px-4 xl:px-6 py-3.5">
+                <h2 className="text-[13px] font-bold tracking-wide uppercase text-slate-800 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-blue-600" /> Ngày Sản Xuất
+                </h2>
+              </div>
+              <div className="p-4 xl:p-6">
+                {!isEditingDate ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        Ngày Sản Xuất hiện tại
+                      </div>
+                      <div className="text-lg font-black text-slate-800">
+                        {status.productionDate ? new Date(status.productionDate).toLocaleDateString('vi-VN', {
+                          year: 'numeric', month: '2-digit', day: '2-digit'
+                        }) : "—"}
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleEditProductionDate}
+                      disabled={!isReady || isSavingDate}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                        isReady
+                          ? "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                          : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      }`}
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      Sửa Ngày SX
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex-1 min-w-[200px]">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">
+                          Chọn ngày mới
+                        </label>
+                        <input
+                          type="date"
+                          value={newProductionDate}
+                          onChange={(e) => setNewProductionDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        />
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <button
+                          onClick={handleSaveProductionDate}
+                          disabled={isSavingDate || !newProductionDate}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                            isSavingDate || !newProductionDate
+                              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                              : "bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20"
+                          }`}
+                        >
+                          <Check className="w-4 h-4" />
+                          {isSavingDate ? "Đang lưu..." : "Lưu"}
+                        </button>
+                        <button
+                          onClick={handleCancelEditDate}
+                          disabled={isSavingDate}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Hủy
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-amber-600 flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Chỉ có thể sửa ngày khi đang ở trạng thái Ready. Ngày mới sẽ áp dụng cho các sản phẩm quét sau khi lưu.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Production Date info when not in Ready state */}
+          {status?.hasPO && !isReady && (
+            <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-slate-400" />
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    Ngày Sản Xuất
+                  </div>
+                  <div className="text-sm font-semibold text-slate-700">
+                    {status.productionDate ? new Date(status.productionDate).toLocaleDateString('vi-VN', {
+                      year: 'numeric', month: '2-digit', day: '2-digit'
+                    }) : "—"}
+                  </div>
+                </div>
+                {!isRunning && (
+                  <span className="ml-auto text-xs text-slate-400">
+                    Sửa ngày khi ở trạng thái Ready
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
         </div>
       </div>

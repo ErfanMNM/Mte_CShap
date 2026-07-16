@@ -2,6 +2,7 @@
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Newtonsoft.Json;
+using Serilog;
 
 namespace GProject.PLCHelpers
 {
@@ -38,7 +39,7 @@ namespace GProject.PLCHelpers
                 ApplyData(localData);
                 return false;
             }
-        }
+}
 
         public static string Get(string key)
         {
@@ -48,44 +49,63 @@ namespace GProject.PLCHelpers
 
         private static Dictionary<string, string> LoadFromGoogleSheet(string spreadsheetId, string range)
         {
-            GoogleCredential credential;
-            string? folder = Path.GetDirectoryName(FilePath);
-            if (!string.IsNullOrEmpty(folder) && !Directory.Exists(folder))
+            try
             {
-                Directory.CreateDirectory(folder);
-            }
-            using (var stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
-            {
-                credential = GoogleCredential.FromStream(stream)
-                    .CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
-            }
-
-            var service = new SheetsService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "GProject-PLCAddress"
-            });
-
-            var request = service.Spreadsheets.Values.Get(spreadsheetId, range);
-            var response = request.Execute();
-            var result = new Dictionary<string, string>();
-
-            if (response.Values != null && response.Values.Count > 0)
-            {
-                foreach (var row in response.Values.Skip(1))
+                GoogleCredential credential;
+                string? folder = Path.GetDirectoryName(FilePath);
+                if (!string.IsNullOrEmpty(folder) && !Directory.Exists(folder))
                 {
-                    if (row.Count >= 3)
+                    Directory.CreateDirectory(folder);
+                }
+                using (var stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
+                {
+                    credential = GoogleCredential.FromStream(stream)
+                        .CreateScoped(SheetsService.Scope.SpreadsheetsReadonly);
+                }
+
+                var service = new SheetsService(new BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "GProject"
+                });
+
+                var request = service.Spreadsheets.Values.Get(spreadsheetId, range);
+                Log.Information("[GoogleSheet] Requesting spreadsheetId={Id}, range={Range}", spreadsheetId, range);
+
+                  var  response = request.Execute();
+
+                Log.Information("[GoogleSheet] Response received. Values is null: {IsNull}, Count: {Count}", 
+                    response.Values == null, response.Values?.Count ?? -1);
+                
+                var result = new Dictionary<string, string>();
+
+                if (response.Values != null && response.Values.Count > 0)
+                {
+                    foreach (var row in response.Values.Skip(1))
                     {
-                        string? name = row[0]?.ToString()?.Trim();
-                        string? dm = row[2]?.ToString()?.Trim();
-                        if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(dm))
+                        if (row.Count >= 3)
                         {
-                            result[name] = dm;
+                            string? name = row[0]?.ToString()?.Trim();
+                            string? dm = row[2]?.ToString()?.Trim();
+                            if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(dm))
+                            {
+                                result[name] = dm;
+                            }
                         }
                     }
                 }
+                return result;
             }
-            return result;
+            catch (Google.GoogleApiException ex)
+            {
+                Log.Error(ex, "[GoogleSheet] API Error: {Message}, Status: {Status}", ex.Message, ex.HttpStatusCode);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[GoogleSheet] Unexpected error loading from Google Sheet");
+                throw;
+            }
         }
 
         private static void ApplyData(Dictionary<string, string> data)

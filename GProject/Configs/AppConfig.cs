@@ -32,8 +32,8 @@ public class AppConfig
         PLC_IP = "192.168.1.1";
         PLC_Port = 9600;
 
-        Camera_Ip = "192.168.1.100";
-        Camera_Port = 5000;
+        Camera_Ip = "127.0.0.1";
+        Camera_Port = 6000;
 
         API_HostIP = "127.0.0.1";
         API_Port = 9999;

@@ -1,16 +1,16 @@
 ﻿using Glib.Omron;
-using GProject.DataPoolHelper;
+using Glib.PLCHelpers;
 using GProject.Auth;
+using GProject.Config;
+using GProject.DataPoolHelper;
+using GProject.Infrastructure;
 using GProject.PLCHelpers;
 using GProject.Production;
 using GProject.ProductionOrderHelpers;
-using GProject.Infrastructure;
+using HslCommunication;
 using Raycoon.Serilog.Sinks.SQLite.Options;
 using Serilog;
-using GProject.Config;
-using Glib.PLCHelpers;
 using System.ComponentModel;
-using HslCommunication;
 
 namespace GProject
 {
@@ -109,8 +109,8 @@ namespace GProject
 
             //Tải cấu hình
             _config = ConfigStorage.Load<AppConfig>() ?? new AppConfig();
-           _config.SetDefault();
-           ConfigStorage.Save(_config);
+           //_config.SetDefault();
+          // ConfigStorage.Save(_config);
 
             // Initialize Auth database
             AuthDb.EnsureCreated();
@@ -151,16 +151,17 @@ namespace GProject
                 // duy nhất (Global.omronPLC), toàn bộ code (camera pipeline, API) cùng
                 // chia sẻ instance này để tránh 2 kết nối song song.
                 const string spreadsheetId = "1V2xjY6AA4URrtcwUorQE54Ud5KyI7Ev2hpDPMMcXVTI";
+                PLCAddressWithGoogleSheetHelper.FilePath = Path.Combine($@"C:/GProject/Configs/Google.json");
                 bool sheetLoaded = PLCAddressWithGoogleSheetHelper.Init(
-                    spreadsheetId,
-                    Environment.GetEnvironmentVariable("PLC_GOOGLE_SHEET_RANGE") ?? "VINA CF!A1:D100");
-                Log.Information("[PLC] Address map loaded from {Source}, keys: {Count}",
-                    sheetLoaded ? "Google Sheet" : "local cache",
-                    PLCAddressWithGoogleSheetHelper.AddressMap.Count);
+                   spreadsheetId,"VINA_CF!A1:D100");
+
+                //Log.Information("[PLC] Address map loaded from {Source}, keys: {Count}",
+                //    sheetLoaded ? "Google Sheet" : "local cache",
+                //    PLCAddressWithGoogleSheetHelper.AddressMap.Count);
 
                 Global.omronPLC = new OmronPLC_Hsl();
                 Global.omronPLC.PLC_Ready_DM = PLCAddressWithGoogleSheetHelper.Get("PLC_Ready_DM") ?? "D16";
-                Global.omronPLC.PLC_IP = _config.PLC_IP ?? "127.0.0.1";
+                Global.omronPLC.PLC_IP = PLCAddressWithGoogleSheetHelper.Get("PLC_IP") ?? "127.0.0.1";
                 Global.omronPLC.PLC_PORT = _config.PLC_Port > 0 ? _config.PLC_Port : 9600;
                 Global.omronPLC.InitPLC();
                 Global.omronPLC.PLCStatus_OnChange += OmronPLC_PLCStatus_OnChange;
@@ -174,10 +175,8 @@ namespace GProject
                     _config.CameraAckTimeoutMs, _config.CameraAckPollIntervalMs);
 
                 // Khởi tạo 1 camera duy nhất (vừa active vừa phân làn)
-                string cameraIp = _config.Camera_Ip ?? Environment.GetEnvironmentVariable("CAMERA_IP") ?? "127.0.0.1";
-                int cameraPort = _config.Camera_Port > 0
-                    ? _config.Camera_Port
-                    : (int.TryParse(Environment.GetEnvironmentVariable("CAMERA_PORT"), out var cp) ? cp : 9001);
+                string cameraIp = _config.Camera_Ip ?? "127.0.0.1";
+                int cameraPort = _config.Camera_Port;
                 _CR_Camera = new OmronCodeReader(OmronCodeReader.e_CodeReaderModel.V430, cameraIp, cameraPort);
                 _CR_Camera.ClientCallback += (state, data) => OnCameraEvent("camera", state, data);
                 _CR_Camera.Connect();
@@ -223,8 +222,7 @@ namespace GProject
                     {
                         Global.Camera_STATUS = eOmronCodeReaderState.Connected;
                         _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
-                        ProductionStateMachine.Instance.OnDeviceStateChanged(
-                            "Camera", true, data);
+                        ProductionStateMachine.Instance.OnDeviceStateChanged("Camera", data);
                     }
                     
                     break;
@@ -233,8 +231,7 @@ namespace GProject
                     {
                         Global.Camera_STATUS = eOmronCodeReaderState.Disconnected;
                         _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
-                        ProductionStateMachine.Instance.OnDeviceStateChanged(
-                            "Camera", false, data);
+                        ProductionStateMachine.Instance.OnDeviceStateChanged("Camera", data);
                     }
 
                     break;
@@ -243,12 +240,8 @@ namespace GProject
                     {
                         Global.Camera_STATUS = eOmronCodeReaderState.Reconnecting;
                         _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
-                        ProductionStateMachine.Instance.OnDeviceStateChanged(
-                            "Camera", false, data);
+                        ProductionStateMachine.Instance.OnDeviceStateChanged("Camera", data);
                     }
-                    _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
-                    ProductionStateMachine.Instance.OnDeviceStateChanged(
-                        "Camera", state == eOmronCodeReaderState.Connected, data);
                     break;
 
                 case eOmronCodeReaderState.Received:
@@ -399,7 +392,7 @@ namespace GProject
                         Global.PLC_STATUS = OmronPLC_Hsl.PLCStatus.Connected;
                     }
                     Log.Information("[PLC] Connected: {Message}", e.Message);
-                    ProductionStateMachine.Instance.OnDeviceStateChanged("PLC", true, e.Message);
+                    ProductionStateMachine.Instance.OnDeviceStateChanged("PLC", e.Message);
                     break;
                 case OmronPLC_Hsl.PLCStatus.Disconnect:
                     if (Global.PLC_STATUS != OmronPLC_Hsl.PLCStatus.Disconnect)
@@ -407,7 +400,7 @@ namespace GProject
                         Global.PLC_STATUS = OmronPLC_Hsl.PLCStatus.Disconnect;
                     }
                     Log.Warning("[PLC] Disconnected: {Message}", e.Message);
-                    ProductionStateMachine.Instance.OnDeviceStateChanged("PLC", false, e.Message);
+                    ProductionStateMachine.Instance.OnDeviceStateChanged("PLC", e.Message);
                     break;
                 default:
                     if (Global.PLC_STATUS != OmronPLC_Hsl.PLCStatus.Disconnect)
