@@ -46,6 +46,7 @@ export interface CameraChannelSnapshot {
   state: CameraState;
   lastCode: string;
   lastAt: string | null;
+  lastScan: { code: string; status: ProductionStatus; at: string } | null;
 }
 
 export interface CameraSnapshot {

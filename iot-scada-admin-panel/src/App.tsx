@@ -434,9 +434,9 @@ const ScadaMonitorView = () => {
   const wsUrl =
     import.meta.env.VITE_CAMERA_WS_URL || "ws://localhost:9999/ws/camera";
 
-  const { logs, reconnect: reconnectCamera, lastScan } = useCameraSocket({
+  const { logs, reconnect: reconnectCamera } = useCameraSocket({
     url: wsUrl,
-    syncToStore: false, // REST polling now handles store sync
+    syncToStore: true, // Sync to store so lastScan persists across tab switches
   });
 
   // PLC & Production — REST polling via /api/devices/status every 2000ms
@@ -448,6 +448,9 @@ const ScadaMonitorView = () => {
   const appStatus = useDeviceStore((s) => s.production);
   const productionConnected = useDeviceStore((s) => s.productionConnected);
   const apiStatus = useDeviceStore((s) => s.apiStatus);
+
+  // Get lastScan from store (persists across tab switches)
+  const lastScan = cameraStatus.camera.lastScan;
 
   // ====== Helpers ======
 

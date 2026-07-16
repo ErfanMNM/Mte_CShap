@@ -34,7 +34,7 @@ export interface LastScan {
 }
 
 const initialSnapshot: CameraSnapshot = {
-  camera: { state: "Reconnecting", lastCode: "", lastAt: null },
+  camera: { state: "Reconnecting", lastCode: "", lastAt: null, lastScan: null },
   connected: false,
   clientCount: 0,
   lastEventAt: null,
@@ -47,9 +47,20 @@ export function useCameraSocket({
   maxReconnectAttempts = 10,
   syncToStore = true,
 }: UseCameraSocketOptions) {
-  const [snapshot, setSnapshot] = useState<CameraSnapshot>(initialSnapshot);
+  // Init from store if available, otherwise use initial
+  const storeSnapshot = useDeviceStore((s) => syncToStore ? s.camera : null);
+  const initialFromStore: CameraSnapshot | null = storeSnapshot ? {
+    camera: storeSnapshot.camera,
+    connected: false,
+    clientCount: storeSnapshot.clientCount,
+    lastEventAt: storeSnapshot.lastEventAt,
+  } : null;
+
+  const [snapshot, setSnapshot] = useState<CameraSnapshot>(initialFromStore || initialSnapshot);
   const [logs, setLogs] = useState<CameraLogEntry[]>([]);
-  const [lastScan, setLastScan] = useState<LastScan | null>(null);
+  const [lastScan, setLastScan] = useState<LastScan | null>(
+    initialFromStore?.camera.lastScan || null
+  );
   const wsRef = useRef<WebSocket | null>(null);
   const attemptsRef = useRef(0);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -115,14 +126,15 @@ export function useCameraSocket({
           // Vẫn đẩy vào logs để tab THÔNG BÁO CHUNG hiển thị.
           if (data.state === "CodeScanned") {
             const codeMsg = data as CameraCodeStatusMessage;
-            setLastScan({
+            const newLastScan: LastScan = {
               code: codeMsg.data ?? "",
               status: codeMsg.status,
               plcSent: !!codeMsg.plcSent,
               cartonCode: codeMsg.cartonCode ?? null,
               cartonId: codeMsg.cartonId ?? null,
               at: codeMsg.at,
-            });
+            };
+            setLastScan(newLastScan);
             const eventMsg: CameraEventMessage = {
               camera: codeMsg.camera,
               state: "CodeScanned",
@@ -138,6 +150,7 @@ export function useCameraSocket({
                   state: "CodeScanned" as const,
                   lastCode: codeMsg.data || s.camera.lastCode,
                   lastAt: codeMsg.at,
+                  lastScan: newLastScan,
                 },
               };
               if (syncToStore) storeSetCamera(newSnapshot);
