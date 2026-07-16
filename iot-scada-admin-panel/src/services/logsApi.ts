@@ -79,6 +79,41 @@ export const logsApi = {
     }
     return response.data.data;
   },
+
+  async exportCsv(params: LogsQueryParams = {}): Promise<Blob> {
+    const search = new URLSearchParams();
+    const fromIso = toIsoUtc(params.from);
+    const toIso = toIsoUtc(params.to);
+    if (fromIso) search.set("from", fromIso);
+    if (toIso) search.set("to", toIso);
+    if (params.level) search.set("level", params.level);
+    if (params.tag) search.set("tag", params.tag);
+    if (params.q) search.set("q", params.q);
+    search.set("pageSize", "10000");
+    search.set("sort", params.sort ?? "desc");
+
+    const response = await apiClient.get(`/api/logs/export/csv?${search.toString()}`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
+
+  async exportPdf(params: LogsQueryParams = {}): Promise<Blob> {
+    const search = new URLSearchParams();
+    const fromIso = toIsoUtc(params.from);
+    const toIso = toIsoUtc(params.to);
+    if (fromIso) search.set("from", fromIso);
+    if (toIso) search.set("to", toIso);
+    if (params.level) search.set("level", params.level);
+    if (params.tag) search.set("tag", params.tag);
+    if (params.q) search.set("q", params.q);
+    search.set("sort", params.sort ?? "desc");
+
+    const response = await apiClient.get(`/api/logs/export/pdf?${search.toString()}`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
 };
 
 export default logsApi;
