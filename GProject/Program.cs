@@ -110,7 +110,7 @@ namespace GProject
             //Tải cấu hình
             _config = ConfigStorage.Load<AppConfig>() ?? new AppConfig();
            //_config.SetDefault();
-          // ConfigStorage.Save(_config);
+         // ConfigStorage.Save(_config);
 
             // Initialize Auth database
             AuthDb.EnsureCreated();
@@ -222,7 +222,6 @@ namespace GProject
                     {
                         Global.Camera_STATUS = eOmronCodeReaderState.Connected;
                         _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
-                        ProductionStateMachine.Instance.OnDeviceStateChanged("Camera", data);
                     }
                     
                     break;
@@ -231,7 +230,6 @@ namespace GProject
                     {
                         Global.Camera_STATUS = eOmronCodeReaderState.Disconnected;
                         _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
-                        ProductionStateMachine.Instance.OnDeviceStateChanged("Camera", data);
                     }
 
                     break;
@@ -240,7 +238,6 @@ namespace GProject
                     {
                         Global.Camera_STATUS = eOmronCodeReaderState.Reconnecting;
                         _ = CameraHub.Instance.BroadcastAsync(camera, state, data);
-                        ProductionStateMachine.Instance.OnDeviceStateChanged("Camera", data);
                     }
                     break;
 
@@ -392,7 +389,7 @@ namespace GProject
                         Global.PLC_STATUS = OmronPLC_Hsl.PLCStatus.Connected;
                     }
                     Log.Information("[PLC] Connected: {Message}", e.Message);
-                    ProductionStateMachine.Instance.OnDeviceStateChanged("PLC", e.Message);
+
                     break;
                 case OmronPLC_Hsl.PLCStatus.Disconnect:
                     if (Global.PLC_STATUS != OmronPLC_Hsl.PLCStatus.Disconnect)
@@ -400,7 +397,7 @@ namespace GProject
                         Global.PLC_STATUS = OmronPLC_Hsl.PLCStatus.Disconnect;
                     }
                     Log.Warning("[PLC] Disconnected: {Message}", e.Message);
-                    ProductionStateMachine.Instance.OnDeviceStateChanged("PLC", e.Message);
+
                     break;
                 default:
                     if (Global.PLC_STATUS != OmronPLC_Hsl.PLCStatus.Disconnect)

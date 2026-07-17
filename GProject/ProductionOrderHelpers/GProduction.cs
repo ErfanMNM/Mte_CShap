@@ -149,6 +149,8 @@ namespace GProject.ProductionOrderHelpers
                 => ProductionOrderHelpers.PORecord.GetUnusedCount(orderNo);
             public static int GetPackedCount(string orderNo)
                 => ProductionOrderHelpers.PORecord.GetPackedCount(orderNo);
+            public static string? GetLastPackedCartonCode(string orderNo)
+                => ProductionOrderHelpers.PORecord.GetLastPackedCartonCode(orderNo);
             public static int GetCodeCountInCarton(string orderNo, string cartonCode)
                 => ProductionOrderHelpers.PORecord.GetCodeCountInCarton(orderNo, cartonCode);
 

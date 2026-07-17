@@ -1102,6 +1102,10 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
         /// </summary>
         private void ProcessState()
         {
+            if(Global.PLC_STATUS != OmronPLC_Hsl.PLCStatus.Connected || Global.Camera_STATUS != eOmronCodeReaderState.Connected)
+            {
+                SetState(e_ProductionState.DeviceError, "PLC disconnected");
+            }
             switch (CurrentState)
             {
                 case e_ProductionState.NeedLogin:
@@ -1167,10 +1171,6 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     break;
 
                 case e_ProductionState.DeviceError:
-                    if (!string.IsNullOrEmpty(_deviceDisconnectReason))
-                    {
-                        Log.Error("[DeviceError] {Reason}", _deviceDisconnectReason);
-                    }
                     TryReconnectDevices();
                     break;
                 case e_ProductionState.Error:
@@ -1179,41 +1179,8 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
             }
         }
 
-        /// <summary>
-        /// Xử lý thay đổi trạng thái thiết bị (PLC/Camera) - đọc trạng thái từ Global
-        /// </summary>
-        public void OnDeviceStateChanged(string deviceName, string message)
-        {
-            lock (_stateLock)
-            {
-                bool isConnected;
-                if (deviceName == "PLC")
-                    isConnected = Global.PLC_STATUS == OmronPLC_Hsl.PLCStatus.Connected;
-                else if (deviceName == "Camera")
-                    isConnected = Global.Camera_STATUS == eOmronCodeReaderState.Connected;
-                else
-                    return;
 
-                if (!isConnected)
-                {
-                    _deviceDisconnectReason = $"{deviceName}: {message}";
-                    Log.Warning("[Device] {Device} disconnected: {Msg}", deviceName, message);
 
-                    if (CurrentState == e_ProductionState.Running ||
-                        CurrentState == e_ProductionState.Ready ||
-                        CurrentState == e_ProductionState.Paused)
-                    {
-                        SetState(e_ProductionState.DeviceError, _deviceDisconnectReason);
-                    }
-                }
-                else
-                {
-                    Log.Information("[Device] {Device} reconnected", deviceName);
-                    // Không xóa _deviceDisconnectReason ở đây - để TryReconnectDevices tự quyết định
-                    // khi CẢ HAI thiết bị đều connected thì mới clear và resume.
-                }
-            }
-        }
 
         /// <summary>
         /// Tự động reconnect và resume khi thiết bị kết nối lại
@@ -1228,15 +1195,9 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 Log.Information("[DeviceError] All devices reconnected, resuming...");
                 _deviceDisconnectReason = "";
 
-                if (PreviousState == e_ProductionState.Running ||
-                    PreviousState == e_ProductionState.Paused)
-                {
                     SetState(PreviousState, "devices reconnected");
-                }
-                else
-                {
-                    SetState(e_ProductionState.Ready, "devices reconnected");
-                }
+                    //SetState(e_ProductionState.Ready, "devices reconnected");
+
             }
         }
 
@@ -1412,27 +1373,40 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     }
 
                     // Reload trạng thái đang chạy từ DB để phục hồi khi restart (mất điện)
-                    // 1) Tìm cartonID đang chạy dở (Start_Datetime != '0' AND Completed_Datetime = '0')
-                    //    Nếu không có thì lấy carton đầu tiên chưa Completed
-                    var lastRunning = Dictionary_Cartons.Values
-                        .Where(c => c.StartDatetime != "0" && c.CompletedDatetime == "0")
-                        .OrderBy(c => c.Id)
-                        .FirstOrDefault();
+                    // Ưu tiên thùng đã pack có sản phẩm nhiều nhất, không dùng StartDatetime
+                    string? lastCartonCode = GProduction.PORecordHelper.GetLastPackedCartonCode(ProductionData.OrderNo);
 
-                    if (lastRunning != null)
+                    if (!string.IsNullOrEmpty(lastCartonCode))
                     {
-                        ActiveCounter.CartonID = lastRunning.Id;
-                        ActiveCounter.CartonCode = lastRunning.CartonCode;
+                        var lastCarton = Dictionary_Cartons.Values
+                            .FirstOrDefault(c => c.CartonCode == lastCartonCode);
+
+                        if (lastCarton != null)
+                        {
+                            int packedCount = GProduction.PORecordHelper.GetCodeCountInCarton(
+                                ProductionData.OrderNo, lastCartonCode);
+
+                            if (packedCount >= ProductionData.CartonCapacity)
+                            {
+                                ActiveCounter.CartonID = lastCarton.Id + 1;
+                                ActiveCounter.CartonCode = "";
+                            }
+                            else
+                            {
+                                ActiveCounter.CartonID = lastCarton.Id;
+                                ActiveCounter.CartonCode = lastCartonCode;
+                            }
+                        }
+                        else
+                        {
+                            ActiveCounter.CartonID = 1;
+                            ActiveCounter.CartonCode = "";
+                        }
                     }
                     else
                     {
-                        // Tìm carton chưa đóng đầu tiên (Completed_Datetime = '0')
-                        var firstOpen = Dictionary_Cartons.Values
-                            .Where(c => c.CompletedDatetime == "0")
-                            .OrderBy(c => c.Id)
-                            .FirstOrDefault();
-                        ActiveCounter.CartonID = firstOpen?.Id ?? 1;
-                        ActiveCounter.CartonCode = firstOpen?.CartonCode ?? "";
+                        ActiveCounter.CartonID = 1;
+                        ActiveCounter.CartonCode = "";
                     }
 
                     // 2) Tính lại PackageCounter.PassTotal = số mã đã pack trong carton hiện tại

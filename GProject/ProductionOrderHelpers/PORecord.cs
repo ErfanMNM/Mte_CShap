@@ -243,6 +243,28 @@ namespace GProject.ProductionOrderHelpers
         }
 
         /// <summary>
+        /// Lấy mã thùng có nhiều sản phẩm đã đóng nhất
+        /// </summary>
+        public static string? GetLastPackedCartonCode(string orderNo)
+        {
+            try
+            {
+                string dbPath = Config.GetPODBPath(orderNo);
+                if (!File.Exists(dbPath)) return null;
+                using var con = new SqliteConnection($"Data Source={dbPath}");
+                con.Open();
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = @"SELECT cartonCode FROM UniqueCodes
+                                    WHERE cartonCode <> '0'
+                                    GROUP BY cartonCode
+                                    ORDER BY COUNT(*) DESC
+                                    LIMIT 1;";
+                return cmd.ExecuteScalar()?.ToString();
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
         /// Lấy số mã trong một thùng cụ thể
         /// </summary>
         public static int GetCodeCountInCarton(string orderNo, string cartonCode)
