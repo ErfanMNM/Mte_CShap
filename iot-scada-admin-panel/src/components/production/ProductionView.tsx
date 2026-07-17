@@ -654,27 +654,30 @@ const healthOk = !apiStatus.error;
         </div>
       </div>
 
-      {/* Toast Notifications */}
+      {/* Toast Notifications - fixed góc dưới phải, không chiếm chỗ layout */}
       {(error || success) && (
-        <div
-          className={`flex items-center gap-3 px-4 py-3 rounded-2xl border shrink-0 animate-in slide-in-from-top-2 ${
-            error
-              ? "bg-red-50 border-red-200 text-red-800"
-              : "bg-green-50 border-green-200 text-green-800"
-          }`}
-        >
-          {error ? (
-            <AlertCircle className="w-5 h-5 shrink-0" />
-          ) : (
-            <Check className="w-5 h-5 shrink-0" />
-          )}
-          <span className="text-sm font-semibold flex-1">{error ? t(error) : t(success || "")}</span>
-          <button
-            onClick={() => { setError(null); setSuccess(null); }}
-            className="p-1 hover:bg-white/50 rounded-lg transition-colors"
+        <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
+          <div
+            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-lg backdrop-blur-sm min-w-[280px] max-w-md animate-in slide-in-from-bottom-4 ${
+              error
+                ? "bg-red-50/95 border-red-200 text-red-800 shadow-red-500/10"
+                : "bg-green-50/95 border-green-200 text-green-800 shadow-green-500/10"
+            }`}
           >
-            <XCircle className="w-4 h-4" />
-          </button>
+            {error ? (
+              <AlertCircle className="w-5 h-5 shrink-0" />
+            ) : (
+              <Check className="w-5 h-5 shrink-0" />
+            )}
+            <span className="text-sm font-semibold flex-1">{error ? t(error) : t(success || "")}</span>
+            <button
+              onClick={() => { setError(null); setSuccess(null); }}
+              className="p-1 hover:bg-white/60 rounded-lg transition-colors shrink-0"
+              aria-label="Đóng thông báo"
+            >
+              <XCircle className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 

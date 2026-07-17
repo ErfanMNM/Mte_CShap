@@ -43,7 +43,7 @@ import POManagerView from "./components/pomanager/POManagerView";
 import DataPoolView from "./components/datapool/DataPoolView";
 import ProductionView from "./components/production/ProductionView";
 import { PLCSettingsView } from "./components/plcsetting/PLCSettingsView";
-import LogsView from "./components/logs/LogsView";
+import LogsView from "./components/LogBrowser/LogsView";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LoginScreen } from "./components/LoginScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
