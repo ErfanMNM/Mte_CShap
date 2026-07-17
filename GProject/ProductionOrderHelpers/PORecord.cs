@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Serilog;
 
 namespace GProject.ProductionOrderHelpers
 {
@@ -282,5 +283,61 @@ namespace GProject.ProductionOrderHelpers
             }
             catch { return 0; }
         }
+
+        /// <summary>
+        /// Tổng hợp counter từ bảng Records (Record_{orderNo}.db).
+        /// Dùng khi PO resume sau khi restart để khôi phục FailTotal/FormatFail/... từ DB.
+        /// Trả về: PassTotal, FailTotal, FormatFailCount, ReadFailCount,
+        ///         TimeoutCount, DuplicateCount, NotFoundCount, ErrorCount, TotalCount
+        /// </summary>
+        public static ProductCounter GetCountersFromRecordDB(string orderNo)
+        {
+            var c = new ProductCounter();
+            try
+            {
+                string dbPath = Config.GetRecordPath(orderNo);
+                if (!File.Exists(dbPath)) return c;
+
+                using var con = new SqliteConnection($"Data Source={dbPath}");
+                con.Open();
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = @"SELECT
+                      SUM(CASE WHEN Status='Pass'             THEN 1 ELSE 0 END),
+                      SUM(CASE WHEN Status='FormatError' OR Status='FormatFail'
+                                                                  THEN 1 ELSE 0 END),
+                      SUM(CASE WHEN Status='ReadFail'           THEN 1 ELSE 0 END),
+                      SUM(CASE WHEN Status='Timeout'            THEN 1 ELSE 0 END),
+                      SUM(CASE WHEN Status='Duplicate'          THEN 1 ELSE 0 END),
+                      SUM(CASE WHEN Status='NotFound'           THEN 1 ELSE 0 END),
+                      SUM(CASE WHEN Status='Error'              THEN 1 ELSE 0 END),
+                      COUNT(*)
+                    FROM Records;";
+                using var r = cmd.ExecuteReader();
+                if (r.Read())
+                {
+                    c.PassTotal       = SafeInt(r, 0);
+                    c.FormatFailCount = SafeInt(r, 1);
+                    c.ReadFailCount   = SafeInt(r, 2);
+                    c.TimeoutCount    = SafeInt(r, 3);
+                    c.DuplicateCount  = SafeInt(r, 4);
+                    c.NotFoundCount   = SafeInt(r, 5);
+                    c.ErrorCount      = SafeInt(r, 6);
+                    c.TotalCount      = SafeInt(r, 7);
+                    // FailTotal: mọi row không phải Pass đều là fail (BAO GỒM cả Duplicate).
+                    // Convention cũ ở Models.cs:204 cũ đã loại Duplicate, nhưng user yêu cầu
+                    // Duplicate cũng tính vào FailTotal (PLC vẫn FAIL cho mã trùng lặp).
+                    c.FailTotal = c.FormatFailCount + c.ReadFailCount + c.TimeoutCount
+                                + c.NotFoundCount + c.DuplicateCount + c.ErrorCount;
+                }
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Logger.Warning(ex, "[PORecord] GetCountersFromRecordDB fail for {OrderNo}", orderNo);
+            }
+            return c;
+        }
+
+        private static int SafeInt(SqliteDataReader r, int col)
+            => r.IsDBNull(col) ? 0 : Convert.ToInt32(r.GetValue(col));
     }
 }

@@ -51,17 +51,17 @@ export interface ProductionStatusResponse {
 }
 
 export interface ActiveCounterSnapshot {
-  PassTotal: number;
-  FailTotal: number;
-  DuplicateCount: number;
-  NotFoundCount: number;
-  ReadFailCount: number;
-  FormatFailCount: number;
-  ErrorCount: number;
-  TimeoutCount: number;
-  TotalCount: number;
-  CartonID: number;
-  CartonCode: string;
+  passTotal: number;
+  failTotal: number;
+  duplicateCount: number;
+  notFoundCount: number;
+  readFailCount: number;
+  formatFailCount: number;
+  errorCount: number;
+  timeoutCount: number;
+  totalCount: number;
+  cartonID: number;
+  cartonCode: string;
 }
 
 export interface ProductionStateResponse {

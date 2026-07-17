@@ -81,7 +81,7 @@ interface DeviceStoreActions {
 // ============================================================================
 
 const initialCameraSnapshot: CameraSnapshot = {
-  camera: { state: "Reconnecting", lastCode: "", lastAt: null },
+  camera: { state: "Reconnecting", lastCode: "", lastAt: null, lastScan: null },
   connected: false,
   clientCount: 0,
   lastEventAt: null,

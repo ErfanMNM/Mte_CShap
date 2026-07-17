@@ -201,7 +201,7 @@ namespace GProject.ProductionOrderHelpers
         public int ErrorCount { get; set; }
         public int TimeoutCount { get; set; }
 
-        // Tách riêng — Duplicate KHÔNG tính FailTotal (mã tốt đã active từ trước, PLC vẫn PASS)
+        // Tách riêng — Duplicate tính vào FailTotal (PLC FAIL cho mã trùng lặp)
         public int DuplicateCount { get; set; }
 
         public int TotalCount { get; set; }
@@ -218,6 +218,7 @@ namespace GProject.ProductionOrderHelpers
             FailTotal = 0;
             NotFoundCount = 0;
             ReadFailCount = 0;
+            FormatFailCount = 0;
             ErrorCount = 0;
             TimeoutCount = 0;
             DuplicateCount = 0;

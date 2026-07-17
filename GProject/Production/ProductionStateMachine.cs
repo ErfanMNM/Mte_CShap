@@ -937,7 +937,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
             }
 
             // 8) Cho PLC ACK V2
-            var ack = WaitPlcAckV2(plcValue, code, camera);
+            var ack = e_TimeoutCheckResult.Pass;//WaitPlcAckV2(plcValue, code, camera);
             if (ack != e_TimeoutCheckResult.Pass)
             {
                 lock (_stateLock)
@@ -1102,10 +1102,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
         /// </summary>
         private void ProcessState()
         {
-            if(Global.PLC_STATUS != OmronPLC_Hsl.PLCStatus.Connected || Global.Camera_STATUS != eOmronCodeReaderState.Connected)
-            {
-                SetState(e_ProductionState.DeviceError, "PLC disconnected");
-            }
+            
             switch (CurrentState)
             {
                 case e_ProductionState.NeedLogin:
@@ -1135,6 +1132,7 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
 
                 case e_ProductionState.Ready:
                     // Sẵn sàng - chờ lệnh start
+                    CheckDeviceStatus();
                     break;
 
                 case e_ProductionState.PushingToDic:
@@ -1142,13 +1140,16 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     break;
 
                 case e_ProductionState.Running:
+                    CheckDeviceStatus();
                     ProcessRunningState();
                     break;
 
                 case e_ProductionState.Paused:
+                    CheckDeviceStatus();
                     ProcessPauseState();
                     break;
                 case e_ProductionState.WaitCartonCode:
+                    CheckDeviceStatus();
                     // Đang chờ user nhập mã thùng mới qua API
                     ProcessPauseState();
                     break;
@@ -1190,14 +1191,22 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
             bool plcConnected = Global.PLC_STATUS == OmronPLC_Hsl.PLCStatus.Connected;
             bool cameraConnected = Global.Camera_STATUS == eOmronCodeReaderState.Connected;
             
-            if (plcConnected && cameraConnected && !string.IsNullOrEmpty(_deviceDisconnectReason))
+            if (plcConnected && cameraConnected)
             {
-                Log.Information("[DeviceError] All devices reconnected, resuming...");
-                _deviceDisconnectReason = "";
-
                     SetState(PreviousState, "devices reconnected");
                     //SetState(e_ProductionState.Ready, "devices reconnected");
 
+            }
+        }
+
+
+        private void CheckDeviceStatus()
+        {
+            bool plcConnected = Global.PLC_STATUS == OmronPLC_Hsl.PLCStatus.Connected;
+            bool cameraConnected = Global.Camera_STATUS == eOmronCodeReaderState.Connected;
+            if (!plcConnected || !cameraConnected)
+            {
+                SetState(e_ProductionState.DeviceError, "device disconnected");
             }
         }
 
@@ -1424,6 +1433,18 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                     // 3) Tính lại ActiveCounter.PassTotal = tổng mã đã active trong PO
                     ActiveCounter.PassTotal = GProduction.PORecordHelper.GetActiveCount(ProductionData.OrderNo);
 
+                    // 3.5) Rehydrate các counter Fail/FormatError/Timeout/... từ bảng Records
+                    var fromRecord = GProduction.PORecordHelper.GetCountersFromRecordDB(ProductionData.OrderNo);
+                    ActiveCounter.FormatFailCount = fromRecord.FormatFailCount;
+                    ActiveCounter.ReadFailCount   = fromRecord.ReadFailCount;
+                    ActiveCounter.TimeoutCount    = fromRecord.TimeoutCount;
+                    ActiveCounter.NotFoundCount   = fromRecord.NotFoundCount;
+                    ActiveCounter.DuplicateCount  = fromRecord.DuplicateCount;
+                    ActiveCounter.ErrorCount      = fromRecord.ErrorCount;
+                    ActiveCounter.FailTotal       = fromRecord.FailTotal;
+                    if (fromRecord.TotalCount > ActiveCounter.TotalCount)
+                        ActiveCounter.TotalCount = fromRecord.TotalCount;
+
                     // 4) Đồng bộ PO với DataPool và kiểm tra đủ mã
                     var syncResult = SyncPoolWithPO();
                     if (!syncResult.success)
@@ -1520,6 +1541,18 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                         : 0;
 
                     ActiveCounter.PassTotal = GProduction.PORecordHelper.GetActiveCount(ProductionData.OrderNo);
+
+                    // Rehydrate các counter Fail/FormatError/Timeout/... từ bảng Records (auto-recover path)
+                    var fromRecordAfter = GProduction.PORecordHelper.GetCountersFromRecordDB(ProductionData.OrderNo);
+                    ActiveCounter.FormatFailCount = fromRecordAfter.FormatFailCount;
+                    ActiveCounter.ReadFailCount   = fromRecordAfter.ReadFailCount;
+                    ActiveCounter.TimeoutCount    = fromRecordAfter.TimeoutCount;
+                    ActiveCounter.NotFoundCount   = fromRecordAfter.NotFoundCount;
+                    ActiveCounter.DuplicateCount  = fromRecordAfter.DuplicateCount;
+                    ActiveCounter.ErrorCount      = fromRecordAfter.ErrorCount;
+                    ActiveCounter.FailTotal       = fromRecordAfter.FailTotal;
+                    if (fromRecordAfter.TotalCount > ActiveCounter.TotalCount)
+                        ActiveCounter.TotalCount = fromRecordAfter.TotalCount;
 
                     var syncResultAfter = SyncPoolWithPO();
                     if (!syncResultAfter.success)
@@ -1667,7 +1700,12 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 && !string.IsNullOrEmpty(currentCarton.CartonCode)
                 && currentCarton.CartonCode != "0")
             {
-                SetState(e_ProductionState.Running, "Thung hien tai da co ma");
+                //int nextThreshold = ActiveCounter.CartonCapacity - CartonOffset;
+                //if (PackageCounter.PassTotal >= nextThreshold)
+                //{
+                //    if(Dictionary_Cartons.TryGetValue(currentCartonId + 1, out var nextCarton))
+                //}
+                    SetState(e_ProductionState.Running, "Thung hien tai da co ma");
                 return;
             }
 

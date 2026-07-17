@@ -57,17 +57,17 @@ export interface DeviceStatusResponse {
     productionDate: string;
     orderQty: number;
     activeCounter: {
-      PassTotal: number;
-      FailTotal: number;
-      DuplicateCount: number;
-      NotFoundCount: number;
-      ReadFailCount: number;
-      FormatFailCount: number;
-      ErrorCount: number;
-      TimeoutCount: number;
-      TotalCount: number;
-      CartonID: number;
-      CartonCode: string;
+      passTotal: number;
+      failTotal: number;
+      duplicateCount: number;
+      notFoundCount: number;
+      readFailCount: number;
+      formatFailCount: number;
+      errorCount: number;
+      timeoutCount: number;
+      totalCount: number;
+      cartonID: number;
+      cartonCode: string;
     };
     cartonCount: number;
     cartonClosedCount: number;
@@ -134,6 +134,7 @@ export function useDevicePolling(options: UseDevicePollingOptions = {}) {
                 state: data.camera.state as CameraSnapshot["camera"]["state"],
                 lastCode: data.camera.lastCode,
                 lastAt: data.camera.lastCodeAt,
+                lastScan: storeState.camera.camera.lastScan,
               },
               connected: data.camera.connected,
               clientCount: data.camera.clientCount,

@@ -154,6 +154,9 @@ namespace GProject.ProductionOrderHelpers
             public static int GetCodeCountInCarton(string orderNo, string cartonCode)
                 => ProductionOrderHelpers.PORecord.GetCodeCountInCarton(orderNo, cartonCode);
 
+            public static ProductCounter GetCountersFromRecordDB(string orderNo)
+                => ProductionOrderHelpers.PORecord.GetCountersFromRecordDB(orderNo);
+
             public static Result UpdateCodeStatusAndCarton(
                 string orderNo, string code, string activateDate, string activateUser,
                 string packingDate, string cartonCode, string productionDate)
