@@ -1572,8 +1572,9 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
 
         /// <summary>
         /// Running: kiểm tra carton hiện tại và carton sắp tới
-        /// - Nếu thùng hiện tại chưa có mã -> Pause
-        /// - Nếu thùng sắp tới chưa có mã và sắp đầy -> Pause
+        /// - PROACTIVE: Nếu thùng sắp đầy VÀ thùng kế tiếp đã có mã -> AUTO ROLLOVER
+        /// - Nếu thùng sắp đầy VÀ thùng kế tiếp chưa có mã -> WaitCartonCode
+        /// - Nếu thùng hiện tại chưa có mã -> WaitCartonCode
         /// </summary>
         private void ProcessRunningState()
         {
@@ -1605,27 +1606,55 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 return;
             }
 
-            // Kiểm tra thùng sắp tới
+            // Kiểm tra thùng sắp tới - threshold
             int nextThreshold = ActiveCounter.CartonCapacity - CartonOffset;
             if (packedCount >= nextThreshold)
             {
                 if (Dictionary_Cartons.TryGetValue(currentCartonId + 1, out var nextCarton))
                 {
-                    if (nextCarton.CartonCode == "0")
+                    if (nextCarton.CartonCode == "0" || string.IsNullOrEmpty(nextCarton.CartonCode))
                     {
+                        // Thùng kế tiếp chưa có mã -> WAIT
                         LastWarning = "Thùng sắp tới chưa có mã";
                         SetState(e_ProductionState.WaitCartonCode, LastWarning);
+                        return;
+                    }
+                    else
+                    {
+                        // Thùng kế tiếp đã có mã -> PROACTIVE AUTO ROLLOVER
+                        Log.Information("[StateMachine] PROACTIVE AUTO ROLLOVER - thung ke tiep da co ma {Code}", nextCarton.CartonCode);
+
+                        // 1. Đóng thùng hiện tại
+                        CartonUpdateQueue.Enqueue(new CartonUpdateItem
+                        {
+                            Type = CartonUpdateType.Complete,
+                            OrderNo = ProductionData.OrderNo,
+                            CartonId = currentCartonId,
+                            ActivateUser = "<AUTO>"
+                        });
+
+                        // Update in-memory
+                        if (Dictionary_Cartons.TryGetValue(currentCartonId, out var closingCarton))
+                            closingCarton.CompletedDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                        // 2. Chuyển sang thùng mới
+                        ActiveCounter.CartonID = currentCartonId + 1;
+                        ActiveCounter.CartonCode = nextCarton.CartonCode;
+                        PackageCounter.PassTotal = 0;
+
+                        // 3. State vẫn là Running
+                        Log.Information("[StateMachine] Auto rollover complete. Now running carton {Id}", currentCartonId + 1);
                         return;
                     }
                 }
             }
 
-            // Cảnh báo sớm
+            // Cảnh báo sớm (khi còn 2-3 sản phẩm nữa là đầy)
             int warningThreshold = ActiveCounter.CartonCapacity - CartonWarning;
             if (packedCount >= warningThreshold)
             {
                 if (Dictionary_Cartons.TryGetValue(currentCartonId + 1, out var nextCarton)
-                    && nextCarton.CartonCode == "0")
+                    && (nextCarton.CartonCode == "0" || string.IsNullOrEmpty(nextCarton.CartonCode)))
                 {
                     LastWarning = "Cảnh báo: thùng sắp tới chưa có mã";
                     Log.Warning("[StateMachine] {Warning}", LastWarning);
@@ -1634,7 +1663,8 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
         }
 
         /// <summary>
-        /// Pause: chờ thùng có mã rồi quay lại Running
+        /// Pause/WaitCartonCode: chờ thùng có mã rồi quay lại Running
+        /// - Auto rollover nếu thùng kế tiếp đã có mã và thùng hiện tại đã đầy
         /// </summary>
         private void ProcessPauseState()
         {
@@ -1646,20 +1676,55 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
 
             int currentCartonId = ActiveCounter.CartonID;
 
-            // Nếu thùng hiện tại đã có mã -> về Running
-            if (Dictionary_Cartons.TryGetValue(currentCartonId, out var carton)
-                && carton.CartonCode != "0")
+            // Sync ActiveCounter.CartonCode nếu cần
+            if (Dictionary_Cartons.TryGetValue(currentCartonId, out var syncCarton))
             {
-                SetState(e_ProductionState.Running, "carton có mã");
+                if (!string.IsNullOrEmpty(syncCarton.CartonCode)
+                    && syncCarton.CartonCode != "0"
+                    && ActiveCounter.CartonCode != syncCarton.CartonCode)
+                {
+                    ActiveCounter.CartonCode = syncCarton.CartonCode;
+                    Log.Information("[StateMachine] Synced ActiveCounter.CartonCode = {Code}", syncCarton.CartonCode);
+                }
+            }
+
+            // THÙNG HIỆN TẠI đã có mã -> về Running (CHECK TRƯỚC)
+            if (Dictionary_Cartons.TryGetValue(currentCartonId, out var currentCarton)
+                && !string.IsNullOrEmpty(currentCarton.CartonCode)
+                && currentCarton.CartonCode != "0")
+            {
+                SetState(e_ProductionState.Running, "Thung hien tai da co ma");
                 return;
             }
 
-            // Nếu thùng sắp tới đã có mã -> về Running
-            if (Dictionary_Cartons.TryGetValue(currentCartonId + 1, out var nextCarton)
-                && nextCarton.CartonCode != "0"
-                && PackageCounter.PassTotal < (ActiveCounter.CartonCapacity - CartonOffset))
+            // THÙNG KẾ TIẾP đã có mã + thùng HIỆN TẠI đã ĐẦY -> AUTO ROLLOVER
+            // CHỈ rollover khi thùng hiện tại đã đầy, tránh bug khi thùng hiện tại chưa có mã
+            if (PackageCounter.PassTotal >= ActiveCounter.CartonCapacity
+                && Dictionary_Cartons.TryGetValue(currentCartonId + 1, out var nextCarton)
+                && !string.IsNullOrEmpty(nextCarton.CartonCode)
+                && nextCarton.CartonCode != "0")
             {
-                SetState(e_ProductionState.Running, "next carton có mã");
+                Log.Information("[StateMachine] Auto rollover in ProcessPauseState - next carton ready, current full");
+
+                // 1. Đóng thùng hiện tại
+                CartonUpdateQueue.Enqueue(new CartonUpdateItem
+                {
+                    Type = CartonUpdateType.Complete,
+                    OrderNo = ProductionData.OrderNo,
+                    CartonId = currentCartonId,
+                    ActivateUser = "<AUTO>"
+                });
+
+                if (Dictionary_Cartons.TryGetValue(currentCartonId, out var closingCarton))
+                    closingCarton.CompletedDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                // 2. Chuyển sang thùng mới
+                ActiveCounter.CartonID = currentCartonId + 1;
+                ActiveCounter.CartonCode = nextCarton.CartonCode;
+                PackageCounter.PassTotal = 0;
+
+                // 3. Về Running
+                SetState(e_ProductionState.Running, "Auto rollover, thung ke tiep da co ma");
                 return;
             }
         }

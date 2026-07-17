@@ -906,12 +906,28 @@ namespace GProject.ProductionOrderHelpers
                     return (statusCode, resp);
                 }
 
-                int currentId = sm.ActiveCounter.CartonID;
-                bool isEven = currentId % 2 == 0;
-                // PDA01: chẵn -> next, lẻ -> current ; PDA02: lẻ -> next, chẵn -> current
-                int targetId = lane.EndsWith("01")
-                    ? (isEven ? currentId + 1 : currentId)
-                    : (isEven ? currentId : currentId + 1);
+                // Xác định targetId: dùng CartonId được chỉ định, hoặc tìm thùng chưa có mã đầu tiên
+                int targetId;
+                if (req.CartonId.HasValue && req.CartonId.Value > 0)
+                {
+                    targetId = req.CartonId.Value;
+                }
+                else
+                {
+                    var firstWithoutCode = sm.Dictionary_Cartons.Values
+                        .Where(c => c.CartonCode == "0" || string.IsNullOrEmpty(c.CartonCode))
+                        .OrderBy(c => c.Id)
+                        .FirstOrDefault();
+
+                    if (firstWithoutCode == null)
+                    {
+                        resp.Success = false;
+                        resp.Status = "ERR";
+                        resp.Message = "Khong con thung nao chua co ma";
+                        return (statusCode, resp);
+                    }
+                    targetId = firstWithoutCode.Id;
+                }
 
                 if (!sm.Dictionary_Cartons.TryGetValue(targetId, out var targetCarton) || targetCarton == null)
                 {
@@ -976,9 +992,19 @@ namespace GProject.ProductionOrderHelpers
                             entry.ActivateUser = req.MachineName;
                     }
 
-                    // Nếu thùng vừa assign là thùng đang chạy -> cập nhật ActiveCounter
+                    // Nếu thùng vừa assign là thùng đang chạy -> cập nhật ActiveCounter + reset counter
                     if (targetId == sm.ActiveCounter.CartonID)
+                    {
                         sm.ActiveCounter.CartonCode = codeTrim;
+                        sm.PackageCounter.PassTotal = 0;
+                        Log.Information("[CartonAssign] Updated current carton code, reset counter");
+
+                        // Nếu đang chờ mã thùng mà giờ đã có mã -> tự động về Running
+                        if (sm.CurrentState == e_ProductionState.WaitCartonCode)
+                        {
+                            sm.SetState(e_ProductionState.Running, "Da assign ma thung hien tai");
+                        }
+                    }
                 }
 
                 Log.Information("[CartonAssign] Result. TargetID={TargetId}, Success={Success}, Status={Status}, Message={Message}",

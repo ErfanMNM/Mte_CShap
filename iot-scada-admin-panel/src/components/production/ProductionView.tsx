@@ -506,16 +506,26 @@ const healthOk = !apiStatus.error;
     fetchCartons(status.orderNo);
   }, [status?.orderNo, fetchCartons]);
 
+  // Auto-fetch cartons when production state or carton changes
+  useEffect(() => {
+    if (!status?.orderNo) return;
+    fetchCartons(status.orderNo);
+  }, [status?.state, status?.currentCartonId, fetchCartons]);
+
   // Derive prev / current / next cartons from the list and status
   const derivedCartons = useMemo(() => {
     const currentId = status?.currentCartonId ?? 0;
     const sorted = [...cartons].sort((a, b) => a.id - b.id);
-    // Current: match by id; otherwise fallback to status data
+
+    // Effective current ID: if 0 but we have a PO, treat as carton #1
+    const effectiveId = currentId > 0 ? currentId : 1;
+
+    // Current: match by id from list; otherwise fallback to status data
     const current =
-      sorted.find((c) => c.id === currentId && currentId > 0) ||
-      (currentId > 0
+      sorted.find((c) => c.id === effectiveId) ||
+      (effectiveId > 0
         ? {
-            id: currentId,
+            id: effectiveId,
             cartonCode: status?.currentCartonCode || "",
             status: "Open",
           }
@@ -537,23 +547,21 @@ const healthOk = !apiStatus.error;
           }
         : null);
 
-    // Next: lowest id that is "Empty" AND > currentId
-    const nextEmpty =
-      sorted
-        .filter((c) => c.status === "Empty" && (!current || c.id > current.id))
-        .sort((a, b) => a.id - b.id)[0] || null;
-    // Fallback: if current exists but no empty carton in list, synthesize current + 1
+    // Next: first carton with id > currentId (regardless of status)
+    const nextWithHigherId =
+      sorted.find((c) => c.id > effectiveId) || null;
+    // Fallback: synthesize next as current + 1
     const next =
-      nextEmpty ||
+      nextWithHigherId ||
       (current
         ? {
             id: current.id + 1,
             cartonCode: "",
             status: "Next",
           }
-        : nextEmpty);
+        : null);
     return { prev, current, next };
-  }, [cartons, status?.currentCartonId, status?.currentCartonCode]);
+  }, [cartons, status?.currentCartonId, status?.currentCartonCode, status?.state]);
 
   const formatDetailDate = (dateStr?: string) => {
     if (!dateStr || dateStr === "0" || dateStr === "null") return "—";
@@ -1097,9 +1105,11 @@ const healthOk = !apiStatus.error;
                   {/* Next */}
                   <div className={`rounded-lg border p-2 flex flex-col gap-1 ${
                     derivedCartons.next
-                      ? derivedCartons.next.status === "Empty"
-                        ? "border-slate-200 bg-white"
-                        : "border-dashed border-slate-300 bg-slate-50/50"
+                      ? derivedCartons.next.status === "Next"
+                        ? "border-dashed border-slate-300 bg-slate-50/50"
+                        : derivedCartons.next.status === "Closed"
+                          ? "border-slate-200 bg-slate-100"
+                          : "border-slate-200 bg-white"
                       : "border-dashed border-slate-200 bg-slate-50/50"
                   }`}>
                     <div className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 justify-end">
@@ -1108,21 +1118,23 @@ const healthOk = !apiStatus.error;
                     {derivedCartons.next ? (
                       <>
                         <div className={`text-sm font-black font-mono ${
-                          derivedCartons.next.status === "Empty" ? "text-slate-700" : "text-slate-400"
+                          derivedCartons.next.status === "Next" ? "text-slate-400" : "text-slate-700"
                         }`}>
                           #{derivedCartons.next.id}
                         </div>
                         <div className={`text-[10px] font-mono truncate ${
-                          derivedCartons.next.status === "Empty" ? "text-slate-500" : "text-slate-400 italic"
+                          derivedCartons.next.status === "Next" ? "text-slate-400 italic" : "text-slate-500"
                         }`}>
                           {derivedCartons.next.cartonCode && derivedCartons.next.cartonCode !== "0"
                             ? derivedCartons.next.cartonCode
                             : "—"}
                         </div>
                         <div className={`text-[9px] font-bold ${
-                          derivedCartons.next.status === "Empty" ? "text-slate-500" : "text-slate-400"
+                          derivedCartons.next.status === "Next" ? "text-slate-400" : "text-slate-500"
                         }`}>
-                          {derivedCartons.next.status === "Empty" ? "Trống" : "Sẽ tạo"}
+                          {derivedCartons.next.status === "Next" ? "Sẽ tạo" :
+                           derivedCartons.next.status === "Open" ? "Mở" :
+                           derivedCartons.next.status === "Closed" ? "Đã đóng" : "Trống"}
                         </div>
                       </>
                     ) : (

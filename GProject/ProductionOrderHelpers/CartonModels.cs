@@ -22,6 +22,12 @@ namespace GProject.ProductionOrderHelpers
         /// </summary>
         [System.Text.Json.Serialization.JsonPropertyName("lane")]
         public string Lane { get; set; } = "";
+
+        /// <summary>
+        /// Carton ID muốn gán mã. Nếu null hoặc 0, hệ thống sẽ tự tìm thùng chưa có mã đầu tiên.
+        /// </summary>
+        [System.Text.Json.Serialization.JsonPropertyName("cartonId")]
+        public int? CartonId { get; set; }
     }
 
     #endregion
