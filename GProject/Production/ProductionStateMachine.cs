@@ -24,6 +24,41 @@ namespace GProject.Production
         private static readonly Lazy<ProductionStateMachine> _instance = new(() => new ProductionStateMachine());
         public static ProductionStateMachine Instance => _instance.Value;
 
+        // #region agent log
+        private static readonly object AgentDebugLogLock = new();
+
+        private static void AgentDebugLog(
+            string hypothesisId,
+            string message,
+            object data,
+            [System.Runtime.CompilerServices.CallerFilePath] string file = "",
+            [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
+        {
+            try
+            {
+                var payload = new
+                {
+                    sessionId = "7016d0",
+                    id = $"log_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{Guid.NewGuid():N}",
+                    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    location = $"{Path.GetFileName(file)}:{line}",
+                    message,
+                    data,
+                    runId = "pre-fix",
+                    hypothesisId
+                };
+                string entry = System.Text.Json.JsonSerializer.Serialize(payload) + Environment.NewLine;
+                lock (AgentDebugLogLock)
+                {
+                    File.AppendAllText(@"C:\Users\THUC\source\repos\Mte_CShap\debug-7016d0.log", entry);
+                }
+            }
+            catch
+            {
+            }
+        }
+        // #endregion
+
         private readonly object _stateLock = new();
         private CancellationTokenSource? _cts;
         private Task? _loopTask;
@@ -342,6 +377,28 @@ namespace GProject.Production
             }
             Log.Information("[StateMachine] {Prev} -> {New} ({Reason})",
                 _previousState, newState, reason ?? "no reason");
+
+            // #region agent log
+            if (newState is e_ProductionState.Running or e_ProductionState.WaitCartonCode)
+            {
+                int cartonId = ActiveCounter.CartonID;
+                AgentDebugLog("H2,H3", "Relevant production state transition", new
+                {
+                    previousState = _previousState.ToString(),
+                    newState = newState.ToString(),
+                    reason = reason ?? "no reason",
+                    cartonId,
+                    packedCount = PackageCounter.PassTotal,
+                    cartonCapacity = ActiveCounter.CartonCapacity,
+                    currentCartonHasCode = Dictionary_Cartons.TryGetValue(cartonId, out var currentCarton)
+                        && !string.IsNullOrEmpty(currentCarton.CartonCode)
+                        && currentCarton.CartonCode != "0",
+                    nextCartonHasCode = Dictionary_Cartons.TryGetValue(cartonId + 1, out var nextCarton)
+                        && !string.IsNullOrEmpty(nextCarton.CartonCode)
+                        && nextCarton.CartonCode != "0"
+                });
+            }
+            // #endregion
         }
 
         /// <summary>
@@ -754,6 +811,8 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 return RejectAndEmit(camera, "", e_Production_Status.ReadFail, "empty payload");
             }
 
+            rawCode = rawCode.Trim();
+            rawCode = rawCode.Replace("\r", "").Replace("\n", "");
             string[] parts = rawCode.Split('|');
             string code = parts[0] ?? "";
             string status = parts.Length > 1 ? (parts[1] ?? "") : "NO_READ";
@@ -1001,6 +1060,22 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 ActiveCounter.PassTotal++;
                 PackageCounter.PassTotal++;
                 ActiveCounter.CartonCode = currentCartonCode;
+
+                // #region agent log
+                if (PackageCounter.PassTotal >= ActiveCounter.CartonCapacity - Math.Max(CartonOffset, 1))
+                {
+                    AgentDebugLog("H3,H5", "Camera pass committed near carton boundary", new
+                    {
+                        assignedCartonId = activeCartonId,
+                        activeCartonId = ActiveCounter.CartonID,
+                        packedCount = PackageCounter.PassTotal,
+                        cartonCapacity = ActiveCounter.CartonCapacity,
+                        cartonOffset = CartonOffset,
+                        activePassTotal = ActiveCounter.PassTotal,
+                        totalCount = ActiveCounter.TotalCount
+                    });
+                }
+                // #endregion
 
                 if (!string.IsNullOrEmpty(ProductionData?.Gtin))
                 {
@@ -1613,48 +1688,9 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 return;
             }
 
-            // Kiểm tra thùng sắp tới - threshold
-            int nextThreshold = ActiveCounter.CartonCapacity - CartonOffset;
-            if (packedCount >= nextThreshold)
-            {
-                if (Dictionary_Cartons.TryGetValue(currentCartonId + 1, out var nextCarton))
-                {
-                    if (nextCarton.CartonCode == "0" || string.IsNullOrEmpty(nextCarton.CartonCode))
-                    {
-                        // Thùng kế tiếp chưa có mã -> WAIT
-                        LastWarning = "Thùng sắp tới chưa có mã";
-                        SetState(e_ProductionState.WaitCartonCode, LastWarning);
-                        return;
-                    }
-                    else
-                    {
-                        // Thùng kế tiếp đã có mã -> PROACTIVE AUTO ROLLOVER
-                        Log.Information("[StateMachine] PROACTIVE AUTO ROLLOVER - thung ke tiep da co ma {Code}", nextCarton.CartonCode);
-
-                        // 1. Đóng thùng hiện tại
-                        CartonUpdateQueue.Enqueue(new CartonUpdateItem
-                        {
-                            Type = CartonUpdateType.Complete,
-                            OrderNo = ProductionData.OrderNo,
-                            CartonId = currentCartonId,
-                            ActivateUser = "<AUTO>"
-                        });
-
-                        // Update in-memory
-                        if (Dictionary_Cartons.TryGetValue(currentCartonId, out var closingCarton))
-                            closingCarton.CompletedDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                        // 2. Chuyển sang thùng mới
-                        ActiveCounter.CartonID = currentCartonId + 1;
-                        ActiveCounter.CartonCode = nextCarton.CartonCode;
-                        PackageCounter.PassTotal = 0;
-
-                        // 3. State vẫn là Running
-                        Log.Information("[StateMachine] Auto rollover complete. Now running carton {Id}", currentCartonId + 1);
-                        return;
-                    }
-                }
-            }
+            // Nhánh ② KHÔNG tự đóng thùng/proactive rollover nữa — chỉ nhánh ① (HandleCodeFromCamera)
+            // mới có quyền đóng thùng khi PackageCounter.PassTotal >= CartonCapacity.
+            // Ở đây chỉ phát cảnh báo sớm nếu thùng sắp đầy mà thùng kế chưa có mã.
 
             // Cảnh báo sớm (khi còn 2-3 sản phẩm nữa là đầy)
             int warningThreshold = ActiveCounter.CartonCapacity - CartonWarning;
@@ -1700,6 +1736,22 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 && !string.IsNullOrEmpty(currentCarton.CartonCode)
                 && currentCarton.CartonCode != "0")
             {
+                // #region agent log
+                AgentDebugLog("H2,H4", "Pause sees current carton code and resumes", new
+                {
+                    currentCartonId,
+                    packedCount = PackageCounter.PassTotal,
+                    cartonCapacity = ActiveCounter.CartonCapacity,
+                    cartonOffset = CartonOffset,
+                    currentCartonHasCode = true,
+                    nextCartonExists = Dictionary_Cartons.TryGetValue(currentCartonId + 1, out var debugNextCarton),
+                    nextCartonHasCode = debugNextCarton != null
+                        && !string.IsNullOrEmpty(debugNextCarton.CartonCode)
+                        && debugNextCarton.CartonCode != "0",
+                    lastWarning = LastWarning
+                });
+                // #endregion
+
                 //int nextThreshold = ActiveCounter.CartonCapacity - CartonOffset;
                 //if (PackageCounter.PassTotal >= nextThreshold)
                 //{
