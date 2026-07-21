@@ -120,15 +120,13 @@ namespace CProject.Views
             switch (topic)
             {
                 case "pool":
-                    var AM = payload.Split("|");
+                    string[] AM = payload.Split('|');
                     if (AM.Length >= 2)
                     {
                         switch (AM[0])
                         {
                             case "GET=>PATH":
-
                                 //trả về thông tin Pool được gọi
-
                                 DataPoolResultString rs = _dataPool.GetPoolPath(AM[1]);
                                 string rp = $"{rs.Success}|{rs.Message}|{rs.Data}";
                                 _ = _server!.SendToTopicAsync(topic,rp );

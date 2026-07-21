@@ -364,3 +364,6 @@ FodyWeavers.xsd
 /TApp/nul
 /Database/Production/batch_history.db
 /PLC_RECIPEs
+
+# VS Code C# Dev Tools - Auto-generated runners
+.vscodecsdt/Runners/
