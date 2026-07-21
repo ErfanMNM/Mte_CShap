@@ -67,19 +67,19 @@ data class HealthResponse(
 )
 
 interface PdaApiService {
-    @POST("/api/scan")
+    @POST("/scan")
     suspend fun postScan(@Body request: ScanRequest): Response<ScanResponse>
 
-    @GET("/api/health")
+    @GET("/health")
     suspend fun getHealth(): Response<HealthResponse>
 
-    @POST("/api/carton/scan")
+    @POST("/carton/scan")
     suspend fun postCartonScan(@Body request: CartonScanRequest): Response<CartonScanResponse>
 
-    @GET("/api/carton/{cartonCode}/info")
+    @GET("/carton/{cartonCode}/info")
     suspend fun getCartonInfo(@Path("cartonCode") code: String): Response<CartonInfoResponse>
 
-    @GET("/api/carton/current-po")
+    @GET("/carton/current-po")
     suspend fun getCurrentPO(): Response<CurrentPOResponse>
 }
 
