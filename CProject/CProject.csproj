@@ -15,4 +15,8 @@
     <PackageReference Include="SunnyUI" Version="3.9.7" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CLib\CLib.csproj" />
+  </ItemGroup>
+
 </Project>

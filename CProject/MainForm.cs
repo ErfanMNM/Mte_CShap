@@ -6,6 +6,7 @@ namespace CProject
     public partial class MainForm : UIForm
     {
         public FDashboard _fdashboard = new FDashboard();
+        public PageSocketUI pageSocketUI = new PageSocketUI();
         public MainForm()
         {
             InitializeComponent();
@@ -23,7 +24,8 @@ namespace CProject
             MainNavMenu.TabControl = mainTabBody;
 
             MainNavMenu.CreateNode(AddPage(_fdashboard, 1001));
-            MainNavMenu.SelectPage(1001);
+            MainNavMenu.CreateNode(AddPage(pageSocketUI, 1002));
+            MainNavMenu.SelectPage(1002);
         }
 
 

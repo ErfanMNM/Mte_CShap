@@ -1,0 +1,61 @@
+{
+  "namespaceUri": "urn:mte:opcua:server",
+  "objectsFolder": "MteServer",
+  "tags": [
+    {
+      "name": "Temperature",
+      "nodeId": "ns=2;s=Temperature",
+      "dataType": "Double",
+      "simulator": "sine",
+      "min": 20.0,
+      "max": 35.0,
+      "periodMs": 1000,
+      "accessLevel": "Read"
+    },
+    {
+      "name": "ProductionCount",
+      "nodeId": "ns=2;s=ProductionCount",
+      "dataType": "Int32",
+      "simulator": "counter",
+      "step": 1,
+      "periodMs": 500,
+      "accessLevel": "Read"
+    },
+    {
+      "name": "StartCommand",
+      "nodeId": "ns=2;s=StartCommand",
+      "dataType": "Boolean",
+      "simulator": "static",
+      "value": false,
+      "accessLevel": "ReadWrite"
+    },
+    {
+      "name": "MachineState",
+      "nodeId": "ns=2;s=MachineState",
+      "dataType": "String",
+      "simulator": "static",
+      "value": "IDLE",
+      "accessLevel": "Read"
+    },
+    {
+      "name": "Pressure",
+      "nodeId": "ns=2;s=Pressure",
+      "dataType": "Double",
+      "simulator": "random",
+      "min": 1.0,
+      "max": 5.0,
+      "periodMs": 750,
+      "accessLevel": "Read"
+    },
+    {
+      "name": "CycleTime",
+      "nodeId": "ns=2;s=CycleTime",
+      "dataType": "Int32",
+      "simulator": "ramp",
+      "min": 0,
+      "max": 60,
+      "periodMs": 1000,
+      "accessLevel": "Read"
+    }
+  ]
+}

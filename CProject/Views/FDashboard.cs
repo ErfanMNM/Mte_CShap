@@ -1,486 +1,411 @@
-﻿using Sunny.UI;
+﻿using System.Data;
+using System.Diagnostics;
+using System.Globalization;
+using System.Text;
+using Sunny.UI;
 using CProject.Module;
-using System.ComponentModel;
-using Microsoft.Win32;
 
 namespace CProject.Views
 {
     public partial class FDashboard : UIPage
     {
         private readonly DataPoolModule _dataPool = new DataPoolModule();
-        private BackgroundWorker? _workerImportFile;
-        private string _workerFilePath = string.Empty;
-        private string _workerPoolName = string.Empty;
-        private int _currentPageA4 = 1;
-        private int _currentPageA7 = 1;
-        private PoolCodePageResult? _lastCodesResultA4;
-        private PoolListResult? _lastPoolsResultA7;
 
         public FDashboard()
         {
             InitializeComponent();
-            InitBackgroundWorker();
+            AddLog("Sẵn sàng. Thiết lập Pool Name ở panel trên cùng rồi bấm CreatePool.");
         }
 
-        private void InitBackgroundWorker()
+        // ===== Helpers ========================================================
+
+        private string GetPoolNameOrWarn()
         {
-            _workerImportFile = new BackgroundWorker
+            string poolName = txtPoolNameSession.Text.Trim();
+            if (string.IsNullOrEmpty(poolName))
             {
-                WorkerReportsProgress = true,
-                WorkerSupportsCancellation = true
-            };
-            _workerImportFile.DoWork += WorkerImportFile_DoWork;
-            _workerImportFile.ProgressChanged += WorkerImportFile_ProgressChanged;
-            _workerImportFile.RunWorkerCompleted += WorkerImportFile_RunWorkerCompleted;
-        }
-
-        private void WorkerImportFile_DoWork(object? sender, DoWorkEventArgs e)
-        {
-            var worker = sender as BackgroundWorker;
-            var args = e.Argument as object[];
-            string poolName = (string)args![0];
-            string filePath = (string)args[1];
-
-            var result = _dataPool.AddCodes(
-                poolName: poolName,
-                mode: 0,
-                filePath: filePath,
-                singleCode: null,
-                dataTable: null,
-                createID: "SYSTEM",
-                createdBy: "Admin",
-                progressCallback: (current, total) =>
-                {
-                    int percent = (int)((double)current / total * 100);
-                    worker?.ReportProgress(percent, $"Đang xử lý: {current}/{total}");
-                }
-            );
-
-            e.Result = result;
-        }
-
-        private void WorkerImportFile_ProgressChanged(object? sender, ProgressChangedEventArgs e)
-        {
-            AddLog(e.UserState?.ToString() ?? "");
-        }
-
-        private void WorkerImportFile_RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
-        {
-            btnAddCodeFile.Enabled = true;
-            btnCreatePool.Enabled = true;
-            btnAddCodeSingle.Enabled = true;
-            btnGetPoolInfo.Enabled = true;
-
-            if (e.Error != null)
-            {
-                AddLog($"Lỗi: {e.Error.Message}");
+                UIMessageBox.ShowWarning("Vui lòng nhật Pool Name ở panel 'Thiết lập phiên test'.");
+                AddLog("Cảnh báo: PoolName trống.");
             }
-            else if (e.Cancelled)
+            return poolName;
+        }
+
+        private bool TryParseStatus(int? defaultValue, out int? status)
+        {
+            status = defaultValue;
+            return true;
+        }
+
+        private int? GetSelectedStatus(Sunny.UI.UIComboBox cbo)
+        {
+            switch (cbo.SelectedIndex)
             {
-                AddLog("Đã hủy!");
+                case 1: return 0;
+                case 2: return 1;
+                case 3: return -1;
+                default: return null;
             }
-            else
+        }
+
+        private string BuildDataTableSummary(DataTable? dt, int maxRows = 5)
+        {
+            if (dt == null) return "(null)";
+            if (dt.Rows.Count == 0) return "(0 dòng)";
+            var sb = new StringBuilder();
+            int show = Math.Min(dt.Rows.Count, maxRows);
+            sb.AppendLine($"Bảng {dt.TableName ?? ""} : {dt.Rows.Count} dòng, {dt.Columns.Count} cột");
+            for (int i = 0; i < dt.Columns.Count; i++)
             {
-                var result = e.Result as DataPoolAddCodesResult;
-                if (result != null)
+                sb.Append("[").Append(dt.Columns[i].ColumnName).Append("] ");
+            }
+            sb.AppendLine();
+            for (int i = 0; i < show; i++)
+            {
+                for (int c = 0; c < dt.Columns.Count; c++)
                 {
-                    AddLog($"Thêm từ File: {result.Message}");
+                    sb.Append(dt.Rows[i][c]?.ToString() ?? "null");
+                    sb.Append(" | ");
                 }
+                sb.AppendLine();
+            }
+            if (dt.Rows.Count > show)
+            {
+                sb.AppendLine($"... ({dt.Rows.Count - show} dòng còn lại)");
+            }
+            return sb.ToString();
+        }
+
+        private T Run<T>(string apiName, Func<T> action)
+        {
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                T result = action();
+                sw.Stop();
+                AddLog($"[{apiName}] hoàn tất trong {sw.ElapsedMilliseconds} ms.");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                AddLog($"[{apiName}] LỖI sau {sw.ElapsedMilliseconds} ms: {ex.Message}");
+                UIMessageBox.ShowError($"{apiName}\n\n{ex.Message}");
+                return default!;
             }
         }
 
         private void AddLog(string message)
         {
-            if (lstResult.InvokeRequired)
+            string line = $"[{DateTime.Now:HH:mm:ss}] {message}";
+            if (lstLog.InvokeRequired)
             {
-                lstResult.Invoke(new Action(() =>
-                {
-                    lstResult.Items.Add($"[{DateTime.Now:HH:mm:ss}] {message}");
-                    lstResult.SelectedIndex = lstResult.Items.Count - 1;
-                }));
+                lstLog.BeginInvoke(new Action(() => lstLog.Items.Add(line)));
             }
             else
             {
-                lstResult.Items.Add($"[{DateTime.Now:HH:mm:ss}] {message}");
-                lstResult.SelectedIndex = lstResult.Items.Count - 1;
+                lstLog.Items.Add(line);
+                lstLog.TopIndex = lstLog.Items.Count - 1;
+            }
+        }
+
+        // ===== Session ========================================================
+
+        private void btnResetSession_Click(object? sender, EventArgs e)
+        {
+            txtPoolNameSession.Text = "TestPool";
+            txtCreateID.Text = "TESTER";
+            txtCreatedBy.Text = "Admin";
+            txtSingleCode.Text = "CODE001";
+            txtQueryPoolCode.Text = string.Empty;
+            txtQueryCodeID.Text = string.Empty;
+            txtFilterBatchID.Text = string.Empty;
+            txtUpdatePoolCode.Text = string.Empty;
+            txtUpdateCodeID.Text = string.Empty;
+            cboUpdateStatus.SelectedIndex = 0;
+            cboFilterStatus.SelectedIndex = 0;
+            cboStatusOnly.SelectedIndex = 0;
+            txtFilePath.Text = "(chưa chọn)";
+            AddLog("Đã reset phiên test về giá trị mặc định.");
+        }
+
+        private void btnLoadSamples_Click(object? sender, EventArgs e)
+        {
+            txtPoolNameSession.Text = "TestPool";
+            txtCreateID.Text = "TESTER";
+            txtCreatedBy.Text = "Admin";
+            txtSingleCode.Text = "SAMPLE-CODE-001";
+            AddLog("Đã load dữ liệu mẫu cho Pool/CreatedBy/SingleCode.");
+        }
+
+        private void btnClearLog_Click(object? sender, EventArgs e)
+        {
+            lstLog.Items.Clear();
+            AddLog("Đã xóa log.");
+        }
+
+        private void btnCopyLog_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (lstLog.Items.Count == 0) return;
+                var sb = new StringBuilder();
+                foreach (var item in lstLog.Items)
+                {
+                    sb.AppendLine(item?.ToString());
+                }
+                Clipboard.SetText(sb.ToString());
+                AddLog($"Đã copy {lstLog.Items.Count} dòng log vào clipboard.");
+            }
+            catch (Exception ex)
+            {
+                UIMessageBox.ShowWarning($"Không copy được: {ex.Message}");
+            }
+        }
+
+        // ===== Lifecycle tab ==================================================
+
+        private void btnGetPoolPath_Click(object? sender, EventArgs e)
+        {
+            string poolName = GetPoolNameOrWarn();
+            if (string.IsNullOrEmpty(poolName)) return;
+            var result = Run("GetPoolPath", () => _dataPool.GetPoolPath(poolName));
+            if (result == null) return;
+            AddLog($"GetPoolPath: Success={result.Success}, Path='{result.Data}'");
+            if (result.Success)
+            {
+                UIMessageBox.ShowInfo($"Đường dẫn:\n{result.Data}");
             }
         }
 
         private void btnCreatePool_Click(object? sender, EventArgs e)
         {
-            string poolName = txtPoolName.Text.Trim();
-            if (string.IsNullOrEmpty(poolName))
-            {
-                UIMessageBox.ShowWarning("Vui lòng nhập tên Pool!");
-                return;
-            }
+            string poolName = GetPoolNameOrWarn();
+            if (string.IsNullOrEmpty(poolName)) return;
+            string createdBy = txtCreatedBy.Text.Trim();
+            string createID = txtCreateID.Text.Trim();
+            if (string.IsNullOrEmpty(createdBy)) createdBy = "Admin";
+            if (string.IsNullOrEmpty(createID)) createID = "TESTER";
 
-            var poolInfo = new DataPoolModule.PoolInfo(
+            var info = new DataPoolModule.PoolInfo(
                 id: 0,
                 name: poolName,
-                description: "Test Pool",
-                batchID: "BATCH001",
-                createID: "SYSTEM",
-                note: "Created for testing",
-                createdBy: "Admin",
+                description: $"Auto-created by FDashboard on {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+                batchID: string.Empty,
+                createID: createID,
+                note: "Tạo bằng giao diện kiểm thử FDashboard.",
+                createdBy: createdBy,
                 createDatetime: DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             );
-
-            var result = _dataPool.CreatePool(poolInfo);
+            var result = Run("CreatePool", () => _dataPool.CreatePool(info));
+            if (result == null) return;
+            AddLog($"CreatePool: Success={result.Success}, Path='{result.Data}'");
             if (result.Success)
             {
-                AddLog($"Tạo Pool thành công: {poolName}");
-                AddLog($"Đường dẫn: {result.Data}");
-            }
-            else
-            {
-                AddLog($"Lỗi: {result.Message}");
-            }
-        }
-
-        private void btnAddCodeSingle_Click(object? sender, EventArgs e)
-        {
-            string poolName = txtPoolName.Text.Trim();
-            string code = txtCode.Text.Trim();
-
-            if (string.IsNullOrEmpty(poolName))
-            {
-                UIMessageBox.ShowWarning("Vui lòng nhập tên Pool!");
-                return;
-            }
-            if (string.IsNullOrEmpty(code))
-            {
-                UIMessageBox.ShowWarning("Vui lòng nhập Code!");
-                return;
-            }
-
-            var result = _dataPool.AddCodes(
-                poolName: poolName,
-                mode: 1,
-                filePath: null,
-                singleCode: code,
-                dataTable: null,
-                createID: "SYSTEM",
-                createdBy: "Admin"
-            );
-
-            AddLog($"Thêm 1 Code: {result.Message}");
-        }
-
-        private void btnAddCodeFile_Click(object? sender, EventArgs e)
-        {
-            string poolName = txtPoolName.Text.Trim();
-            if (string.IsNullOrEmpty(poolName))
-            {
-                UIMessageBox.ShowWarning("Vui lòng nhập tên Pool!");
-                return;
-            }
-
-            var openFileDialog = new OpenFileDialog
-            {
-                Filter = "Text Files|*.txt;*.csv|All Files|*.*",
-                Title = "Chọn file chứa mã code"
-            };
-
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                // Disable buttons during import
-                btnAddCodeFile.Enabled = false;
-                btnCreatePool.Enabled = false;
-                btnAddCodeSingle.Enabled = false;
-                btnGetPoolInfo.Enabled = false;
-
-                AddLog($"Bắt đầu import file: {openFileDialog.SafeFileName}");
-                
-                _workerImportFile!.RunWorkerAsync(new object[] { poolName, openFileDialog.FileName });
+                UIMessageBox.ShowInfo($"Đã tạo pool:\n{result.Data}");
             }
         }
 
         private void btnGetPoolInfo_Click(object? sender, EventArgs e)
         {
-            string poolName = txtPoolName.Text.Trim();
-            if (string.IsNullOrEmpty(poolName))
-            {
-                UIMessageBox.ShowWarning("Vui lòng nhập tên Pool!");
-                return;
-            }
-
-            var pathResult = _dataPool.GetPoolPath(poolName);
-            if (pathResult.Success)
-            {
-                AddLog($"Pool Path: {pathResult.Data}");
-                if (System.IO.File.Exists(pathResult.Data))
-                {
-                    AddLog("Pool tồn tại!");
-                }
-                else
-                {
-                    AddLog("Pool không tồn tại!");
-                }
-            }
-            else
-            {
-                AddLog($"Lỗi: {pathResult.Message}");
-            }
-        }
-
-        private void btnA1UpdateStatus_Click(object? sender, EventArgs e)
-        {
-            string poolName = txtPoolNameA1.Text.Trim();
-            string poolCode = txtPoolCodeA1.Text.Trim();
-            string codeIdText = txtCodeIDA1.Text.Trim();
-            string newStatusText = txtNewStatus.Text.Trim();
-
-            if (string.IsNullOrEmpty(poolName))
-            {
-                UIMessageBox.ShowWarning("Vui lòng nhập Pool Name!");
-                return;
-            }
-            if (string.IsNullOrEmpty(poolCode) && string.IsNullOrEmpty(codeIdText))
-            {
-                UIMessageBox.ShowWarning("Vui lòng nhập PoolCode hoặc Code ID!");
-                return;
-            }
-            if (!int.TryParse(newStatusText, out int newStatus))
-            {
-                UIMessageBox.ShowWarning("NewStatus phải là số nguyên (0, 1, -1)!");
-                return;
-            }
-
-            double? id = string.IsNullOrEmpty(codeIdText) ? null : double.Parse(codeIdText);
-
-            var result = _dataPool.UpdateCodeStatus(poolName, poolCode, id, newStatus);
-            AddLog($"[A1] UpdateStatus: {result.Message}");
-        }
-
-        private void btnA2GetPoolInfo_Click(object? sender, EventArgs e)
-        {
-            string poolName = txtPoolNameA1.Text.Trim();
-            if (string.IsNullOrEmpty(poolName))
-            {
-                UIMessageBox.ShowWarning("Vui lòng nhập Pool Name!");
-                return;
-            }
-
-            var result = _dataPool.GetPoolInfo(poolName);
-            AddLog($"[A2] GetPoolInfo: {result.Message}");
-
-            if (result.Success && result.Data != null)
-            {
-                dgvResultA1A5.DataSource = null;
-                dgvResultA1A5.Columns.Clear();
-                dgvResultA1A5.Rows.Clear();
-                dgvResultA1A5.Columns.Add("Property", "Property");
-                dgvResultA1A5.Columns.Add("Value", "Value");
-                dgvResultA1A5.Columns[0].Width = 200;
-                dgvResultA1A5.Columns[1].Width = 300;
-
-                dgvResultA1A5.Rows.Add("ID", result.Data.ID);
-                dgvResultA1A5.Rows.Add("PoolName", result.Data.PoolName);
-                dgvResultA1A5.Rows.Add("PoolDescription", result.Data.PoolDescription);
-                dgvResultA1A5.Rows.Add("PoolCreatedBy", result.Data.PoolCreatedBy);
-                dgvResultA1A5.Rows.Add("PoolCreateDatetime", result.Data.PoolCreateDatetime);
-
-                if (result.Data.Count != null)
-                {
-                    dgvResultA1A5.Rows.Add("---Count---", "---");
-                    dgvResultA1A5.Rows.Add("TotalCount", result.Data.Count.TotalCount);
-                    dgvResultA1A5.Rows.Add("UnusedCount", result.Data.Count.UnusedCount);
-                    dgvResultA1A5.Rows.Add("UsedCount", result.Data.Count.UsedCount);
-                    dgvResultA1A5.Rows.Add("ErrorCount", result.Data.Count.ErrorCount);
-                }
-
-                txtPoolNameA6.Text = poolName;
-            }
-        }
-
-        private void btnA3GetPoolCode_Click(object? sender, EventArgs e)
-        {
-            string poolName = txtPoolNameA1.Text.Trim();
-            string poolCode = txtPoolCodeA1.Text.Trim();
-            string codeIdText = txtCodeIDA1.Text.Trim();
-
-            if (string.IsNullOrEmpty(poolName))
-            {
-                UIMessageBox.ShowWarning("Vui lòng nhập Pool Name!");
-                return;
-            }
-            if (string.IsNullOrEmpty(poolCode) && string.IsNullOrEmpty(codeIdText))
-            {
-                UIMessageBox.ShowWarning("Vui lòng nhập PoolCode hoặc Code ID!");
-                return;
-            }
-
-            double? id = string.IsNullOrEmpty(codeIdText) ? null : double.Parse(codeIdText);
-            var result = _dataPool.GetPoolCode(poolName, poolCode, id);
-            AddLog($"[A3] GetPoolCode: {result.Message}");
-
-            if (result.Success && result.Data != null)
-            {
-                dgvResultA1A5.DataSource = result.Data;
-            }
-        }
-
-        private void btnA4GetCodesPaginated_Click(object? sender, EventArgs e)
-        {
-            string poolName = txtPoolNameA1.Text.Trim();
-            if (string.IsNullOrEmpty(poolName))
-            {
-                UIMessageBox.ShowWarning("Vui lòng nhập Pool Name!");
-                return;
-            }
-
-            _currentPageA4 = 1;
-            LoadCodesPaginated(poolName, _currentPageA4);
-        }
-
-        private void LoadCodesPaginated(string poolName, int pageIndex)
-        {
-            int? status = null;
-            if (cboFilterStatus.SelectedIndex > 0)
-            {
-                string[] parts = cboFilterStatus.Text.Split('-');
-                if (parts.Length > 0 && int.TryParse(parts[0], out int s))
-                    status = s;
-            }
-
-            string? batchID = string.IsNullOrWhiteSpace(txtFilterBatchID.Text) ? null : txtFilterBatchID.Text.Trim();
-
-            var result = _dataPool.GetPoolCodesPaginated(poolName, pageIndex, 100, status, batchID);
-
-            AddLog($"[A4] Page {pageIndex}: {result.Message}");
-
-            if (result.Success && result.Data != null)
-            {
-                _lastCodesResultA4 = result.Data;
-                dgvResultA1A5.DataSource = result.Data.Data;
-                lblPageInfoA4.Text = $"Page: {result.Data.PageIndex} / {result.Data.TotalPages} (Total: {result.Data.TotalCount})";
-            }
-            else
-            {
-                _lastCodesResultA4 = null;
-                dgvResultA1A5.DataSource = null;
-                lblPageInfoA4.Text = "No data";
-            }
-        }
-
-        private void btnPrevPage_Click(object? sender, EventArgs e)
-        {
-            if (_lastCodesResultA4 == null || _lastCodesResultA4.PageIndex <= 1) return;
-            string poolName = txtPoolNameA1.Text.Trim();
+            string poolName = GetPoolNameOrWarn();
             if (string.IsNullOrEmpty(poolName)) return;
-
-            _currentPageA4 = _lastCodesResultA4.PageIndex - 1;
-            LoadCodesPaginated(poolName, _currentPageA4);
+            var result = Run("GetPoolInfo", () => _dataPool.GetPoolInfo(poolName));
+            if (result == null || result.Data == null) return;
+            var info = result.Data;
+            var sb = new StringBuilder();
+            sb.AppendLine($"ID={info.ID}, Name={info.PoolName}");
+            sb.AppendLine($"Description={info.PoolDescription}");
+            sb.AppendLine($"CreateID={info.PoolCreateID}, CreatedBy={info.PoolCreatedBy}");
+            sb.AppendLine($"CreateDatetime={info.PoolCreateDatetime}");
+            sb.AppendLine($"Note={info.PoolNote}");
+            if (info.Count != null)
+            {
+                sb.AppendLine($"Counts: Total={info.Count.TotalCount}, Unused={info.Count.UnusedCount}, Used={info.Count.UsedCount}, Error={info.Count.ErrorCount}");
+            }
+            AddLog(sb.ToString());
+            UIMessageBox.ShowInfo(sb.ToString());
         }
 
-        private void btnNextPage_Click(object? sender, EventArgs e)
+        private void btnGetPoolsPaginated_Click(object? sender, EventArgs e)
         {
-            if (_lastCodesResultA4 == null || !_lastCodesResultA4.HasNextPage) return;
-            string poolName = txtPoolNameA1.Text.Trim();
+            var result = Run("GetPoolsPaginated", () => _dataPool.GetPoolsPaginated(1, 100));
+            if (result == null) return;
+            AddLog($"GetPoolsPaginated: Success={result.Success}, Message='{result.Message}'");
+            if (!result.Success)
+            {
+                UIMessageBox.ShowWarning(result.Message);
+                return;
+            }
+            if (result.Data == null || result.Data.Items.Count == 0)
+            {
+                AddLog("Không có Pool nào trong thư mục databasePath.");
+                return;
+            }
+            var sb = new StringBuilder();
+            sb.AppendLine($"Tổng: {result.Data.TotalCount}, Trang: {result.Data.PageIndex}/{result.Data.TotalPages}");
+            foreach (var p in result.Data.Items)
+            {
+                sb.AppendLine($"#{p.ID} | {p.PoolName} | by {p.PoolCreatedBy} | {p.PoolCreateDatetime}");
+            }
+            AddLog(sb.ToString());
+            UIMessageBox.ShowInfo(sb.ToString());
+        }
+
+        // ===== Write tab ======================================================
+
+        private void btnBrowseFile_Click(object? sender, EventArgs e)
+        {
+            using var dlg = new OpenFileDialog
+            {
+                Title = "Chọn file chứa các code (mỗi dòng 1 code)",
+                Filter = "Text/CSV files (*.txt;*.csv)|*.txt;*.csv|All files (*.*)|*.*"
+            };
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+                txtFilePath.Text = dlg.FileName;
+                AddLog($"Đã chọn file: {dlg.FileName}");
+            }
+        }
+
+        private void btnAddCodeSingle_Click(object? sender, EventArgs e)
+        {
+            string poolName = GetPoolNameOrWarn();
             if (string.IsNullOrEmpty(poolName)) return;
-
-            _currentPageA4 = _lastCodesResultA4.PageIndex + 1;
-            LoadCodesPaginated(poolName, _currentPageA4);
-        }
-
-        private void btnA5GetCounts_Click(object? sender, EventArgs e)
-        {
-            string poolName = txtPoolNameA1.Text.Trim();
-            if (string.IsNullOrEmpty(poolName))
+            string code = txtSingleCode.Text.Trim();
+            if (string.IsNullOrEmpty(code))
             {
-                UIMessageBox.ShowWarning("Vui lòng nhập Pool Name!");
+                UIMessageBox.ShowWarning("Vui lòng nhập 1 code ở ô bên cạnh.");
                 return;
             }
+            string createID = txtCreateID.Text.Trim();
+            string createdBy = txtCreatedBy.Text.Trim();
+            if (string.IsNullOrEmpty(createID)) createID = "TESTER";
+            if (string.IsNullOrEmpty(createdBy)) createdBy = "Admin";
 
-            var result = _dataPool.GetCodeCounts(poolName);
-            AddLog($"[A5] GetCodeCounts: {result.Message}");
-
-            if (result.Success && result.Data != null)
-            {
-                dgvResultA1A5.DataSource = null;
-                dgvResultA1A5.Columns.Clear();
-                dgvResultA1A5.Rows.Clear();
-                dgvResultA1A5.Columns.Add("Metric", "Metric");
-                dgvResultA1A5.Columns.Add("Count", "Count");
-                dgvResultA1A5.Columns[0].Width = 200;
-                dgvResultA1A5.Columns[1].Width = 100;
-
-                dgvResultA1A5.Rows.Add("TotalCount", result.Data.TotalCount);
-                dgvResultA1A5.Rows.Add("UsedCount", result.Data.UsedCount);
-            }
+            var result = Run("AddCodes(single)", () => _dataPool.AddCodes(poolName, 1, null, code, null, createID, createdBy));
+            if (result == null) return;
+            AddLog($"AddCodes(single): Success={result.Success}, Message='{result.Message}'");
         }
 
-        private void btnA6GetCodesByStatus_Click(object? sender, EventArgs e)
+        private void btnAddCodeFile_Click(object? sender, EventArgs e)
         {
-            string poolName = txtPoolNameA6.Text.Trim();
-            if (string.IsNullOrEmpty(poolName))
+            string poolName = GetPoolNameOrWarn();
+            if (string.IsNullOrEmpty(poolName)) return;
+            string filePath = txtFilePath.Text.Trim();
+            if (string.IsNullOrEmpty(filePath) || filePath == "(chưa chọn)" || !File.Exists(filePath))
             {
-                UIMessageBox.ShowWarning("Vui lòng nhập Pool Name!");
+                UIMessageBox.ShowWarning("Vui lòng chọn file hợp lệ trước khi thêm.");
                 return;
             }
+            string createID = txtCreateID.Text.Trim();
+            string createdBy = txtCreatedBy.Text.Trim();
+            if (string.IsNullOrEmpty(createID)) createID = "TESTER";
+            if (string.IsNullOrEmpty(createdBy)) createdBy = "Admin";
 
-            int? status = null;
-            if (cboStatusFilterA6.SelectedIndex > 0)
-            {
-                string[] parts = cboStatusFilterA6.Text.Split('-');
-                if (parts.Length > 0 && int.TryParse(parts[0], out int s))
-                    status = s;
-            }
-
-            var result = _dataPool.GetCodesByStatus(poolName, status);
-            AddLog($"[A6] GetCodesByStatus: {result.Message}");
-
-            if (result.Success && result.Data != null)
-            {
-                dgvResultA6A7.DataSource = result.Data;
-                lblPageInfoA7.Text = $"Total: {result.Data.Rows.Count}";
-            }
-            else
-            {
-                dgvResultA6A7.DataSource = null;
-            }
+            var result = Run("AddCodes(file)", () => _dataPool.AddCodes(poolName, 0, filePath, null, null, createID, createdBy));
+            if (result == null) return;
+            AddLog($"AddCodes(file): Success={result.Success}, Added={result.AddedCount}, Duplicate={result.DuplicateCount}, Error={result.ErrorCount}, Message='{result.Message}'");
         }
 
-        private void btnA7GetPoolsPaginated_Click(object? sender, EventArgs e)
+        private void btnUpdateStatus_Click(object? sender, EventArgs e)
         {
-            _currentPageA7 = 1;
-            LoadPoolsPaginated(_currentPageA7);
-        }
-
-        private void LoadPoolsPaginated(int pageIndex)
-        {
-            var result = _dataPool.GetPoolsPaginated(pageIndex);
-            AddLog($"[A7] Page {pageIndex}: {result.Message}");
-
-            if (result.Success && result.Data != null)
+            string poolName = GetPoolNameOrWarn();
+            if (string.IsNullOrEmpty(poolName)) return;
+            string poolCode = txtUpdatePoolCode.Text.Trim();
+            string idText = txtUpdateCodeID.Text.Trim();
+            if (string.IsNullOrEmpty(poolCode) && string.IsNullOrEmpty(idText))
             {
-                _lastPoolsResultA7 = result.Data;
-                dgvResultA6A7.DataSource = result.Data.Items;
-                lblPageInfoA7.Text = $"Page: {result.Data.PageIndex} / {result.Data.TotalPages} (Total: {result.Data.TotalCount})";
+                UIMessageBox.ShowWarning("Vui lòng nhập PoolCode hoặc CodeID.");
+                return;
             }
-            else
+            if (cboUpdateStatus.SelectedIndex <= 0)
             {
-                _lastPoolsResultA7 = null;
-                dgvResultA6A7.DataSource = null;
-                lblPageInfoA7.Text = "No data";
+                UIMessageBox.ShowWarning("Vui lòng chọn status mới.");
+                return;
             }
+            int newStatus = cboUpdateStatus.SelectedIndex switch
+            {
+                1 => 0,
+                2 => 1,
+                3 => -1,
+                _ => 0
+            };
+            double? id = null;
+            if (!string.IsNullOrEmpty(idText))
+            {
+                if (!double.TryParse(idText, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed))
+                {
+                    UIMessageBox.ShowWarning("CodeID phải là số.");
+                    return;
+                }
+                id = parsed;
+            }
+            var result = Run("UpdateCodeStatus", () => _dataPool.UpdateCodeStatus(poolName, poolCode, id, newStatus));
+            if (result == null) return;
+            AddLog($"UpdateCodeStatus: Success={result.Success}, Message='{result.Message}'");
         }
 
-        private void btnPrevPageA7_Click(object? sender, EventArgs e)
-        {
-            if (_lastPoolsResultA7 == null || _lastPoolsResultA7.PageIndex <= 1) return;
+        // ===== Read tab =======================================================
 
-            _currentPageA7 = _lastPoolsResultA7.PageIndex - 1;
-            LoadPoolsPaginated(_currentPageA7);
+        private void btnGetPoolCode_Click(object? sender, EventArgs e)
+        {
+            string poolName = GetPoolNameOrWarn();
+            if (string.IsNullOrEmpty(poolName)) return;
+            string poolCode = txtQueryPoolCode.Text.Trim();
+            string idText = txtQueryCodeID.Text.Trim();
+            if (string.IsNullOrEmpty(poolCode) && string.IsNullOrEmpty(idText))
+            {
+                UIMessageBox.ShowWarning("Vui lòng nhập PoolCode hoặc CodeID.");
+                return;
+            }
+            double? id = null;
+            if (!string.IsNullOrEmpty(idText))
+            {
+                if (!double.TryParse(idText, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed))
+                {
+                    UIMessageBox.ShowWarning("CodeID phải là số.");
+                    return;
+                }
+                id = parsed;
+            }
+            var result = Run("GetPoolCode", () => _dataPool.GetPoolCode(poolName, poolCode, id));
+            if (result == null) return;
+            AddLog($"GetPoolCode: Success={result.Success}, Message='{result.Message}'");
+            AddLog(BuildDataTableSummary(result.Data));
         }
 
-        private void btnNextPageA7_Click(object? sender, EventArgs e)
+        private void btnGetCodesPaginated_Click(object? sender, EventArgs e)
         {
-            if (_lastPoolsResultA7 == null || !_lastPoolsResultA7.HasNextPage) return;
+            string poolName = GetPoolNameOrWarn();
+            if (string.IsNullOrEmpty(poolName)) return;
+            int? status = GetSelectedStatus(cboFilterStatus);
+            string batchID = txtFilterBatchID.Text.Trim();
+            var result = Run("GetCodesPaginated", () => _dataPool.GetPoolCodesPaginated(poolName, 1, 100, status, string.IsNullOrEmpty(batchID) ? null : batchID));
+            if (result == null) return;
+            AddLog($"GetCodesPaginated: Success={result.Success}, Total={result.Data?.TotalCount ?? 0}, Page={result.Data?.PageIndex}/{result.Data?.TotalPages}");
+            AddLog(BuildDataTableSummary(result.Data?.Data));
+        }
 
-            _currentPageA7 = _lastPoolsResultA7.PageIndex + 1;
-            LoadPoolsPaginated(_currentPageA7);
+        private void btnGetCodesByStatus_Click(object? sender, EventArgs e)
+        {
+            string poolName = GetPoolNameOrWarn();
+            if (string.IsNullOrEmpty(poolName)) return;
+            int? status = GetSelectedStatus(cboStatusOnly);
+            var result = Run("GetCodesByStatus", () => _dataPool.GetCodesByStatus(poolName, status));
+            if (result == null) return;
+            AddLog($"GetCodesByStatus: Success={result.Success}, Message='{result.Message}'");
+            AddLog(BuildDataTableSummary(result.Data));
+        }
+
+        private void btnGetCodeCounts_Click(object? sender, EventArgs e)
+        {
+            string poolName = GetPoolNameOrWarn();
+            if (string.IsNullOrEmpty(poolName)) return;
+            var result = Run("GetCodeCounts", () => _dataPool.GetCodeCounts(poolName));
+            if (result == null || result.Data == null) return;
+            var c = result.Data;
+            AddLog($"GetCodeCounts: Total={c.TotalCount}, Used={c.UsedCount}, Message='{result.Message}'");
+            UIMessageBox.ShowInfo($"Tổng: {c.TotalCount}\nĐã dùng: {c.UsedCount}\nCòn lại: {c.TotalCount - c.UsedCount}");
         }
     }
 }

@@ -67,6 +67,11 @@ namespace CProject.Module
                 PoolCodeUsedDatetime = usedDatetime;
                 PoolCodeNote = note;
             }
+
+            public static class GET
+            {
+
+            }
         }
 
         //Lấy đường dẫn pool theo tên pool
@@ -76,8 +81,15 @@ namespace CProject.Module
             {
                 return new DataPoolResultString(false, "Tên Pool không được trống.", string.Empty);
             }
+            if (poolName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                return new DataPoolResultString(false, "Tên Pool chứa ký tự không hợp lệ (path/file).", string.Empty);
+            }
             return new DataPoolResultString(true, "Success", Path.Combine(_databasePath, poolName + ".db"));
         }
+
+        //B.1 Lấy thông tin Pool theo tên pool (trả về thông tin pool và Count số lượng mã code trong pool, số lượng mã code đã sử dụng, số lượng mã code chưa sử dụng, số lượng mã code lỗi).
+
 
         //tạo pool mới
         public DataPoolResultString CreatePool(PoolInfo poolInfo)
@@ -139,6 +151,21 @@ namespace CProject.Module
             con.Open();
             using var cmd = new SqliteCommand(sql, con);
             cmd.ExecuteNonQuery();
+
+            string createDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            using (var insertCmd = new SqliteCommand(@"
+                INSERT INTO Pool (PoolName, PoolDescription, PoolCreateID, PoolNote, PoolCreatedBy, PoolCreateDatetime)
+                VALUES (@name, @description, @createID, @note, @createdBy, @createDatetime)", con))
+            {
+                insertCmd.Parameters.AddWithValue("@name", poolInfo.PoolName);
+                insertCmd.Parameters.AddWithValue("@description", poolInfo.PoolDescription ?? string.Empty);
+                insertCmd.Parameters.AddWithValue("@createID", poolInfo.PoolCreateID ?? string.Empty);
+                insertCmd.Parameters.AddWithValue("@note", poolInfo.PoolNote ?? string.Empty);
+                insertCmd.Parameters.AddWithValue("@createdBy", poolInfo.PoolCreatedBy ?? string.Empty);
+                insertCmd.Parameters.AddWithValue("@createDatetime", createDatetime);
+                insertCmd.ExecuteNonQuery();
+            }
+
             return new DataPoolResultString(true, "Pool created successfully", poolPath);
         }
 
@@ -257,47 +284,41 @@ namespace CProject.Module
             try
             {
                 int processed = 0;
+                using var insertCmd = new SqliteCommand(@"
+                    INSERT OR IGNORE INTO Codes (PoolCode, Status, PoolCodeCreateID, PoolCodeCreatedBy, PoolCodeCreateDatetime)
+                    VALUES (@code, 0, @createID, @createdBy, @createDatetime)", con, transaction);
+                insertCmd.Parameters.AddWithValue("@createID", createID);
+                insertCmd.Parameters.AddWithValue("@createdBy", createdBy);
+                insertCmd.Parameters.AddWithValue("@createDatetime", createDatetime);
+                var codeParam = insertCmd.Parameters.Add("@code", SqliteType.Text);
+
                 foreach (var code in codesToAdd)
                 {
                     if (string.IsNullOrWhiteSpace(code)) continue;
 
                     try
                     {
-                        using var checkCmd = new SqliteCommand(
-                            "SELECT COUNT(*) FROM Codes WHERE PoolCode = @code", con, transaction);
-                        checkCmd.Parameters.AddWithValue("@code", code);
-                        int count = Convert.ToInt32(checkCmd.ExecuteScalar());
-
-                        if (count > 0)
+                        codeParam.Value = code;
+                        int rowsAffected = insertCmd.ExecuteNonQuery();
+                        if (rowsAffected > 0)
+                        {
+                            result.AddedCount++;
+                        }
+                        else
                         {
                             result.DuplicateCount++;
-                            processed++;
-                            progressCallback?.Invoke(processed, codesToAdd.Count);
-                            continue;
                         }
-
-                        using var insertCmd = new SqliteCommand(@"
-                            INSERT INTO Codes (PoolCode, Status, PoolCodeCreateID, PoolCodeCreatedBy, PoolCodeCreateDatetime)
-                            VALUES (@code, 0, @createID, @createdBy, @createDatetime)", con, transaction);
-                        insertCmd.Parameters.AddWithValue("@code", code);
-                        insertCmd.Parameters.AddWithValue("@createID", createID);
-                        insertCmd.Parameters.AddWithValue("@createdBy", createdBy);
-                        insertCmd.Parameters.AddWithValue("@createDatetime", createDatetime);
-                        insertCmd.ExecuteNonQuery();
-                        result.AddedCount++;
-                        processed++;
-                        progressCallback?.Invoke(processed, codesToAdd.Count);
                     }
                     catch (Exception ex)
                     {
                         result.ErrorCount++;
-                        processed++;
-                        progressCallback?.Invoke(processed, codesToAdd.Count);
                         if (result.Errors.Count < 10)
                         {
                             result.Errors.Add($"Code '{code}': {ex.Message}");
                         }
                     }
+                    processed++;
+                    progressCallback?.Invoke(processed, codesToAdd.Count);
                 }
 
                 transaction.Commit();
@@ -314,8 +335,12 @@ namespace CProject.Module
             return result;
         }
 
-        //A1. Cập nhật trạng thái mã trong pool : Status = 0: chưa sử dụng, 1: đã sử dụng, -1: lỗi : Cập nhật theo PoolCode hoặc theo ID, nếu PoolCode và ID đều có thì ưu tiên PoolCode, nếu không có thì báo lỗi.
-        public DataPoolResult UpdateCodeStatus(string poolName, string? poolCode, double? id, int newStatus)
+        //A1. Cập nhật trạng thái mã trong pool: 0 = chưa dùng, 1 = đã dùng, -1 = lỗi.
+        //   - Ưu tiên poolCode; nếu không có thì dùng id.
+        //   - newStatus = 1: ghi batchID (mặc định "BATCH_yyyyMMddHHmmss" nếu batchID trống) + usedDatetime.
+        //   - newStatus = 0: xóa batchID và usedDatetime.
+        //   - newStatus = -1: KHÔNG thay đổi batchID/usedDatetime (giữ nguyên lịch sử dùng).
+        public DataPoolResult UpdateCodeStatus(string poolName, string? poolCode, double? id, int newStatus, string? batchID = null)
         {
             if (string.IsNullOrWhiteSpace(poolName))
             {
@@ -352,20 +377,26 @@ namespace CProject.Module
                 sql = @"UPDATE Codes SET Status = @status";
                 if (newStatus == 1)
                 {
+                    string effectiveBatchID = string.IsNullOrWhiteSpace(batchID)
+                        ? $"BATCH_{DateTime.Now:yyyyMMddHHmmss}"
+                        : batchID;
                     sql += @", PoolCodeUsedBatchID = @batchID, PoolCodeUsedDatetime = @usedDatetime";
-                }
-                else if (newStatus == 0)
-                {
-                    sql += @", PoolCodeUsedBatchID = '', PoolCodeUsedDatetime = ''";
-                }
-                sql += @" WHERE PoolCode = @code";
-                cmd = new SqliteCommand(sql, con);
-                cmd.Parameters.AddWithValue("@code", poolCode);
-                cmd.Parameters.AddWithValue("@status", newStatus);
-                if (newStatus == 1)
-                {
-                    cmd.Parameters.AddWithValue("@batchID", $"BATCH_{DateTime.Now:yyyyMMddHHmmss}");
+                    cmd = new SqliteCommand(sql, con);
+                    cmd.Parameters.AddWithValue("@code", poolCode);
+                    cmd.Parameters.AddWithValue("@status", newStatus);
+                    cmd.Parameters.AddWithValue("@batchID", effectiveBatchID);
                     cmd.Parameters.AddWithValue("@usedDatetime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                }
+                else
+                {
+                    if (newStatus == 0)
+                    {
+                        sql += @", PoolCodeUsedBatchID = '', PoolCodeUsedDatetime = ''";
+                    }
+                    sql += @" WHERE PoolCode = @code";
+                    cmd = new SqliteCommand(sql, con);
+                    cmd.Parameters.AddWithValue("@code", poolCode);
+                    cmd.Parameters.AddWithValue("@status", newStatus);
                 }
             }
             else
@@ -373,20 +404,26 @@ namespace CProject.Module
                 sql = @"UPDATE Codes SET Status = @status";
                 if (newStatus == 1)
                 {
+                    string effectiveBatchID = string.IsNullOrWhiteSpace(batchID)
+                        ? $"BATCH_{DateTime.Now:yyyyMMddHHmmss}"
+                        : batchID;
                     sql += @", PoolCodeUsedBatchID = @batchID, PoolCodeUsedDatetime = @usedDatetime";
-                }
-                else if (newStatus == 0)
-                {
-                    sql += @", PoolCodeUsedBatchID = '', PoolCodeUsedDatetime = ''";
-                }
-                sql += @" WHERE ID = @id";
-                cmd = new SqliteCommand(sql, con);
-                cmd.Parameters.AddWithValue("@id", id!.Value);
-                cmd.Parameters.AddWithValue("@status", newStatus);
-                if (newStatus == 1)
-                {
-                    cmd.Parameters.AddWithValue("@batchID", $"BATCH_{DateTime.Now:yyyyMMddHHmmss}");
+                    cmd = new SqliteCommand(sql, con);
+                    cmd.Parameters.AddWithValue("@id", id!.Value);
+                    cmd.Parameters.AddWithValue("@status", newStatus);
+                    cmd.Parameters.AddWithValue("@batchID", effectiveBatchID);
                     cmd.Parameters.AddWithValue("@usedDatetime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                }
+                else
+                {
+                    if (newStatus == 0)
+                    {
+                        sql += @", PoolCodeUsedBatchID = '', PoolCodeUsedDatetime = ''";
+                    }
+                    sql += @" WHERE ID = @id";
+                    cmd = new SqliteCommand(sql, con);
+                    cmd.Parameters.AddWithValue("@id", id!.Value);
+                    cmd.Parameters.AddWithValue("@status", newStatus);
                 }
             }
 
@@ -572,8 +609,8 @@ namespace CProject.Module
             }
             if (!string.IsNullOrWhiteSpace(createdBy))
             {
-                whereClauses.Add("PoolCodeCreatedBy LIKE @createdBy");
-                parameters.Add(new SqliteParameter("@createdBy", $"%{createdBy}%"));
+                whereClauses.Add("PoolCodeCreatedBy = @createdBy");
+                parameters.Add(new SqliteParameter("@createdBy", createdBy));
             }
             if (fromCreateDate.HasValue)
             {
@@ -727,6 +764,7 @@ namespace CProject.Module
 
             var files = Directory.GetFiles(_databasePath, "*.db");
             var poolInfos = new List<PoolInfoBasic>();
+            var invalidFiles = new List<string>();
 
             foreach (var file in files)
             {
@@ -751,23 +789,33 @@ namespace CProject.Module
                             filePath: file
                         ));
                     }
+                    else
+                    {
+                        invalidFiles.Add($"{fileName}: bảng Pool rỗng.");
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Skip invalid files
+                    invalidFiles.Add($"{fileName}: {ex.Message}");
                 }
             }
 
             int totalCount = poolInfos.Count;
             if (totalCount == 0)
             {
-                return new DataPoolResult<PoolListResult>(true, "Không có Pool nào.", new PoolListResult(new List<PoolInfoBasic>(), 0, pageIndex, pageSize));
+                string msg = invalidFiles.Count > 0
+                    ? "Không có Pool hợp lệ. File lỗi: " + string.Join("; ", invalidFiles)
+                    : "Không có Pool nào.";
+                return new DataPoolResult<PoolListResult>(true, msg, new PoolListResult(new List<PoolInfoBasic>(), 0, pageIndex, pageSize));
             }
 
             int offset = (pageIndex - 1) * pageSize;
             var pagedList = poolInfos.OrderBy(p => p.ID).Skip(offset).Take(pageSize).ToList();
 
-            return new DataPoolResult<PoolListResult>(true, "Success", new PoolListResult(pagedList, totalCount, pageIndex, pageSize));
+            string resultMessage = invalidFiles.Count > 0
+                ? "Success (bỏ qua file lỗi: " + string.Join("; ", invalidFiles) + ")"
+                : "Success";
+            return new DataPoolResult<PoolListResult>(true, resultMessage, new PoolListResult(pagedList, totalCount, pageIndex, pageSize));
         }
     }
 
