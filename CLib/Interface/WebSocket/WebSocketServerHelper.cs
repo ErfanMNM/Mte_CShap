@@ -12,7 +12,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TTManager.Communication.WebSocket
+namespace CLib.Communication.WebSocket
 {
     public enum WebSocketServerState
     {

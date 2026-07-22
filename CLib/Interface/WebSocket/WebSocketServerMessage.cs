@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace TTManager.Communication.WebSocket
+namespace CLib.Communication.WebSocket
 {
     public sealed class WebSocketServerMessage
     {

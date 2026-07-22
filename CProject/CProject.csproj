@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CLib\CLib.csproj" />
+    <ProjectReference Include="..\TTManager\TTManager.csproj" />
   </ItemGroup>
 
 </Project>
