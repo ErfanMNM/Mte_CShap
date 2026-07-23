@@ -9,8 +9,8 @@ namespace TApp.Models
     public class BatchHistoryModel
     {
         public int ID { get; set; }
-        public string? BatchCode { get; set; }
-        public string? Barcode { get; set; }
+        public string? POItem { get; set; }
+        public string? POLot { get; set; }
         public string? UserName { get; set; }
         public string? ProductionDate { get; set; }
         public string? TimeStamp { get; set; }

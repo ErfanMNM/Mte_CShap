@@ -35,10 +35,10 @@ namespace TApp.Helpers
 
     public class ProductionData
     {
-        public string ? BatchCode;
+        public string ? POItem;
         public e_Production_Status Status;
         public string? ProductionDate;
-        public string? Barcode;
+        public string? POLot;
 
         public Product_PLC_Counter PLC_Counter = new Product_PLC_Counter();
 
@@ -58,10 +58,10 @@ namespace TApp.Helpers
 
         public ProductionData()
         {
-            BatchCode = string.Empty;
+            POItem = string.Empty;
             Status = e_Production_Status.Error;
             ProductionDate = string.Empty;
-            Barcode = "0";
+            POLot = "0";
         }
 
         public class Product_Camera_Counter

@@ -17,7 +17,7 @@ namespace TApp.Views.Dashboard
     public partial class FDashboard : UIPage
     {
         #region Fields
-        private DatalogicCamera _datalogicCamera_C1;
+        private DatalogicCamera? _datalogicCamera_C1;
         private PLCStatus _plcStatus = PLCStatus.Disconnect;
         private bool _batchChangeMode = false;
         private int _blinkAlarm = 0;
@@ -25,11 +25,11 @@ namespace TApp.Views.Dashboard
         #endregion
 
         #region Events
-        public event Action<int> ChangePage;
+        public event Action<int>? ChangePage;
         /// <summary>
         /// Event được gọi khi trạng thái DEACTIVE từ PLC thay đổi.
         /// </summary>
-        public event Action<bool> DeactiveStateChanged;
+        public event Action<bool>? DeactiveStateChanged;
         #endregion
 
         #region Constructor & Page Load
@@ -40,16 +40,51 @@ namespace TApp.Views.Dashboard
 
         public void Start()
         {
-            InitializeConfigs();
-            InitializeERP();
-            InitializeDevices();
-            InitializeProductionInformation();
-            InitializeProductionDatabase();
-            InitializeDashboardUI();
-            InitializeBackgroundWorkers();
+            if(WK_AppState.IsBusy) { return; }
+            WK_AppState.RunWorkerAsync();
+            //InitializeConfigs();
+            //InitializeDevices();
+            //InitializeProductionInformation();
+            //InitializeProductionDatabase();
+            //InitializeDashboardUI();
+            //InitializeBackgroundWorkers();
         }
         #endregion
 
+        #region AppState
+        private void WK_AppState_DoWork(object sender, DoWorkEventArgs e)
+        {
+            while (!WK_AppState.CancellationPending)
+            {
+                switch (GlobalVarialbles.CurrentAppState)
+                {
+                    case e_AppState.Initializing:
+                        InitializeConfigs();
+                        InitializeDevices();
+                        InitializeDashboardUI();
+                        InitializeBackgroundWorkers();
+                        break;
+                    case e_AppState.CreatePO:
+                        break;
+                    case e_AppState.Push_Data_To_Printer:
+                        break;
+                    case e_AppState.New_PO:
+                        break;
+                    case e_AppState.Start_Printer:
+                        break;
+                    case e_AppState.Ready:
+                        break;
+                    case e_AppState.Printing:
+                        break;
+                    case e_AppState.Error:
+                        break;
+                    case e_AppState.Stopping:
+                        break;
+                }
+            }
+
+        }
+        #endregion
         #region Public Methods
         public bool Send_Result_To_PLC(e_PLC_Result rs)
         {
@@ -140,6 +175,7 @@ namespace TApp.Views.Dashboard
             if (!WK_Dequeue.IsBusy) WK_Dequeue.RunWorkerAsync();
             if (!WK_Load_Counter.IsBusy) WK_Load_Counter.RunWorkerAsync();
             if (!WK_Render_HMI.IsBusy) WK_Render_HMI.RunWorkerAsync();
+
         }
 
         private void InitializeDevices()
@@ -178,26 +214,28 @@ namespace TApp.Views.Dashboard
         {
             try
             {
-                string dbPath = "Database/Production/batch_history.db";
+                string dbPath = "Database/Production/po_history.db";
                 BatchHistoryHelper.EnsureDatabase(dbPath);
 
                 BatchHistoryModel lastBatch = BatchHistoryHelper.GetLatest(dbPath);
                 if (lastBatch != null)
                 {
-                    FD_Globals.productionData.BatchCode = lastBatch.BatchCode;
-                    FD_Globals.productionData.Barcode = lastBatch.Barcode;
-                    ipBatchNo.Text = lastBatch.BatchCode;
-                    ipBarcode.Text = lastBatch.Barcode;
+                    FD_Globals.productionData.POItem = lastBatch.POItem;
+                    FD_Globals.productionData.POLot = lastBatch.POLot;
+                    ipPOItem.Text = lastBatch.POItem;
+                    ipPOLot.Text = lastBatch.POLot;
                 }
                 else
                 {
-                    FD_Globals.productionData.BatchCode = "NNN";
-                    FD_Globals.productionData.Barcode = "000";
-                    ipBatchNo.Text = "NNN";
-                    ipBarcode.Text = "000";
+                    FD_Globals.productionData.POItem = "NULL";
+                    FD_Globals.productionData.POLot = "NaN";
+                    ipPOItem.Text = "NULL";
+                    ipPOLot.Text = "NaN";
+
+                    GlobalVarialbles.CurrentAppState = e_AppState.Editing;
                 }
 
-                LoadProductionCounters(FD_Globals.productionData.BatchCode);
+                LoadProductionCounters(FD_Globals.productionData.POItem);
             }
             catch (Exception ex)
             {
@@ -272,6 +310,11 @@ namespace TApp.Views.Dashboard
             {
                 this.ShowErrorDialog($"Lỗi khởi tạo PLC: {ex.Message}");
             }
+        }
+
+        public void InitializePOCartoning()
+        {
+
         }
 
         public void InitializeERP()
@@ -419,6 +462,8 @@ namespace TApp.Views.Dashboard
             }
         }
 
+        
+
         /// <summary>
         /// Kiểm tra trạng thái DEACTIVE từ PLC và gửi event nếu có thay đổi.
         /// </summary>
@@ -488,43 +533,6 @@ namespace TApp.Views.Dashboard
         #endregion
 
         #region UI Event Handlers
-        private void btnChangeBatch_Click(object sender, EventArgs e)
-        {
-            btnChangeBatch.Enabled = false;
-            btnChangeBatch.Text = "Đang tải...";
-            GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Nhấn đổi lô sản xuất", $"{{'BatchCode':'{ipBatchNo.Text.Trim()}','Barcode':'{ipBarcode.Text.Trim()}'}}", "UA-F-03");
-
-            using (var dialog = new DChangeBatch())
-            {
-                dialog.BatchCode = ipBatchNo.Text.Trim();
-
-                dialog.Barcode = ipBarcode.Text.Trim();
-                dialog.CurrentUser = GlobalVarialbles.CurrentUser;
-                dialog.bt = erP_Google2.LoadExcelToProductListD(AppConfigs.Current.production_list_path);
-
-                string loadErpResult = erP_Google2.Load_Erp_to_Cbb_With_Line_Name(dialog.ipBatch);
-                ProcessChangeBatchDialog(dialog, loadErpResult);
-            }
-            btnChangeBatch.Enabled = true;
-            btnChangeBatch.Text = "Đổi lô";
-        }
-
-        private void btnABatch_Click(object sender, EventArgs e)
-        {
-            GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Người dùng nhấn nút chỉnh sửa lô", "", "UA-F-01");
-            try
-            {
-                if (!_batchChangeMode) HandleEnterBatchChangeMode();
-                else HandleConfirmBatchChange();
-                _batchChangeMode = !_batchChangeMode;
-            }
-            catch (Exception ex)
-            {
-                ResetBatchChangeMode();
-                GlobalVarialbles.Logger.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERP-F-02");
-                this.ShowErrorDialog($"Lỗi đổi lô, bạn có thể liên hệ NCC máy theo số 0876 00 01 00: {ex.Message}");
-            }
-        }
 
         private void btnResetCounterPLC_Click(object sender, EventArgs e)
         {
@@ -548,13 +556,6 @@ namespace TApp.Views.Dashboard
             });
         }
 
-        private void ipBatchNo_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (ipBatchNo.SelectedItem != null)
-            {
-                ipBarcode.Text = erP_Google2.LoadExcelToProductList(ipBatchNo.SelectedItem.ToString(), AppConfigs.Current.production_list_path);
-            }
-        }
         private void btnClearPLC_Click(object sender, EventArgs e)
         {
             try
@@ -601,8 +602,8 @@ namespace TApp.Views.Dashboard
                 int clearedCount = FD_Globals.AlarmCount;
                 DateTime clearTime = DateTime.Now;
                 string username = GlobalVarialbles.CurrentUser?.Username ?? "System";
-                string batchCode = FD_Globals.productionData?.BatchCode ?? "N/A";
-                string barcode = FD_Globals.productionData?.Barcode ?? "N/A";
+                string batchCode = FD_Globals.productionData?.POItem ?? "N/A";
+                string barcode = FD_Globals.productionData?.POLot ?? "N/A";
 
                 // Tạo log record
                 var clearLog = new FormatErrorClearLog(clearTime, username, clearedCount, batchCode, barcode);
@@ -645,93 +646,9 @@ namespace TApp.Views.Dashboard
                 btnClearPLC.Text = "Xóa lỗi";
             }
         }
-        private void btnScan_Click(object sender, EventArgs e) => ChangePage?.Invoke(1003);
         private void btnPLCSetting_Click(object sender, EventArgs e) => ChangePage?.Invoke(1005);
-        //private void btnReload_Click(object sender, EventArgs e) => ReadPLCParameters();
-        //private void btnUpload_Click(object sender, EventArgs e) => WritePLCParameters();
-        //private void btnApply_Click(object sender, EventArgs e)
-        //{
-        //    WritePLCParameters();
-        //    ReadPLCParameters();
-        //}
-        //private void ReadPLCParameters()
-        //{
-        //    if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
-        //    {
-        //        this.ShowWarningTip("PLC chưa kết nối!");
-        //        return;
-        //    }
-        //    Task.Run(() =>
-        //    {
-        //        try
-        //        {
-        //            this.InvokeIfRequired(() => { btnReload.Enabled = false; btnReload.Text = "Đang nạp..."; });
-        //            var read = omronPLC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Delay_Camera_DM_C2"), 3);
-        //            if (read.IsSuccess)
-        //            {
-        //                this.InvokeIfRequired(() =>
-        //                {
-        //                    ipDelayTriger.Text = read.Content[0].ToString();
-        //                    ipDelayRject.Text = read.Content[1].ToString();
-        //                    ipRejectStreng.Text = read.Content[2].ToString();
-        //                });
-        //            }
-        //            else
-        //            {
-        //                this.InvokeIfRequired(() => this.ShowErrorDialog("Đọc PLC thất bại: " + read.Message));
-        //            }
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            this.InvokeIfRequired(() => this.ShowErrorDialog($"Lỗi khi đọc PLC: {ex.Message}"));
-        //        }
-        //        finally
-        //        {
-        //            this.InvokeIfRequired(() => { btnReload.Enabled = true; btnReload.Text = "Nạp PLC"; });
-        //        }
-        //    });
-        //}
-        //private void WritePLCParameters()
-        //{
-        //    if (omronPLC_Hsl1.plc == null || _plcStatus != PLCStatus.Connected)
-        //    {
-        //        this.ShowWarningTip("PLC chưa kết nối!");
-        //        return;
-        //    }
-        //    Task.Run(() =>
-        //    {
-        //        try
-        //        {
-        //            this.InvokeIfRequired(() => { btnUpload.Enabled = false; btnUpload.Text = "Đang ghi..."; });
-        //            var values = new int[]
-        //            {
-        //                int.Parse(ipDelayTriger.Text),
-        //                int.Parse(ipDelayRject.Text),
-        //                int.Parse(ipRejectStreng.Text)
-        //            };
-        //            var write = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Delay_Camera_DM_C2"), values);
-        //            if (write.IsSuccess)
-        //            {
-        //                this.InvokeIfRequired(() => this.ShowSuccessTip("Ghi PLC thành công!"));
-        //            }
-        //            else
-        //            {
-        //                this.InvokeIfRequired(() => this.ShowErrorDialog("Ghi PLC thất bại: " + write.Message));
-        //            }
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            this.InvokeIfRequired(() => this.ShowErrorDialog($"Lỗi khi ghi PLC: {ex.Message}"));
-        //        }
-        //        finally
-        //        {
-        //            this.InvokeIfRequired(() => { btnUpload.Enabled = true; btnUpload.Text = "Ghi PLC"; });
-        //        }
-        //    });
-        //}
         private void uiSymbolButton3_Click(object sender, EventArgs e) => ChangePage?.Invoke(1004);
         private void opFail_DoubleClick(object sender, EventArgs e) => this.ShowInfoDialog($"Số quá thời gian: {FD_Globals.productionData.PLC_Counter.Timeout}");
-        private void opNoteCameraView_SelectedIndexChanged(object sender, EventArgs e) { /* Designer Required */ }
         #endregion
 
         #region UI Rendering
@@ -909,7 +826,7 @@ namespace TApp.Views.Dashboard
             {
                 ResetBatchChangeMode(false);
                 FD_Globals.productionData.BatchCode = ipBatchNo.Text.Trim();
-                FD_Globals.productionData.Barcode = ipBarcode.Text;
+                FD_Globals.productionData.Barcode = ipPOLot.Text;
 
                 string dbPath = "Database/Production/batch_history.db";
                 BatchHistoryHelper.AddHistory(dbPath, FD_Globals.productionData.BatchCode, FD_Globals.productionData.Barcode, GlobalVarialbles.CurrentUser.Username, DateTime.Now);
@@ -1034,9 +951,9 @@ namespace TApp.Views.Dashboard
 
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    ipBarcode.Text = dialog.Barcode;
+                    ipPOLot.Text = dialog.Barcode;
                     ipBatchNo.Text = dialog.BatchCode;
-                    FD_Globals.productionData.BatchCode = dialog.BatchCode;
+                    FD_Globals.productionData.POItem = dialog.BatchCode;
                     FD_Globals.productionData.Barcode = dialog.Barcode;
                     BatchHistoryHelper.AddHistory("Database/Production/batch_history.db", FD_Globals.productionData.BatchCode, FD_Globals.productionData.Barcode, GlobalVarialbles.CurrentUser.Username, DateTime.Now);
                     this.ShowSuccessTip("Đổi lô thành công!");
@@ -1053,7 +970,7 @@ namespace TApp.Views.Dashboard
                 dialog.opERPStatus.FillColor = Color.Red;
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    ipBarcode.Text = dialog.Barcode;
+                    ipPOLot.Text = dialog.Barcode;
                     ipBatchNo.Text = dialog.BatchCode;
                     FD_Globals.productionData.BatchCode = dialog.BatchCode;
                     FD_Globals.productionData.Barcode = dialog.Barcode;
@@ -1153,6 +1070,8 @@ namespace TApp.Views.Dashboard
         {
             FD_Globals.BypassActiveDate = value.ToString("yyyy-MM-dd");
         }
+
+
     }
 
     #region Nested Types

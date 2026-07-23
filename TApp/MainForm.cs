@@ -142,8 +142,8 @@ namespace TApp
             // Các trang chức năng chính
             NavMenu.CreateNode(AddPage(fDashboard, 1001));
             NavMenu.CreateNode(AddPage(PAppSetting, 1002));
-            NavMenu.CreateNode(AddPage(fScan, 1003));
-            NavMenu.CreateNode(AddPage(fAddCode, 1004));
+            //NavMenu.CreateNode(AddPage(fScan, 1003));
+            //NavMenu.CreateNode(AddPage(fAddCode, 1004));
             NavMenu.CreateNode(AddPage(PLCSetting, 1005));
             NavMenu.CreateNode(AddPage(fActivityLogs, 1006));
             NavMenu.CreateNode(AddPage(fExtention, 1007));
@@ -198,7 +198,7 @@ namespace TApp
             PAppSetting.ShowTitle = false;
             PAppSetting.START();
 
-            fDashboard.Start();
+            fDashboard.Start();//khởi động hàm kiểm soát lưu trình
             fLogin.INIT();
             //fScan.InitializeScanner();
             PLCSetting.INIT();
@@ -459,7 +459,7 @@ namespace TApp
             if (AppRenderState != e_App_Render_State.LOGIN)
             {
                 AppRenderState = e_App_Render_State.LOGIN;
-                SetGlobalAppState(e_AppState.Stopped); // Đang ở màn hình đăng nhập
+                SetGlobalAppState(e_AppState.Stopping); // Đang ở màn hình đăng nhập
 
                 this.Invoke(new Action(() =>
                 {
@@ -490,7 +490,7 @@ namespace TApp
             if (AppRenderState != e_App_Render_State.ACTIVE)
             {
                 AppRenderState = e_App_Render_State.ACTIVE;
-                SetGlobalAppState(e_AppState.Ready); // Trạng thái hoạt động bình thường
+                SetGlobalAppState(e_AppState.Initializing); // Trạng thái hoạt động bình thường
 
                 this.Invoke(new Action(() =>
                 {
@@ -516,7 +516,7 @@ namespace TApp
             if (AppRenderState != e_App_Render_State.DEACTIVE)
             {
                 AppRenderState = e_App_Render_State.DEACTIVE;
-                SetGlobalAppState(e_AppState.Deactive); // Đang bị vô hiệu hóa
+                SetGlobalAppState(e_AppState.Stopping); // Đang bị vô hiệu hóa
 
                 this.Invoke(new Action(() =>
                 {

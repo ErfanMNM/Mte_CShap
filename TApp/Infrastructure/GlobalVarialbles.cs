@@ -47,11 +47,14 @@ namespace TApp.Infrastructure
     public enum e_AppState
     {
         Initializing = 0, // Khởi động ứng dụng
-        Ready = 1,        // Đang chạy (ACTIVE)
-        Stopped = 2,      // Dừng máy - bộ đá vẫn hoạt động
-        Deactive = 3,     // Dừng máy, không kiểm và không đá (DEACTIVE)
-        Error = 4,        // Lỗi
-        Editing = 5       // Đang chỉnh sửa
+        CreatePO = 1, //tạo PO
+        Push_Data_To_Printer = 2, //Gửi dữ liệu cho máy in
+        New_PO = 3,
+        Start_Printer = 4,
+        Ready = 5,
+        Printing = 6,
+        Error = 7,
+        Stopping = 8,
     }
 
     public static class GlobalVarialbles

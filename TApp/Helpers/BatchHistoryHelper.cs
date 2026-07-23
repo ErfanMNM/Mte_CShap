@@ -11,10 +11,10 @@ namespace TApp.Helpers
     public static class BatchHistoryHelper
     {
         private const string TABLE_SQL = @"
-        CREATE TABLE IF NOT EXISTS BatchHistory (
+        CREATE TABLE IF NOT EXISTS POHistory (
             ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            BatchCode TEXT NOT NULL,
-            Barcode TEXT NOT NULL,
+            POItem TEXT NOT NULL,
+            POLot TEXT NOT NULL,
             UserName TEXT NOT NULL,
             ProductionDate TEXT NOT NULL,
             TimeStamp TEXT NOT NULL
@@ -48,8 +48,8 @@ namespace TApp.Helpers
         /// </summary>
         public static void AddHistory(
             string dbPath,
-            string batchCode,
-            string barcode,
+            string POItem,
+            string POLot,
             string userName,
             DateTime productionDate)
         {
@@ -61,14 +61,14 @@ namespace TApp.Helpers
 
                 string sql = @"
             INSERT INTO BatchHistory 
-            (BatchCode, Barcode, UserName, ProductionDate, TimeStamp)
+            (POItem, POLot, UserName, ProductionDate, TimeStamp)
             VALUES 
-            (@BatchCode, @Barcode, @UserName, @ProductionDate, @TimeStamp);";
+            (@POItem, @POLot, @UserName, @ProductionDate, @TimeStamp);";
 
                 using (var cmd = new SQLiteCommand(sql, con))
                 {
-                    cmd.Parameters.AddWithValue("@BatchCode", batchCode);
-                    cmd.Parameters.AddWithValue("@Barcode", barcode);
+                    cmd.Parameters.AddWithValue("@POItem", POItem);
+                    cmd.Parameters.AddWithValue("@POLot", POLot);
                     cmd.Parameters.AddWithValue("@UserName", userName);
                     cmd.Parameters.AddWithValue("@ProductionDate", productionDate.ToString("yyyy-MM-dd"));
                     cmd.Parameters.AddWithValue("@TimeStamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"));
@@ -91,7 +91,7 @@ namespace TApp.Helpers
                 con.Open();
 
                 string sql = @"
-            SELECT ID, BatchCode, Barcode, UserName, ProductionDate, TimeStamp
+            SELECT ID, POItem, POLot, UserName, ProductionDate, TimeStamp
             FROM BatchHistory
             ORDER BY datetime(TimeStamp) DESC, ID DESC
             LIMIT 1;";
@@ -105,8 +105,8 @@ namespace TApp.Helpers
                     return new BatchHistoryModel
                     {
                         ID = rd.GetInt32(0),
-                        BatchCode = rd.GetString(1),
-                        Barcode = rd.GetString(2),
+                        POItem = rd.GetString(1),
+                        POLot = rd.GetString(2),
                         UserName = rd.GetString(3),
                         ProductionDate = rd.GetString(4),
                         TimeStamp = rd.GetString(5)
@@ -164,7 +164,7 @@ namespace TApp.Helpers
                 con.Open();
 
                 string sql = @"
-            SELECT ID, BatchCode, Barcode, UserName, ProductionDate, TimeStamp
+            SELECT ID, POItem, POLot, UserName, ProductionDate, TimeStamp
             FROM BatchHistory
             ORDER BY datetime(TimeStamp) DESC, ID DESC
             LIMIT @Limit OFFSET @Offset;";
@@ -181,8 +181,8 @@ namespace TApp.Helpers
                             list.Add(new BatchHistoryModel
                             {
                                 ID = rd.GetInt32(0),
-                                BatchCode = rd.GetString(1),
-                                Barcode = rd.GetString(2),
+                                POItem = rd.GetString(1),
+                                POLot = rd.GetString(2),
                                 UserName = rd.GetString(3),
                                 ProductionDate = rd.GetString(4),
                                 TimeStamp = rd.GetString(5)
