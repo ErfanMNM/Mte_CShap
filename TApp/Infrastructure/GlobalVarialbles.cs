@@ -62,7 +62,7 @@ namespace TApp.Infrastructure
     public static class GlobalVarialbles
     {
         public static UserData CurrentUser { get; set; } = new UserData();
-        public static e_AppState CurrentAppState { get; set; } = e_AppState.Initializing;
+        public static e_AppState CurrentAppState { get; set; } = e_AppState.Stopping;
         public static LogHelper<e_LogType>? Logger;
     }
 

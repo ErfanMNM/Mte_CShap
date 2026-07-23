@@ -475,6 +475,7 @@ namespace TApp
             if (AppRenderState != e_App_Render_State.ACTIVE)
             {
                 AppRenderState = e_App_Render_State.ACTIVE;
+
                 SetGlobalAppState(e_AppState.Initializing); // Trạng thái hoạt động bình thường
 
                 this.Invoke(new Action(() =>

@@ -228,52 +228,6 @@ namespace TApp.Views.Dashboard
             }
         }
 
-        private void InitializeProductionDatabase()
-        {
-            try
-            {
-                QRDatabaseHelper.InitDatabases();
-                FD_Globals.ActiveSet = QRDatabaseHelper.LoadActiveToHashSet();
-            }
-            catch (Exception ex)
-            {
-                this.ShowErrorDialog($"Lỗi khởi tạo database sản xuất: {ex.Message}");
-            }
-        }
-
-        private void InitializeProductionInformation()
-        {
-            try
-            {
-                string dbPath = "Database/Production/po_history.db";
-                BatchHistoryHelper.EnsureDatabase(dbPath);
-
-                BatchHistoryModel lastBatch = BatchHistoryHelper.GetLatest(dbPath);
-                if (lastBatch != null)
-                {
-                    FD_Globals.productionData.POItem = lastBatch.POItem;
-                    FD_Globals.productionData.POLot = lastBatch.POLot;
-                    ipPOItem.Text = lastBatch.POItem;
-                    ipPOLot.Text = lastBatch.POLot;
-                }
-                else
-                {
-                    FD_Globals.productionData.POItem = "NULL";
-                    FD_Globals.productionData.POLot = "NaN";
-                    ipPOItem.Text = "NULL";
-                    ipPOLot.Text = "NaN";
-
-                    GlobalVarialbles.CurrentAppState = e_AppState.CreatePO;
-                }
-
-                LoadProductionCounters(FD_Globals.productionData.POItem??"NULL", FD_Globals.productionData.POLot??"NULL");
-            }
-            catch (Exception ex)
-            {
-                this.ShowErrorDialog($"Lỗi lấy dữ liệu cũ: {ex.Message}");
-            }
-        }
-
         private void LoadProductionCounters(string POItem, string POLot)
         {
             FD_Globals.productionData.productCameraCounter.Total = QRDatabaseHelper.GetRecordCountByBatch(POItem,POLot);
