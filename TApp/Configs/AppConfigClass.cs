@@ -24,7 +24,6 @@ namespace TApp.Configs
 
         public string Data_Mode { get; set; }
 
-        public string AWS_Credential_Path { get; set; }
         public string ? PLC_IP { get; set; }
         public int PLC_Port { get; set; }
 
@@ -41,13 +40,6 @@ namespace TApp.Configs
 
         public string ? production_list_path { get; set; }
         public string? credentialPLCAddressPath { get; set; }
-        public string? credentialERPPath { get; set; }
-
-        public string? ERP_Sub_Inv { get; set; }
-        public string? ERP_Org_Code { get; set; }
-        public string? ERP_DatasetID { get; set; }
-        public string? ERP_TableID { get; set; }
-        public string? ERP_ProjectID { get; set; }
 
         public bool Cloud_Connection_Enabled { get; set; }
         public int Cloud_Refresh_Interval_Minute { get; set; }
@@ -96,14 +88,7 @@ namespace TApp.Configs
             PLC_Test_Mode = true;
             production_list_path = "C:/MASANQR/Configs/DBProductList.xlsx";
             credentialPLCAddressPath = "C:/MASANQR/Configs/GoogleSheet.json";
-            credentialERPPath = "C:/MASANQR/Configs/sales-268504-20a4b06ea0fb.json";
-            AWS_Credential_Path = "C:/MASANQR/Configs/aws_credentials.json";
             Data_Mode = "normal";
-            ERP_DatasetID = "FactoryIntegration";
-            ERP_TableID = "BatchProduction";
-            ERP_Sub_Inv = "W05";
-            ERP_Org_Code = "MIP";
-            ERP_ProjectID = "sales-268504";
             Cloud_Connection_Enabled = false;
             Cloud_Refresh_Interval_Minute = 60;
             Cloud_Upload_Enabled = true;
