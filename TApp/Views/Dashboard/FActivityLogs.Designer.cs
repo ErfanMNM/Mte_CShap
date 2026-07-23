@@ -208,7 +208,6 @@ namespace TApp.Views.Dashboard
             btnGetAll.MinimumSize = new Size(1, 1);
             btnGetAll.Name = "btnGetAll";
             btnGetAll.RectColor = Color.Blue;
-            btnGetAll.RectSize = 2;
             btnGetAll.Size = new Size(107, 70);
             btnGetAll.Symbol = 559775;
             btnGetAll.SymbolColor = Color.MediumBlue;
@@ -230,7 +229,6 @@ namespace TApp.Views.Dashboard
             ipDateFrom.Name = "ipDateFrom";
             ipDateFrom.Padding = new Padding(0, 0, 30, 2);
             ipDateFrom.RectColor = Color.Blue;
-            ipDateFrom.RectSize = 2;
             ipDateFrom.Size = new Size(392, 72);
             ipDateFrom.SymbolDropDown = 61555;
             ipDateFrom.SymbolNormal = 61555;
@@ -252,7 +250,6 @@ namespace TApp.Views.Dashboard
             btnExportCsv.MinimumSize = new Size(1, 1);
             btnExportCsv.Name = "btnExportCsv";
             btnExportCsv.RectColor = Color.Blue;
-            btnExportCsv.RectSize = 2;
             btnExportCsv.Size = new Size(135, 72);
             btnExportCsv.Symbol = 363197;
             btnExportCsv.SymbolColor = Color.Green;
@@ -272,7 +269,6 @@ namespace TApp.Views.Dashboard
             btnExportPDF.MinimumSize = new Size(1, 1);
             btnExportPDF.Name = "btnExportPDF";
             btnExportPDF.RectColor = Color.Blue;
-            btnExportPDF.RectSize = 2;
             btnExportPDF.Size = new Size(143, 72);
             btnExportPDF.Symbol = 261889;
             btnExportPDF.SymbolColor = Color.FromArgb(255, 128, 0);
@@ -291,7 +287,6 @@ namespace TApp.Views.Dashboard
             btnGetLogs.MinimumSize = new Size(1, 1);
             btnGetLogs.Name = "btnGetLogs";
             btnGetLogs.RectColor = Color.Blue;
-            btnGetLogs.RectSize = 2;
             btnGetLogs.Size = new Size(125, 70);
             btnGetLogs.Symbol = 61473;
             btnGetLogs.SymbolColor = Color.MediumBlue;
@@ -316,7 +311,6 @@ namespace TApp.Views.Dashboard
             ipLogType.Name = "ipLogType";
             ipLogType.Padding = new Padding(0, 0, 30, 2);
             ipLogType.RectColor = Color.Blue;
-            ipLogType.RectSize = 2;
             ipLogType.Size = new Size(275, 72);
             ipLogType.SymbolSize = 24;
             ipLogType.TabIndex = 5;
@@ -336,7 +330,6 @@ namespace TApp.Views.Dashboard
             ipDateTo.Name = "ipDateTo";
             ipDateTo.Padding = new Padding(0, 0, 30, 2);
             ipDateTo.RectColor = Color.Blue;
-            ipDateTo.RectSize = 2;
             ipDateTo.Size = new Size(389, 72);
             ipDateTo.SymbolDropDown = 61555;
             ipDateTo.SymbolNormal = 61555;
@@ -358,7 +351,6 @@ namespace TApp.Views.Dashboard
             btnRefresh.MinimumSize = new Size(1, 1);
             btnRefresh.Name = "btnRefresh";
             btnRefresh.RectColor = Color.Blue;
-            btnRefresh.RectSize = 2;
             btnRefresh.Size = new Size(132, 72);
             btnRefresh.Symbol = 61473;
             btnRefresh.SymbolColor = Color.Blue;

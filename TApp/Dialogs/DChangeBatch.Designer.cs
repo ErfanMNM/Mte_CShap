@@ -77,7 +77,6 @@
             uiTitlePanel1.Name = "uiTitlePanel1";
             uiTitlePanel1.Padding = new Padding(1, 50, 1, 1);
             uiTitlePanel1.RectColor = Color.Red;
-            uiTitlePanel1.RectSize = 2;
             uiTitlePanel1.ShowText = false;
             uiTitlePanel1.Size = new Size(584, 401);
             uiTitlePanel1.TabIndex = 0;
@@ -339,7 +338,6 @@
             uiPanel1.Margin = new Padding(0);
             uiPanel1.MinimumSize = new Size(1, 1);
             uiPanel1.Name = "uiPanel1";
-            uiPanel1.RectSize = 2;
             uiPanel1.Size = new Size(576, 91);
             uiPanel1.TabIndex = 2;
             uiPanel1.Text = null;

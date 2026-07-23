@@ -1,18 +1,14 @@
 ﻿using TTManager.Audit;
 using Sunny.UI;
-using System.Windows.Forms;
-using System.Threading.Tasks;
 using TApp.Configs;
 using TApp.Infrastructure;
 using TApp.Utils;
 using TApp.Views.Auth;
 using TApp.Views.Dashboard;
 using TApp.Views.Extention;
-using TApp.Views.Test;
+
 using TApp.Views.Settings;
 using TTManager.Auth;
-using TTManager.Diaglogs;
-using static TApp.Views.Dashboard.FDashboard;
 
 namespace TApp
 {
@@ -30,12 +26,9 @@ namespace TApp
         // Các trang cấu hình/chức năng
         private readonly PAppSetting PAppSetting = new PAppSetting();
         private readonly FDashboard fDashboard = new FDashboard();
-        //private readonly FScan fScan = new FScan();
         private readonly Login fLogin = new Login();
-        //private readonly FAddCode fAddCode = new FAddCode();
         private readonly PLCSetting PLCSetting = new PLCSetting();
         private readonly FActivityLogs fActivityLogs = new FActivityLogs();
-        private readonly FExtention fExtention = new FExtention();
         private readonly FDeactive fDeactive = new FDeactive();
        // private readonly FCameraSimulator fCameraSimulator = new FCameraSimulator();
 
@@ -142,12 +135,8 @@ namespace TApp
             // Các trang chức năng chính
             NavMenu.CreateNode(AddPage(fDashboard, 1001));
             NavMenu.CreateNode(AddPage(PAppSetting, 1002));
-            //NavMenu.CreateNode(AddPage(fScan, 1003));
-            //NavMenu.CreateNode(AddPage(fAddCode, 1004));
             NavMenu.CreateNode(AddPage(PLCSetting, 1005));
             NavMenu.CreateNode(AddPage(fActivityLogs, 1006));
-            NavMenu.CreateNode(AddPage(fExtention, 1007));
-            //NavMenu.CreateNode(AddPage(fCameraSimulator, 1008));
 
             // Trang đăng nhập
             NavMenu.CreateNode(AddPage(fLogin, 2001));
@@ -200,10 +189,7 @@ namespace TApp
 
             fDashboard.Start();//khởi động hàm kiểm soát lưu trình
             fLogin.INIT();
-            //fScan.InitializeScanner();
             PLCSetting.INIT();
-            fExtention.InitializeERP();
-
             fDashboard.ChangePage += FDashboard_ChangePage;
             fDashboard.DeactiveStateChanged += FDashboard_DeactiveStateChanged;
             fDeactive.OnReactivateRequested += FDeactive_OnReactivateRequested;

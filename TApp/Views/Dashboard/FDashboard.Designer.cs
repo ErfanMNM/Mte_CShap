@@ -959,7 +959,6 @@
             opAppStatus.MinimumSize = new Size(1, 1);
             opAppStatus.Name = "opAppStatus";
             opAppStatus.RectColor = Color.FromArgb(255, 128, 0);
-            opAppStatus.RectSize = 2;
             opAppStatus.Size = new Size(139, 80);
             opAppStatus.TabIndex = 0;
             opAppStatus.Text = "Tạm dừng";
@@ -1026,7 +1025,6 @@
             opServerStatus.MinimumSize = new Size(1, 1);
             opServerStatus.Name = "opServerStatus";
             opServerStatus.RectColor = Color.FromArgb(0, 192, 0);
-            opServerStatus.RectSize = 2;
             opServerStatus.Size = new Size(139, 80);
             opServerStatus.TabIndex = 0;
             opServerStatus.Text = "Kết nối";
@@ -1114,7 +1112,6 @@
             uiPanel4.MinimumSize = new Size(1, 1);
             uiPanel4.Name = "uiPanel4";
             uiPanel4.RectColor = Color.Silver;
-            uiPanel4.RectSize = 2;
             uiPanel4.Size = new Size(139, 79);
             uiPanel4.TabIndex = 0;
             uiPanel4.Text = "K.Dùng";
@@ -1176,7 +1173,6 @@
             opPLCStatus.MinimumSize = new Size(1, 1);
             opPLCStatus.Name = "opPLCStatus";
             opPLCStatus.RectColor = Color.Red;
-            opPLCStatus.RectSize = 2;
             opPLCStatus.Size = new Size(139, 79);
             opPLCStatus.TabIndex = 0;
             opPLCStatus.Text = "Lỗi K01";
@@ -1240,7 +1236,6 @@
             opCameraStatus.MinimumSize = new Size(1, 1);
             opCameraStatus.Name = "opCameraStatus";
             opCameraStatus.RectColor = Color.FromArgb(0, 192, 0);
-            opCameraStatus.RectSize = 2;
             opCameraStatus.Size = new Size(139, 79);
             opCameraStatus.TabIndex = 0;
             opCameraStatus.Text = "Kết nối";
@@ -1263,7 +1258,6 @@
             opAlarm.Margin = new Padding(2);
             opAlarm.MinimumSize = new Size(1, 1);
             opAlarm.Name = "opAlarm";
-            opAlarm.RectSize = 2;
             opAlarm.Size = new Size(1120, 70);
             opAlarm.TabIndex = 6;
             opAlarm.Text = "-";

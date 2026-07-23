@@ -162,37 +162,37 @@ namespace TApp.Views.Extention
 
                 // Lấy dữ liệu từ cả hai database
                 TResult resultActive = QRDatabaseHelper.GetActiveByQRContent(qrCode);
-                TResult resultAll = QRDatabaseHelper.GetByQRContent(qrCode);
+                //TResult resultAll = QRDatabaseHelper.GetByQRContent(qrCode);
 
-                if (!resultAll.issuccess)
-                {
-                    this.InvokeIfRequired(() =>
-                    {
-                        UpdateStatus("Lỗi truy xuất database!", Color.Orange, 61527);
-                    });
-                    return;
-                }
+                //if (!resultAll.issuccess)
+                //{
+                //    this.InvokeIfRequired(() =>
+                //    {
+                //        UpdateStatus("Lỗi truy xuất database!", Color.Orange, 61527);
+                //    });
+                //    return;
+                //}
 
-                if (resultAll.data == null || resultAll.data.Rows.Count < 1)
-                {
-                    this.InvokeIfRequired(() =>
-                    {
-                        UpdateStatus("Không tìm thấy mã QR!", Color.Red, 61453);
-                    });
-                    return;
-                }
+                //if (resultAll.data == null || resultAll.data.Rows.Count < 1)
+                //{
+                //    this.InvokeIfRequired(() =>
+                //    {
+                //        UpdateStatus("Không tìm thấy mã QR!", Color.Red, 61453);
+                //    });
+                //    return;
+                //}
 
                 // Hiển thị dữ liệu lên grid
-                this.InvokeIfRequired(() =>
-                {
-                    opInfoTable.DataSource = resultAll.data;
+                //this.InvokeIfRequired(() =>
+                //{
+                //    opInfoTable.DataSource = resultAll.data;
 
-                    // Tự động resize columns
-                    foreach (DataGridViewColumn column in opInfoTable.Columns)
-                    {
-                        column.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                    }
-                });
+                //    // Tự động resize columns
+                //    foreach (DataGridViewColumn column in opInfoTable.Columns)
+                //    {
+                //        column.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                //    }
+                //});
 
                 // Kiểm tra mã có active không
                 if (resultActive.issuccess && resultActive.data != null && resultActive.data.Rows.Count > 0)
@@ -209,8 +209,8 @@ namespace TApp.Views.Extention
                 else
                 {
                     // Kiểm tra status trong database chính
-                    var firstRow = resultAll.data.Rows[0];
-                    string status = firstRow["Status"].ToString();
+                    //var firstRow; //resultAll.data.Rows[0];
+                    string status = "";//firstRow["Status"].ToString();
 
                     this.InvokeIfRequired(() =>
                     {
@@ -224,7 +224,7 @@ namespace TApp.Views.Extention
                         }
 
                         // Hiển thị thông tin thời gian
-                        opTime.Text = firstRow["TimeStampActive"].ToString();
+                        opTime.Text = "";// firstRow["TimeStampActive"].ToString();
                     });
                 }
             }

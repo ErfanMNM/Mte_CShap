@@ -268,7 +268,7 @@ namespace TApp.Views.Extention
                 {
                     QRContent = qrCode,
                     Status = e_Production_Status.Pass,
-                    BatchCode = currentBatch,
+                    POItem = currentBatch,
                     Barcode = currentBarcode,
                     UserName = GlobalVarialbles.CurrentUser.Username + "Quét tay",
                     TimeStampActive = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"),
@@ -350,7 +350,7 @@ namespace TApp.Views.Extention
                     int index = 1;
                     foreach (var record in _pendingRecords.TakeLast(50))
                     {
-                        dt.Rows.Add(index++, record.QRContent, record.BatchCode, record.Barcode, record.TimeStampActive);
+                        //dt.Rows.Add(index++, record.QRContent, record.BatchCode, record.Barcode, record.TimeStampActive);
                     }
 
                     opQueueTable.DataSource = dt;

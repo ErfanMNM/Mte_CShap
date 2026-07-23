@@ -138,7 +138,6 @@ namespace TApp.Views.Settings
                 FillColor = Color.FromArgb(255, 255, 255),
                 RectColor = Color.FromArgb(189, 195, 199),
                 Radius = 8,
-                RectSize = 1,
                 AutoSize = false,
                 Margin = new Padding(0, 0, 0, RowGap)
             };
@@ -395,7 +394,6 @@ namespace TApp.Views.Settings
                         FillColor = Color.FromArgb(108, 117, 125),
                         FillHoverColor = Color.FromArgb(134, 142, 150),
                         FillPressColor = Color.FromArgb(73, 80, 87),
-                        RectSize = 0,
                         ForeColor = Color.White
                     };
 
