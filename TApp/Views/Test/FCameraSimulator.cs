@@ -26,7 +26,7 @@ namespace TApp.Views.Test
         {
             InitializeSimulatorComponent();
             Text = "Giả lập Camera";
-            txtBarcode.Text = FD_Globals.productionData?.Barcode ?? string.Empty;
+           // txtBarcode.Text = FD_Globals.productionData?.Barcode ?? string.Empty;
         }
 
         private void StartServer()

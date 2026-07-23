@@ -198,53 +198,53 @@ namespace TApp.Views.Extention
 
         private bool ValidateQRCodeInput(string qrCode)
         {
-            if (string.IsNullOrWhiteSpace(qrCode))
-            {
-                this.InvokeIfRequired(() =>
-                {
-                    UpdateStatus("Mã QR không hợp lệ!", Color.Red, 61453);
-                    AddConsoleLog($"[LỖI] Mã QR rỗng hoặc không hợp lệ", Color.Red);
-                });
-                return false;
-            }
+            //if (string.IsNullOrWhiteSpace(qrCode))
+            //{
+            //    this.InvokeIfRequired(() =>
+            //    {
+            //        UpdateStatus("Mã QR không hợp lệ!", Color.Red, 61453);
+            //        AddConsoleLog($"[LỖI] Mã QR rỗng hoặc không hợp lệ", Color.Red);
+            //    });
+            //    return false;
+            //}
 
-            if (FD_Globals.ActiveSet.Contains(qrCode))
-            {
-                this.InvokeIfRequired(() =>
-                {
-                    UpdateStatus("Mã đã tồn tại!", Color.Orange, 61527);
-                    AddConsoleLog($"[CẢNH BÁO] Mã {qrCode} đã tồn tại trong hệ thống", Color.Orange);
-                });
-                return false;
-            }
+            //if (FD_Globals.ActiveSet.Contains(qrCode))
+            //{
+            //    this.InvokeIfRequired(() =>
+            //    {
+            //        UpdateStatus("Mã đã tồn tại!", Color.Orange, 61527);
+            //        AddConsoleLog($"[CẢNH BÁO] Mã {qrCode} đã tồn tại trong hệ thống", Color.Orange);
+            //    });
+            //    return false;
+            //}
 
-            if (qrCode.Length < 16)
-            {
-                this.InvokeIfRequired(() =>
-                {
-                    UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
-                    AddConsoleLog(qrCode.Contains(FD_Globals.productionData.Barcode) ?
-                        $"[LỖI] Có thể bạn đã quét nhầm mã vạch, vui lòng che lại rồi quét" :
-                        $"[LỖI] Vui lòng quét mã đúng định dạng", Color.Red);
-                });
-                return false;
-            }
+            //if (qrCode.Length < 16)
+            //{
+            //    this.InvokeIfRequired(() =>
+            //    {
+            //        UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
+            //        AddConsoleLog(qrCode.Contains(FD_Globals.productionData.Barcode) ?
+            //            $"[LỖI] Có thể bạn đã quét nhầm mã vạch, vui lòng che lại rồi quét" :
+            //            $"[LỖI] Vui lòng quét mã đúng định dạng", Color.Red);
+            //    });
+            //    return false;
+            //}
 
-            if (!qrCode.Contains(FD_Globals.productionData.Barcode))
-            {
-                this.InvokeIfRequired(() =>
-                {
-                    UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
-                    AddConsoleLog($"[LỖI] Mã không chứa mã vạch sản phẩm hiện tại", Color.Red);
-                });
-                return false;
-            }
+            //if (!qrCode.Contains(FD_Globals.productionData.Barcode))
+            //{
+            //    this.InvokeIfRequired(() =>
+            //    {
+            //        UpdateStatus("Mã sai định dạng!", Color.Red, 61453);
+            //        AddConsoleLog($"[LỖI] Mã không chứa mã vạch sản phẩm hiện tại", Color.Red);
+            //    });
+            //    return false;
+            //}
             return true;
         }
 
         private bool ValidateBatchInformation()
         {
-            string currentBatch = FD_Globals.productionData.BatchCode;
+            string currentBatch = "";// FD_Globals.productionData.BatchCode;
             if (string.IsNullOrWhiteSpace(currentBatch) || currentBatch == "NNN")
             {
                 this.InvokeIfRequired(() =>
@@ -259,8 +259,8 @@ namespace TApp.Views.Extention
 
         private void ProcessQRCodeAddition(string qrCode)
         {
-            string currentBatch = FD_Globals.productionData.BatchCode;
-            string currentBarcode = FD_Globals.productionData.Barcode;
+            string currentBatch = "";// FD_Globals.productionData.BatchCode;
+            string currentBarcode = "";// FD_Globals.productionData.Barcode;
 
             try
             {

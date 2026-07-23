@@ -30,14 +30,14 @@ namespace TApp
         // Các trang cấu hình/chức năng
         private readonly PAppSetting PAppSetting = new PAppSetting();
         private readonly FDashboard fDashboard = new FDashboard();
-        private readonly FScan fScan = new FScan();
+        //private readonly FScan fScan = new FScan();
         private readonly Login fLogin = new Login();
-        private readonly FAddCode fAddCode = new FAddCode();
+        //private readonly FAddCode fAddCode = new FAddCode();
         private readonly PLCSetting PLCSetting = new PLCSetting();
         private readonly FActivityLogs fActivityLogs = new FActivityLogs();
         private readonly FExtention fExtention = new FExtention();
         private readonly FDeactive fDeactive = new FDeactive();
-        private readonly FCameraSimulator fCameraSimulator = new FCameraSimulator();
+       // private readonly FCameraSimulator fCameraSimulator = new FCameraSimulator();
 
         private readonly string _userDbPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

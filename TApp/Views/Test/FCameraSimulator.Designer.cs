@@ -108,7 +108,7 @@ namespace TApp.Views.Test
             this.btnLoadBarcode.Symbol = 61639;
             this.btnLoadBarcode.Dock = DockStyle.Left;
             this.btnLoadBarcode.Width = 70;
-            this.btnLoadBarcode.Click += (s, e) => { this.txtBarcode.Text = FD_Globals.productionData?.Barcode ?? string.Empty; };
+
             this.btnSendRandom.Text = "Gửi Prefix+Random";
             this.btnSendRandom.Symbol = 61527;
             this.btnSendRandom.Dock = DockStyle.Fill;

@@ -42,12 +42,7 @@ namespace TApp.Views.Dashboard
         {
             if(WK_AppState.IsBusy) { return; }
             WK_AppState.RunWorkerAsync();
-            //InitializeConfigs();
-            //InitializeDevices();
-            //InitializeProductionInformation();
-            //InitializeProductionDatabase();
-            //InitializeDashboardUI();
-            //InitializeBackgroundWorkers();
+            
         }
         #endregion
 
@@ -232,7 +227,7 @@ namespace TApp.Views.Dashboard
                     ipPOItem.Text = "NULL";
                     ipPOLot.Text = "NaN";
 
-                    GlobalVarialbles.CurrentAppState = e_AppState.Editing;
+                    GlobalVarialbles.CurrentAppState = e_AppState.CreatePO;
                 }
 
                 LoadProductionCounters(FD_Globals.productionData.POItem);
@@ -267,8 +262,6 @@ namespace TApp.Views.Dashboard
 
                 PLCAddressWithGoogleSheetHelper.FilePath = AppConfigs.Current.credentialPLCAddressPath;
                 PLCAddressWithGoogleSheetHelper.Init("1V2xjY6AA4URrtcwUorQE54Ud5KyI7Ev2hpDPMMcXVTI", "PLC " + AppConfigs.Current.Line_Name + "!A1:D100");
-
-                erP_Google2.credentialPath = AppConfigs.Current.credentialERPPath;
             }
             catch (Exception ex)
             {
@@ -317,15 +310,6 @@ namespace TApp.Views.Dashboard
 
         }
 
-        public void InitializeERP()
-        {
-            erP_Google2.credentialPath = AppConfigs.Current.credentialERPPath;
-            erP_Google2.SUB_INV = AppConfigs.Current.ERP_Sub_Inv;
-            erP_Google2.ORG_CODE = AppConfigs.Current.ERP_Org_Code;
-            erP_Google2.DatasetID = AppConfigs.Current.ERP_DatasetID;
-            erP_Google2.TableID = AppConfigs.Current.ERP_TableID;
-            erP_Google2.LineName = AppConfigs.Current.Line_Name;
-        }
         #endregion
 
         #region Device Communication (Camera & PLC)
@@ -452,7 +436,6 @@ namespace TApp.Views.Dashboard
             while (!WK_Render_HMI.CancellationPending)
             {
                 Render_PLC_Status();
-                Render_App_Status();
                 Render_Camera_Status();
                 Render_Camera_Counter();
                 Render_Order_Statistics();
@@ -656,36 +639,6 @@ namespace TApp.Views.Dashboard
         private void Render_Camera_Counter() => this.InvokeIfRequired(() => { opSCount.Text = $"{FD_Globals.productionData.productCameraCounter.Total} - {FD_Globals.productionData.productCameraCounter.Pass} - {FD_Globals.productionData.productCameraCounter.Fail}"; });
         private void Render_Production_Statistics() => this.InvokeIfRequired(() => { opTotalCount.Value = FD_Globals.productionData.PLC_Counter.Total; opPassCount.Value = FD_Globals.productionData.PLC_Counter.Pass; opFail.Value = FD_Globals.productionData.PLC_Counter.Fail; opTimeout.Value = FD_Globals.productionData.PLC_Counter.Timeout; });
 
-        private void Render_App_Status()
-        {
-            bool deviceDisconnected = FD_Globals.pLCStatus != PLCStatus.Connected || FD_Globals.CameraStatus != CameraStatus.Connected;
-
-            e_AppState state;
-            if (_lastDeactiveState)
-            {
-                state = e_AppState.Deactive; // PLC yêu cầu vô hiệu hóa
-            }
-            else if (deviceDisconnected)
-            {
-                state = e_AppState.Stopped; // Mất kết nối thiết bị -> dừng máy, bộ đá vẫn hoạt động
-            }
-            else
-            {
-                state = ipBatchNo.Enabled ? e_AppState.Editing : e_AppState.Ready;
-            }
-
-            GlobalVarialbles.CurrentAppState = state;
-
-            switch (state)
-            {
-                case e_AppState.Ready: SetAppStatus("Sẵn Sàng", Color.FromArgb(0, 192, 0), 1); break;
-                case e_AppState.Editing: SetAppStatus("Cấu hình", Color.Blue, 4); break;
-                case e_AppState.Stopped: SetAppStatus("Lỗi TB", Color.OrangeRed, 2); break;
-                case e_AppState.Deactive: SetAppStatus("K.Dùng", Color.Red, 3); break;
-                case e_AppState.Error: SetAppStatus("LỖI", Color.Red, 5); break;
-            }
-        }
-
         private void Render_PLC_Status()
         {
             if (FD_Globals.pLCStatus == _plcStatus) return;
@@ -772,7 +725,7 @@ namespace TApp.Views.Dashboard
             }
         }
 
-        private bool IsValidQRContent(string data) => data.Length >= 16 && data.Contains(FD_Globals.productionData.Barcode);
+        private bool IsValidQRContent(string data) => data.Length >= 16 && data.Contains(FD_Globals.productionData.POItem);
 
         private void Send_Result_Content(e_Production_Status status, string data)
         {
@@ -787,68 +740,14 @@ namespace TApp.Views.Dashboard
             {
                 QRContent = qrContent,
                 Status = status,
-                BatchCode = FD_Globals.productionData.BatchCode,
-                Barcode = FD_Globals.productionData.Barcode,
+                BatchCode = FD_Globals.productionData.POItem,
+                Barcode = FD_Globals.productionData.POLot,
                 UserName = GlobalVarialbles.CurrentUser.Username,
                 TimeStampActive = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"),
                 TimeUnixActive = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
                 ProductionDatetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ssK"),
                 Reason = reason
             };
-        }
-
-        private void HandleEnterBatchChangeMode()
-        {
-            //btnABatch.Enabled = false;
-            //btnABatch.Symbol = 61473; // loading
-            string rs = erP_Google2.Load_Erp_to_Cbb_With_Line_Name(ipBatchNo);
-            if (rs == "OK")
-            {
-                //btnABatch.FillColor = Color.OrangeRed;
-                //btnABatch.Symbol = 61533; // confirm
-                //btnABatch.Enabled = true;
-                ipBatchNo.Enabled = true;
-                ipBatchNo.FillColor = Color.Yellow;
-            }
-            else
-            {
-                this.ShowErrorDialog("Tải xuống ERP thất bại, HÃY CHỤP LẠI THÔNG BÁO NÀY. Vui lòng nhấn vào mục Kiểm tra-> chọn mục B09 -> Nhấn bắt đầu và đợi một lát. Nếu A01 báo thành công nhưng hiện trống, vui lòng kiểm tra Tên line, Tên nhà máy, Tên xưởng đã đúng chưa? Nếu đã đúng hãy liên hệ người quản lý ERP hoặc IT nhà máy");
-                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", $"{{'Thông tin lỗi':'{rs}'}}", "ERP-F-01");
-                ResetBatchChangeMode();
-            }
-        }
-
-        private void HandleConfirmBatchChange()
-        {
-            if (!this.ShowAskDialog("Bạn có chắc chắn thay đổi lô sản xuất?")) return;
-
-            try
-            {
-                ResetBatchChangeMode(false);
-                FD_Globals.productionData.BatchCode = ipBatchNo.Text.Trim();
-                FD_Globals.productionData.Barcode = ipPOLot.Text;
-
-                string dbPath = "Database/Production/batch_history.db";
-                BatchHistoryHelper.AddHistory(dbPath, FD_Globals.productionData.BatchCode, FD_Globals.productionData.Barcode, GlobalVarialbles.CurrentUser.Username, DateTime.Now);
-
-                this.ShowSuccessTip("Đổi lô thành công!");
-                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'Lô mới':'{FD_Globals.productionData.BatchCode}','Barcode mới':'{FD_Globals.productionData.Barcode}'}}", "UA-F-02");
-            }
-            catch (Exception ex)
-            {
-                this.ShowErrorTip($"Lỗi đổi lô: {ex.Message}");
-                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi đổi lô", ex.Message, "ERR-F-01");
-            }
-        }
-
-        private void ResetBatchChangeMode(bool resetBatchChangeVar = true)
-        {
-            //btnABatch.Enabled = true;
-            //btnABatch.FillColor = Color.FromArgb(0, 192, 0);
-            //btnABatch.Symbol = 563629; // Reset symbol
-            ipBatchNo.Enabled = false;
-            ipBatchNo.FillColor = Color.White;
-            if (resetBatchChangeVar) _batchChangeMode = false;
         }
 
         private void ProcessQueueRecord()
@@ -942,50 +841,7 @@ namespace TApp.Views.Dashboard
             }
         }
 
-        private void ProcessChangeBatchDialog(DChangeBatch dialog, string loadErpResult)
-        {
-            if (loadErpResult == "OK")
-            {
-                dialog.opERPStatus.Text = "ERP OK";
-                dialog.opERPStatus.FillColor = Color.FromArgb(0, 192, 0);
 
-                if (dialog.ShowDialog() == DialogResult.OK)
-                {
-                    ipPOLot.Text = dialog.Barcode;
-                    ipBatchNo.Text = dialog.BatchCode;
-                    FD_Globals.productionData.POItem = dialog.BatchCode;
-                    FD_Globals.productionData.Barcode = dialog.Barcode;
-                    BatchHistoryHelper.AddHistory("Database/Production/batch_history.db", FD_Globals.productionData.BatchCode, FD_Globals.productionData.Barcode, GlobalVarialbles.CurrentUser.Username, DateTime.Now);
-                    this.ShowSuccessTip("Đổi lô thành công!");
-                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
-                }
-                else
-                {
-                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Hủy đổi lô sản xuất", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
-                }
-            }
-            else
-            {
-                dialog.opERPStatus.Text = "ERP Lỗi";
-                dialog.opERPStatus.FillColor = Color.Red;
-                if (dialog.ShowDialog() == DialogResult.OK)
-                {
-                    ipPOLot.Text = dialog.Barcode;
-                    ipBatchNo.Text = dialog.BatchCode;
-                    FD_Globals.productionData.BatchCode = dialog.BatchCode;
-                    FD_Globals.productionData.Barcode = dialog.Barcode;
-                    BatchHistoryHelper.AddHistory("Database/Production/batch_history.db", FD_Globals.productionData.BatchCode, FD_Globals.productionData.Barcode, GlobalVarialbles.CurrentUser.Username, DateTime.Now);
-                    this.ShowSuccessTip("Đổi lô thành công!");
-                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Đổi lô thành công", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
-                }
-                else
-                {
-                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Hủy đổi lô sản xuất", $"{{'BatchCode':'{dialog.BatchCode}','Barcode':'{dialog.Barcode}'}}", "UA-F-03");
-                }
-
-                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Tải lô từ ERP thất bại", $"{{'Thông tin lỗi':'{loadErpResult}'}}", "ERP-F-01");
-            }
-        }
 
         private void SetAppStatus(string text, Color color, int code) => this.InvokeIfRequired(() => { opAppStatus.Text = text; opAppStatus.RectColor = color; opAppStatus.ForeColor = color; opAppStatusCode.Value = code; });
         private void SetResultStatus(string text, Color color) => this.InvokeIfRequired(() => { opResultStatus.Text = text; opResultStatus.FillColor = color; });
@@ -1044,32 +900,6 @@ namespace TApp.Views.Dashboard
         }
         #endregion
 
-
-        private void uiTableLayoutPanel8_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
-        private void ipBypassActive_ValueChanged(object sender, bool value)
-        {
-            if (GlobalVarialbles.CurrentUser.Role != "Admin")
-            {
-                this.ShowWarningDialog("Chỉ Admin mới có quyền thay đổi trạng thái Bypass Active!");
-                ipBypassActive.Active = !FD_Globals.BypassActive; // revert
-                return;
-            }
-            else
-            {
-                FD_Globals.BypassActive = value;
-                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.UserAction, "Thay đổi trạng thái Bypass Active", $"{{'BypassActive':{FD_Globals.BypassActive}}}", "UA-FDASH-BYPASS-ACTIVE");
-                this.ShowSuccessDialog($"Trạng thái Bypass Active đã được thay đổi thành: {FD_Globals.BypassActive}");
-            }
-        }
-
-        private void ipByPassActiveDate_ValueChanged(object sender, DateTime value)
-        {
-            FD_Globals.BypassActiveDate = value.ToString("yyyy-MM-dd");
-        }
 
 
     }

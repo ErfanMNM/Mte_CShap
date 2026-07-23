@@ -688,7 +688,7 @@ namespace TApp.Views.Extention
                 //Ghi dữ liệu mới - Đọc từ PLC trước, nếu trùng thì không gửi
                 //batch code
                 string batchCodeAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_Batch_Code_DM");
-                string newBatchCode = FD_Globals.productionData.BatchCode ?? "";
+                string newBatchCode = "";// FD_Globals.productionData.BatchCode ?? "";
                 OperateResult<string> readBatchCode = plc.ReadString(batchCodeAddr, 40, Encoding.ASCII);
                 bool needWriteBatchCode = true;
                 
@@ -717,7 +717,7 @@ namespace TApp.Views.Extention
 
                 //barcode
                 string barcodeAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_Barcode_DM");
-                string newBarcode = FD_Globals.productionData.Barcode ?? "";
+                string newBarcode = "";// FD_Globals.productionData.Barcode ?? "";
                 OperateResult<string> readBarcode = plc.ReadString(barcodeAddr, 40, Encoding.ASCII);
                 bool needWriteBarcode = true;
                 
