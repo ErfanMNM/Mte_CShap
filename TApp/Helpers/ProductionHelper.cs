@@ -61,7 +61,7 @@ namespace TApp.Helpers
             POItem = string.Empty;
             Status = e_Production_Status.Error;
             ProductionDate = string.Empty;
-            POLot = "0";
+            POLot = string.Empty;
         }
 
         public class Product_Camera_Counter

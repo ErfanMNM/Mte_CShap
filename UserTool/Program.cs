@@ -3,7 +3,7 @@ using System.Data.SQLite;
 using System.Security.Cryptography;
 using System.Text;
 
-const string DefaultDbPath = @"C:\Users\THUC\AppData\Local\TanTien\Users\users.database";
+const string DefaultDbPath = @"C:\Users\TH\AppData\Local\TanTien\Users\users.database";
 
 Console.Clear();
 PrintBanner();

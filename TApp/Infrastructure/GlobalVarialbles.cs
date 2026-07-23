@@ -55,6 +55,8 @@ namespace TApp.Infrastructure
         Printing = 6,
         Error = 7,
         Stopping = 8,
+        Checking = 9,
+        Load_PO = 10,
     }
 
     public static class GlobalVarialbles

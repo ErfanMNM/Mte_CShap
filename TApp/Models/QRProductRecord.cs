@@ -10,15 +10,16 @@ namespace TApp.Models
     public class QRProductRecord
     {
         public int ID { get; set; }
-        public string QRContent { get; set; }
-        public string BatchCode { get; set; }
-        public string Barcode { get; set; }
+        public string? QRContent { get; set; }
+        public string? POItem { get; set; }
+        public string? POLot { get; set; }
+        public string? Barcode { get; set; }
         public e_Production_Status Status { get; set; }   // Pass, ReadFail, Duplicate, Error, Timeout, Deactive
-        public string UserName { get; set; }
-        public string TimeStampActive { get; set; }
+        public string? UserName { get; set; }
+        public string? TimeStampActive { get; set; }
         public long TimeUnixActive { get; set; }
-        public string ProductionDatetime { get; set; }
-        public string Reason { get; set; }   // lý do xóa / lỗi
+        public string? ProductionDatetime { get; set; }
+        public string? Reason { get; set; }   // lý do xóa / lỗi
     }
 
     public class ActiveQRRecord

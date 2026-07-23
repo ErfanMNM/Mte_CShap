@@ -1,10 +1,8 @@
 ﻿using HslCommunication;
-using HslCommunication.Profinet.Inovance;
 using Sunny.UI;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using TApp.Configs;
-using TApp.Dialogs;
 using TApp.Helpers;
 using TApp.Infrastructure;
 using TApp.Models;
@@ -19,9 +17,9 @@ namespace TApp.Views.Dashboard
         #region Fields
         private DatalogicCamera? _datalogicCamera_C1;
         private PLCStatus _plcStatus = PLCStatus.Disconnect;
-        private bool _batchChangeMode = false;
         private int _blinkAlarm = 0;
         private bool _lastDeactiveState = false;
+        private bool _isInitiated = false;
         #endregion
 
         #region Events
@@ -54,10 +52,17 @@ namespace TApp.Views.Dashboard
                 switch (GlobalVarialbles.CurrentAppState)
                 {
                     case e_AppState.Initializing:
+                        if (_isInitiated)
+                        {
+                            GlobalVarialbles.CurrentAppState = e_AppState.Stopping;
+                            break;
+                        }
+                        _isInitiated = true;
                         InitializeConfigs();
                         InitializeDevices();
                         InitializeDashboardUI();
                         InitializeBackgroundWorkers();
+                        GlobalVarialbles.CurrentAppState = e_AppState.Load_PO;
                         break;
                     case e_AppState.CreatePO:
                         break;
@@ -75,7 +80,38 @@ namespace TApp.Views.Dashboard
                         break;
                     case e_AppState.Stopping:
                         break;
+                    case e_AppState.Checking:
+                        //Kiểm tra thông tin PO 
+                        //A0. Kiểm tra có PO hay chưa
+                        if(FD_Globals.productionData.POItem.IsNullOrEmpty() || FD_Globals.productionData.POLot.IsNullOrEmpty())
+                        {
+                            //chuyển về Load_PO
+                            GlobalVarialbles.CurrentAppState = e_AppState.Load_PO;
+                        }    
+                        //A1. Kiểm tra xem PO đã từng chạy trước đó hay chưa'
+                        if(QRDatabaseHelper.POHasData(FD_Globals.productionData.POItem, FD_Globals.productionData.POLot))
+                        {
+                            //Nếu đã từng chạy
+
+                            //A1.1 Lấy ID lớn nhất để tạo mã máy in
+                            //A1.2 Load mấy cái chạy rồi vào dic
+                            //A1.3 Chuyển sang máy in
+                        }
+                        else
+                        {
+                           //A1.4 Tạo list máy in
+                           //A1.5 Chuyển sang máy in
+                        }
+                        
+                        break;
+                    case e_AppState.Load_PO:
+                        //lấy thông tin PO từ OPC
+                        FD_Globals.productionData.POLot = "LOT123";
+                        FD_Globals.productionData.POItem = "ITEM TEST";
+                        break;
                 }
+
+                Thread.Sleep(10);
             }
 
         }
@@ -230,7 +266,7 @@ namespace TApp.Views.Dashboard
                     GlobalVarialbles.CurrentAppState = e_AppState.CreatePO;
                 }
 
-                LoadProductionCounters(FD_Globals.productionData.POItem);
+                LoadProductionCounters(FD_Globals.productionData.POItem??"NULL", FD_Globals.productionData.POLot??"NULL");
             }
             catch (Exception ex)
             {
@@ -238,15 +274,15 @@ namespace TApp.Views.Dashboard
             }
         }
 
-        private void LoadProductionCounters(string batchCode)
+        private void LoadProductionCounters(string POItem, string POLot)
         {
-            FD_Globals.productionData.productCameraCounter.Total = QRDatabaseHelper.GetRecordCountByBatch(batchCode);
-            FD_Globals.productionData.productCameraCounter.Pass = QRDatabaseHelper.GetRowCount(batchCode, e_Production_Status.Pass.ToString());
-            FD_Globals.productionData.productCameraCounter.Duplicate = QRDatabaseHelper.GetRowCount(batchCode, e_Production_Status.Duplicate.ToString());
-            FD_Globals.productionData.productCameraCounter.Error = QRDatabaseHelper.GetRowCount(batchCode, e_Production_Status.Error.ToString());
-            FD_Globals.productionData.productCameraCounter.Timeout = QRDatabaseHelper.GetRowCount(batchCode, e_Production_Status.Timeout.ToString());
-            FD_Globals.productionData.productCameraCounter.ReadFail = QRDatabaseHelper.GetRowCount(batchCode, e_Production_Status.ReadFail.ToString());
-            FD_Globals.productionData.productCameraCounter.FormatError = QRDatabaseHelper.GetRowCount(batchCode, e_Production_Status.FormatError.ToString());
+            FD_Globals.productionData.productCameraCounter.Total = QRDatabaseHelper.GetRecordCountByBatch(POItem,POLot);
+            FD_Globals.productionData.productCameraCounter.Pass = QRDatabaseHelper.GetRowCount(POItem,POLot, e_Production_Status.Pass.ToString());
+            FD_Globals.productionData.productCameraCounter.Duplicate = QRDatabaseHelper.GetRowCount(POItem, POLot, e_Production_Status.Duplicate.ToString());
+            FD_Globals.productionData.productCameraCounter.Error = QRDatabaseHelper.GetRowCount(POItem, POLot, e_Production_Status.Error.ToString());
+            FD_Globals.productionData.productCameraCounter.Timeout = QRDatabaseHelper.GetRowCount(POItem, POLot, e_Production_Status.Timeout.ToString());
+            FD_Globals.productionData.productCameraCounter.ReadFail = QRDatabaseHelper.GetRowCount(POItem, POLot, e_Production_Status.ReadFail.ToString());
+            FD_Globals.productionData.productCameraCounter.FormatError = QRDatabaseHelper.GetRowCount(POItem, POLot, e_Production_Status.FormatError.ToString());
         }
 
         private void InitializeConfigs()
@@ -301,7 +337,7 @@ namespace TApp.Views.Dashboard
             }
             catch (Exception ex)
             {
-                this.ShowErrorDialog($"Lỗi khởi tạo PLC: {ex.Message}");
+                this.ShowErrorDialog($"FDashboard: Lỗi khởi tạo PLC: {ex.Message}");
             }
         }
 
@@ -585,15 +621,15 @@ namespace TApp.Views.Dashboard
                 int clearedCount = FD_Globals.AlarmCount;
                 DateTime clearTime = DateTime.Now;
                 string username = GlobalVarialbles.CurrentUser?.Username ?? "System";
-                string batchCode = FD_Globals.productionData?.POItem ?? "N/A";
+                string POItem = FD_Globals.productionData?.POItem ?? "N/A";
                 string barcode = FD_Globals.productionData?.POLot ?? "N/A";
 
                 // Tạo log record
-                var clearLog = new FormatErrorClearLog(clearTime, username, clearedCount, batchCode, barcode);
+                var clearLog = new FormatErrorClearLog(clearTime, username, clearedCount, POItem, barcode);
                 FD_Globals.FormatErrorClearHistory.Add(clearLog);
 
                 // Ghi log vào hệ thống
-                string logDetail = $"{{\"ClearedCount\":{clearedCount},\"BatchCode\":\"{batchCode}\",\"Barcode\":\"{barcode}\",\"ClearTime\":\"{clearTime:yyyy-MM-dd HH:mm:ss}\"}}";
+                string logDetail = $"{{\"ClearedCount\":{clearedCount},\"POItem\":\"{POItem}\",\"Barcode\":\"{barcode}\",\"ClearTime\":\"{clearTime:yyyy-MM-dd HH:mm:ss}\"}}";
                 GlobalVarialbles.Logger?.LogAsync(
                     username,
                     e_LogType.UserAction,
@@ -740,7 +776,7 @@ namespace TApp.Views.Dashboard
             {
                 QRContent = qrContent,
                 Status = status,
-                BatchCode = FD_Globals.productionData.POItem,
+                POItem = FD_Globals.productionData.POItem,
                 Barcode = FD_Globals.productionData.POLot,
                 UserName = GlobalVarialbles.CurrentUser.Username,
                 TimeStampActive = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"),
@@ -754,9 +790,10 @@ namespace TApp.Views.Dashboard
         {
             try
             {
-                if (FD_Globals.QueueRecord.TryDequeue(out QRProductRecord record))
+                if (FD_Globals.QueueRecord.TryDequeue(out QRProductRecord? record))
                 {
-                    QRDatabaseHelper.AddOrActivateCode(record.QRContent, record.BatchCode, record.UserName, record.Barcode, record.TimeStampActive, record.TimeUnixActive, record.TimeStampActive, record.Status);
+                    QRDatabaseHelper.AddRecord(record.QRContent, record.POItem, record.POLot, record.UserName, record.TimeStampActive, record.TimeUnixActive, record.TimeStampActive, record.Status);
+
                     Render_Production_Result(record);
                 }
             }
@@ -773,7 +810,7 @@ namespace TApp.Views.Dashboard
             {
                 if (AppConfigs.Current.Data_Mode == "normal" && FD_Globals.QueueActive.TryDequeue(out QRProductRecord otherRecord))
                 {
-                    QRDatabaseHelper.AddActiveCodeUnique(otherRecord.QRContent, otherRecord.BatchCode, otherRecord.Barcode, otherRecord.UserName, otherRecord.TimeStampActive, otherRecord.TimeUnixActive);
+                    QRDatabaseHelper.AddActiveCodeUnique(otherRecord.QRContent, otherRecord.POItem, otherRecord.Barcode, otherRecord.UserName, otherRecord.TimeStampActive, otherRecord.TimeUnixActive);
                 }
             }
             catch (Exception ex)
@@ -913,15 +950,15 @@ namespace TApp.Views.Dashboard
         public DateTime ClearTime { get; set; }
         public string Username { get; set; }
         public int ClearedCount { get; set; }
-        public string BatchCode { get; set; }
+        public string POItem { get; set; }
         public string Barcode { get; set; }
 
-        public FormatErrorClearLog(DateTime clearTime, string username, int clearedCount, string batchCode, string barcode)
+        public FormatErrorClearLog(DateTime clearTime, string username, int clearedCount, string POItem, string barcode)
         {
             ClearTime = clearTime;
             Username = username;
             ClearedCount = clearedCount;
-            BatchCode = batchCode;
+            POItem = POItem;
             Barcode = barcode;
         }
     }
