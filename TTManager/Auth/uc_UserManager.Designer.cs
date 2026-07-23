@@ -152,7 +152,6 @@
             uiPanel1.MinimumSize = new Size(1, 1);
             uiPanel1.Name = "uiPanel1";
             uiPanel1.RectColor = Color.DodgerBlue;
-            uiPanel1.RectSize = 2;
             uiPanel1.Size = new Size(385, 53);
             uiPanel1.TabIndex = 1;
             uiPanel1.Text = null;
@@ -194,7 +193,6 @@
             btnLoad.Name = "btnLoad";
             btnLoad.Radius = 10;
             btnLoad.RectColor = Color.Blue;
-            btnLoad.RectSize = 2;
             btnLoad.Size = new Size(62, 49);
             btnLoad.Symbol = 61473;
             btnLoad.SymbolColor = Color.FromArgb(0, 192, 192);
@@ -215,7 +213,6 @@
             btnAddUser.Name = "btnAddUser";
             btnAddUser.Radius = 10;
             btnAddUser.RectColor = Color.Blue;
-            btnAddUser.RectSize = 2;
             btnAddUser.Size = new Size(59, 49);
             btnAddUser.Symbol = 62004;
             btnAddUser.SymbolColor = Color.FromArgb(0, 192, 0);
@@ -236,7 +233,6 @@
             btnExportCsv.Name = "btnExportCsv";
             btnExportCsv.Radius = 10;
             btnExportCsv.RectColor = Color.Blue;
-            btnExportCsv.RectSize = 2;
             btnExportCsv.Size = new Size(47, 49);
             btnExportCsv.Symbol = 363197;
             btnExportCsv.SymbolColor = Color.Green;

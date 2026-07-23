@@ -133,7 +133,6 @@
             opPanel2FA.MinimumSize = new Size(1, 1);
             opPanel2FA.Name = "opPanel2FA";
             opPanel2FA.RectColor = Color.FromArgb(255, 128, 0);
-            opPanel2FA.RectSize = 2;
             opPanel2FA.Size = new Size(317, 55);
             opPanel2FA.TabIndex = 6;
             opPanel2FA.Text = null;

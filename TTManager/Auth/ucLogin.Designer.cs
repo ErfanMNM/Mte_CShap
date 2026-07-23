@@ -110,7 +110,6 @@
             uiSymbolLabel1.Location = new Point(3, 3);
             uiSymbolLabel1.MinimumSize = new Size(1, 1);
             uiSymbolLabel1.Name = "uiSymbolLabel1";
-            uiSymbolLabel1.RectSize = 2;
             uiSymbolLabel1.Size = new Size(138, 55);
             uiSymbolLabel1.Symbol = 62142;
             uiSymbolLabel1.SymbolSize = 40;
@@ -143,7 +142,6 @@
             uiSymbolLabel2.MinimumSize = new Size(1, 1);
             uiSymbolLabel2.Name = "uiSymbolLabel2";
             uiSymbolLabel2.Radius = 20;
-            uiSymbolLabel2.RectSize = 2;
             uiSymbolLabel2.Size = new Size(138, 55);
             uiSymbolLabel2.Symbol = 361475;
             uiSymbolLabel2.SymbolSize = 40;
@@ -230,7 +228,6 @@
             uiSymbolLabel3.MinimumSize = new Size(1, 1);
             uiSymbolLabel3.Name = "uiSymbolLabel3";
             uiSymbolLabel3.Radius = 10;
-            uiSymbolLabel3.RectSize = 2;
             uiSymbolLabel3.Size = new Size(134, 55);
             uiSymbolLabel3.Symbol = 57454;
             uiSymbolLabel3.SymbolColor = Color.FromArgb(255, 255, 128);

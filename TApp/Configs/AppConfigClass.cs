@@ -36,16 +36,8 @@ namespace TApp.Configs
 
         public bool PLC_Test_Mode { get; set; }
 
-        public string ? Handheld_COM_Port { get; set; }
-
         public string ? production_list_path { get; set; }
         public string? credentialPLCAddressPath { get; set; }
-
-        public bool Cloud_Connection_Enabled { get; set; }
-        public int Cloud_Refresh_Interval_Minute { get; set; }
-        public bool Cloud_Upload_Enabled { get; set; }
-        public bool Local_Backup_Enabled { get; set; }
-        public string? Backup_Folder_Path { get; set; }
 
         public bool Old_Camera_job_Enabled { get; set; }
 
@@ -79,8 +71,6 @@ namespace TApp.Configs
             PLC_IP = "192.168.250.1";
             PLC_Port = 9600;
 
-            Handheld_COM_Port = "COM3";
-
             PLC_Time_Refresh = 1000;
             Camera_01_IP = "127.0.0.1";
             Camera_01_Port = 50001;
@@ -89,11 +79,6 @@ namespace TApp.Configs
             production_list_path = "C:/MASANQR/Configs/DBProductList.xlsx";
             credentialPLCAddressPath = "C:/MASANQR/Configs/GoogleSheet.json";
             Data_Mode = "normal";
-            Cloud_Connection_Enabled = false;
-            Cloud_Refresh_Interval_Minute = 60;
-            Cloud_Upload_Enabled = true;
-            Local_Backup_Enabled = true;
-            Backup_Folder_Path = ""; // Để trống sẽ dùng mặc định C:\MASANQR\Backup
             OPC_UA_Time_Refresh = 5000;
             Old_Camera_job_Enabled = false;
             Batch_Rule_Template = "{AN:6,15}-{N:6}-TOL{LINE}-{AN:1}";

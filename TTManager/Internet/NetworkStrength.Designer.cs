@@ -61,7 +61,6 @@
             opInternetStatus.MinimumSize = new Size(1, 1);
             opInternetStatus.Name = "opInternetStatus";
             opInternetStatus.RectColor = Color.FromArgb(255, 128, 0);
-            opInternetStatus.RectSize = 2;
             opInternetStatus.Size = new Size(83, 37);
             opInternetStatus.TabIndex = 0;
             opInternetStatus.Text = "Không có";
