@@ -73,7 +73,7 @@
             uiTabControl1.Dock = DockStyle.Fill;
             uiTabControl1.DrawMode = TabDrawMode.OwnerDrawFixed;
             uiTabControl1.Font = new Font("Microsoft Sans Serif", 12F);
-            uiTabControl1.ItemSize = new Size(150, 40);
+            uiTabControl1.ItemSize = new Size(0, 1);
             uiTabControl1.Location = new Point(216, 3);
             uiTabControl1.MainPage = "";
             uiTabControl1.Name = "uiTabControl1";
@@ -82,6 +82,7 @@
             uiTabControl1.SizeMode = TabSizeMode.Fixed;
             uiTabControl1.TabIndex = 1;
             uiTabControl1.TabUnSelectedForeColor = Color.FromArgb(240, 240, 240);
+            uiTabControl1.TabVisible = false;
             uiTabControl1.TipsFont = new Font("Microsoft Sans Serif", 9F);
             // 
             // MainForm

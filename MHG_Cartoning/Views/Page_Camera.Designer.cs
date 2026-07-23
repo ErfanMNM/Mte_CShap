@@ -34,8 +34,8 @@
             // uiTableLayoutPanel1
             // 
             uiTableLayoutPanel1.ColumnCount = 2;
-            uiTableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 67.94035F));
-            uiTableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32.0596466F));
+            uiTableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 63.00093F));
+            uiTableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 36.99907F));
             uiTableLayoutPanel1.Dock = DockStyle.Fill;
             uiTableLayoutPanel1.Location = new Point(0, 0);
             uiTableLayoutPanel1.Name = "uiTableLayoutPanel1";
