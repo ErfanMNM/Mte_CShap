@@ -14,6 +14,10 @@ namespace MHG_Cartoning.Configs
         public int PLC_Port { get; set; }
         public string? Camera_IP { get; set; }
         public int Camera_Port { get; set; }
+
+        public string? OPC_CA_TCP { get; set; }
+        public string? OPC_Cartoning_POItem_Node { get; set; }
+        public string? OPC_Cartoning_POLot_Node { get; set; }
         public override void SetDefault()
         {
 
@@ -21,6 +25,9 @@ namespace MHG_Cartoning.Configs
             PLC_Port = 9600;
             Camera_IP = "127.0.0.1";
             Camera_Port = 51236;
+            OPC_CA_TCP = "opc.tcp://DESKTOP-3LR82CB:53530/OPCUA/SimulationServer";
+            OPC_Cartoning_POItem_Node = "ns=3;s=2001";
+            OPC_Cartoning_POLot_Node = "ns=3;s=2002";
         }
     }
 }

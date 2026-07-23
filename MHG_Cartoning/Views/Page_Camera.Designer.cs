@@ -28,12 +28,36 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Text = "Page_Camera";
+            uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
+            SuspendLayout();
+            // 
+            // uiTableLayoutPanel1
+            // 
+            uiTableLayoutPanel1.ColumnCount = 2;
+            uiTableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 67.94035F));
+            uiTableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32.0596466F));
+            uiTableLayoutPanel1.Dock = DockStyle.Fill;
+            uiTableLayoutPanel1.Location = new Point(0, 0);
+            uiTableLayoutPanel1.Name = "uiTableLayoutPanel1";
+            uiTableLayoutPanel1.RowCount = 2;
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 36.4217262F));
+            uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 63.5782738F));
+            uiTableLayoutPanel1.Size = new Size(1073, 626);
+            uiTableLayoutPanel1.TabIndex = 0;
+            uiTableLayoutPanel1.TagString = null;
+            // 
+            // Page_Camera
+            // 
+            AutoScaleMode = AutoScaleMode.None;
+            ClientSize = new Size(1073, 626);
+            Controls.Add(uiTableLayoutPanel1);
+            Name = "Page_Camera";
+            Text = "Page_Camera";
+            ResumeLayout(false);
         }
 
         #endregion
+
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel1;
     }
 }

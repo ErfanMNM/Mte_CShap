@@ -153,5 +153,50 @@ namespace MHG_Cartoning.Views
                 Log($"Subscribe error: {ex.Message}");
             }
         }
+        private async void uiSymbolButton3_Click(object sender, EventArgs e)
+        {
+            if (_client == null || !_client.IsConnected)
+            {
+                Log("Not connected. Please connect first.");
+                return;
+            }
+
+            try
+            {
+                var value = $"test+{DateTime.Now:HHmmss}";
+                Log($"Writing \"{value}\" to ns=3;s=2001 and ns=3;s=2002...");
+
+                var nodeId1 = NodeId.TryParse("ns=3;s=2001");
+                var nodeId2 = NodeId.TryParse("ns=3;s=2002");
+
+                if (nodeId1 == null || nodeId2 == null)
+                {
+                    Log("Invalid NodeId");
+                    return;
+                }
+
+                var requests = new WriteValue[]
+                {
+                    new(nodeId1, NodeAttribute.Value, string.Empty, 
+                        new DataValue(value, StatusCode.Good, DateTime.UtcNow, DateTime.UtcNow)),
+                    new(nodeId2, NodeAttribute.Value, string.Empty,
+                        new DataValue(value, StatusCode.Good, DateTime.UtcNow, DateTime.UtcNow))
+                };
+
+                uint[] results = Array.Empty<uint>();
+                await Task.Run(() => _client.Write(requests, out results));
+
+                if (results.Length >= 2)
+                {
+                    var status1 = (StatusCode)results[0];
+                    var status2 = (StatusCode)results[1];
+                    Log($"Write 2001: {status1}, Write 2002: {status2}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Write error: {ex.Message}");
+            }
+        }
     }
 }

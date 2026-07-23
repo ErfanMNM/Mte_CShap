@@ -31,6 +31,7 @@
             uiListBox1 = new Sunny.UI.UIListBox();
             uiSymbolButton1 = new Sunny.UI.UISymbolButton();
             uiSymbolButton2 = new Sunny.UI.UISymbolButton();
+            uiSymbolButton3 = new Sunny.UI.UISymbolButton();
             SuspendLayout();
             // 
             // uiListBox1
@@ -44,7 +45,7 @@
             uiListBox1.Name = "uiListBox1";
             uiListBox1.Padding = new Padding(2);
             uiListBox1.ShowText = false;
-            uiListBox1.Size = new Size(1065, 506);
+            uiListBox1.Size = new Size(816, 506);
             uiListBox1.TabIndex = 0;
             uiListBox1.Text = "uiListBox1";
             // 
@@ -72,10 +73,23 @@
             uiSymbolButton2.TipsFont = new Font("Microsoft Sans Serif", 9F);
             uiSymbolButton2.Click += uiSymbolButton2_Click;
             // 
+            // uiSymbolButton3
+            // 
+            uiSymbolButton3.Font = new Font("Microsoft Sans Serif", 12F);
+            uiSymbolButton3.Location = new Point(400, 12);
+            uiSymbolButton3.MinimumSize = new Size(1, 1);
+            uiSymbolButton3.Name = "uiSymbolButton3";
+            uiSymbolButton3.Size = new Size(175, 52);
+            uiSymbolButton3.TabIndex = 3;
+            uiSymbolButton3.Text = "uiSymbolButton3";
+            uiSymbolButton3.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            uiSymbolButton3.Click += uiSymbolButton3_Click;
+            // 
             // Page_OPC_Production_Order
             // 
             AutoScaleMode = AutoScaleMode.None;
             ClientSize = new Size(1091, 631);
+            Controls.Add(uiSymbolButton3);
             Controls.Add(uiSymbolButton2);
             Controls.Add(uiSymbolButton1);
             Controls.Add(uiListBox1);
@@ -89,5 +103,6 @@
         private Sunny.UI.UIListBox uiListBox1;
         private Sunny.UI.UISymbolButton uiSymbolButton1;
         private Sunny.UI.UISymbolButton uiSymbolButton2;
+        private Sunny.UI.UISymbolButton uiSymbolButton3;
     }
 }
