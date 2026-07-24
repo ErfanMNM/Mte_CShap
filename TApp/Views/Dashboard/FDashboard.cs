@@ -71,8 +71,6 @@ namespace TApp.Views.Dashboard
                         //Sự kiện phát hiện PO mới
                         
                         break;
-                    case e_AppState.Ready:
-                        break;
                     case e_AppState.Printing:
                         //Máy in sẽ trả về đây kkkk
                         break;
@@ -132,6 +130,7 @@ namespace TApp.Views.Dashboard
                             {
                                 string codePrint = AppConfigs.Current.Main_Url + FD_Globals.productionData.POItem + "/" + FD_Globals.productionData.POLot + "/" + i;
                                 GlobalVarialbles.Print_Codes.Add(codePrint);
+                                FD_Globals.PrintSet.Add(codePrint);
                             }
                         }
                         else
@@ -141,6 +140,7 @@ namespace TApp.Views.Dashboard
                             {
                                 string codePrint = AppConfigs.Current.Main_Url + FD_Globals.productionData.POItem + "/" + FD_Globals.productionData.POLot + "/" + i;
                                 GlobalVarialbles.Print_Codes.Add(codePrint);
+                                FD_Globals.PrintSet.Add(codePrint);
                             }
                         }
                         GlobalVarialbles.CurrentAppState = e_AppState.Push_Data_To_Printer;
@@ -348,11 +348,6 @@ namespace TApp.Views.Dashboard
             }
         }
 
-        public void InitializePOCartoning()
-        {
-
-        }
-
         #endregion
 
         #region Device Communication (Camera & PLC)
@@ -427,7 +422,7 @@ namespace TApp.Views.Dashboard
                 data = data.Replace(";", ""); // Xóa khoảng trắng nếu có
             }
             // Tách riêng trường hợp camera trả về "FAIL" (lỗi đọc)
-            if (string.Equals(data, "FAIL", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(data, "NoRead", StringComparison.OrdinalIgnoreCase))
             {
                 Send_Result_To_PLC(e_PLC_Result.Fail);
                 Send_Result_Content(e_Production_Status.ReadFail, data);
@@ -441,16 +436,14 @@ namespace TApp.Views.Dashboard
                 return;
             }
 
-            if (!IsValidQRContent(data))
+            if (FD_Globals.PrintSet.Contains(data))
             {
                 Send_Result_To_PLC(e_PLC_Result.Fail);
-                Send_Result_Content(e_Production_Status.FormatError, data);
+                Send_Result_Content(e_Production_Status.NotFound, data);
                 return;
             }
 
             FD_Globals.ActiveSet.Add(data); // Update RAM
-
-
 
             Send_Result_To_PLC(e_PLC_Result.Pass);
             Send_Result_Content(e_Production_Status.Pass, data);
@@ -458,6 +451,7 @@ namespace TApp.Views.Dashboard
             if (AppConfigs.Current.Data_Mode == "normal")
             {
                 var record = CreateQRProductRecord(data, e_Production_Status.Pass);
+
                 FD_Globals.QueueActive.Enqueue(record);
             }
             else
@@ -528,8 +522,11 @@ namespace TApp.Views.Dashboard
                 try
                 {
                     dem1++;
+
+
                     ProcessQueueRecord();
                     ProcessQueueActive();
+
 
                     UpdateAlarmDisplay();
                     //cập nhật tốc độ sản xuất
@@ -769,7 +766,7 @@ namespace TApp.Views.Dashboard
             }
         }
 
-        private bool IsValidQRContent(string data) => data.Length >= 16 && data.Contains(FD_Globals.productionData.POItem);
+       // private bool IsValidQRContent(string data) => data.Length >= 16 && data.Contains(FD_Globals.productionData.POItem);
 
         private void Send_Result_Content(e_Production_Status status, string data)
         {
@@ -980,6 +977,7 @@ namespace TApp.Views.Dashboard
         public static int AlarmCount { get; set; } = 0;
         public static PLCStatus pLCStatus { get; set; } = PLCStatus.Disconnect;
         public static HashSet<string> ActiveSet { get; set; } = new HashSet<string>();
+        public static HashSet<string> PrintSet { get; set; } = new HashSet<string>();
         public static ConcurrentQueue<QRProductRecord> QueueRecord { get; set; } = new ConcurrentQueue<QRProductRecord>();
         public static ConcurrentQueue<QRProductRecord> QueueActive { get; set; } = new ConcurrentQueue<QRProductRecord>();
         /// <summary>
