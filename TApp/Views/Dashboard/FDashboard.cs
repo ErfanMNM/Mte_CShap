@@ -143,6 +143,7 @@ namespace TApp.Views.Dashboard
                                 FD_Globals.PrintSet.Add(codePrint);
                             }
                         }
+                        LoadProductionCounters(FD_Globals.productionData.POItem, FD_Globals.productionData.POLot);
                         GlobalVarialbles.CurrentAppState = e_AppState.Push_Data_To_Printer;
                         break;
                     case e_AppState.Load_PO:
