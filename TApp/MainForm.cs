@@ -8,6 +8,7 @@ using TApp.Views.Dashboard;
 
 using TApp.Views.Settings;
 using TTManager.Auth;
+using TApp.Views;
 
 namespace TApp
 {
@@ -29,6 +30,7 @@ namespace TApp
         private readonly PLCSetting PLCSetting = new PLCSetting();
         private readonly FActivityLogs fActivityLogs = new FActivityLogs();
         private readonly FDeactive fDeactive = new FDeactive();
+        private readonly Page_OPC_Production_Order _page_OPC_Production_Order = new Page_OPC_Production_Order();
        // private readonly FCameraSimulator fCameraSimulator = new FCameraSimulator();
 
         private readonly string _userDbPath = Path.Combine(
@@ -136,6 +138,7 @@ namespace TApp
             NavMenu.CreateNode(AddPage(PAppSetting, 1002));
             NavMenu.CreateNode(AddPage(PLCSetting, 1005));
             NavMenu.CreateNode(AddPage(fActivityLogs, 1006));
+            NavMenu.CreateNode(AddPage(_page_OPC_Production_Order,1007));
 
             // Trang đăng nhập
             NavMenu.CreateNode(AddPage(fLogin, 2001));
@@ -185,7 +188,7 @@ namespace TApp
         {
             PAppSetting.ShowTitle = false;
             PAppSetting.START();
-
+            _page_OPC_Production_Order.Start();
             fDashboard.Start();//khởi động hàm kiểm soát lưu trình
             fLogin.INIT();
             PLCSetting.INIT();

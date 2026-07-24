@@ -17,8 +17,8 @@ namespace TApp.Configs
     [ConfigFile("Configs\\App.ini")]
     public class AppConfigs : IniConfig<AppConfigs>
     {
-
-        public int OPC_UA_Time_Refresh { get; set; }
+        public string OPCUA_NodeID_POItem {  get; set; }
+        public string OPCUA_NodeID_POLot { get; set; }
         public bool AppHideEnable { get; set; }
         public bool AppTwoFA_Enabled { get; set; }
 
@@ -42,6 +42,8 @@ namespace TApp.Configs
         public bool Old_Camera_job_Enabled { get; set; }
 
         public string Batch_Rule_Template { get; set; }
+
+        public string Main_Url { get; set; }
 
         /// <summary>
         /// Bypass security checks (chỉ dùng khi debug - KHÔNG BẬT trong production!)
@@ -70,7 +72,7 @@ namespace TApp.Configs
 
             PLC_IP = "192.168.250.1";
             PLC_Port = 9600;
-
+            Main_Url = "https://mes.masancloud.com/t/";
             PLC_Time_Refresh = 1000;
             Camera_01_IP = "127.0.0.1";
             Camera_01_Port = 50001;
@@ -79,13 +81,14 @@ namespace TApp.Configs
             production_list_path = "C:/MASANQR/Configs/DBProductList.xlsx";
             credentialPLCAddressPath = "C:/MASANQR/Configs/GoogleSheet.json";
             Data_Mode = "normal";
-            OPC_UA_Time_Refresh = 5000;
             Old_Camera_job_Enabled = false;
             Batch_Rule_Template = "{AN:6,15}-{N:6}-TOL{LINE}-{AN:1}";
             Security_Bypass_Enabled = false; // Mặc định TẮT - chỉ bật khi debug
             Production_Speed_Mode = 0; // 0=Database 15min, 1=Time between products
             Production_Speed_Sample_Count = 10; // Số sản phẩm lấy mẫu tính trung bình
             Production_Speed_Reset_Timeout = 30; // Thời gian reset về 0 (giây)
+            OPCUA_NodeID_POItem = "ns=3;s=2001";
+            OPCUA_NodeID_POLot = "ns=3;s=2002";
         }
     }
 }

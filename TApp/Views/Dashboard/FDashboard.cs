@@ -64,21 +64,24 @@ namespace TApp.Views.Dashboard
                         InitializeBackgroundWorkers();
                         GlobalVarialbles.CurrentAppState = e_AppState.Load_PO;
                         break;
-                    case e_AppState.CreatePO:
-                        break;
                     case e_AppState.Push_Data_To_Printer:
+                        //chờ máy in kích hoạt lại
                         break;
                     case e_AppState.New_PO:
-                        break;
-                    case e_AppState.Start_Printer:
+                        //Sự kiện phát hiện PO mới
+                        
                         break;
                     case e_AppState.Ready:
                         break;
                     case e_AppState.Printing:
+                        //Máy in sẽ trả về đây kkkk
                         break;
                     case e_AppState.Error:
+                        //lỗi
                         break;
                     case e_AppState.Stopping:
+                        //dừng
+
                         break;
                     case e_AppState.Checking:
                         //Kiểm tra thông tin PO 
@@ -92,22 +95,63 @@ namespace TApp.Views.Dashboard
                         if(QRDatabaseHelper.POHasData(FD_Globals.productionData.POItem, FD_Globals.productionData.POLot))
                         {
                             //Nếu đã từng chạy
+                            //A1.1 Lấy dòng chạy cuối cùng để tạo mã tiếp theo
+                            var lastCodeResult = QRDatabaseHelper.GetLastActiveCode(
+                                FD_Globals.productionData.POItem,
+                                FD_Globals.productionData.POLot);
 
-                            //A1.1 Lấy ID lớn nhất để tạo mã máy in
-                            //A1.2 Load mấy cái chạy rồi vào dic
-                            //A1.3 Chuyển sang máy in
+                            string LastCode = string.Empty;
+                            if (lastCodeResult.issuccess && lastCodeResult.data != null && lastCodeResult.data.Rows.Count > 0)
+                            {
+                                LastCode = lastCodeResult.data.Rows[0]["QRContent"]?.ToString() ?? string.Empty;
+                            }
+                            int lastIndex = 0;
+                            string[] AC = LastCode.Split('/');
+                            if(AC.Length > 0)
+                            {
+                                string lastIndexString = AC[AC.Length - 1];
+                                lastIndex = int.Parse(lastIndexString);
+                            }
+                            else
+                            {
+                                lastIndex = 0;
+                            }
+
+                            //A1.2 Load mấy cái chạy rồi vào hashset
+                            FD_Globals.ActiveSet = QRDatabaseHelper.LoadActiveToHashSet(
+                                FD_Globals.productionData.POItem,
+                                FD_Globals.productionData.POLot);
+
+                            GlobalVarialbles.Logger?.LogAsync("Dashboard", e_LogType.Info,
+                                $"Đã load {FD_Globals.ActiveSet.Count} mã active vào HashSet", LastCode, "INFO-FDASH-LOAD-HS-01");
+
+
+                            //A1.3 Tạo list cho máy in
+                            
+                            for (int i = lastIndex; i<1000000;i++)
+                            {
+                                string codePrint = AppConfigs.Current.Main_Url + FD_Globals.productionData.POItem + "/" + FD_Globals.productionData.POLot + "/" + i;
+                                GlobalVarialbles.Print_Codes.Add(codePrint);
+                            }
                         }
                         else
                         {
-                           //A1.4 Tạo list máy in
-                           //A1.5 Chuyển sang máy in
+                            //A1.4 Tạo list máy in
+                            for (int i = 0; i < 1000000; i++)
+                            {
+                                string codePrint = AppConfigs.Current.Main_Url + FD_Globals.productionData.POItem + "/" + FD_Globals.productionData.POLot + "/" + i;
+                                GlobalVarialbles.Print_Codes.Add(codePrint);
+                            }
                         }
-                        
+                        GlobalVarialbles.CurrentAppState = e_AppState.Push_Data_To_Printer;
                         break;
                     case e_AppState.Load_PO:
                         //lấy thông tin PO từ OPC
-                        FD_Globals.productionData.POLot = "LOT123";
-                        FD_Globals.productionData.POItem = "ITEM TEST";
+                        if(FD_Globals.productionData.POLot.IsNullOrEmpty()|| FD_Globals.productionData.POItem.IsNullOrEmpty())
+                        {
+                            break;
+                        }
+                        GlobalVarialbles.CurrentAppState = e_AppState.Checking;
                         break;
                 }
 
@@ -226,6 +270,15 @@ namespace TApp.Views.Dashboard
             {
                 this.ShowErrorDialog($"Lỗi khởi tạo giao diện Dashboard: {ex.Message}");
             }
+        }
+
+        private void UpdateUI()
+        {
+          this.InvokeIfRequired ( () => {
+
+              ipPOItem.Text = FD_Globals.productionData.POItem;
+              ipPOLot.Text = FD_Globals.productionData.POLot;
+          });
         }
 
         private void LoadProductionCounters(string POItem, string POLot)
@@ -431,6 +484,7 @@ namespace TApp.Views.Dashboard
                 Render_Order_Statistics();
                 Render_Production_Statistics();
                 CheckDeactiveStateFromPLC();
+                UpdateUI();
                 Thread.Sleep(500);
             }
         }
@@ -731,7 +785,7 @@ namespace TApp.Views.Dashboard
                 QRContent = qrContent,
                 Status = status,
                 POItem = FD_Globals.productionData.POItem,
-                Barcode = FD_Globals.productionData.POLot,
+                POLot = FD_Globals.productionData.POLot,
                 UserName = GlobalVarialbles.CurrentUser.Username,
                 TimeStampActive = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"),
                 TimeUnixActive = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
@@ -764,7 +818,7 @@ namespace TApp.Views.Dashboard
             {
                 if (AppConfigs.Current.Data_Mode == "normal" && FD_Globals.QueueActive.TryDequeue(out QRProductRecord otherRecord))
                 {
-                    QRDatabaseHelper.AddActiveCodeUnique(otherRecord.QRContent, otherRecord.POItem, otherRecord.Barcode, otherRecord.UserName, otherRecord.TimeStampActive, otherRecord.TimeUnixActive);
+                    QRDatabaseHelper.AddActiveCodeUnique(otherRecord.QRContent, otherRecord.POItem, otherRecord.POLot, otherRecord.UserName, otherRecord.TimeStampActive, otherRecord.TimeUnixActive);
                 }
             }
             catch (Exception ex)
