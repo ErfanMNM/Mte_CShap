@@ -149,14 +149,30 @@ namespace TApp.Views
                     {
                         Log($"{_monitoredNodes[i]} = {results[i].Value}");
 
-                        if (GlobalVarialbles.CurrentAppState == e_AppState.Load_PO)
+                        if (GlobalVarialbles.CurrentAppState == e_AppState.Loading_PO)
                         {
                             FD_Globals.productionData.POItem = results[0].Value.ToString();
                             FD_Globals.productionData.POLot = results[0].Value.ToString();
                         }
                         else
                         {
+                            bool PO_Change = false;
+                            if(FD_Globals.productionData.POItem != results[0].Value.ToString())
+                            {
+                                FD_Globals.productionData.POItem = results[0].Value.ToString();
+                                PO_Change = true;
+                            }
 
+                            if(FD_Globals.productionData.POLot != results[0].Value.ToString())
+                            {
+                                FD_Globals.productionData.POLot = results[0].Value.ToString();
+                                PO_Change = true;
+                            }
+
+                            if(PO_Change)
+                            {
+                                GlobalVarialbles.CurrentAppState = e_AppState.Switching;
+                            }
                         }
                     }
                 }

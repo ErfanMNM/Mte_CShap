@@ -148,7 +148,7 @@
             Controls.Add(uiSymbolButton3);
             Controls.Add(uiListBox1);
             Name = "Page_OPC_Production_Order";
-            Text = "Page_OPC_Production_Order";
+            Text = "Quản lý PO";
             ResumeLayout(false);
         }
 

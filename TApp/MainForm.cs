@@ -447,7 +447,7 @@ namespace TApp
             if (AppRenderState != e_App_Render_State.LOGIN)
             {
                 AppRenderState = e_App_Render_State.LOGIN;
-                SetGlobalAppState(e_AppState.Stopping); // Đang ở màn hình đăng nhập
+                SetGlobalAppState(e_AppState.Stopped); // Đang ở màn hình đăng nhập
 
                 this.Invoke(new Action(() =>
                 {
@@ -505,7 +505,7 @@ namespace TApp
             if (AppRenderState != e_App_Render_State.DEACTIVE)
             {
                 AppRenderState = e_App_Render_State.DEACTIVE;
-                SetGlobalAppState(e_AppState.Stopping); // Đang bị vô hiệu hóa
+                SetGlobalAppState(e_AppState.Stopped); // Đang bị vô hiệu hóa
 
                 this.Invoke(new Action(() =>
                 {

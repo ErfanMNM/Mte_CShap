@@ -54,7 +54,7 @@ namespace TApp.Views.Dashboard
                     case e_AppState.Initializing:
                         if (_isInitiated)
                         {
-                            GlobalVarialbles.CurrentAppState = e_AppState.Stopping;
+                            GlobalVarialbles.CurrentAppState = e_AppState.Stopped;
                             break;
                         }
                         _isInitiated = true;
@@ -62,35 +62,46 @@ namespace TApp.Views.Dashboard
                         InitializeDevices();
                         InitializeDashboardUI();
                         InitializeBackgroundWorkers();
-                        GlobalVarialbles.CurrentAppState = e_AppState.Load_PO;
+                        GlobalVarialbles.CurrentAppState = e_AppState.Loading_PO;
                         break;
-                    case e_AppState.Push_Data_To_Printer:
+                    case e_AppState.Pushing:
                         //chờ máy in kích hoạt lại
+                        GlobalVarialbles.CurrentAppState = e_AppState.Running;
                         break;
-                    case e_AppState.New_PO:
-                        //Sự kiện phát hiện PO mới
-                        
+                    case e_AppState.Switching:
+                        //tạm nhảy về Creating PO
+                        GlobalVarialbles.CurrentAppState = e_AppState.Creating_PO;
                         break;
-                    case e_AppState.Printing:
-                        //Máy in sẽ trả về đây kkkk
+                    case e_AppState.Running:
+                        //Đang innnnn
+
+                        if(FD_Globals.CameraStatus != CameraStatus.Connected || FD_Globals.pLCStatus != PLCStatus.Connected)
+                        {
+                            GlobalVarialbles.CurrentAppState = e_AppState.Device_Error;
+                        }
+
                         break;
-                    case e_AppState.Error:
+                    case e_AppState.Device_Error:
                         //lỗi
+                        if (FD_Globals.CameraStatus == CameraStatus.Connected && FD_Globals.pLCStatus == PLCStatus.Connected)
+                        {
+                            GlobalVarialbles.CurrentAppState = e_AppState.Running;
+                        }
                         break;
-                    case e_AppState.Stopping:
+                    case e_AppState.Stopped:
                         //dừng
 
                         break;
-                    case e_AppState.Checking:
+                    case e_AppState.Creating_PO:
                         //Kiểm tra thông tin PO 
                         //A0. Kiểm tra có PO hay chưa
-                        if(FD_Globals.productionData.POItem.IsNullOrEmpty() || FD_Globals.productionData.POLot.IsNullOrEmpty())
+                        if (FD_Globals.productionData.POItem.IsNullOrEmpty() || FD_Globals.productionData.POLot.IsNullOrEmpty())
                         {
                             //chuyển về Load_PO
-                            GlobalVarialbles.CurrentAppState = e_AppState.Load_PO;
-                        }    
+                            GlobalVarialbles.CurrentAppState = e_AppState.Loading_PO;
+                        }
                         //A1. Kiểm tra xem PO đã từng chạy trước đó hay chưa'
-                        if(QRDatabaseHelper.POHasData(FD_Globals.productionData.POItem, FD_Globals.productionData.POLot))
+                        if (QRDatabaseHelper.POHasData(FD_Globals.productionData.POItem, FD_Globals.productionData.POLot))
                         {
                             //Nếu đã từng chạy
                             //A1.1 Lấy dòng chạy cuối cùng để tạo mã tiếp theo
@@ -105,10 +116,10 @@ namespace TApp.Views.Dashboard
                             }
                             int lastIndex = 0;
                             string[] AC = LastCode.Split('/');
-                            if(AC.Length > 0)
+                            if (AC.Length > 0)
                             {
                                 string lastIndexString = AC[AC.Length - 1];
-                                lastIndex = int.Parse(lastIndexString);
+                                lastIndex = int.Parse(lastIndexString) + 10; //cộng thêm 10 thùng để tránh lỗi
                             }
                             else
                             {
@@ -125,8 +136,8 @@ namespace TApp.Views.Dashboard
 
 
                             //A1.3 Tạo list cho máy in
-                            
-                            for (int i = lastIndex; i<1000000;i++)
+
+                            for (int i = lastIndex; i < 1000000; i++)
                             {
                                 string codePrint = AppConfigs.Current.Main_Url + FD_Globals.productionData.POItem + "/" + FD_Globals.productionData.POLot + "/" + i;
                                 GlobalVarialbles.Print_Codes.Add(codePrint);
@@ -144,15 +155,19 @@ namespace TApp.Views.Dashboard
                             }
                         }
                         LoadProductionCounters(FD_Globals.productionData.POItem, FD_Globals.productionData.POLot);
-                        GlobalVarialbles.CurrentAppState = e_AppState.Push_Data_To_Printer;
+                        GlobalVarialbles.CurrentAppState = e_AppState.Pushing;
                         break;
-                    case e_AppState.Load_PO:
+                    case e_AppState.Loading_PO:
                         //lấy thông tin PO từ OPC
-                        if(FD_Globals.productionData.POLot.IsNullOrEmpty()|| FD_Globals.productionData.POItem.IsNullOrEmpty())
+                        if (FD_Globals.productionData.POLot.IsNullOrEmpty() || FD_Globals.productionData.POItem.IsNullOrEmpty())
                         {
                             break;
                         }
-                        GlobalVarialbles.CurrentAppState = e_AppState.Checking;
+                        GlobalVarialbles.CurrentAppState = e_AppState.Creating_PO;
+                        break;
+                    case e_AppState.Printer_Error:
+                        break;
+                    case e_AppState.Printer_Pause:
                         break;
                 }
 
@@ -279,6 +294,8 @@ namespace TApp.Views.Dashboard
 
               ipPOItem.Text = FD_Globals.productionData.POItem;
               ipPOLot.Text = FD_Globals.productionData.POLot;
+              opAppStatus.Text = GlobalVarialbles.CurrentAppState.ToString();
+              opAppStatusCode.Value = Convert.ToInt32(GlobalVarialbles.CurrentAppState);
           });
         }
 
@@ -827,7 +844,7 @@ namespace TApp.Views.Dashboard
 
         private void UpdateCountersFromPLC()
         {
-            if (GlobalVarialbles.CurrentAppState == e_AppState.Ready)
+            if (GlobalVarialbles.CurrentAppState == e_AppState.Running)
             {
                 omronPLC_Hsl1.Ready = 1;
             }

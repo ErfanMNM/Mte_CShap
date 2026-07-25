@@ -47,22 +47,22 @@ namespace TApp.Infrastructure
     public enum e_AppState
     {
         Initializing = 0, // Khởi động ứng dụng
-        CreatePO = 1, //tạo PO
-        Push_Data_To_Printer = 2, //Gửi dữ liệu cho máy in
-        New_PO = 3,
-        Start_Printer = 4,
-        Ready = 5,
-        Printing = 6,
-        Error = 7,
-        Stopping = 8,
-        Checking = 9,
-        Load_PO = 10,
+        Loading_PO = 1,
+        Creating_PO = 2,
+        Pushing = 3,
+        Device_Error = 4,
+        Stopped = 5,
+        Switching = 6,
+        Running = 7,
+        Printer_Error = 8,
+        Printer_Pause = 9,
+
     }
 
     public static class GlobalVarialbles
     {
         public static UserData CurrentUser { get; set; } = new UserData();
-        public static e_AppState CurrentAppState { get; set; } = e_AppState.Stopping;
+        public static e_AppState CurrentAppState { get; set; } = e_AppState.Stopped;
         public static LogHelper<e_LogType>? Logger;
 
         public static List<string> Print_Codes { get; set; } = new List<string>();
