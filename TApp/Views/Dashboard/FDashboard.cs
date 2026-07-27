@@ -119,7 +119,15 @@ namespace TApp.Views.Dashboard
                             if (AC.Length > 0)
                             {
                                 string lastIndexString = AC[AC.Length - 1];
-                                lastIndex = int.Parse(lastIndexString) + 10; //cộng thêm 10 thùng để tránh lỗi
+                                try
+                                {
+                                    lastIndex = int.Parse(lastIndexString) + 10; //cộng thêm 10 thùng để tránh lỗi
+                                }
+                                catch
+                                {
+                                    lastIndex = 0;
+                                }
+                                
                             }
                             else
                             {
@@ -545,6 +553,8 @@ namespace TApp.Views.Dashboard
                     ProcessQueueRecord();
                     ProcessQueueActive();
 
+                    GlobalVarialbles.IsPush = true;
+
 
                     UpdateAlarmDisplay();
                     //cập nhật tốc độ sản xuất
@@ -835,6 +845,11 @@ namespace TApp.Views.Dashboard
                 {
                     QRDatabaseHelper.AddActiveCodeUnique(otherRecord.QRContent, otherRecord.POItem, otherRecord.POLot, otherRecord.UserName, otherRecord.TimeStampActive, otherRecord.TimeUnixActive);
                 }
+
+                if (FD_Globals.QueuePush.TryDequeue (out Push resultPush))
+                {
+                    QRDatabaseHelper.UpdateStatusPush(resultPush.QRContent, resultPush.Status);
+                }
             }
             catch (Exception ex)
             {
@@ -998,6 +1013,9 @@ namespace TApp.Views.Dashboard
         public static HashSet<string> PrintSet { get; set; } = new HashSet<string>();
         public static ConcurrentQueue<QRProductRecord> QueueRecord { get; set; } = new ConcurrentQueue<QRProductRecord>();
         public static ConcurrentQueue<QRProductRecord> QueueActive { get; set; } = new ConcurrentQueue<QRProductRecord>();
+
+        public static ConcurrentQueue<Push> QueuePush { get; set; } = new ConcurrentQueue<Push>();
+
         /// <summary>
         /// Lịch sử các lần xóa lỗi FormatError
         /// </summary>

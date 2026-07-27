@@ -21,6 +21,14 @@ namespace TApp.Models
         public string? Reason { get; set; }   // lý do xóa / lỗi
     }
 
+    public class Push
+    {
+        public int ID { get; set; }
+        public string? QRContent { get; set; }
+        public string Status { get; set; }
+    }
+
+
     public class ActiveQRRecord
     {
         public int ID { get; set; }

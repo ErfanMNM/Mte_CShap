@@ -36,6 +36,8 @@
             opPOLot = new Sunny.UI.UILabel();
             ipPOItem = new Sunny.UI.UITextBox();
             ipPOLot = new Sunny.UI.UITextBox();
+            WK_UpServer = new System.ComponentModel.BackgroundWorker();
+            uiListBox2 = new Sunny.UI.UIListBox();
             SuspendLayout();
             // 
             // uiListBox1
@@ -43,13 +45,13 @@
             uiListBox1.Font = new Font("Microsoft Sans Serif", 12F);
             uiListBox1.HoverColor = Color.FromArgb(155, 200, 255);
             uiListBox1.ItemSelectForeColor = Color.White;
-            uiListBox1.Location = new Point(13, 72);
+            uiListBox1.Location = new Point(13, 80);
             uiListBox1.Margin = new Padding(4, 5, 4, 5);
             uiListBox1.MinimumSize = new Size(1, 1);
             uiListBox1.Name = "uiListBox1";
             uiListBox1.Padding = new Padding(2);
             uiListBox1.ShowText = false;
-            uiListBox1.Size = new Size(1065, 545);
+            uiListBox1.Size = new Size(545, 537);
             uiListBox1.TabIndex = 0;
             uiListBox1.Text = "uiListBox1";
             // 
@@ -135,10 +137,31 @@
             ipPOLot.TextAlignment = ContentAlignment.MiddleLeft;
             ipPOLot.Watermark = "";
             // 
+            // WK_UpServer
+            // 
+            WK_UpServer.WorkerSupportsCancellation = true;
+            WK_UpServer.DoWork += WK_UpServer_DoWork;
+            // 
+            // uiListBox2
+            // 
+            uiListBox2.Font = new Font("Microsoft Sans Serif", 12F);
+            uiListBox2.HoverColor = Color.FromArgb(155, 200, 255);
+            uiListBox2.ItemSelectForeColor = Color.White;
+            uiListBox2.Location = new Point(559, 80);
+            uiListBox2.Margin = new Padding(4, 5, 4, 5);
+            uiListBox2.MinimumSize = new Size(1, 1);
+            uiListBox2.Name = "uiListBox2";
+            uiListBox2.Padding = new Padding(2);
+            uiListBox2.ShowText = false;
+            uiListBox2.Size = new Size(519, 537);
+            uiListBox2.TabIndex = 8;
+            uiListBox2.Text = "uiListBox2";
+            // 
             // Page_OPC_Production_Order
             // 
             AutoScaleMode = AutoScaleMode.None;
             ClientSize = new Size(1091, 631);
+            Controls.Add(uiListBox2);
             Controls.Add(ipPOLot);
             Controls.Add(ipPOItem);
             Controls.Add(opPOLot);
@@ -162,5 +185,7 @@
         private Sunny.UI.UILabel opPOLot;
         private Sunny.UI.UITextBox ipPOItem;
         private Sunny.UI.UITextBox ipPOLot;
+        private System.ComponentModel.BackgroundWorker WK_UpServer;
+        private Sunny.UI.UIListBox uiListBox2;
     }
 }

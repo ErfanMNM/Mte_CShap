@@ -66,6 +66,8 @@ namespace TApp.Infrastructure
         public static LogHelper<e_LogType>? Logger;
 
         public static List<string> Print_Codes { get; set; } = new List<string>();
+
+        public static bool IsPush { get; set; } = true;
     }
 
 }

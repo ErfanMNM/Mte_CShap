@@ -16,8 +16,8 @@ namespace TApp.Helpers
             CREATE TABLE IF NOT EXISTS ActiveUniqueQR (
                 ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 QRContent TEXT NOT NULL,
-                Status TEXT NOT NULL DEFAULT 0,
-                PushStatus TEXT NOT NULL DEFAULT 0,
+                Status TEXT NOT NULL DEFAULT 1,
+                PushStatus TEXT NOT NULL DEFAULT 'Pending',
                 POItem TEXT NOT NULL,
                 POLot TEXT NOT NULL,
                 UserName TEXT NOT NULL,
@@ -186,6 +186,35 @@ namespace TApp.Helpers
             }
         }
 
+
+        public static bool UpdateStatusPush(
+            string qrContent,
+            string PushStatus,
+            string dbPath = ActiveUniqueDbPath)
+        {
+            EnsureDatabase(dbPath);
+
+            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            {
+                con.Open();
+
+                string sql = @"
+                UPDATE QRProducts
+                SET PushStatus = @PushStatus
+                WHERE QRContent = @QRContent;
+            ";
+
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@PushStatus", PushStatus);
+                    cmd.Parameters.AddWithValue("@QRContent", qrContent);
+
+                    int rows = cmd.ExecuteNonQuery();
+                    return rows > 0;
+                }
+            }
+        }
+
         /// <summary>
         /// Hủy (deactive) 1 mã với lý do.
         /// </summary>
@@ -236,7 +265,7 @@ namespace TApp.Helpers
         }
 
         //Lấy mã active
-        public static TResult Get_ActiveQR_By_TimeUnix(long timeunix, string dbPath = ActiveUniqueDbPath)
+        public static TResult Get_ActiveQR_By_Push(string dbPath = ActiveUniqueDbPath)
         {
             EnsureDatabase(dbPath);
 
@@ -249,13 +278,13 @@ namespace TApp.Helpers
                     string sql = @"
                 SELECT *
                 FROM ActiveUniqueQR
-                WHERE TimeUnixActive > @u
+                WHERE PushStatus != '200'
                 ORDER BY TimeUnixActive ASC;
             ";
 
                     using (var cmd = new SQLiteCommand(sql, con))
                     {
-                        cmd.Parameters.AddWithValue("@u", timeunix);
+                        cmd.Parameters.AddWithValue("@u", "a");
 
                         var adapter = new SQLiteDataAdapter(cmd);
                         var table = new DataTable();
@@ -273,7 +302,6 @@ namespace TApp.Helpers
             }
 
         }
-
 
         //Lấy counter từ DB
         public static int GetRowCount(string POItem, string POLot, string status, string dbPath = DB_RECORD_PATH)
