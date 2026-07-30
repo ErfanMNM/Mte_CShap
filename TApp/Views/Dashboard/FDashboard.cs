@@ -54,7 +54,7 @@ namespace TApp.Views.Dashboard
                     case e_AppState.Initializing:
                         if (_isInitiated)
                         {
-                            GlobalVarialbles.CurrentAppState = e_AppState.Stopping;
+                            GlobalVarialbles.CurrentAppState = e_AppState.Stopped;
                             break;
                         }
                         _isInitiated = true;
@@ -62,52 +62,120 @@ namespace TApp.Views.Dashboard
                         InitializeDevices();
                         InitializeDashboardUI();
                         InitializeBackgroundWorkers();
-                        GlobalVarialbles.CurrentAppState = e_AppState.Load_PO;
+                        GlobalVarialbles.CurrentAppState = e_AppState.Loading_PO;
                         break;
-                    case e_AppState.CreatePO:
+                    case e_AppState.Pushing:
+                        //chờ máy in kích hoạt lại
+                        GlobalVarialbles.CurrentAppState = e_AppState.Running;
                         break;
-                    case e_AppState.Push_Data_To_Printer:
+                    case e_AppState.Switching:
+                        //tạm nhảy về Creating PO
+                        GlobalVarialbles.CurrentAppState = e_AppState.Creating_PO;
                         break;
-                    case e_AppState.New_PO:
+                    case e_AppState.Running:
+                        //Đang innnnn
+
+                        if(FD_Globals.CameraStatus != CameraStatus.Connected || FD_Globals.pLCStatus != PLCStatus.Connected)
+                        {
+                            GlobalVarialbles.CurrentAppState = e_AppState.Device_Error;
+                        }
+
                         break;
-                    case e_AppState.Start_Printer:
+                    case e_AppState.Device_Error:
+                        //lỗi
+                        if (FD_Globals.CameraStatus == CameraStatus.Connected && FD_Globals.pLCStatus == PLCStatus.Connected)
+                        {
+                            GlobalVarialbles.CurrentAppState = e_AppState.Running;
+                        }
                         break;
-                    case e_AppState.Ready:
+                    case e_AppState.Stopped:
+                        //dừng
+
                         break;
-                    case e_AppState.Printing:
-                        break;
-                    case e_AppState.Error:
-                        break;
-                    case e_AppState.Stopping:
-                        break;
-                    case e_AppState.Checking:
+                    case e_AppState.Creating_PO:
                         //Kiểm tra thông tin PO 
                         //A0. Kiểm tra có PO hay chưa
-                        if(FD_Globals.productionData.POItem.IsNullOrEmpty() || FD_Globals.productionData.POLot.IsNullOrEmpty())
+                        if (FD_Globals.productionData.POItem.IsNullOrEmpty() || FD_Globals.productionData.POLot.IsNullOrEmpty())
                         {
                             //chuyển về Load_PO
-                            GlobalVarialbles.CurrentAppState = e_AppState.Load_PO;
-                        }    
+                            GlobalVarialbles.CurrentAppState = e_AppState.Loading_PO;
+                        }
                         //A1. Kiểm tra xem PO đã từng chạy trước đó hay chưa'
-                        if(QRDatabaseHelper.POHasData(FD_Globals.productionData.POItem, FD_Globals.productionData.POLot))
+                        if (QRDatabaseHelper.POHasData(FD_Globals.productionData.POItem, FD_Globals.productionData.POLot))
                         {
                             //Nếu đã từng chạy
+                            //A1.1 Lấy dòng chạy cuối cùng để tạo mã tiếp theo
+                            var lastCodeResult = QRDatabaseHelper.GetLastActiveCode(
+                                FD_Globals.productionData.POItem,
+                                FD_Globals.productionData.POLot);
 
-                            //A1.1 Lấy ID lớn nhất để tạo mã máy in
-                            //A1.2 Load mấy cái chạy rồi vào dic
-                            //A1.3 Chuyển sang máy in
+                            string LastCode = string.Empty;
+                            if (lastCodeResult.issuccess && lastCodeResult.data != null && lastCodeResult.data.Rows.Count > 0)
+                            {
+                                LastCode = lastCodeResult.data.Rows[0]["QRContent"]?.ToString() ?? string.Empty;
+                            }
+                            int lastIndex = 0;
+                            string[] AC = LastCode.Split('/');
+                            if (AC.Length > 0)
+                            {
+                                string lastIndexString = AC[AC.Length - 1];
+                                try
+                                {
+                                    lastIndex = int.Parse(lastIndexString) + 10; //cộng thêm 10 thùng để tránh lỗi
+                                }
+                                catch
+                                {
+                                    lastIndex = 0;
+                                }
+                                
+                            }
+                            else
+                            {
+                                lastIndex = 0;
+                            }
+
+                            //A1.2 Load mấy cái chạy rồi vào hashset
+                            FD_Globals.ActiveSet = QRDatabaseHelper.LoadActiveToHashSet(
+                                FD_Globals.productionData.POItem,
+                                FD_Globals.productionData.POLot);
+
+                            GlobalVarialbles.Logger?.LogAsync("Dashboard", e_LogType.Info,
+                                $"Đã load {FD_Globals.ActiveSet.Count} mã active vào HashSet", LastCode, "INFO-FDASH-LOAD-HS-01");
+
+
+                            //A1.3 Tạo list cho máy in
+
+                            for (int i = lastIndex; i < 1000000; i++)
+                            {
+                                string codePrint = AppConfigs.Current.Main_Url + FD_Globals.productionData.POItem + "/" + FD_Globals.productionData.POLot + "/" + i;
+                                GlobalVarialbles.Print_Codes.Add(codePrint);
+                                FD_Globals.PrintSet.Add(codePrint);
+                            }
                         }
                         else
                         {
-                           //A1.4 Tạo list máy in
-                           //A1.5 Chuyển sang máy in
+                            //A1.4 Tạo list máy in
+                            for (int i = 0; i < 1000000; i++)
+                            {
+                                string codePrint = AppConfigs.Current.Main_Url + FD_Globals.productionData.POItem + "/" + FD_Globals.productionData.POLot + "/" + i;
+                                GlobalVarialbles.Print_Codes.Add(codePrint);
+                                FD_Globals.PrintSet.Add(codePrint);
+                            }
                         }
-                        
+                        LoadProductionCounters(FD_Globals.productionData.POItem, FD_Globals.productionData.POLot);
+                        GlobalVarialbles.CurrentAppState = e_AppState.Pushing;
                         break;
-                    case e_AppState.Load_PO:
+                    case e_AppState.Loading_PO:
                         //lấy thông tin PO từ OPC
-                        FD_Globals.productionData.POLot = "LOT123";
-                        FD_Globals.productionData.POItem = "ITEM TEST";
+                        if (FD_Globals.productionData.POLot.IsNullOrEmpty() || FD_Globals.productionData.POItem.IsNullOrEmpty())
+                        {
+                            break;
+                        }
+                        GlobalVarialbles.CurrentAppState = e_AppState.Creating_PO;
+                        break;
+                    case e_AppState.Printer_Error:
+                        break;
+                    case e_AppState.Printer_Pause:
                         break;
                 }
 
@@ -228,6 +296,17 @@ namespace TApp.Views.Dashboard
             }
         }
 
+        private void UpdateUI()
+        {
+          this.InvokeIfRequired ( () => {
+
+              ipPOItem.Text = FD_Globals.productionData.POItem;
+              ipPOLot.Text = FD_Globals.productionData.POLot;
+              opAppStatus.Text = GlobalVarialbles.CurrentAppState.ToString();
+              opAppStatusCode.Value = Convert.ToInt32(GlobalVarialbles.CurrentAppState);
+          });
+        }
+
         private void LoadProductionCounters(string POItem, string POLot)
         {
             FD_Globals.productionData.productCameraCounter.Total = QRDatabaseHelper.GetRecordCountByBatch(POItem,POLot);
@@ -293,11 +372,6 @@ namespace TApp.Views.Dashboard
             {
                 this.ShowErrorDialog($"FDashboard: Lỗi khởi tạo PLC: {ex.Message}");
             }
-        }
-
-        public void InitializePOCartoning()
-        {
-
         }
 
         #endregion
@@ -374,7 +448,7 @@ namespace TApp.Views.Dashboard
                 data = data.Replace(";", ""); // Xóa khoảng trắng nếu có
             }
             // Tách riêng trường hợp camera trả về "FAIL" (lỗi đọc)
-            if (string.Equals(data, "FAIL", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(data, "NoRead", StringComparison.OrdinalIgnoreCase))
             {
                 Send_Result_To_PLC(e_PLC_Result.Fail);
                 Send_Result_Content(e_Production_Status.ReadFail, data);
@@ -388,16 +462,14 @@ namespace TApp.Views.Dashboard
                 return;
             }
 
-            if (!IsValidQRContent(data))
+            if (FD_Globals.PrintSet.Contains(data))
             {
                 Send_Result_To_PLC(e_PLC_Result.Fail);
-                Send_Result_Content(e_Production_Status.FormatError, data);
+                Send_Result_Content(e_Production_Status.NotFound, data);
                 return;
             }
 
             FD_Globals.ActiveSet.Add(data); // Update RAM
-
-
 
             Send_Result_To_PLC(e_PLC_Result.Pass);
             Send_Result_Content(e_Production_Status.Pass, data);
@@ -405,6 +477,7 @@ namespace TApp.Views.Dashboard
             if (AppConfigs.Current.Data_Mode == "normal")
             {
                 var record = CreateQRProductRecord(data, e_Production_Status.Pass);
+
                 FD_Globals.QueueActive.Enqueue(record);
             }
             else
@@ -431,6 +504,7 @@ namespace TApp.Views.Dashboard
                 Render_Order_Statistics();
                 Render_Production_Statistics();
                 CheckDeactiveStateFromPLC();
+                UpdateUI();
                 Thread.Sleep(500);
             }
         }
@@ -474,8 +548,13 @@ namespace TApp.Views.Dashboard
                 try
                 {
                     dem1++;
+
+
                     ProcessQueueRecord();
                     ProcessQueueActive();
+
+                    GlobalVarialbles.IsPush = true;
+
 
                     UpdateAlarmDisplay();
                     //cập nhật tốc độ sản xuất
@@ -715,7 +794,7 @@ namespace TApp.Views.Dashboard
             }
         }
 
-        private bool IsValidQRContent(string data) => data.Length >= 16 && data.Contains(FD_Globals.productionData.POItem);
+       // private bool IsValidQRContent(string data) => data.Length >= 16 && data.Contains(FD_Globals.productionData.POItem);
 
         private void Send_Result_Content(e_Production_Status status, string data)
         {
@@ -731,7 +810,7 @@ namespace TApp.Views.Dashboard
                 QRContent = qrContent,
                 Status = status,
                 POItem = FD_Globals.productionData.POItem,
-                Barcode = FD_Globals.productionData.POLot,
+                POLot = FD_Globals.productionData.POLot,
                 UserName = GlobalVarialbles.CurrentUser.Username,
                 TimeStampActive = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffK"),
                 TimeUnixActive = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
@@ -764,7 +843,12 @@ namespace TApp.Views.Dashboard
             {
                 if (AppConfigs.Current.Data_Mode == "normal" && FD_Globals.QueueActive.TryDequeue(out QRProductRecord otherRecord))
                 {
-                    QRDatabaseHelper.AddActiveCodeUnique(otherRecord.QRContent, otherRecord.POItem, otherRecord.Barcode, otherRecord.UserName, otherRecord.TimeStampActive, otherRecord.TimeUnixActive);
+                    QRDatabaseHelper.AddActiveCodeUnique(otherRecord.QRContent, otherRecord.POItem, otherRecord.POLot, otherRecord.UserName, otherRecord.TimeStampActive, otherRecord.TimeUnixActive);
+                }
+
+                if (FD_Globals.QueuePush.TryDequeue (out Push resultPush))
+                {
+                    QRDatabaseHelper.UpdateStatusPush(resultPush.QRContent, resultPush.Status);
                 }
             }
             catch (Exception ex)
@@ -775,7 +859,7 @@ namespace TApp.Views.Dashboard
 
         private void UpdateCountersFromPLC()
         {
-            if (GlobalVarialbles.CurrentAppState == e_AppState.Ready)
+            if (GlobalVarialbles.CurrentAppState == e_AppState.Running)
             {
                 omronPLC_Hsl1.Ready = 1;
             }
@@ -926,8 +1010,12 @@ namespace TApp.Views.Dashboard
         public static int AlarmCount { get; set; } = 0;
         public static PLCStatus pLCStatus { get; set; } = PLCStatus.Disconnect;
         public static HashSet<string> ActiveSet { get; set; } = new HashSet<string>();
+        public static HashSet<string> PrintSet { get; set; } = new HashSet<string>();
         public static ConcurrentQueue<QRProductRecord> QueueRecord { get; set; } = new ConcurrentQueue<QRProductRecord>();
         public static ConcurrentQueue<QRProductRecord> QueueActive { get; set; } = new ConcurrentQueue<QRProductRecord>();
+
+        public static ConcurrentQueue<Push> QueuePush { get; set; } = new ConcurrentQueue<Push>();
+
         /// <summary>
         /// Lịch sử các lần xóa lỗi FormatError
         /// </summary>

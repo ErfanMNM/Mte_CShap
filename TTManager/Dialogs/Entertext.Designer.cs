@@ -158,7 +158,6 @@
             Dot.MinimumSize = new Size(1, 1);
             Dot.Name = "Dot";
             Dot.RectColor = Color.DeepSkyBlue;
-            Dot.RectSize = 2;
             Dot.Size = new Size(69, 55);
             Dot.TabIndex = 8;
             Dot.Text = ".";
@@ -176,7 +175,6 @@
             Space.MinimumSize = new Size(1, 1);
             Space.Name = "Space";
             Space.RectColor = Color.DeepSkyBlue;
-            Space.RectSize = 2;
             Space.Size = new Size(341, 55);
             Space.TabIndex = 5;
             Space.Text = "_";
@@ -275,7 +273,7 @@
             M.MinimumSize = new Size(1, 1);
             M.Name = "M";
             M.RectColor = Color.DeepSkyBlue;
-            M.RectSize = 2;
+
             M.Size = new Size(71, 47);
             M.TabIndex = 8;
             M.Text = "M";
@@ -293,7 +291,7 @@
             N.MinimumSize = new Size(1, 1);
             N.Name = "N";
             N.RectColor = Color.DeepSkyBlue;
-            N.RectSize = 2;
+
             N.Size = new Size(71, 47);
             N.TabIndex = 7;
             N.Text = "N";
@@ -311,7 +309,7 @@
             B.MinimumSize = new Size(1, 1);
             B.Name = "B";
             B.RectColor = Color.DeepSkyBlue;
-            B.RectSize = 2;
+
             B.Size = new Size(71, 47);
             B.TabIndex = 6;
             B.Text = "B";
@@ -329,7 +327,7 @@
             V.MinimumSize = new Size(1, 1);
             V.Name = "V";
             V.RectColor = Color.DeepSkyBlue;
-            V.RectSize = 2;
+
             V.Size = new Size(71, 47);
             V.TabIndex = 5;
             V.Text = "V";
@@ -347,7 +345,7 @@
             C.MinimumSize = new Size(1, 1);
             C.Name = "C";
             C.RectColor = Color.DeepSkyBlue;
-            C.RectSize = 2;
+
             C.Size = new Size(71, 47);
             C.TabIndex = 4;
             C.Text = "C";
@@ -365,7 +363,7 @@
             X.MinimumSize = new Size(1, 1);
             X.Name = "X";
             X.RectColor = Color.DeepSkyBlue;
-            X.RectSize = 2;
+
             X.Size = new Size(71, 47);
             X.TabIndex = 3;
             X.Text = "X";
@@ -383,7 +381,7 @@
             Z.MinimumSize = new Size(1, 1);
             Z.Name = "Z";
             Z.RectColor = Color.DeepSkyBlue;
-            Z.RectSize = 2;
+
             Z.Size = new Size(71, 47);
             Z.TabIndex = 2;
             Z.Text = "Z";
@@ -417,7 +415,7 @@
             uiSymbolButton2.MinimumSize = new Size(1, 1);
             uiSymbolButton2.Name = "uiSymbolButton2";
             uiSymbolButton2.RectColor = Color.DeepSkyBlue;
-            uiSymbolButton2.RectSize = 2;
+
             uiSymbolButton2.Size = new Size(113, 47);
             uiSymbolButton2.Symbol = 557674;
             uiSymbolButton2.TabIndex = 11;
@@ -467,7 +465,7 @@
             L.MinimumSize = new Size(1, 1);
             L.Name = "L";
             L.RectColor = Color.DeepSkyBlue;
-            L.RectSize = 2;
+
             L.Size = new Size(71, 48);
             L.TabIndex = 9;
             L.Text = "L";
@@ -485,7 +483,7 @@
             K.MinimumSize = new Size(1, 1);
             K.Name = "K";
             K.RectColor = Color.DeepSkyBlue;
-            K.RectSize = 2;
+
             K.Size = new Size(71, 48);
             K.TabIndex = 8;
             K.Text = "K";
@@ -503,7 +501,7 @@
             J.MinimumSize = new Size(1, 1);
             J.Name = "J";
             J.RectColor = Color.DeepSkyBlue;
-            J.RectSize = 2;
+  
             J.Size = new Size(71, 48);
             J.TabIndex = 7;
             J.Text = "J";
@@ -521,7 +519,7 @@
             H.MinimumSize = new Size(1, 1);
             H.Name = "H";
             H.RectColor = Color.DeepSkyBlue;
-            H.RectSize = 2;
+
             H.Size = new Size(71, 48);
             H.TabIndex = 6;
             H.Text = "H";
@@ -539,7 +537,7 @@
             G.MinimumSize = new Size(1, 1);
             G.Name = "G";
             G.RectColor = Color.DeepSkyBlue;
-            G.RectSize = 2;
+
             G.Size = new Size(71, 48);
             G.TabIndex = 5;
             G.Text = "G";
@@ -557,7 +555,7 @@
             F.MinimumSize = new Size(1, 1);
             F.Name = "F";
             F.RectColor = Color.DeepSkyBlue;
-            F.RectSize = 2;
+
             F.Size = new Size(71, 48);
             F.TabIndex = 4;
             F.Text = "F";
@@ -575,7 +573,7 @@
             D.MinimumSize = new Size(1, 1);
             D.Name = "D";
             D.RectColor = Color.DeepSkyBlue;
-            D.RectSize = 2;
+
             D.Size = new Size(71, 48);
             D.TabIndex = 3;
             D.Text = "D";
@@ -593,7 +591,7 @@
             S.MinimumSize = new Size(1, 1);
             S.Name = "S";
             S.RectColor = Color.DeepSkyBlue;
-            S.RectSize = 2;
+
             S.Size = new Size(71, 48);
             S.TabIndex = 2;
             S.Text = "S";
@@ -611,7 +609,7 @@
             A.MinimumSize = new Size(1, 1);
             A.Name = "A";
             A.RectColor = Color.DeepSkyBlue;
-            A.RectSize = 2;
+
             A.Size = new Size(71, 48);
             A.TabIndex = 1;
             A.Text = "A";
@@ -661,7 +659,7 @@
             P.MinimumSize = new Size(1, 1);
             P.Name = "P";
             P.RectColor = Color.DeepSkyBlue;
-            P.RectSize = 2;
+
             P.Size = new Size(75, 48);
             P.TabIndex = 9;
             P.Text = "P";
@@ -679,7 +677,7 @@
             O.MinimumSize = new Size(1, 1);
             O.Name = "O";
             O.RectColor = Color.DeepSkyBlue;
-            O.RectSize = 2;
+
             O.Size = new Size(71, 48);
             O.TabIndex = 8;
             O.Text = "O";
@@ -697,7 +695,7 @@
             I.MinimumSize = new Size(1, 1);
             I.Name = "I";
             I.RectColor = Color.DeepSkyBlue;
-            I.RectSize = 2;
+
             I.Size = new Size(71, 48);
             I.TabIndex = 7;
             I.Text = "I";
@@ -715,7 +713,7 @@
             U.MinimumSize = new Size(1, 1);
             U.Name = "U";
             U.RectColor = Color.DeepSkyBlue;
-            U.RectSize = 2;
+
             U.Size = new Size(71, 48);
             U.TabIndex = 6;
             U.Text = "U";
@@ -733,7 +731,7 @@
             Y.MinimumSize = new Size(1, 1);
             Y.Name = "Y";
             Y.RectColor = Color.DeepSkyBlue;
-            Y.RectSize = 2;
+
             Y.Size = new Size(71, 48);
             Y.TabIndex = 5;
             Y.Text = "Y";
@@ -751,7 +749,7 @@
             T.MinimumSize = new Size(1, 1);
             T.Name = "T";
             T.RectColor = Color.DeepSkyBlue;
-            T.RectSize = 2;
+
             T.Size = new Size(71, 48);
             T.TabIndex = 4;
             T.Text = "T";
@@ -769,7 +767,7 @@
             R.MinimumSize = new Size(1, 1);
             R.Name = "R";
             R.RectColor = Color.DeepSkyBlue;
-            R.RectSize = 2;
+
             R.Size = new Size(71, 48);
             R.TabIndex = 3;
             R.Text = "R";
@@ -787,7 +785,7 @@
             E.MinimumSize = new Size(1, 1);
             E.Name = "E";
             E.RectColor = Color.DeepSkyBlue;
-            E.RectSize = 2;
+
             E.Size = new Size(71, 48);
             E.TabIndex = 2;
             E.Text = "E";
@@ -805,7 +803,7 @@
             W.MinimumSize = new Size(1, 1);
             W.Name = "W";
             W.RectColor = Color.DeepSkyBlue;
-            W.RectSize = 2;
+
             W.Size = new Size(71, 48);
             W.TabIndex = 1;
             W.Text = "W";
@@ -823,7 +821,7 @@
             Q.MinimumSize = new Size(1, 1);
             Q.Name = "Q";
             Q.RectColor = Color.DeepSkyBlue;
-            Q.RectSize = 2;
+
             Q.Size = new Size(71, 48);
             Q.TabIndex = 0;
             Q.Text = "Q";

@@ -13,7 +13,6 @@ namespace TApp.Models
         public string? QRContent { get; set; }
         public string? POItem { get; set; }
         public string? POLot { get; set; }
-        public string? Barcode { get; set; }
         public e_Production_Status Status { get; set; }   // Pass, ReadFail, Duplicate, Error, Timeout, Deactive
         public string? UserName { get; set; }
         public string? TimeStampActive { get; set; }
@@ -22,12 +21,20 @@ namespace TApp.Models
         public string? Reason { get; set; }   // lý do xóa / lỗi
     }
 
+    public class Push
+    {
+        public int ID { get; set; }
+        public string? QRContent { get; set; }
+        public string Status { get; set; }
+    }
+
+
     public class ActiveQRRecord
     {
         public int ID { get; set; }
         public string QRContent { get; set; }
-        public string BatchCode { get; set; }
-        public string Barcode { get; set; }
+        public string POItem { get; set; }
+        public string POLot { get; set; }
         public string UserName { get; set; }
         public string TimeStampActive { get; set; }
         public long TimeUnixActive { get; set; }

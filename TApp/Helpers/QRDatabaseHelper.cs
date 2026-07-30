@@ -16,8 +16,8 @@ namespace TApp.Helpers
             CREATE TABLE IF NOT EXISTS ActiveUniqueQR (
                 ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 QRContent TEXT NOT NULL,
-                Status TEXT NOT NULL DEFAULT 0,
-                PushStatus TEXT NOT NULL DEFAULT 0,
+                Status TEXT NOT NULL DEFAULT 1,
+                PushStatus TEXT NOT NULL DEFAULT 'Pending',
                 POItem TEXT NOT NULL,
                 POLot TEXT NOT NULL,
                 UserName TEXT NOT NULL,
@@ -87,7 +87,7 @@ namespace TApp.Helpers
         /// </summary>
         public static bool POHasData(string POItem, string POLot, string dbPath = ActiveUniqueDbPath)
         {
-            EnsureDatabase(dbPath);
+            EnsureActiveUniqueDatabase(dbPath);
 
             using (var con = new SQLiteConnection($"Data Source={dbPath}"))
             {
@@ -102,8 +102,7 @@ namespace TApp.Helpers
                 }
             }
         }
-
-
+ 
         //Lưu record 
         public static void AddRecord(
             string qrContent,
@@ -187,6 +186,35 @@ namespace TApp.Helpers
             }
         }
 
+
+        public static bool UpdateStatusPush(
+            string qrContent,
+            string PushStatus,
+            string dbPath = ActiveUniqueDbPath)
+        {
+            EnsureDatabase(dbPath);
+
+            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            {
+                con.Open();
+
+                string sql = @"
+                UPDATE QRProducts
+                SET PushStatus = @PushStatus
+                WHERE QRContent = @QRContent;
+            ";
+
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@PushStatus", PushStatus);
+                    cmd.Parameters.AddWithValue("@QRContent", qrContent);
+
+                    int rows = cmd.ExecuteNonQuery();
+                    return rows > 0;
+                }
+            }
+        }
+
         /// <summary>
         /// Hủy (deactive) 1 mã với lý do.
         /// </summary>
@@ -236,9 +264,8 @@ namespace TApp.Helpers
                 
         }
 
-
         //Lấy mã active
-        public static TResult Get_ActiveQR_By_TimeUnix(long timeunix, string dbPath = ActiveUniqueDbPath)
+        public static TResult Get_ActiveQR_By_Push(string dbPath = ActiveUniqueDbPath)
         {
             EnsureDatabase(dbPath);
 
@@ -251,13 +278,13 @@ namespace TApp.Helpers
                     string sql = @"
                 SELECT *
                 FROM ActiveUniqueQR
-                WHERE TimeUnixActive > @u
+                WHERE PushStatus != '200'
                 ORDER BY TimeUnixActive ASC;
             ";
 
                     using (var cmd = new SQLiteCommand(sql, con))
                     {
-                        cmd.Parameters.AddWithValue("@u", timeunix);
+                        cmd.Parameters.AddWithValue("@u", "a");
 
                         var adapter = new SQLiteDataAdapter(cmd);
                         var table = new DataTable();
@@ -275,7 +302,6 @@ namespace TApp.Helpers
             }
 
         }
-
 
         //Lấy counter từ DB
         public static int GetRowCount(string POItem, string POLot, string status, string dbPath = DB_RECORD_PATH)
@@ -447,7 +473,7 @@ namespace TApp.Helpers
         /// <summary>
         /// Load toàn bộ mã active vào HashSet để check trùng siêu nhanh.
         /// </summary>
-        public static HashSet<string> LoadActiveToHashSet(string dbPath = ActiveUniqueDbPath)
+        public static HashSet<string> LoadActiveToHashSet(string POItem, string POLot, string dbPath = ActiveUniqueDbPath)
         {
             EnsureActiveUniqueDatabase(dbPath);
 
@@ -457,14 +483,19 @@ namespace TApp.Helpers
             {
                 con.Open();
 
-                string sql = "SELECT QRContent FROM ActiveUniqueQR;";
+                string sql = "SELECT QRContent FROM ActiveUniqueQR WHERE POItem = @POItem AND POLot = @POLot;";
 
                 using (var cmd = new SQLiteCommand(sql, con))
-                using (var rd = cmd.ExecuteReader())
                 {
-                    while (rd.Read())
+                    cmd.Parameters.AddWithValue("@POItem", POItem);
+                    cmd.Parameters.AddWithValue("@POLot", POLot);
+
+                    using (var rd = cmd.ExecuteReader())
                     {
-                        set.Add(rd.GetString(0));
+                        while (rd.Read())
+                        {
+                            set.Add(rd.GetString(0));
+                        }
                     }
                 }
             }
@@ -490,7 +521,6 @@ namespace TApp.Helpers
             }
         }
 
-
         public static int GetRecordCodeCount(string dbPath = DB_RECORD_PATH)
         {
             EnsureDatabase(dbPath);
@@ -505,7 +535,6 @@ namespace TApp.Helpers
                 }
             }
         }
-
 
         public static int GetActiveCountByBatch(string POItem, string dbPath = ActiveUniqueDbPath)
         {
@@ -524,7 +553,6 @@ namespace TApp.Helpers
                 }
             }
         }
-
         public static int GetRecordCountByBatch(string POItem, string POLot, string dbPath = DB_RECORD_PATH)
         {
             EnsureDatabase(dbPath);
@@ -543,7 +571,6 @@ namespace TApp.Helpers
                 }
             }
         }
-
 
         public static TResult GetActiveByQRContent(string qrContent, string dbPath = ActiveUniqueDbPath)
         {
@@ -606,6 +633,39 @@ namespace TApp.Helpers
                     return (table.Rows.Count > 0)
                         ? new TResult(true, "Lấy danh sách mã active thành công.", table)
                         : new TResult(false, "Không có mã active nào.");
+                }
+            }
+        }
+
+        public static TResult GetLastActiveCode(string POItem, string POLot, string dbPath = ActiveUniqueDbPath)
+        {
+            EnsureActiveUniqueDatabase(dbPath);
+
+            using (var con = new SQLiteConnection($"Data Source={dbPath}"))
+            {
+                con.Open();
+
+                string sql = @"
+                SELECT ID, QRContent, Status, POItem, POLot, UserName,
+                       TimeStampActive, TimeUnixActive, ProductionDatetime
+                FROM ActiveUniqueQR
+                WHERE POItem = @POItem AND POLot = @POLot
+                ORDER BY ID DESC
+                LIMIT 1;
+            ";
+
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@POItem", POItem);
+                    cmd.Parameters.AddWithValue("@POLot", POLot);
+
+                    var adapter = new SQLiteDataAdapter(cmd);
+                    var table = new DataTable();
+                    adapter.Fill(table);
+
+                    return (table.Rows.Count > 0)
+                        ? new TResult(true, "Lấy mã active cuối cùng thành công.", table)
+                        : new TResult(false, "Không tìm thấy mã nào.");
                 }
             }
         }
