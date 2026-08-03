@@ -1,4 +1,7 @@
 {
     "dotnet.defaultSolution": "disable",
-    "idf.pythonInstallPath": "C:\\Users\\THUC\\.espressif\\tools\\idf-python\\3.11.2\\python.exe"
+    "idf.pythonInstallPath": "C:\\Users\\THUC\\.espressif\\tools\\idf-python\\3.11.2\\python.exe",
+    "csharp-dev-tools.solutionViewer.selectedWorkspaceSolutions": [
+        "Mte.sln"
+    ]
 }
