@@ -1916,9 +1916,9 @@ ProductionData.OrderNo, oldDate, ProductionData.ProductionDate, userName);
                 if (pollMs <= 0) pollMs = 10;
 
                 string idAddr, statusAddr;
-                try { idAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_CurrentID_DM_C2"); }
+                try { idAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_CurrentID_DM_C1"); }
                 catch { idAddr = "D200"; }
-                try { statusAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_CurrentStatus_DM_C2"); }
+                try { statusAddr = PLCAddressWithGoogleSheetHelper.Get("PLC_CurrentStatus_DM_C1"); }
                 catch { statusAddr = "D202"; }
 
                 var sw = System.Diagnostics.Stopwatch.StartNew();

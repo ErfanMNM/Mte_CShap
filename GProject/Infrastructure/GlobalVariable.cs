@@ -1,4 +1,6 @@
-﻿using GProject.ProductionOrderHelpers;
+﻿using GProject.IoT;
+using GProject.PLCHelpers;
+using GProject.ProductionOrderHelpers;
 using System.Collections.Concurrent;
 
 namespace GProject.Infrastructure
@@ -21,7 +23,17 @@ namespace GProject.Infrastructure
         /// <summary>
         /// AWS IoT Client instance
         /// </summary>
-        public static GProject.IoT.AWSIoTClient? AWSClient { get; set; }
+        public static AWSIoTClient? AWSClient { get; set; }
+
+        /// <summary>
+        /// PLC Simulator instance
+        /// </summary>
+        public static PLCSimulator? PlcSimulator { get; set; }
+
+        /// <summary>
+        /// Flag to use PLC simulation mode
+        /// </summary>
+        public static bool UsePlcSimulation { get; set; } = false;
     }
 
     /// <summary>

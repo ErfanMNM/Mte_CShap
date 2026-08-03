@@ -246,8 +246,8 @@ public enum e_AWSReceiveStatus { Waiting, Pending, Sent=200, Error, Error404, ..
 ### 5. Cấu Trúc Database Files
 
 ```
-C:/VNQR/PODatabases/
-├── PO_List.db                    # Danh sách PO
+C:/DMS/ProductionData/
+├── POList.db                    # Danh sách PO
 ├── POHistory.db                  # Lịch sử chạy PO
 └── yyyy-MM/
     └── {gtin}/

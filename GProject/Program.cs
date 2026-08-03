@@ -159,8 +159,17 @@ namespace GProject
                 //    sheetLoaded ? "Google Sheet" : "local cache",
                 //    PLCAddressWithGoogleSheetHelper.AddressMap.Count);
 
+                // Khởi tạo PLC Simulator nếu được bật trong config
+                if (_config.PLC_Simulation)
+                {
+                    G.UsePlcSimulation = true;
+                    G.PlcSimulator = new PLCSimulator();
+                    G.PlcSimulator.Start(_config.PLC_Port > 0 ? _config.PLC_Port : 9600);
+                    Log.Information("[Main] PLC SIMULATION mode ENABLED on port {Port}", _config.PLC_Port > 0 ? _config.PLC_Port : 9600);
+                }
+
                 Global.omronPLC = new OmronPLC_Hsl();
-                Global.omronPLC.PLC_Ready_DM = PLCAddressWithGoogleSheetHelper.Get("PLC_Ready_DM") ?? "D16";
+                Global.omronPLC.PLC_Ready_DM = PLCAddressWithGoogleSheetHelper.Get("PLC_Ready_DM_C1") ?? "D16";
                 Global.omronPLC.PLC_IP = PLCAddressWithGoogleSheetHelper.Get("PLC_IP") ?? "127.0.0.1";
                 Global.omronPLC.PLC_PORT = _config.PLC_Port > 0 ? _config.PLC_Port : 9600;
                 Global.omronPLC.InitPLC();

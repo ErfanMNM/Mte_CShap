@@ -2,6 +2,7 @@ import React from "react";
 import { Cpu } from "lucide-react";
 import CameraIframe from "./CameraIframe";
 import PLCRecipeForm from "./PLCRecipeForm";
+import PLCSimulation from "./PLCSimulation";
 
 export const PLCSettingsView: React.FC<{ className?: string }> = ({ className = "" }) => {
   return (
@@ -21,6 +22,9 @@ export const PLCSettingsView: React.FC<{ className?: string }> = ({ className = 
           </p>
         </div>
       </div>
+
+      {/* Simulation Toggle */}
+      <PLCSimulation />
 
       {/* 2-column layout */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 2xl:gap-5 items-stretch flex-1 min-h-0">

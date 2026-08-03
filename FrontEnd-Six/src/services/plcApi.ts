@@ -130,6 +130,40 @@ export const plcApi = {
     );
     return r.data;
   },
+
+  // ============ PLC SIMULATION ============
+
+  /** GET /api/plc/simulation/status */
+  async getSimulationStatus(): Promise<{
+    success: boolean;
+    simulation: boolean;
+    running: boolean;
+    port: number;
+  }> {
+    const r = await apiClient.get<{
+      success: boolean;
+      simulation: boolean;
+      running: boolean;
+      port: number;
+    }>("/api/plc/simulation/status");
+    if (!r.data.success) throw new Error("Failed to get simulation status");
+    return r.data;
+  },
+
+  /** POST /api/plc/simulation/toggle body { enable } */
+  async toggleSimulation(enable: boolean): Promise<{
+    success: boolean;
+    simulation: boolean;
+    running: boolean;
+  }> {
+    const r = await apiClient.post<{
+      success: boolean;
+      simulation: boolean;
+      running: boolean;
+    }>("/api/plc/simulation/toggle", { enable });
+    if (!r.data.success) throw new Error("Failed to toggle simulation");
+    return r.data;
+  },
 };
 
 export default plcApi;

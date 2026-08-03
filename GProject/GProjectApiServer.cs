@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Glib.Omron;
 using GProject.DataPoolHelper;
+using GProject.PLCHelpers;
 using GProject.ProductionOrderHelpers;
 using GProject.Production;
 using GProject.Auth;
@@ -210,6 +211,10 @@ public class GProjectApiServer : IDisposable
         _app.MapPost("/api/plc/recipe/{recipeId:int}/registers", (Delegate)HandlePlcSaveRegisters);
         _app.MapPost("/api/plc/recipe/{recipeId:int}/registers/read", (Delegate)HandlePlcReadRegistersFromDevice);
         _app.MapPost("/api/plc/recipe/{recipeId:int}/registers/write", (Delegate)HandlePlcWriteRegistersToDevice);
+
+        // PLC Simulation endpoints
+        _app.MapGet("/api/plc/simulation/status", HandlePlcSimulationStatus);
+        _app.MapPost("/api/plc/simulation/toggle", HandlePlcSimulationToggle);
 
         // AWS IoT endpoints
         _app.MapGet("/api/aws/status", HandleGetAWSStatus);
@@ -1833,4 +1838,67 @@ public class GProjectApiServer : IDisposable
         [JsonPropertyName("productionDate")] public string productionDate { get; set; } = "";
         [JsonPropertyName("userName")] public string? userName { get; set; }
     }
+
+    #region PLC Simulation Handlers
+
+    /// <summary>Lấy trạng thái PLC Simulation</summary>
+    private IResult HandlePlcSimulationStatus(HttpContext context)
+    {
+        return Results.Json(new
+        {
+            success = true,
+            simulation = G.UsePlcSimulation,
+            running = G.PlcSimulator?.IsRunning ?? false,
+            port = G.PlcSimulator?.Port ?? 9600
+        });
+    }
+
+    /// <summary>Bật/tắt PLC Simulation</summary>
+    private IResult HandlePlcSimulationToggle(HttpContext context)
+    {
+        try
+        {
+            var body = context.Request.ReadFromJsonAsync<SimulationToggleRequest>().GetAwaiter().GetResult();
+            bool enable = body?.enable ?? false;
+
+            if (enable)
+            {
+                if (G.PlcSimulator == null)
+                    G.PlcSimulator = new PLCSimulator();
+
+                if (!G.PlcSimulator.IsRunning)
+                {
+                    int port = G.PlcSimulator.Port;
+                    G.PlcSimulator.Start(port);
+                }
+                G.UsePlcSimulation = true;
+                Log.Information("[PLC] Simulation ENABLED via API");
+            }
+            else
+            {
+                G.UsePlcSimulation = false;
+                G.PlcSimulator?.Stop();
+                Log.Information("[PLC] Simulation DISABLED via API");
+            }
+
+            return Results.Json(new
+            {
+                success = true,
+                simulation = G.UsePlcSimulation,
+                running = G.PlcSimulator?.IsRunning ?? false
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "[PLC] Error toggling simulation");
+            return Results.Json(new { success = false, message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private class SimulationToggleRequest
+    {
+        public bool enable { get; set; }
+    }
+
+    #endregion
 }
