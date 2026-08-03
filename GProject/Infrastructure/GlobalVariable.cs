@@ -3,16 +3,21 @@ using System.Collections.Concurrent;
 
 namespace GProject.Infrastructure
 {
-    //public class GlobalVariable
-    //{
-    //    public static ConcurrentDictionary<int, CartonInfo> Dictionary_Cartons { get; set; } = new();
-    //}
-
     /// <summary>
     /// Global configuration cho GProject
     /// </summary>
     public static class G
     {
+        /// <summary>
+        /// PLC Simulator instance
+        /// </summary>
+        public static PLCSimulator? plcSimulator;
+
+        /// <summary>
+        /// Flag to use PLC simulation mode
+        /// </summary>
+        public static bool UsePlcSimulation = false;
+
         /// <summary>
         /// AWS IoT Configuration
         /// </summary>

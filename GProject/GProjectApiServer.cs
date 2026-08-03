@@ -199,6 +199,10 @@ public class GProjectApiServer : IDisposable
         _app.MapPost("/api/plc/recipe/active", (Delegate)HandlePlcSetActiveRecipe);
         _app.MapDelete("/api/plc/recipe/{id:int}", (Delegate)HandlePlcDeleteRecipe);
 
+        // PLC Simulation endpoint
+        _app.MapGet("/api/plc/simulation/status", HandlePlcSimulationStatus);
+        _app.MapPost("/api/plc/simulation/toggle", HandlePlcSimulationToggle);
+
         // Logs API (SAdmin only - see LogApi.Permission)
         _app.MapGet("/api/logs", GProject.Logs.LogApi.HandleList);
         _app.MapGet("/api/logs/levels", GProject.Logs.LogApi.HandleListLevels);
@@ -1578,6 +1582,75 @@ public class GProjectApiServer : IDisposable
     {
         public Dictionary<string, string>? Values { get; set; }
     }
+    #endregion
+
+    #region PLC Simulation Handlers
+
+    /// <summary>
+    /// GET /api/plc/simulation/status
+    /// Returns current simulation status
+    /// </summary>
+    private IResult HandlePlcSimulationStatus()
+    {
+        return Results.Json(new
+        {
+            success = true,
+            enabled = G.UsePlcSimulation,
+            running = G.plcSimulator?.IsRunning ?? false,
+            port = Program._config?.PLC_Port ?? 9600
+        });
+    }
+
+    /// <summary>
+    /// POST /api/plc/simulation/toggle
+    /// Toggle PLC simulation on/off
+    /// </summary>
+    private async Task<IResult> HandlePlcSimulationToggle(HttpContext context)
+    {
+        try
+        {
+            var body = await context.Request.ReadFromJsonAsync<ToggleSimulationRequest>();
+            bool enable = body?.enable ?? false;
+
+            if (enable)
+            {
+                if (G.plcSimulator == null)
+                {
+                    G.plcSimulator = new PLCSimulator();
+                }
+                if (!G.plcSimulator.IsRunning)
+                {
+                    G.plcSimulator.Start(Program._config?.PLC_Port > 0 ? Program._config.PLC_Port : 9600);
+                }
+                G.UsePlcSimulation = true;
+                Log.Information("[PLC] Simulation enabled via API");
+            }
+            else
+            {
+                G.plcSimulator?.Stop();
+                G.UsePlcSimulation = false;
+                Log.Information("[PLC] Simulation disabled via API");
+            }
+
+            return Results.Json(new
+            {
+                success = true,
+                enabled = G.UsePlcSimulation,
+                running = G.plcSimulator?.IsRunning ?? false
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "[PLC] Error toggling simulation");
+            return Results.Json(new { success = false, message = ex.Message }, statusCode: 500);
+        }
+    }
+
+    private class ToggleSimulationRequest
+    {
+        public bool enable { get; set; }
+    }
+
     #endregion
 
     #region AWS IoT Handlers

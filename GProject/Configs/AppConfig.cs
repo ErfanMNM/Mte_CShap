@@ -8,6 +8,7 @@ public class AppConfig
     // PLC Settings
     public string? PLC_IP { get; set; }
     public int PLC_Port { get; set; }
+    public bool PLC_Simulation { get; set; } = false;
 
     //API Settings
     public string? API_HostIP { get; set; } = "0.0.0.0";
