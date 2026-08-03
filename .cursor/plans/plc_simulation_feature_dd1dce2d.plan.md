@@ -6,7 +6,7 @@ todos:
     content: Add PLC_Simulation property to AppConfig.cs
     status: completed
   - id: create-simulator-class
-    content: Create PLCSimulator.cs using HslCommunication NetSimplifyServer
+    content: Create PLCSimulator.cs using TCP sockets
     status: completed
   - id: add-global-vars
     content: Add plcSimulator and UsePlcSimulation to GlobalVariable.cs
@@ -16,12 +16,6 @@ todos:
     status: completed
   - id: add-api-endpoint
     content: Add /api/plc/simulation endpoint to GProjectApiServer.cs
-    status: completed
-  - id: add-ui-switch
-    content: Add UI switch to PLCSettingsView.tsx
-    status: completed
-  - id: add-api-client
-    content: Add togglePlcSimulation to plcApi.ts
     status: completed
 isProject: false
 ---

@@ -1,18 +1,23 @@
-using HslCommunication;
-using HslCommunication.Core.Net;
+using System.Net;
+using System.Net.Sockets;
 using Serilog;
 
 namespace GProject.PLCHelpers;
 
 /// <summary>
-/// PLC Simulator - creates a virtual PLC server using HslCommunication NetSimplifyServer.
-/// Allows testing without real hardware PLC.
+/// PLC Simulator - creates a virtual PLC server using TCP sockets.
+/// Responds to Omron FINS UDP protocol over TCP for testing without real hardware PLC.
 /// </summary>
 public class PLCSimulator : IDisposable
 {
-    private NetSimplifyServer? _server;
+    private TcpListener? _listener;
+    private CancellationTokenSource? _cts;
+    private Task? _acceptTask;
+    private readonly List<TcpClient> _clients = new();
+    private readonly object _clientsLock = new();
+
     private readonly short[] _dmRegisters = new short[5000];
-    private readonly object _lock = new();
+    private readonly object _registerLock = new();
 
     private int _totalCount = 0;
     private int _passCount = 0;
@@ -21,24 +26,28 @@ public class PLCSimulator : IDisposable
     public bool IsRunning { get; private set; }
     public event EventHandler<string>? OnLog;
 
+    public PLCSimulator()
+    {
+        // Initialize default values for common registers
+        _dmRegisters[16] = 0;  // PLC_Ready_DM_C1 = D16
+        _dmRegisters[30] = 0;  // PLC_Total_Count_DM_C1 = D30
+        _dmRegisters[34] = 0;  // PLC_Pass_Count_DM_C1 = D34
+        _dmRegisters[32] = 0;  // PLC_Fail_Count_DM_C1 = D32
+        _dmRegisters[42] = 0;   // PLC_ORDERQTY_DM = D42
+    }
+
     public void Start(int port = 9600)
     {
         if (IsRunning) return;
 
         try
         {
-            _server = new NetSimplifyServer();
-            _server.OnBytesReceived += HandleBytesReceived;
-            _server.ServerStart(port);
+            _cts = new CancellationTokenSource();
+            _listener = new TcpListener(IPAddress.Any, port);
+            _listener.Start();
             IsRunning = true;
 
-            // Initialize default values
-            _dmRegisters[16] = 0;  // PLC_Ready_DM_C1 = D16
-            _dmRegisters[30] = 0;  // PLC_Total_Count_DM_C1 = D30
-            _dmRegisters[34] = 0;  // PLC_Pass_Count_DM_C1 = D34
-            _dmRegisters[32] = 0;  // PLC_Fail_Count_DM_C1 = D32
-            _dmRegisters[42] = 0;   // PLC_ORDERQTY_DM = D42
-
+            _acceptTask = Task.Run(() => AcceptClientsAsync(_cts.Token));
             Log.Information("[PLC Simulator] Started on port {Port}", port);
             OnLog?.Invoke(this, $"Simulator started on port {port}");
         }
@@ -56,8 +65,18 @@ public class PLCSimulator : IDisposable
 
         try
         {
-            _server?.ServerClose();
-            _server = null;
+            _cts?.Cancel();
+            _listener?.Stop();
+
+            lock (_clientsLock)
+            {
+                foreach (var client in _clients)
+                {
+                    try { client.Close(); } catch { }
+                }
+                _clients.Clear();
+            }
+
             IsRunning = false;
             Log.Information("[PLC Simulator] Stopped");
             OnLog?.Invoke(this, "Simulator stopped");
@@ -70,7 +89,7 @@ public class PLCSimulator : IDisposable
 
     public void ResetCounters()
     {
-        lock (_lock)
+        lock (_registerLock)
         {
             _totalCount = 0;
             _passCount = 0;
@@ -84,7 +103,7 @@ public class PLCSimulator : IDisposable
 
     public void SetCounter(string counterType, int value)
     {
-        lock (_lock)
+        lock (_registerLock)
         {
             switch (counterType.ToUpper())
             {
@@ -106,7 +125,7 @@ public class PLCSimulator : IDisposable
 
     public void SetRegister(short address, short value)
     {
-        lock (_lock)
+        lock (_registerLock)
         {
             if (address >= 0 && address < _dmRegisters.Length)
             {
@@ -116,100 +135,200 @@ public class PLCSimulator : IDisposable
         }
     }
 
-    private void HandleBytesReceived(object? sender, HslCommunication.Core.Net.HslProtocol? protocol)
+    public short GetRegister(short address)
     {
-        if (protocol == null) return;
+        lock (_registerLock)
+        {
+            if (address >= 0 && address < _dmRegisters.Length)
+                return _dmRegisters[address];
+            return 0;
+        }
+    }
+
+    private async Task AcceptClientsAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested && _listener != null)
+        {
+            try
+            {
+                var client = await _listener.AcceptTcpClientAsync(ct);
+                lock (_clientsLock)
+                {
+                    _clients.Add(client);
+                }
+
+                _ = Task.Run(() => HandleClientAsync(client, ct));
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[PLC Simulator] Accept client error");
+            }
+        }
+    }
+
+    private async Task HandleClientAsync(TcpClient client, CancellationToken ct)
+    {
+        string clientInfo = client.Client.RemoteEndPoint?.ToString() ?? "unknown";
+        OnLog?.Invoke(this, $"Client connected: {clientInfo}");
 
         try
         {
-            // Omron FINS protocol handling
-            var data = protocol.ProtocolData;
-            if (data == null || data.Length < 10) return;
+            var stream = client.GetStream();
+            var buffer = new byte[1024];
 
-            // FINS command: Read DM (command code 0x0101)
-            // Format: Header + Command + Address + Length
-            if (data.Length >= 14)
+            while (!ct.IsCancellationRequested && client.Connected)
             {
-                var command = (data[8] << 8) | data[9];
-                var memoryArea = data[10];
+                var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, ct);
+                if (bytesRead == 0) break;
 
-                if (command == 0x0101 && memoryArea == 0x82) // DM area read
+                // Process FINS UDP packet (wrapped in TCP)
+                var response = ProcessFinsPacket(buffer, bytesRead);
+                if (response != null && response.Length > 0)
                 {
-                    var addressHigh = data[11];
-                    var addressLow = data[12];
-                    var address = (addressHigh << 8) | addressLow;
-                    var wordCount = data[13];
-
-                    // Read DM values
-                    var response = new byte[wordCount * 2 + 14];
-                    Array.Copy(data, 0, response, 0, 14); // Copy header
-                    response[8] = 0; response[9] = 0; // Success response
-                    response[10] = 0x82; // DM area
-
-                    lock (_lock)
-                    {
-                        for (int i = 0; i < wordCount && (address + i) < _dmRegisters.Length; i++)
-                        {
-                            var value = _dmRegisters[address + i];
-                            response[14 + i * 2] = (byte)(value >> 8);
-                            response[14 + i * 2 + 1] = (byte)(value & 0xFF);
-                        }
-                    }
-
-                    _server?.SendBack(response, response.Length);
-                    OnLog?.Invoke(this, $"Read D{address}-{address + wordCount - 1}");
-                    return;
+                    await stream.WriteAsync(response, 0, response.Length, ct);
                 }
-
-                // Write DM (command code 0x0102)
-                if (command == 0x0102 && memoryArea == 0x82)
-                {
-                    var addressHigh = data[11];
-                    var addressLow = data[12];
-                    var address = (addressHigh << 8) | addressLow;
-                    var wordCount = data[13];
-
-                    lock (_lock)
-                    {
-                        for (int i = 0; i < wordCount && (address + i) < _dmRegisters.Length; i++)
-                        {
-                            var value = (short)((data[14 + i * 2] << 8) | data[14 + i * 2 + 1]);
-                            _dmRegisters[address + i] = value;
-                            OnLog?.Invoke(this, $"Write D{address + i} = {value}");
-
-                            // Update counters if needed
-                            if (address + i == 30) _totalCount = value;
-                            if (address + i == 34) _passCount = value;
-                            if (address + i == 32) _failCount = value;
-                        }
-                    }
-
-                    // Send success response
-                    var response = new byte[14];
-                    Array.Copy(data, 0, response, 0, 12);
-                    response[12] = 0; response[13] = 0; // End code: success
-                    _server?.SendBack(response, response.Length);
-                    return;
-                }
-            }
-
-            // Simple response for unknown commands
-            if (data.Length >= 12)
-            {
-                var response = new byte[14];
-                Array.Copy(data, 0, response, 0, 12);
-                response[12] = 0; response[13] = 0;
-                _server?.SendBack(response, response.Length);
             }
         }
         catch (Exception ex)
         {
-            Log.Warning(ex, "[PLC Simulator] Error handling request");
+            OnLog?.Invoke(this, $"Client error: {ex.Message}");
         }
+        finally
+        {
+            lock (_clientsLock)
+            {
+                _clients.Remove(client);
+            }
+            client.Close();
+            OnLog?.Invoke(this, $"Client disconnected: {clientInfo}");
+        }
+    }
+
+    private byte[]? ProcessFinsPacket(byte[] data, int length)
+    {
+        // FINS/UDP over TCP format (simplified for Omron)
+        // ICF(1) + RSV(1) + GCT(1) + DNA(1) + DA1(1) + DA2(1) + SNA(1) + SA1(1) + SA2(1) + SID(1) + MRC(2) + SRC(2) + [DATA]
+
+        if (length < 14) return null;
+
+        // Check if it's a FINS command (ICF = 0x80 or 0x00)
+        if (data[0] != 0x80 && data[0] != 0x00) return null;
+
+        byte MRC = data[12];
+        byte SRC = data[13];
+
+        // Read DM area command (FINS 01 01)
+        if (MRC == 0x01 && SRC == 0x01)
+        {
+            return HandleReadDM(data, length);
+        }
+
+        // Write DM area command (FINS 01 02)
+        if (MRC == 0x01 && SRC == 0x02)
+        {
+            return HandleWriteDM(data, length);
+        }
+
+        // Unsupported command - return error response
+        return CreateErrorResponse(data, 0x00, 0x01);
+    }
+
+    private byte[] HandleReadDM(byte[] data, int length)
+    {
+        // FINS Read DM format:
+        // Header (14) + Memory area code (1) + Address (2) + Bit/Word (1) + Word count (2)
+
+        if (length < 20) return CreateErrorResponse(data, 0x00, 0x01);
+
+        byte memoryArea = data[14]; // 0x82 = DM area
+        if (memoryArea != 0x82) return CreateErrorResponse(data, 0x00, 0x01);
+
+        // Parse address (big-endian)
+        short address = (short)((data[15] << 8) | data[16]);
+
+        // Word count (big-endian)
+        short wordCount = (short)((data[18] << 8) | data[19]);
+        if (wordCount <= 0 || wordCount > 100) wordCount = 1;
+
+        // Build response
+        // Response format: Header (14) + Response code (2) + Data (wordCount * 2)
+        var response = new byte[16 + wordCount * 2];
+
+        // Copy original header
+        Array.Copy(data, 0, response, 0, 14);
+
+        // Response code: 00 00 = Normal completion
+        response[14] = 0x00;
+        response[15] = 0x00;
+
+        lock (_registerLock)
+        {
+            for (int i = 0; i < wordCount; i++)
+            {
+                short value = (address + i < _dmRegisters.Length) ? _dmRegisters[address + i] : (short)0;
+                response[16 + i * 2] = (byte)(value >> 8);      // High byte
+                response[16 + i * 2 + 1] = (byte)(value & 0xFF); // Low byte
+            }
+        }
+
+        OnLog?.Invoke(this, $"READ D{address} x{wordCount}");
+        return response;
+    }
+
+    private byte[] HandleWriteDM(byte[] data, int length)
+    {
+        // FINS Write DM format:
+        // Header (14) + Memory area code (1) + Address (2) + Bit/Word (1) + Word count (2) + Data (wordCount * 2)
+
+        if (length < 20) return CreateErrorResponse(data, 0x00, 0x01);
+
+        byte memoryArea = data[14];
+        if (memoryArea != 0x82) return CreateErrorResponse(data, 0x00, 0x01);
+
+        short address = (short)((data[15] << 8) | data[16]);
+        short wordCount = (short)((data[18] << 8) | data[19]);
+
+        if (wordCount <= 0 || length < 20 + wordCount * 2)
+            return CreateErrorResponse(data, 0x00, 0x01);
+
+        lock (_registerLock)
+        {
+            for (int i = 0; i < wordCount; i++)
+            {
+                short value = (short)((data[20 + i * 2] << 8) | data[20 + i * 2 + 1]);
+                if (address + i < _dmRegisters.Length)
+                {
+                    _dmRegisters[address + i] = value;
+                }
+            }
+        }
+
+        // Success response
+        var response = new byte[16];
+        Array.Copy(data, 0, response, 0, 14);
+        response[14] = 0x00;
+        response[15] = 0x00;
+
+        OnLog?.Invoke(this, $"WRITE D{address} x{wordCount}");
+        return response;
+    }
+
+    private byte[] CreateErrorResponse(byte[] original, byte mrc, byte src)
+    {
+        var response = new byte[16];
+        Array.Copy(original, 0, response, 0, 14);
+        response[14] = mrc;
+        response[15] = src;
+        return response;
     }
 
     public void Dispose()
     {
         Stop();
+        _cts?.Dispose();
     }
 }
