@@ -282,6 +282,7 @@ namespace TApp.Views.Dashboard
             erP_Google2.DatasetID = AppConfigs.Current.ERP_DatasetID;
             erP_Google2.TableID = AppConfigs.Current.ERP_TableID;
             erP_Google2.LineName = AppConfigs.Current.Line_Name;
+            erP_Google2.Conf = AppConfigs.Current.Batch_Code_Template;
         }
         #endregion
 
