@@ -25,6 +25,7 @@ namespace TTManager.Masan
         public string SUB_INV { get; set; } = "110-101-1001";
         public string ORG_CODE { get; set; } = "MASAN";
         public string LineName { get; set; } = "DL01";
+        public string Batch_Code { get; set; } = "CS";
 
 
         public ERP_Google()
@@ -42,7 +43,7 @@ namespace TTManager.Masan
         private bool checkERP(string batchId)
         {
             string LineNumber = LineName.Split(" ")[1].ToString();
-            string TOLs = "TOL"+LineNumber;
+            string TOLs = Batch_Code+LineNumber;
 
             // Network kiểm mẫu 1: Đảm bảo ký tự date có 6 ký tự, Network kiểm mẫu 2: Kiểm tra ký tự TOL1, TOL2, TOL3,...
             if (IsDateValid(batchId) && IsLineValid(batchId, TOLs) && HasThreeDashes(batchId))

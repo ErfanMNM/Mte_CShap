@@ -58,6 +58,7 @@ namespace TApp.Configs
         public bool Old_Camera_job_Enabled { get; set; }
 
         public string Batch_Rule_Template { get; set; }
+        public string Batch_Code_Template { get; set; } = "CS";
 
         /// <summary>
         /// Bypass security checks (chỉ dùng khi debug - KHÔNG BẬT trong production!)
@@ -116,6 +117,7 @@ namespace TApp.Configs
             Production_Speed_Mode = 0; // 0=Database 15min, 1=Time between products
             Production_Speed_Sample_Count = 10; // Số sản phẩm lấy mẫu tính trung bình
             Production_Speed_Reset_Timeout = 30; // Thời gian reset về 0 (giây)
+            Batch_Code_Template = "CS"; // Mặc định là CS, có thể thay đổi theo yêu cầu
         }
     }
 }
