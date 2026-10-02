@@ -3,6 +3,7 @@ using HslCommunication.Profinet.Inovance;
 using Sunny.UI;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using TApp;
 using TApp.Configs;
 using TApp.Dialogs;
 using TApp.Helpers;
@@ -53,6 +54,35 @@ namespace TApp.Views.Dashboard
         #region Public Methods
         public bool Send_Result_To_PLC(e_PLC_Result rs)
         {
+            // Khi bật chế độ truyền CC320 trong Configs, gửi Pass/Fail xuống CC320 thay cho PLC.
+            if (AppConfigs.Current.CC320_Enabled)
+            {
+                try
+                {
+                    var frm = MainForm.Instance?.fCC320;
+                    if (frm == null)
+                    {
+                        GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Warning, "Không tìm thấy frmMain (CC320) trên MainForm", "", "WARN-FDASH-CC320-01");
+                        return false;
+                    }
+
+                    if (rs == e_PLC_Result.Pass)
+                    {
+                        frm.setPASS();
+                    }
+                    else
+                    {
+                        frm.setFAIL();
+                    }
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi gửi kết quả xuống CC320", ex.Message, "ERR-FDASH-CC320-01");
+                    return false;
+                }
+            }
+
             OperateResult write = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Reject_DM"), (short)rs);
             return write.IsSuccess;
         }

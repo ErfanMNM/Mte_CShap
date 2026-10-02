@@ -24,6 +24,12 @@ namespace TApp
     {
         #region Fields
 
+        /// <summary>
+        /// Instance tĩnh của MainForm, cho phép các trang con (FDashboard, ...) truy cập
+        /// các thành phần do MainForm quản lý (ví dụ: fCC320 để gửi Pass/Fail xuống CC320).
+        /// </summary>
+        public static MainForm? Instance { get; private set; }
+
         private NotifyIcon? trayIcon;
         private ContextMenuStrip? trayMenu;
 
@@ -38,7 +44,7 @@ namespace TApp
         private readonly FExtention fExtention = new FExtention();
         private readonly FDeactive fDeactive = new FDeactive();
         //private readonly FCameraSimulator fCameraSimulator = new FCameraSimulator();
-        private frmMain fCC320 = new frmMain();
+        internal frmMain fCC320 = new frmMain();
 
         private readonly string _userDbPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -76,6 +82,7 @@ namespace TApp
 
         public MainForm()
         {
+            Instance = this;
             InitializeComponent();
 
             try

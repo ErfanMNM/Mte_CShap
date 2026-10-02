@@ -57,6 +57,12 @@ namespace TApp.Configs
 
         public bool Old_Camera_job_Enabled { get; set; }
 
+        /// <summary>
+        /// Bật/tắt việc gửi kết quả Pass/Fail xuống CC320 (chế độ chuyển đổi giữa truyền PLC và truyền CC320).
+        /// Khi bật, các hàm setPASS/setFAIL của frmMain sẽ được gọi thay cho ghi PLC trong FDashboard.
+        /// </summary>
+        public bool CC320_Enabled { get; set; }
+
         public string Batch_Rule_Template { get; set; }
         public string Batch_Code_Template { get; set; } = "CS";
 
@@ -112,6 +118,7 @@ namespace TApp.Configs
             Backup_Folder_Path = ""; // Để trống sẽ dùng mặc định C:\MASANQR\Backup
             OPC_UA_Time_Refresh = 5000;
             Old_Camera_job_Enabled = false;
+            CC320_Enabled = false; // Mặc định TẮT - dùng PLC; bật khi muốn chuyển sang truyền CC320
             Batch_Rule_Template = "{AN:6,15}-{N:6}-TOL{LINE}-{AN:1}";
             Security_Bypass_Enabled = false; // Mặc định TẮT - chỉ bật khi debug
             Production_Speed_Mode = 0; // 0=Database 15min, 1=Time between products
