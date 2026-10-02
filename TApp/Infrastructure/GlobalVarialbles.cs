@@ -59,6 +59,8 @@ namespace TApp.Infrastructure
         public static UserData CurrentUser { get; set; } = new UserData();
         public static e_AppState CurrentAppState { get; set; } = e_AppState.Initializing;
         public static LogHelper<e_LogType>? Logger;
+
+        public static int TagID { get; set; } = 0;
     }
 
 }

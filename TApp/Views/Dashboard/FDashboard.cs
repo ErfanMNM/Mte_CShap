@@ -1128,12 +1128,6 @@ namespace TApp.Views.Dashboard
         }
         #endregion
 
-
-        private void uiTableLayoutPanel8_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
         private void ipBypassActive_ValueChanged(object sender, bool value)
         {
             if (GlobalVarialbles.CurrentUser.Role != "Admin")

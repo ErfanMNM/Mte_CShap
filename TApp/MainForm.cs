@@ -37,7 +37,8 @@ namespace TApp
         private readonly FActivityLogs fActivityLogs = new FActivityLogs();
         private readonly FExtention fExtention = new FExtention();
         private readonly FDeactive fDeactive = new FDeactive();
-        private readonly FCameraSimulator fCameraSimulator = new FCameraSimulator();
+        //private readonly FCameraSimulator fCameraSimulator = new FCameraSimulator();
+        private frmMain fCC320 = new frmMain();
 
         private readonly string _userDbPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -148,6 +149,7 @@ namespace TApp
             NavMenu.CreateNode(AddPage(fActivityLogs, 1006));
             NavMenu.CreateNode(AddPage(fExtention, 1007));
             //NavMenu.CreateNode(AddPage(fCameraSimulator, 1008));
+            NavMenu.CreateNode(AddPage(fCC320, 1009));
 
             // Trang đăng nhập
             NavMenu.CreateNode(AddPage(fLogin, 2001));
@@ -203,6 +205,7 @@ namespace TApp
             //fScan.InitializeScanner();
             PLCSetting.INIT();
             fExtention.InitializeERP();
+            fCC320.INIT();
 
             fDashboard.ChangePage += FDashboard_ChangePage;
             fDashboard.DeactiveStateChanged += FDashboard_DeactiveStateChanged;

@@ -41,4 +41,20 @@
 	  <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Communication\CC320\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Gardasoft.Controller.API">
+      <HintPath>Communication\CC320\Gardasoft.Controller.API.dll</HintPath>
+    </Reference>
+    <Reference Include="Gardasoft.Device.CommunicationLayer">
+      <HintPath>Communication\CC320\Gardasoft.Device.CommunicationLayer.dll</HintPath>
+    </Reference>
+    <Reference Include="Gardasoft.Device.Discovery">
+      <HintPath>Communication\CC320\Gardasoft.Device.Discovery.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
