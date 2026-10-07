@@ -1095,10 +1095,7 @@ namespace TApp.Views.Dashboard
 
         private void UpdateAlarmDisplay()
         {
-            if(FD_Globals.BypassActive)
-            {
-                SetAlarm($"ĐANG CHẠY ĐÈ NGÀY {FD_Globals.BypassActiveDate}", Color.AliceBlue, Color.AliceBlue);
-            }
+           
             if (FD_Globals.AlarmCount >= 1)
             {
                 _blinkAlarm = (_blinkAlarm + 1) % 10; // Cycle blink state
@@ -1107,7 +1104,14 @@ namespace TApp.Views.Dashboard
             }
             else
             {
-                SetAlarm(FD_Globals.AlarmCount.ToString(), Color.FromArgb(243, 249, 255), Color.FromArgb(80, 160, 255));
+                if (FD_Globals.BypassActive)
+                {
+                    SetAlarm($"ĐANG CHẠY ĐÈ NGÀY {FD_Globals.BypassActiveDate}", Color.Blue, Color.AliceBlue);
+                }
+                else
+                {
+                    SetAlarm(FD_Globals.AlarmCount.ToString(), Color.FromArgb(243, 249, 255), Color.FromArgb(80, 160, 255));
+                }
             }
         }
 
