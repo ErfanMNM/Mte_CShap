@@ -79,6 +79,10 @@ namespace TApp.Configs
         /// </summary>
         public int Production_Speed_Reset_Timeout { get; set; }
 
+        public string SKUCamera01 { get; set; }
+        public string SKUCamera02 { get; set; }
+        public string SKUCamera03 { get; set; }
+
         public override void SetDefault()
         {
             base.SetDefault();

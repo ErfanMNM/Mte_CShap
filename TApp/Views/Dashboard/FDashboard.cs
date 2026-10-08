@@ -151,13 +151,44 @@ namespace TApp.Views.Dashboard
         {
             InitializeCameras();
             InitializePLC();
+
+            OperateResult<int> readResult = omronPLC_Hsl1.plc.ReadInt32("D28");
+
+            if (readResult.Content.ToString() == "1")
+            {
+
+                Helpers.NetworkHelper.SetNetworkAdapter("cam 1", true);
+                NetworkHelper.SetNetworkAdapter("cam than", false);
+                NetworkHelper.SetNetworkAdapter("cam co", false);
+
+                ipCamList.SelectedIndex = 0;
+            }
+
+            else if (readResult.Content.ToString() == "2")
+            {
+
+                Helpers.NetworkHelper.SetNetworkAdapter("cam 1", false);
+                NetworkHelper.SetNetworkAdapter("cam than", true);
+                NetworkHelper.SetNetworkAdapter("cam co", false);
+
+                ipCamList.SelectedIndex = 1;
+            }
+            else if (readResult.Content.ToString() == "3")
+            {
+
+                Helpers.NetworkHelper.SetNetworkAdapter("cam 1", false);
+                NetworkHelper.SetNetworkAdapter("cam than", false);
+                NetworkHelper.SetNetworkAdapter("cam co", true);
+
+                ipCamList.SelectedIndex = 2;
+            }
         }
 
         private void InitializeDashboardUI()
         {
             try
             {
-                opLineName.Text = AppConfigs.Current.Line_Name;
+                // opLineName.Text = AppConfigs.Current.Line_Name;
                 networkStrength1.StartMonitoring();
             }
             catch (Exception ex)
@@ -1095,7 +1126,7 @@ namespace TApp.Views.Dashboard
 
         private void UpdateAlarmDisplay()
         {
-           
+
             if (FD_Globals.AlarmCount >= 1)
             {
                 _blinkAlarm = (_blinkAlarm + 1) % 10; // Cycle blink state
@@ -1161,6 +1192,46 @@ namespace TApp.Views.Dashboard
         private void ipByPassActiveDate_ValueChanged(object sender, DateTime value)
         {
             FD_Globals.BypassActiveDate = value.ToString("yyyy-MM-dd");
+        }
+
+        private void btnSetCamera_Click(object sender, EventArgs e)
+        {
+            ipCamList.Enabled = false;
+            btnSetCamera.Enabled = false;
+
+            if (ipCamList.SelectedIndex == 0)
+            {
+                NetworkHelper.SetNetworkAdapter("cam 1", true);
+                NetworkHelper.SetNetworkAdapter("cam than", false);
+                NetworkHelper.SetNetworkAdapter("cam co", false);
+
+                OperateResult w = omronPLC_Hsl1.plc.Write("D28", 1);
+            }
+            else if (ipCamList.SelectedIndex == 1)
+            {
+                NetworkHelper.SetNetworkAdapter("cam 1", false);
+                NetworkHelper.SetNetworkAdapter("cam than", true);
+                NetworkHelper.SetNetworkAdapter("cam co", false);
+                OperateResult w = omronPLC_Hsl1.plc.Write("D28", 2);
+            }
+            else if (ipCamList.SelectedIndex ==2)
+            {
+                NetworkHelper.SetNetworkAdapter("cam 1", false);
+                NetworkHelper.SetNetworkAdapter("cam than", false);
+                NetworkHelper.SetNetworkAdapter("cam co", true);
+                OperateResult w = omronPLC_Hsl1.plc.Write("D28", 3);
+            }
+
+
+
+
+
+        }
+
+        private void uiPanel12_Click(object sender, EventArgs e)
+        {
+            ipCamList.Enabled = true;
+            btnSetCamera.Enabled = true;
         }
     }
 

@@ -65,8 +65,10 @@
             btnResetCounterPLC = new Sunny.UI.UISymbolButton();
             uiTitlePanel4 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel11 = new Sunny.UI.UITableLayoutPanel();
+            uiTableLayoutPanel16 = new Sunny.UI.UITableLayoutPanel();
+            btnSetCamera = new Sunny.UI.UISymbolButton();
+            ipCamList = new Sunny.UI.UIComboBox();
             uiPanel1 = new Sunny.UI.UIPanel();
-            opLineName = new Sunny.UI.UITextBox();
             uiPanel12 = new Sunny.UI.UIPanel();
             uiTableLayoutPanel14 = new Sunny.UI.UITableLayoutPanel();
             ipBatchNo = new Sunny.UI.UIComboBox();
@@ -130,6 +132,7 @@
             uiTableLayoutPanel12.SuspendLayout();
             uiTitlePanel4.SuspendLayout();
             uiTableLayoutPanel11.SuspendLayout();
+            uiTableLayoutPanel16.SuspendLayout();
             uiTableLayoutPanel14.SuspendLayout();
             uiTableLayoutPanel13.SuspendLayout();
             uiTableLayoutPanel8.SuspendLayout();
@@ -762,8 +765,8 @@
             uiTableLayoutPanel11.ColumnCount = 2;
             uiTableLayoutPanel11.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32.69231F));
             uiTableLayoutPanel11.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 67.30769F));
+            uiTableLayoutPanel11.Controls.Add(uiTableLayoutPanel16, 1, 3);
             uiTableLayoutPanel11.Controls.Add(uiPanel1, 0, 4);
-            uiTableLayoutPanel11.Controls.Add(opLineName, 1, 3);
             uiTableLayoutPanel11.Controls.Add(uiPanel12, 0, 3);
             uiTableLayoutPanel11.Controls.Add(uiTableLayoutPanel14, 1, 0);
             uiTableLayoutPanel11.Controls.Add(uiPanel8, 0, 0);
@@ -786,6 +789,59 @@
             uiTableLayoutPanel11.TabIndex = 0;
             uiTableLayoutPanel11.TagString = null;
             // 
+            // uiTableLayoutPanel16
+            // 
+            uiTableLayoutPanel16.ColumnCount = 2;
+            uiTableLayoutPanel16.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 66.5024643F));
+            uiTableLayoutPanel16.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.4975357F));
+            uiTableLayoutPanel16.Controls.Add(btnSetCamera, 1, 0);
+            uiTableLayoutPanel16.Controls.Add(ipCamList, 0, 0);
+            uiTableLayoutPanel16.Dock = DockStyle.Fill;
+            uiTableLayoutPanel16.Location = new Point(203, 186);
+            uiTableLayoutPanel16.Name = "uiTableLayoutPanel16";
+            uiTableLayoutPanel16.RowCount = 1;
+            uiTableLayoutPanel16.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            uiTableLayoutPanel16.Size = new Size(406, 55);
+            uiTableLayoutPanel16.TabIndex = 10;
+            uiTableLayoutPanel16.TagString = null;
+            // 
+            // btnSetCamera
+            // 
+            btnSetCamera.Dock = DockStyle.Fill;
+            btnSetCamera.Font = new Font("Microsoft Sans Serif", 12F);
+            btnSetCamera.Location = new Point(272, 2);
+            btnSetCamera.Margin = new Padding(2);
+            btnSetCamera.MinimumSize = new Size(1, 1);
+            btnSetCamera.Name = "btnSetCamera";
+            btnSetCamera.Size = new Size(132, 51);
+            btnSetCamera.Symbol = 563580;
+            btnSetCamera.TabIndex = 5;
+            btnSetCamera.Text = "OK";
+            btnSetCamera.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnSetCamera.Click += btnSetCamera_Click;
+            // 
+            // ipCamList
+            // 
+            ipCamList.DataSource = null;
+            ipCamList.Dock = DockStyle.Fill;
+            ipCamList.DropDownStyle = Sunny.UI.UIDropDownStyle.DropDownList;
+            ipCamList.Enabled = false;
+            ipCamList.FillColor = Color.White;
+            ipCamList.Font = new Font("Microsoft Sans Serif", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            ipCamList.ItemHoverColor = Color.FromArgb(155, 200, 255);
+            ipCamList.Items.AddRange(new object[] { "CAM 1", "CAM 2", "CAM 3" });
+            ipCamList.ItemSelectForeColor = Color.FromArgb(235, 243, 255);
+            ipCamList.Location = new Point(2, 2);
+            ipCamList.Margin = new Padding(2);
+            ipCamList.MinimumSize = new Size(63, 0);
+            ipCamList.Name = "ipCamList";
+            ipCamList.Padding = new Padding(0, 0, 30, 2);
+            ipCamList.Size = new Size(266, 51);
+            ipCamList.SymbolSize = 24;
+            ipCamList.TabIndex = 4;
+            ipCamList.TextAlignment = ContentAlignment.MiddleLeft;
+            ipCamList.Watermark = "";
+            // 
             // uiPanel1
             // 
             uiPanel1.Dock = DockStyle.Fill;
@@ -799,23 +855,6 @@
             uiPanel1.Text = "Bỏ Kích Hoạt Thật";
             uiPanel1.TextAlignment = ContentAlignment.MiddleCenter;
             // 
-            // opLineName
-            // 
-            opLineName.Dock = DockStyle.Fill;
-            opLineName.Font = new Font("Microsoft Sans Serif", 12F);
-            opLineName.Location = new Point(202, 185);
-            opLineName.Margin = new Padding(2);
-            opLineName.MinimumSize = new Size(1, 16);
-            opLineName.Name = "opLineName";
-            opLineName.Padding = new Padding(5);
-            opLineName.ReadOnly = true;
-            opLineName.ShowText = false;
-            opLineName.Size = new Size(408, 57);
-            opLineName.TabIndex = 7;
-            opLineName.Text = "Line 3";
-            opLineName.TextAlignment = ContentAlignment.MiddleLeft;
-            opLineName.Watermark = "";
-            // 
             // uiPanel12
             // 
             uiPanel12.Dock = DockStyle.Fill;
@@ -826,8 +865,9 @@
             uiPanel12.Name = "uiPanel12";
             uiPanel12.Size = new Size(196, 57);
             uiPanel12.TabIndex = 6;
-            uiPanel12.Text = "Tên chuyền";
+            uiPanel12.Text = "CAMERA ID";
             uiPanel12.TextAlignment = ContentAlignment.MiddleCenter;
+            uiPanel12.Click += uiPanel12_Click;
             // 
             // uiTableLayoutPanel14
             // 
@@ -1472,6 +1512,7 @@
             uiTableLayoutPanel12.ResumeLayout(false);
             uiTitlePanel4.ResumeLayout(false);
             uiTableLayoutPanel11.ResumeLayout(false);
+            uiTableLayoutPanel16.ResumeLayout(false);
             uiTableLayoutPanel14.ResumeLayout(false);
             uiTableLayoutPanel13.ResumeLayout(false);
             uiTableLayoutPanel8.ResumeLayout(false);
@@ -1562,7 +1603,6 @@
         private Sunny.UI.UIPanel opAlarm;
         private System.ComponentModel.BackgroundWorker WK_Load_Counter;
         private Sunny.UI.UIListBox uiListBox1;
-        private Sunny.UI.UITextBox opLineName;
         private Sunny.UI.UIPanel uiPanel12;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel12;
         private Sunny.UI.UISymbolButton btnChangeBatch;
@@ -1575,5 +1615,8 @@
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel8;
         private Sunny.UI.UIDatePicker ipByPassActiveDate;
         private Sunny.UI.UISwitch ipBypassActive;
+        private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel16;
+        private Sunny.UI.UISymbolButton btnSetCamera;
+        private Sunny.UI.UIComboBox ipCamList;
     }
 }

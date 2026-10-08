@@ -116,6 +116,10 @@ namespace TApp.Dialogs
                 return;
             }
 
+            //doi camera
+
+            //
+
             BatchCode = ipBatch.Text.Trim();
             Barcode = ipBarcode.Text.Trim();
             DialogResult = DialogResult.OK;
