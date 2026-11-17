@@ -1326,6 +1326,7 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(146, 3);
             opPLCLed.Name = "opPLCLed";
+            opPLCLed.On = false;
             opPLCLed.Size = new Size(51, 50);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";
@@ -1426,6 +1427,7 @@
             // 
             // erP_Google2
             // 
+            erP_Google2.Conf = "CS";
             erP_Google2.credentialPath = "D:\\Masan\\sales-268504-20a4b06ea0fb.json";
             erP_Google2.DatasetID = "FactoryIntegration";
             erP_Google2.LineName = "Line 3";
