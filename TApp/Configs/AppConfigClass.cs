@@ -31,6 +31,9 @@ namespace TApp.Configs
         public string ? Camera_01_IP { get; set; }
         public int Camera_01_Port { get; set; }
 
+        public string? CC320IP { get; set; }
+        public int CC320Port { get; set; }
+
         public int PLC_Time_Refresh { get; set; }
 
         public string ? Line_Name { get; set; }
@@ -125,6 +128,8 @@ namespace TApp.Configs
             Production_Speed_Sample_Count = 10; // Số sản phẩm lấy mẫu tính trung bình
             Production_Speed_Reset_Timeout = 30; // Thời gian reset về 0 (giây)
             Batch_Code_Template = "CS"; // Mẫu mã lô sản xuất
+            CC320IP = "127.0.0.1";
+            CC320Port = 51234;
         }
     }
 }

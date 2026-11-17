@@ -19,6 +19,7 @@ namespace TApp.Views.Dashboard
     {
         #region Fields
         private DatalogicCamera _datalogicCamera_C1;
+        private DatalogicCamera _cc320; 
         private PLCStatus _plcStatus = PLCStatus.Disconnect;
         private bool _batchChangeMode = false;
         private int _blinkAlarm = 0;
@@ -176,7 +177,10 @@ namespace TApp.Views.Dashboard
         {
             InitializeCameras();
             InitializePLC();
+            InitializeCC320();
         }
+
+
 
         private void InitializeDashboardUI()
         {
@@ -285,6 +289,45 @@ namespace TApp.Views.Dashboard
                 this.ShowErrorDialog($"Lỗi khởi tạo camera: {ex.Message}");
                 GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi khởi tạo camera", ex.Message, "ERR-FDASH-01");
             }
+        }
+
+        private void InitializeCC320()
+        {
+            if (string.IsNullOrEmpty(AppConfigs.Current.CC320IP)) throw new InvalidOperationException("Lỗi: DA001 không có IP CC320.");
+            if (AppConfigs.Current.CC320Port <= 0) throw new InvalidOperationException("Lỗi: DA001 không có Port CC320.");
+
+            try
+            {
+                _cc320 = new DatalogicCamera(AppConfigs.Current.CC320IP, AppConfigs.Current.CC320Port);
+                _cc320.ClientCallback += _cc320_ClientCallback;
+                _cc320.Connect();
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "Khởi tạo CC320 thành công", $"{{'IP':'{AppConfigs.Current.CC320IP}','Port':'{AppConfigs.Current.CC320Port}'}}", "INFO-FDASH-02");
+            }
+            catch (Exception ex)
+            {
+                this.ShowErrorDialog($"Lỗi khởi tạo CC320: {ex.Message}");
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi khởi tạo CC320", ex.Message, "ERR-FDASH-02");
+            }
+        }
+
+        private void _cc320_ClientCallback(eDatalogicCameraState state, string data)
+        {
+            switch (state)
+            {
+                case eDatalogicCameraState.Connected:
+                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "CC320 kết nối thành công", "", "INFO-FDASH-CC320-01");
+                    break;
+                case eDatalogicCameraState.Disconnected:
+                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "CC320 mất kết nối", "", "ERR-FDASH-CC320-01");
+                    break;
+                case eDatalogicCameraState.Reconnecting:
+                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Warning, "CC320 đang kết nối lại", "", "WARN-FDASH-CC320-01");
+                    break;
+                case eDatalogicCameraState.Received:
+                    // Xử lý dữ liệu nhận được từ CC320 nếu cần
+                    break;
+            }
+
         }
 
         private void InitializePLC()
