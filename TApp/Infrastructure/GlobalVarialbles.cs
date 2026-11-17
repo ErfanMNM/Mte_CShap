@@ -60,6 +60,18 @@ namespace TApp.Infrastructure
         public static e_AppState CurrentAppState { get; set; } = e_AppState.Initializing;
         public static LogHelper<e_LogType>? Logger;
 
+        private static double _cameraToCC320ElapsedMs = -1;
+
+        /// <summary>
+        /// Thời gian từ lúc nhận code camera đến khi gửi xong TCP CC320, gồm cả chờ hàng đợi (ms).
+        /// Giá trị -1 khi chưa đo, gửi lỗi hoặc kết quả không gửi qua CC320.
+        /// </summary>
+        public static double CameraToCC320ElapsedMs
+        {
+            get => Volatile.Read(ref _cameraToCC320ElapsedMs);
+            set => Volatile.Write(ref _cameraToCC320ElapsedMs, value);
+        }
+
         public static int TagID { get; set; } = 0;
     }
 

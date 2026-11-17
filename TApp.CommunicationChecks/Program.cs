@@ -37,6 +37,9 @@ internal static class Program
             ("Không gửi lệnh đã chờ khóa sang phiên kết nối mới", CheckConnectionVersionAfterWait),
             ("Không gửi kết quả camera cũ sau kết nối lại", CheckQueuedResultAfterReconnect),
             ("Tắt CC320 vẫn ghi PLC qua UDP", CheckPlcRouting),
+            ("Thời gian camera đến CC320 bao gồm chờ hàng đợi", CheckTimingIncludesQueueWait),
+            ("Listbox giữ số đo riêng cho từng code", CheckTimingSnapshotsOnListbox),
+            ("Gửi lỗi xóa số đo Global và không gắn thời gian thành công", CheckFailedSendTiming),
             ("Gửi đồng thời dữ liệu lớn không thiếu hoặc xen byte", CheckConcurrentTransport)
         ];
 
@@ -67,6 +70,7 @@ internal static class Program
         AppConfigs.Current.Production_Speed_Mode = 0;
         AppConfigs.Current.Old_Camera_job_Enabled = false;
         GlobalVarialbles.Logger = null;
+        GlobalVarialbles.CameraToCC320ElapsedMs = -1;
         GlobalVarialbles.CurrentUser.Username = "CC320-check";
         FD_Globals.productionData = new ProductionData { Barcode = "TEST-BARCODE", BatchCode = "CHECK" };
         FD_Globals.ActiveSet = new HashSet<string>();
@@ -272,12 +276,98 @@ internal static class Program
             return values;
         });
 
-        Assert(dashboard.Send_Result_To_PLC(e_PLC_Result.Pass), "Nhánh PLC không gửi được Pass.");
-        Assert(dashboard.Send_Result_To_PLC(e_PLC_Result.Fail), "Nhánh PLC không gửi được Fail.");
+        GlobalVarialbles.CameraToCC320ElapsedMs = 123.456;
+        Assert((bool)InvokePrivate(dashboard, "SendInspectionResult", e_Production_Status.Pass, ValidCode,
+            null, Stopwatch.GetTimestamp())!, "Nhánh PLC không gửi được Pass.");
+        Assert((bool)InvokePrivate(dashboard, "SendInspectionResult", e_Production_Status.ReadFail, "FAIL",
+            null, Stopwatch.GetTimestamp())!, "Nhánh PLC không gửi được Fail.");
         var values = receive.WaitAsync(CheckTimeout).GetAwaiter().GetResult();
         Assert(values[0].AsSpan().SequenceEqual(new byte[] { 0, 1 }), "PLC Pass phải giữ giá trị 1.");
         Assert(values[1].AsSpan().SequenceEqual(new byte[] { 0, 0 }), "PLC Fail phải giữ giá trị 0.");
+        Assert(GlobalVarialbles.CameraToCC320ElapsedMs == -1, "Nhánh PLC không được giữ số đo CC320 cũ.");
+        Assert(FD_Globals.QueueRecord.All(record => record.CameraToCC320ElapsedMs == null),
+            "Bản ghi PLC không có thời gian gửi CC320.");
         connection.AssertNoExtraBytes();
+    }
+
+    private static void CheckTimingIncludesQueueWait()
+    {
+        using var connection = new LoopbackConnection();
+        using var dashboard = CreateDashboard(connection.Camera);
+        double queuedMs;
+        lock (GetField<object>(dashboard, "_cameraQueueLock"))
+        {
+            InvokePrivate(dashboard, "HandleCameraDataReceived", ValidCode);
+            // Giữ worker để chứng minh mốc đo bắt đầu lúc nhận, không phải lúc dequeue/gửi.
+            long queuedAt = Stopwatch.GetTimestamp();
+            Thread.Sleep(60);
+            queuedMs = Stopwatch.GetElapsedTime(queuedAt).TotalMilliseconds;
+        }
+        AssertBytes(connection.ReadExactly(3), "MP5");
+        WaitForWorker(dashboard, 1);
+        var record = FD_Globals.QueueRecord.Single();
+        Assert(record.CameraToCC320ElapsedMs >= queuedMs,
+            $"Số đo phải bao gồm ít nhất {queuedMs:F3} ms chờ worker.");
+        Assert(GlobalVarialbles.CameraToCC320ElapsedMs == record.CameraToCC320ElapsedMs,
+            "Global phải bằng số đo của kết quả vừa gửi.");
+        connection.AssertNoExtraBytes();
+    }
+
+    private static void CheckTimingSnapshotsOnListbox()
+    {
+        using var connection = new LoopbackConnection();
+        using var dashboard = CreateDashboard(connection.Camera);
+        long firstReceivedAt = Stopwatch.GetTimestamp();
+        Thread.Sleep(20);
+        Assert((bool)InvokePrivate(dashboard, "SendInspectionResult", e_Production_Status.Pass, ValidCode,
+            null, firstReceivedAt)!, "Không gửi được kết quả có số đo thứ nhất.");
+        var first = FD_Globals.QueueRecord.Single();
+        double? firstElapsedMs = first.CameraToCC320ElapsedMs;
+
+        long secondReceivedAt = Stopwatch.GetTimestamp();
+        Thread.Sleep(70);
+        Assert((bool)InvokePrivate(dashboard, "SendInspectionResult", e_Production_Status.ReadFail, "FAIL",
+            null, secondReceivedAt)!, "Không gửi được kết quả có số đo thứ hai.");
+        var second = FD_Globals.QueueRecord.Last();
+        AssertBytes(connection.ReadExactly(6), "MP5MP6");
+        Assert(firstElapsedMs.HasValue && second.CameraToCC320ElapsedMs.HasValue,
+            "Cả hai bản ghi CC320 đều phải có số đo.");
+        double firstMeasuredMs = firstElapsedMs ?? throw new InvalidOperationException("Thiếu số đo code thứ nhất.");
+        double secondMeasuredMs = second.CameraToCC320ElapsedMs ?? throw new InvalidOperationException("Thiếu số đo code thứ hai.");
+        Assert(first.CameraToCC320ElapsedMs == firstElapsedMs, "Số đo cũ không được thay đổi khi code mới được gửi.");
+        Assert(GlobalVarialbles.CameraToCC320ElapsedMs == second.CameraToCC320ElapsedMs,
+            "Global phải cập nhật theo code vừa gửi sau cùng.");
+
+        // Đổi Global trước khi render để bắt lỗi dùng nhầm số đo mới nhất cho mọi dòng.
+        GlobalVarialbles.CameraToCC320ElapsedMs = 98765.432;
+        InvokePrivate(dashboard, "Render_Production_Result", first);
+        InvokePrivate(dashboard, "Render_Production_Result", second);
+        var view = GetField<Sunny.UI.UIListBox>(dashboard, "opView");
+        string firstText = view.Items[1].ToString()!;
+        string secondText = view.Items[0].ToString()!;
+        Assert(firstText.StartsWith($"[CC320: {firstMeasuredMs:F3} ms]") && firstText.Contains(ValidCode),
+            "Dòng code thứ nhất phải hiển thị số đo riêng của nó phía trước.");
+        Assert(secondText.StartsWith($"[CC320: {secondMeasuredMs:F3} ms]") && secondText.Contains("FAIL"),
+            "Dòng code thứ hai phải hiển thị số đo riêng của nó phía trước.");
+        Assert(!firstText.Contains("98765") && !secondText.Contains("98765"),
+            "Listbox không được lấy số đo Global tại thời điểm render.");
+        connection.AssertNoExtraBytes();
+    }
+
+    private static void CheckFailedSendTiming()
+    {
+        using var dashboard = CreateDashboard(new DatalogicCamera("127.0.0.1", 1));
+        GlobalVarialbles.CameraToCC320ElapsedMs = 123.456;
+        InvokePrivate(dashboard, "HandleCameraDataReceived", ValidCode);
+        WaitForWorker(dashboard, 1);
+        var record = FD_Globals.QueueRecord.Single();
+        Assert(GlobalVarialbles.CameraToCC320ElapsedMs == -1, "Gửi lỗi phải xóa số đo Global cũ.");
+        Assert(record.Status == e_Production_Status.Error && record.CameraToCC320ElapsedMs == null,
+            "Gửi lỗi không được hiển thị số đo của một lần gửi thành công.");
+        InvokePrivate(dashboard, "Render_Production_Result", record);
+        var view = GetField<Sunny.UI.UIListBox>(dashboard, "opView");
+        Assert(!view.Items[0].ToString()!.StartsWith("[CC320:"),
+            "Bản ghi gửi lỗi không được gắn thời gian CC320 giả.");
     }
 
     private static void CheckConcurrentTransport()

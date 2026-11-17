@@ -3,6 +3,7 @@ using HslCommunication.Profinet.Inovance;
 using Sunny.UI;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Diagnostics;
 using TApp;
 using TApp.Configs;
 using TApp.Dialogs;
@@ -21,7 +22,7 @@ namespace TApp.Views.Dashboard
         private DatalogicCamera _datalogicCamera_C1;
         private DatalogicCamera _cc320; 
         private readonly object _cameraQueueLock = new object();
-        private readonly Queue<(string Data, bool IsTimeout, long? CC320Session)> _cameraQueue = new();
+        private readonly Queue<(string Data, bool IsTimeout, long? CC320Session, long ReceivedTimestamp)> _cameraQueue = new();
         private PLCStatus _plcStatus = PLCStatus.Disconnect;
         private bool _batchChangeMode = false;
         private int _blinkAlarm = 0;
@@ -416,7 +417,7 @@ namespace TApp.Views.Dashboard
             GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, logType, message, "", code);
         }
 
-        private void Camera_ProcessData(string data, long? cc320Session = null)
+        private void Camera_ProcessData(string data, long? cc320Session = null, long? cameraReceivedTimestamp = null)
         {
             // Tính tốc độ sản xuất từ thời gian giữa N sản phẩm (Mode 1)
             if (AppConfigs.Current.Production_Speed_Mode == 1)
@@ -467,23 +468,23 @@ namespace TApp.Views.Dashboard
             // Tách riêng trường hợp camera trả về "FAIL" (lỗi đọc)
             if (string.Equals(data, "FAIL", StringComparison.OrdinalIgnoreCase))
             {
-                SendInspectionResult(e_Production_Status.ReadFail, data, cc320Session);
+                SendInspectionResult(e_Production_Status.ReadFail, data, cc320Session, cameraReceivedTimestamp);
                 return;
             }
 
             if (FD_Globals.ActiveSet.Contains(data))
             {
-                SendInspectionResult(e_Production_Status.Duplicate, data, cc320Session);
+                SendInspectionResult(e_Production_Status.Duplicate, data, cc320Session, cameraReceivedTimestamp);
                 return;
             }
 
             if (!IsValidQRContent(data))
             {
-                SendInspectionResult(e_Production_Status.FormatError, data, cc320Session);
+                SendInspectionResult(e_Production_Status.FormatError, data, cc320Session, cameraReceivedTimestamp);
                 return;
             }
 
-            if (!SendInspectionResult(e_Production_Status.Pass, data, cc320Session)) return;
+            if (!SendInspectionResult(e_Production_Status.Pass, data, cc320Session, cameraReceivedTimestamp)) return;
 
             FD_Globals.ActiveSet.Add(data);
 
@@ -504,7 +505,7 @@ namespace TApp.Views.Dashboard
         {
             while (true)
             {
-                (string Data, bool IsTimeout, long? CC320Session) item;
+                (string Data, bool IsTimeout, long? CC320Session, long ReceivedTimestamp) item;
                 lock (_cameraQueueLock)
                 {
                     if (_cameraQueue.Count == 0) return;
@@ -513,11 +514,11 @@ namespace TApp.Views.Dashboard
 
                 if (item.IsTimeout)
                 {
-                    SendInspectionResult(e_Production_Status.Timeout, item.Data, item.CC320Session);
+                    SendInspectionResult(e_Production_Status.Timeout, item.Data, item.CC320Session, item.ReceivedTimestamp);
                 }
                 else
                 {
-                    Camera_ProcessData(item.Data, item.CC320Session);
+                    Camera_ProcessData(item.Data, item.CC320Session, item.ReceivedTimestamp);
                 }
             }
         }
@@ -930,7 +931,10 @@ namespace TApp.Views.Dashboard
         {
             this.InvokeIfRequired(() =>
             {
-                opView.Items.Insert(0, $"#{qRProductRecord.ID} - {qRProductRecord.Status} - {qRProductRecord.QRContent}");
+                string timing = qRProductRecord.CameraToCC320ElapsedMs is double elapsedMs
+                    ? $"[CC320: {elapsedMs:F3} ms] "
+                    : "";
+                opView.Items.Insert(0, $"{timing}#{qRProductRecord.ID} - {qRProductRecord.Status} - {qRProductRecord.QRContent}");
                 if (opView.Items.Count >= 50) opView.Items.RemoveAt(opView.Items.Count - 1);
                 opResopse.Text = qRProductRecord.QRContent;
 
@@ -969,6 +973,9 @@ namespace TApp.Views.Dashboard
 
         private void HandleCameraDataReceived(string data)
         {
+            // Đồng hồ đơn điệu, lấy trước hàng đợi để đo cả thời gian chờ xử lý.
+            long receivedTimestamp = Stopwatch.GetTimestamp();
+
             // Kiểm tra nếu hệ thống đang ở chế độ DEACTIVE thì không xử lý
             if (_lastDeactiveState)
             {
@@ -991,26 +998,41 @@ namespace TApp.Views.Dashboard
                 long? cc320Session = AppConfigs.Current.CC320_Enabled
                     ? (cc320?.Connected == true ? connectionVersion : -1)
                     : null;
-                _cameraQueue.Enqueue((data, isTimeout, cc320Session));
+                _cameraQueue.Enqueue((data, isTimeout, cc320Session, receivedTimestamp));
                 if (!WK_Camera.IsBusy) WK_Camera.RunWorkerAsync();
             }
         }
 
         private bool IsValidQRContent(string data) => data.Length >= 16 && data.Contains(FD_Globals.productionData.Barcode);
 
-        private bool SendInspectionResult(e_Production_Status status, string data, long? cc320Session = null)
+        private bool SendInspectionResult(e_Production_Status status, string data, long? cc320Session = null,
+            long? cameraReceivedTimestamp = null)
         {
+            bool useCC320 = AppConfigs.Current.CC320_Enabled;
             e_PLC_Result result = status == e_Production_Status.Pass ? e_PLC_Result.Pass : e_PLC_Result.Fail;
             bool sent = Send_Result_To_PLC(result, cc320Session);
+
+            // Chốt số đo ngay sau gửi, trước tạo bản ghi, cập nhật UI hoặc ghi database.
+            // Đây là thời điểm socket gửi xong, không phải xác nhận CC320 đã thực thi lệnh.
+            double? elapsedMs = sent && useCC320 && cameraReceivedTimestamp.HasValue
+                ? Stopwatch.GetElapsedTime(cameraReceivedTimestamp.Value).TotalMilliseconds
+                : null;
+            if (cameraReceivedTimestamp.HasValue)
+            {
+                GlobalVarialbles.CameraToCC320ElapsedMs = elapsedMs ?? -1;
+            }
+
             Send_Result_Content(sent ? status : e_Production_Status.Error, data,
-                sent ? "" : $"Không gửi được kết quả {status} tới {(AppConfigs.Current.CC320_Enabled ? "CC320" : "PLC")}");
+                sent ? "" : $"Không gửi được kết quả {status} tới {(useCC320 ? "CC320" : "PLC")}", elapsedMs);
             return sent;
         }
 
-        private void Send_Result_Content(e_Production_Status status, string data, string reason = "")
+        private void Send_Result_Content(e_Production_Status status, string data, string reason = "",
+            double? cameraToCC320ElapsedMs = null)
         {
             FD_Globals.productionData.productCameraCounter.Increment(status);
             var record = CreateQRProductRecord(data, status, reason);
+            record.CameraToCC320ElapsedMs = cameraToCC320ElapsedMs;
             FD_Globals.QueueRecord.Enqueue(record);
         }
 

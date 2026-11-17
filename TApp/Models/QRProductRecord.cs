@@ -19,6 +19,10 @@ namespace TApp.Models
         public long TimeUnixActive { get; set; }
         public string ProductionDatetime { get; set; }
         public string Reason { get; set; }   // lý do xóa / lỗi
+        /// <summary>
+        /// Số đo riêng của code này, chỉ có khi đã gửi TCP CC320 thành công; dùng hiển thị trên listbox.
+        /// </summary>
+        public double? CameraToCC320ElapsedMs { get; set; }
     }
 
     public class ActiveQRRecord
