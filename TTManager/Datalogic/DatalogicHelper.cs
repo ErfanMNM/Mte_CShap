@@ -22,12 +22,15 @@ namespace TTManager.Datalogic
         #region Fields
         private Socket? _client;
         private CancellationTokenSource? _cancellationTokenSource;
+        private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
+        private long _connectionVersion;
         #endregion
 
         #region Properties
         public string ? IP { get; set; } = string.Empty;
         public int Port { get; set; }
         public bool Connected { get; private set; } = false;
+        public long ConnectionVersion => Interlocked.Read(ref _connectionVersion);
         #endregion
 
         #region Events
@@ -101,6 +104,8 @@ namespace TTManager.Datalogic
 
                 if (_client.Connected)
                 {
+                    // Công bố phiên mới trước khi cho phép gửi dữ liệu.
+                    Interlocked.Increment(ref _connectionVersion);
                     Connected = true;
                     OnClientCallback(eDatalogicCameraState.Connected, "Connected successfully");
                     _cancellationTokenSource?.Cancel(); // Stop reconnection attempts
@@ -185,23 +190,47 @@ namespace TTManager.Datalogic
             HandleDisconnection("Disconnected by user.");
         }
 
-        public async Task<bool> SendAsync(string data)
+        public async Task<bool> SendAsync(string data, long? expectedConnectionVersion = null)
         {
-            if (string.IsNullOrEmpty(data) || _client == null || !Connected)
+            if (string.IsNullOrEmpty(data))
             {
                 return false;
             }
 
+            await _sendLock.WaitAsync().ConfigureAwait(false);
             try
             {
+                Socket? client = _client;
+                if (client == null || !Connected) return false;
+                // Kiểm tra sau khi chờ lượt gửi để không phát lệnh cũ qua phiên mới.
+                if (expectedConnectionVersion.HasValue && expectedConnectionVersion.Value != ConnectionVersion)
+                    return false;
+
                 byte[] dataBytes = Encoding.UTF8.GetBytes(data);
-                int bytesSent = await _client.SendAsync(new ArraySegment<byte>(dataBytes), SocketFlags.None);
-                return bytesSent == dataBytes.Length;
+                int totalSent = 0;
+                while (totalSent < dataBytes.Length)
+                {
+                    // Một lần SendAsync có thể chỉ gửi được một phần dữ liệu.
+                    int bytesSent = await client.SendAsync(
+                        new ArraySegment<byte>(dataBytes, totalSent, dataBytes.Length - totalSent),
+                        SocketFlags.None).ConfigureAwait(false);
+                    if (bytesSent == 0)
+                    {
+                        HandleDisconnection("Connection closed while sending data.");
+                        return false;
+                    }
+                    totalSent += bytesSent;
+                }
+                return true;
             }
             catch (Exception ex)
             {
                 HandleDisconnection($"Send failed: {ex.Message}");
                 return false;
+            }
+            finally
+            {
+                _sendLock.Release();
             }
         }
         #endregion

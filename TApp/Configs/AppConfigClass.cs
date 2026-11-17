@@ -62,7 +62,7 @@ namespace TApp.Configs
 
         /// <summary>
         /// Bật/tắt việc gửi kết quả Pass/Fail xuống CC320 (chế độ chuyển đổi giữa truyền PLC và truyền CC320).
-        /// Khi bật, các hàm setPASS/setFAIL của frmMain sẽ được gọi thay cho ghi PLC trong FDashboard.
+        /// Khi bật, FDashboard gửi nguyên chuỗi MP5 (Pass) hoặc MP6 (Fail) qua TCP bằng _cc320 thay cho ghi PLC.
         /// </summary>
         public bool CC320_Enabled { get; set; }
 

@@ -20,6 +20,8 @@ namespace TApp.Views.Dashboard
         #region Fields
         private DatalogicCamera _datalogicCamera_C1;
         private DatalogicCamera _cc320; 
+        private readonly object _cameraQueueLock = new object();
+        private readonly Queue<(string Data, bool IsTimeout, long? CC320Session)> _cameraQueue = new();
         private PLCStatus _plcStatus = PLCStatus.Disconnect;
         private bool _batchChangeMode = false;
         private int _blinkAlarm = 0;
@@ -38,6 +40,7 @@ namespace TApp.Views.Dashboard
         public FDashboard()
         {
             InitializeComponent();
+            WK_Camera.RunWorkerCompleted += WK_Camera_RunWorkerCompleted;
         }
 
         public void Start()
@@ -53,39 +56,68 @@ namespace TApp.Views.Dashboard
         #endregion
 
         #region Public Methods
-        public bool Send_Result_To_PLC(e_PLC_Result rs)
+        public bool Send_Result_To_PLC(e_PLC_Result rs, long? cc320Session = null)
         {
             // Khi bật chế độ truyền CC320 trong Configs, gửi Pass/Fail xuống CC320 thay cho PLC.
             if (AppConfigs.Current.CC320_Enabled)
             {
-                try
-                {
-                    var frm = MainForm.Instance?.fCC320;
-                    if (frm == null)
-                    {
-                        GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Warning, "Không tìm thấy frmMain (CC320) trên MainForm", "", "WARN-FDASH-CC320-01");
-                        return false;
-                    }
-
-                    if (rs == e_PLC_Result.Pass)
-                    {
-                        frm.setPASS();
-                    }
-                    else
-                    {
-                        frm.setFAIL();
-                    }
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "Lỗi gửi kết quả xuống CC320", ex.Message, "ERR-FDASH-CC320-01");
-                    return false;
-                }
+                // BackgroundWorker chờ gửi xong trước khi xử lý kết quả tiếp theo.
+                return SendResultToCC320Async(rs, cc320Session).GetAwaiter().GetResult();
             }
 
             OperateResult write = omronPLC_Hsl1.plc.Write(PLCAddressWithGoogleSheetHelper.Get("PLC_Reject_DM"), (short)rs);
             return write.IsSuccess;
+        }
+
+        private async Task<bool> SendResultToCC320Async(e_PLC_Result result, long? expectedSession = null)
+        {
+            string command = result == e_PLC_Result.Pass ? "MP5" : "MP6";
+            try
+            {
+                if (_cc320 == null || !_cc320.Connected)
+                {
+                    ReportResultSendError("CC320 chưa kết nối", command);
+                    return false;
+                }
+
+                // Gửi nguyên chuỗi, không thêm CR/LF và không gửi lại lệnh cũ.
+                bool sent = await _cc320.SendAsync(command, expectedSession).ConfigureAwait(false);
+                if (!sent)
+                {
+                    ReportResultSendError("Không gửi được kết quả xuống CC320", command);
+                }
+                return sent;
+            }
+            catch (Exception ex)
+            {
+                ReportResultSendError("Lỗi gửi kết quả xuống CC320", $"{command}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private void ReportResultSendError(string message, string detail)
+        {
+            GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser?.Username ?? "System",
+                e_LogType.Error, message, detail, "ERR-FDASH-CC320-SEND");
+
+            // Thông báo lỗi mà không chặn luồng gửi bằng dialog.
+            if (!IsDisposed && IsHandleCreated)
+            {
+                try
+                {
+                    BeginInvoke(new Action(() =>
+                    {
+                        if (IsDisposed) return;
+                        opView.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] [ERR-FDASH-CC320-SEND] {message}: {detail}");
+                        if (opView.Items.Count > 200) opView.Items.RemoveAt(opView.Items.Count - 1);
+                        SetResultStatus("LỖI GỬI", Color.OrangeRed);
+                    }));
+                }
+                catch (InvalidOperationException)
+                {
+                    // Form có thể đã đóng sau khi kiểm tra IsHandleCreated.
+                }
+            }
         }
 
         /// <summary>
@@ -293,6 +325,8 @@ namespace TApp.Views.Dashboard
 
         private void InitializeCC320()
         {
+            if (!AppConfigs.Current.CC320_Enabled) return;
+
             if (string.IsNullOrEmpty(AppConfigs.Current.CC320IP)) throw new InvalidOperationException("Lỗi: DA001 không có IP CC320.");
             if (AppConfigs.Current.CC320Port <= 0) throw new InvalidOperationException("Lỗi: DA001 không có Port CC320.");
 
@@ -382,7 +416,7 @@ namespace TApp.Views.Dashboard
             GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, logType, message, "", code);
         }
 
-        private void Camera_ProcessData(string data)
+        private void Camera_ProcessData(string data, long? cc320Session = null)
         {
             // Tính tốc độ sản xuất từ thời gian giữa N sản phẩm (Mode 1)
             if (AppConfigs.Current.Production_Speed_Mode == 1)
@@ -433,31 +467,25 @@ namespace TApp.Views.Dashboard
             // Tách riêng trường hợp camera trả về "FAIL" (lỗi đọc)
             if (string.Equals(data, "FAIL", StringComparison.OrdinalIgnoreCase))
             {
-                Send_Result_To_PLC(e_PLC_Result.Fail);
-                Send_Result_Content(e_Production_Status.ReadFail, data);
+                SendInspectionResult(e_Production_Status.ReadFail, data, cc320Session);
                 return;
             }
 
             if (FD_Globals.ActiveSet.Contains(data))
             {
-                Send_Result_To_PLC(e_PLC_Result.Fail);
-                Send_Result_Content(e_Production_Status.Duplicate, data);
+                SendInspectionResult(e_Production_Status.Duplicate, data, cc320Session);
                 return;
             }
 
             if (!IsValidQRContent(data))
             {
-                Send_Result_To_PLC(e_PLC_Result.Fail);
-                Send_Result_Content(e_Production_Status.FormatError, data);
+                SendInspectionResult(e_Production_Status.FormatError, data, cc320Session);
                 return;
             }
 
-            FD_Globals.ActiveSet.Add(data); // Update RAM
+            if (!SendInspectionResult(e_Production_Status.Pass, data, cc320Session)) return;
 
-
-
-            Send_Result_To_PLC(e_PLC_Result.Pass);
-            Send_Result_Content(e_Production_Status.Pass, data);
+            FD_Globals.ActiveSet.Add(data);
 
             if (AppConfigs.Current.Data_Mode == "normal")
             {
@@ -474,8 +502,42 @@ namespace TApp.Views.Dashboard
         #region Background Worker Handlers
         private void WK_Camera_DoWork(object sender, DoWorkEventArgs e)
         {
-            string data = e.Argument as string ?? string.Empty;
-            Camera_ProcessData(data);
+            while (true)
+            {
+                (string Data, bool IsTimeout, long? CC320Session) item;
+                lock (_cameraQueueLock)
+                {
+                    if (_cameraQueue.Count == 0) return;
+                    item = _cameraQueue.Dequeue();
+                }
+
+                if (item.IsTimeout)
+                {
+                    SendInspectionResult(e_Production_Status.Timeout, item.Data, item.CC320Session);
+                }
+                else
+                {
+                    Camera_ProcessData(item.Data, item.CC320Session);
+                }
+            }
+        }
+
+        private void WK_Camera_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (e.Error != null)
+            {
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser?.Username ?? "System",
+                    e_LogType.Error, "Lỗi xử lý dữ liệu camera", e.Error.Message, "ERR-FDASH-CAMERA-PROCESS");
+            }
+
+            lock (_cameraQueueLock)
+            {
+                // Bản tin có thể đến sau khi DoWork kết thúc nhưng IsBusy chưa về false.
+                if (_cameraQueue.Count > 0 && !WK_Camera.IsBusy)
+                {
+                    WK_Camera.RunWorkerAsync();
+                }
+            }
         }
 
         private void WK_Render_HMI_DoWork(object sender, DoWorkEventArgs e)
@@ -815,7 +877,9 @@ namespace TApp.Views.Dashboard
 
         private void Render_App_Status()
         {
-            bool deviceDisconnected = FD_Globals.pLCStatus != PLCStatus.Connected || FD_Globals.CameraStatus != CameraStatus.Connected;
+            bool deviceDisconnected = FD_Globals.pLCStatus != PLCStatus.Connected
+                || FD_Globals.CameraStatus != CameraStatus.Connected
+                || (AppConfigs.Current.CC320_Enabled && (_cc320 == null || !_cc320.Connected));
 
             e_AppState state;
             if (_lastDeactiveState)
@@ -918,23 +982,35 @@ namespace TApp.Views.Dashboard
                 return;
             }
 
-            if (!WK_Camera.IsBusy)
+            lock (_cameraQueueLock)
             {
-                WK_Camera.RunWorkerAsync(data);
-            }
-            else
-            {
-                Send_Result_To_PLC(e_PLC_Result.Fail);
-                Send_Result_Content(e_Production_Status.Timeout, data);
+                // Giữ quy tắc Timeout khi đang bận, nhưng gửi theo thứ tự nhận.
+                bool isTimeout = WK_Camera.IsBusy || _cameraQueue.Count > 0;
+                var cc320 = _cc320;
+                long connectionVersion = cc320?.ConnectionVersion ?? -1;
+                long? cc320Session = AppConfigs.Current.CC320_Enabled
+                    ? (cc320?.Connected == true ? connectionVersion : -1)
+                    : null;
+                _cameraQueue.Enqueue((data, isTimeout, cc320Session));
+                if (!WK_Camera.IsBusy) WK_Camera.RunWorkerAsync();
             }
         }
 
         private bool IsValidQRContent(string data) => data.Length >= 16 && data.Contains(FD_Globals.productionData.Barcode);
 
-        private void Send_Result_Content(e_Production_Status status, string data)
+        private bool SendInspectionResult(e_Production_Status status, string data, long? cc320Session = null)
+        {
+            e_PLC_Result result = status == e_Production_Status.Pass ? e_PLC_Result.Pass : e_PLC_Result.Fail;
+            bool sent = Send_Result_To_PLC(result, cc320Session);
+            Send_Result_Content(sent ? status : e_Production_Status.Error, data,
+                sent ? "" : $"Không gửi được kết quả {status} tới {(AppConfigs.Current.CC320_Enabled ? "CC320" : "PLC")}");
+            return sent;
+        }
+
+        private void Send_Result_Content(e_Production_Status status, string data, string reason = "")
         {
             FD_Globals.productionData.productCameraCounter.Increment(status);
-            var record = CreateQRProductRecord(data, status);
+            var record = CreateQRProductRecord(data, status, reason);
             FD_Globals.QueueRecord.Enqueue(record);
         }
 
@@ -1014,7 +1090,16 @@ namespace TApp.Views.Dashboard
             {
                 if (FD_Globals.QueueRecord.TryDequeue(out QRProductRecord record))
                 {
-                    QRDatabaseHelper.AddOrActivateCode(record.QRContent, record.BatchCode, record.UserName, record.Barcode, record.TimeStampActive, record.TimeUnixActive, record.TimeStampActive, record.Status);
+                    QRDatabaseHelper.AddOrActivateCode(
+                        qrContent: record.QRContent,
+                        batchCode: record.BatchCode,
+                        barcode: record.Barcode,
+                        userName: record.UserName,
+                        TimeStampActive: record.TimeStampActive,
+                        TimeUnixActive: record.TimeUnixActive,
+                        productionDateTime: record.ProductionDatetime,
+                        status: record.Status,
+                        reason: record.Reason);
                     Render_Production_Result(record);
                 }
             }

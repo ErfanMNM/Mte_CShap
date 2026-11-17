@@ -26,7 +26,7 @@ namespace TApp
 
         /// <summary>
         /// Instance tĩnh của MainForm, cho phép các trang con (FDashboard, ...) truy cập
-        /// các thành phần do MainForm quản lý (ví dụ: fCC320 để gửi Pass/Fail xuống CC320).
+        /// các thành phần do MainForm quản lý.
         /// </summary>
         public static MainForm? Instance { get; private set; }
 
@@ -44,7 +44,7 @@ namespace TApp
         private readonly FExtention fExtention = new FExtention();
         private readonly FDeactive fDeactive = new FDeactive();
         //private readonly FCameraSimulator fCameraSimulator = new FCameraSimulator();
-        internal frmMain fCC320 = new frmMain();
+        //internal frmMain fCC320 = new frmMain();
 
         private readonly string _userDbPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -156,7 +156,7 @@ namespace TApp
             NavMenu.CreateNode(AddPage(fActivityLogs, 1006));
             NavMenu.CreateNode(AddPage(fExtention, 1007));
             //NavMenu.CreateNode(AddPage(fCameraSimulator, 1008));
-            NavMenu.CreateNode(AddPage(fCC320, 1009));
+            //NavMenu.CreateNode(AddPage(fCC320, 1009));
 
             // Trang đăng nhập
             NavMenu.CreateNode(AddPage(fLogin, 2001));
@@ -212,7 +212,7 @@ namespace TApp
             //fScan.InitializeScanner();
             PLCSetting.INIT();
             fExtention.InitializeERP();
-            fCC320.INIT();
+            //fCC320.INIT();
 
             fDashboard.ChangePage += FDashboard_ChangePage;
             fDashboard.DeactiveStateChanged += FDashboard_DeactiveStateChanged;
