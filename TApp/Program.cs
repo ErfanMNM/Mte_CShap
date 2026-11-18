@@ -59,21 +59,11 @@ namespace TApp
             var (isValid, license, errorMessage) = licenseVerifier.VerifyLicense();
 
 #if DEBUG
-            // Trong DEBUG mode, vẫn yêu cầu license; cho phép bypass có chủ đích
+            // Trong DEBUG mode, vẫn yêu cầu license nhưng không hiện hộp thoại hỏi bypass.
             if (!isValid)
             {
-                var bypassLicense = MessageBox.Show(
-                    $"License không hợp lệ!\n\n{errorMessage}\n\nBạn có muốn BYPASS license check để debug không?",
-                    "License Error (DEBUG MODE)",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning
-                );
-                
-                if (bypassLicense == DialogResult.No)
-                {
-                    return;
-                }
-                // Nếu chọn Yes, tiếp tục chạy
+                System.Diagnostics.Debug.WriteLine($"Không thể khởi động ứng dụng do license không hợp lệ: {errorMessage}");
+                return;
             }
 #else
             // Trong RELEASE mode, bắt buộc phải có license hợp lệ

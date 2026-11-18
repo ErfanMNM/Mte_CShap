@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            TTManager.Auth.UserData userData2 = new TTManager.Auth.UserData();
+            TTManager.Auth.UserData userData1 = new TTManager.Auth.UserData();
             uiTableLayoutPanel1 = new Sunny.UI.UITableLayoutPanel();
             uiTabControl1 = new Sunny.UI.UITabControl();
             tabPage1 = new TabPage();
@@ -37,9 +37,9 @@
             uiListBox1 = new Sunny.UI.UIListBox();
             uc_UserSetting1 = new TTManager.Auth.uc_UserSetting();
             uiTableLayoutPanel2 = new Sunny.UI.UITableLayoutPanel();
+            btnReload = new Sunny.UI.UISymbolButton();
             btnSave = new Sunny.UI.UISymbolButton();
             btnDefault = new Sunny.UI.UISymbolButton();
-            btnReload = new Sunny.UI.UISymbolButton();
             uiTableLayoutPanel1.SuspendLayout();
             uiTabControl1.SuspendLayout();
             tabPage2.SuspendLayout();
@@ -59,7 +59,7 @@
             uiTableLayoutPanel1.RowCount = 2;
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 91.77019F));
             uiTableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 8.229814F));
-            uiTableLayoutPanel1.Size = new Size(874, 644);
+            uiTableLayoutPanel1.Size = new Size(1702, 883);
             uiTableLayoutPanel1.TabIndex = 0;
             uiTableLayoutPanel1.TagString = null;
             // 
@@ -75,7 +75,7 @@
             uiTabControl1.MainPage = "";
             uiTabControl1.Name = "uiTabControl1";
             uiTabControl1.SelectedIndex = 0;
-            uiTabControl1.Size = new Size(868, 585);
+            uiTabControl1.Size = new Size(1696, 804);
             uiTabControl1.SizeMode = TabSizeMode.Fixed;
             uiTabControl1.TabIndex = 1;
             uiTabControl1.TabUnSelectedForeColor = Color.FromArgb(240, 240, 240);
@@ -86,7 +86,7 @@
             tabPage1.AutoScroll = true;
             tabPage1.Location = new Point(0, 40);
             tabPage1.Name = "tabPage1";
-            tabPage1.Size = new Size(868, 545);
+            tabPage1.Size = new Size(1696, 764);
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Setting";
             tabPage1.UseVisualStyleBackColor = true;
@@ -99,7 +99,7 @@
             tabPage2.Controls.Add(uc_UserSetting1);
             tabPage2.Location = new Point(0, 40);
             tabPage2.Name = "tabPage2";
-            tabPage2.Size = new Size(868, 545);
+            tabPage2.Size = new Size(1696, 764);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Người dùng";
             tabPage2.UseVisualStyleBackColor = true;
@@ -111,9 +111,10 @@
             uc_UserManager1.Dock = DockStyle.Right;
             uc_UserManager1.Font = new Font("Microsoft Sans Serif", 12F);
             uc_UserManager1.IS2FAEnabled = false;
+            uc_UserManager1.Location = new Point(644, 0);
             uc_UserManager1.MinimumSize = new Size(1, 1);
             uc_UserManager1.Name = "uc_UserManager1";
-            uc_UserManager1.Size = new Size(440, 366);
+            uc_UserManager1.Size = new Size(1052, 584);
             uc_UserManager1.TabIndex = 2;
             uc_UserManager1.Text = "uc_UserManager1";
             uc_UserManager1.TextAlignment = ContentAlignment.MiddleCenter;
@@ -125,10 +126,13 @@
             uiListBox1.Font = new Font("Microsoft Sans Serif", 12F);
             uiListBox1.HoverColor = Color.FromArgb(155, 200, 255);
             uiListBox1.ItemSelectForeColor = Color.White;
+            uiListBox1.Location = new Point(648, 584);
+            uiListBox1.Margin = new Padding(4, 5, 4, 5);
             uiListBox1.MinimumSize = new Size(1, 1);
             uiListBox1.Name = "uiListBox1";
             uiListBox1.Padding = new Padding(2);
             uiListBox1.ShowText = false;
+            uiListBox1.Size = new Size(1048, 180);
             uiListBox1.TabIndex = 1;
             uiListBox1.Text = "uiListBox1";
             // 
@@ -138,19 +142,20 @@
             uc_UserSetting1.Dock = DockStyle.Left;
             uc_UserSetting1.Font = new Font("Microsoft Sans Serif", 12F);
             uc_UserSetting1.IS2FAEnabled = false;
+            uc_UserSetting1.Location = new Point(0, 0);
             uc_UserSetting1.MinimumSize = new Size(1, 1);
             uc_UserSetting1.Name = "uc_UserSetting1";
-            uc_UserSetting1.Size = new Size(415, 366);
+            uc_UserSetting1.Size = new Size(648, 764);
             uc_UserSetting1.TabIndex = 0;
             uc_UserSetting1.Text = "uc_UserSetting1";
             uc_UserSetting1.TextAlignment = ContentAlignment.MiddleCenter;
             uc_UserSetting1.TwoFARequired = false;
-            userData2.Key2FA = null;
-            userData2.Password = null;
-            userData2.Role = null;
-            userData2.Salt = null;
-            userData2.Username = "";
-            uc_UserSetting1.userData = userData2;
+            userData1.Key2FA = null;
+            userData1.Password = null;
+            userData1.Role = null;
+            userData1.Salt = null;
+            userData1.Username = "";
+            uc_UserSetting1.userData = userData1;
             uc_UserSetting1.OnUserAction += uc_UserSetting1_OnUserAction;
             // 
             // uiTableLayoutPanel2
@@ -163,24 +168,38 @@
             uiTableLayoutPanel2.Controls.Add(btnSave, 2, 0);
             uiTableLayoutPanel2.Controls.Add(btnDefault, 1, 0);
             uiTableLayoutPanel2.Dock = DockStyle.Fill;
-            uiTableLayoutPanel2.Location = new Point(2, 593);
+            uiTableLayoutPanel2.Location = new Point(2, 812);
             uiTableLayoutPanel2.Margin = new Padding(2);
             uiTableLayoutPanel2.Name = "uiTableLayoutPanel2";
             uiTableLayoutPanel2.RowCount = 1;
             uiTableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            uiTableLayoutPanel2.Size = new Size(870, 49);
+            uiTableLayoutPanel2.Size = new Size(1698, 69);
             uiTableLayoutPanel2.TabIndex = 2;
             uiTableLayoutPanel2.TagString = null;
+            // 
+            // btnReload
+            // 
+            btnReload.Dock = DockStyle.Fill;
+            btnReload.FillColor = Color.Silver;
+            btnReload.Font = new Font("Microsoft Sans Serif", 12F);
+            btnReload.Location = new Point(3, 3);
+            btnReload.MinimumSize = new Size(1, 1);
+            btnReload.Name = "btnReload";
+            btnReload.Size = new Size(1477, 63);
+            btnReload.Symbol = 61473;
+            btnReload.TabIndex = 2;
+            btnReload.TipsFont = new Font("Microsoft Sans Serif", 9F);
+            btnReload.Click += btnReload_Click;
             // 
             // btnSave
             // 
             btnSave.Dock = DockStyle.Fill;
             btnSave.FillColor = Color.FromArgb(0, 192, 192);
             btnSave.Font = new Font("Microsoft Sans Serif", 12F);
-            btnSave.Location = new Point(773, 3);
+            btnSave.Location = new Point(1601, 3);
             btnSave.MinimumSize = new Size(1, 1);
             btnSave.Name = "btnSave";
-            btnSave.Size = new Size(94, 43);
+            btnSave.Size = new Size(94, 63);
             btnSave.Symbol = 61639;
             btnSave.TabIndex = 0;
             btnSave.Text = "Lưu Lại";
@@ -192,36 +211,22 @@
             btnDefault.Dock = DockStyle.Fill;
             btnDefault.FillColor = Color.FromArgb(255, 192, 128);
             btnDefault.Font = new Font("Microsoft Sans Serif", 12F);
-            btnDefault.Location = new Point(658, 3);
+            btnDefault.Location = new Point(1486, 3);
             btnDefault.MinimumSize = new Size(1, 1);
             btnDefault.Name = "btnDefault";
-            btnDefault.Size = new Size(109, 43);
+            btnDefault.Size = new Size(109, 63);
             btnDefault.Symbol = 61473;
             btnDefault.TabIndex = 1;
             btnDefault.Text = "Khôi phục";
             btnDefault.TipsFont = new Font("Microsoft Sans Serif", 9F);
             btnDefault.Click += btnDefault_Click;
             // 
-            // btnReload
-            // 
-            btnReload.Dock = DockStyle.Fill;
-            btnReload.FillColor = Color.Silver;
-            btnReload.Font = new Font("Microsoft Sans Serif", 12F);
-            btnReload.Location = new Point(3, 3);
-            btnReload.MinimumSize = new Size(1, 1);
-            btnReload.Name = "btnReload";
-            btnReload.Size = new Size(649, 43);
-            btnReload.Symbol = 61473;
-            btnReload.TabIndex = 2;
-            btnReload.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            btnReload.Click += btnReload_Click;
-            // 
             // PAppSetting
             // 
             AllowShowTitle = true;
             AutoScaleMode = AutoScaleMode.None;
             AutoSize = true;
-            ClientSize = new Size(874, 679);
+            ClientSize = new Size(1702, 918);
             Controls.Add(uiTableLayoutPanel1);
             Name = "PAppSetting";
             Padding = new Padding(0, 35, 0, 0);
