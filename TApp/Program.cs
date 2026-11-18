@@ -27,7 +27,7 @@ namespace TApp
 #if DEBUG
             // Trong DEBUG mode, tự động bypass
             AntiReverseEngineering.BypassSecurityChecks = true;
-            System.Diagnostics.Debug.WriteLine("⚠️ DEBUG MODE: Security checks are BYPASSED");
+            //ystem.Diagnostics.Debug.WriteLine("⚠️ DEBUG MODE: Security checks are BYPASSED");
 #else
             // Trong RELEASE mode, check config và env
             AntiReverseEngineering.BypassSecurityChecks = bypassFromConfig || bypassFromEnv;

@@ -93,8 +93,8 @@
             networkStrength1 = new TTManager.Internet.NetworkStrength();
             uiTitlePanel10 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel7 = new Sunny.UI.UITableLayoutPanel();
-            uiPanel4 = new Sunny.UI.UIPanel();
-            uiLedBulb3 = new Sunny.UI.UILedBulb();
+            opCC320 = new Sunny.UI.UIPanel();
+            opCC320Led = new Sunny.UI.UILedBulb();
             uiTitlePanel9 = new Sunny.UI.UITitlePanel();
             uiTableLayoutPanel6 = new Sunny.UI.UITableLayoutPanel();
             opPLCStatus = new Sunny.UI.UIPanel();
@@ -1219,7 +1219,7 @@
             uiTitlePanel10.ShowText = false;
             uiTitlePanel10.Size = new Size(202, 87);
             uiTitlePanel10.TabIndex = 3;
-            uiTitlePanel10.Text = "MÁY IN";
+            uiTitlePanel10.Text = "CC320";
             uiTitlePanel10.TextAlignment = ContentAlignment.MiddleCenter;
             uiTitlePanel10.TitleColor = Color.Teal;
             uiTitlePanel10.TitleHeight = 30;
@@ -1229,8 +1229,8 @@
             uiTableLayoutPanel7.ColumnCount = 2;
             uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 71.962616F));
             uiTableLayoutPanel7.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28.037384F));
-            uiTableLayoutPanel7.Controls.Add(uiPanel4, 0, 0);
-            uiTableLayoutPanel7.Controls.Add(uiLedBulb3, 1, 0);
+            uiTableLayoutPanel7.Controls.Add(opCC320, 0, 0);
+            uiTableLayoutPanel7.Controls.Add(opCC320Led, 1, 0);
             uiTableLayoutPanel7.Dock = DockStyle.Fill;
             uiTableLayoutPanel7.Location = new Point(1, 30);
             uiTableLayoutPanel7.Margin = new Padding(0);
@@ -1241,30 +1241,30 @@
             uiTableLayoutPanel7.TabIndex = 0;
             uiTableLayoutPanel7.TagString = null;
             // 
-            // uiPanel4
+            // opCC320
             // 
-            uiPanel4.Dock = DockStyle.Fill;
-            uiPanel4.Font = new Font("Microsoft Sans Serif", 12F);
-            uiPanel4.Location = new Point(2, 2);
-            uiPanel4.Margin = new Padding(2);
-            uiPanel4.MinimumSize = new Size(1, 1);
-            uiPanel4.Name = "uiPanel4";
-            uiPanel4.RectColor = Color.Silver;
-            uiPanel4.RectSize = 2;
-            uiPanel4.Size = new Size(139, 52);
-            uiPanel4.TabIndex = 0;
-            uiPanel4.Text = "K.Dùng";
-            uiPanel4.TextAlignment = ContentAlignment.MiddleCenter;
+            opCC320.Dock = DockStyle.Fill;
+            opCC320.Font = new Font("Microsoft Sans Serif", 12F);
+            opCC320.Location = new Point(2, 2);
+            opCC320.Margin = new Padding(2);
+            opCC320.MinimumSize = new Size(1, 1);
+            opCC320.Name = "opCC320";
+            opCC320.RectColor = Color.Silver;
+            opCC320.RectSize = 2;
+            opCC320.Size = new Size(139, 52);
+            opCC320.TabIndex = 0;
+            opCC320.Text = "K.Dùng";
+            opCC320.TextAlignment = ContentAlignment.MiddleCenter;
             // 
-            // uiLedBulb3
+            // opCC320Led
             // 
-            uiLedBulb3.Color = Color.FromArgb(224, 224, 224);
-            uiLedBulb3.Dock = DockStyle.Fill;
-            uiLedBulb3.Location = new Point(146, 3);
-            uiLedBulb3.Name = "uiLedBulb3";
-            uiLedBulb3.Size = new Size(51, 50);
-            uiLedBulb3.TabIndex = 1;
-            uiLedBulb3.Text = "uiLedBulb3";
+            opCC320Led.Color = Color.FromArgb(224, 224, 224);
+            opCC320Led.Dock = DockStyle.Fill;
+            opCC320Led.Location = new Point(146, 3);
+            opCC320Led.Name = "opCC320Led";
+            opCC320Led.Size = new Size(51, 50);
+            opCC320Led.TabIndex = 1;
+            opCC320Led.Text = "uiLedBulb3";
             // 
             // uiTitlePanel9
             // 
@@ -1326,7 +1326,6 @@
             opPLCLed.ForeColor = Color.Red;
             opPLCLed.Location = new Point(146, 3);
             opPLCLed.Name = "opPLCLed";
-            opPLCLed.On = false;
             opPLCLed.Size = new Size(51, 50);
             opPLCLed.TabIndex = 1;
             opPLCLed.Text = "uiLedBulb2";
@@ -1523,8 +1522,8 @@
         private Sunny.UI.UITitlePanel uiTitlePanel11;
         private Sunny.UI.UITitlePanel uiTitlePanel10;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel7;
-        private Sunny.UI.UIPanel uiPanel4;
-        private Sunny.UI.UILedBulb uiLedBulb3;
+        private Sunny.UI.UIPanel opCC320;
+        private Sunny.UI.UILedBulb opCC320Led;
         private Sunny.UI.UITitlePanel uiTitlePanel9;
         private Sunny.UI.UITableLayoutPanel uiTableLayoutPanel6;
         private Sunny.UI.UIPanel opPLCStatus;
