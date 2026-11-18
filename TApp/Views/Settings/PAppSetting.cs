@@ -122,6 +122,14 @@ namespace TApp.Views.Settings
                 var targetPanel = (i % 2 == 0) ? leftPanel : rightPanel;
                 CreateGroupBoxForCategory(targetPanel, category);
             }
+
+            // Các nhóm được tạo sau lần Resize ban đầu của tab, nên tính lại chiều rộng
+            // sau khi đã thêm đủ nhóm để chúng khớp với cột chứa.
+            UpdateGroupBoxWidths();
+            if (tabPage1.IsHandleCreated)
+                tabPage1.BeginInvoke((Action)UpdateGroupBoxWidths);
+            else
+                tabPage1.HandleCreated += tabPage1_HandleCreated;
         }
 
         private void CreateGroupBoxForCategory(FlowLayoutPanel parent, KeyValuePair<string, List<PropertyInfo>> category)
@@ -213,13 +221,24 @@ namespace TApp.Views.Settings
 
         private void tabPage1_Resize(object sender, EventArgs e)
         {
-            // Recalculate group box widths based on current column width
-            if (tabPage1.Width <= 0) return;
+            UpdateGroupBoxWidths();
+        }
 
-            int availableWidth = (tabPage1.Width / 2) - ColumnGap - 20;
-            foreach (var gb in _groupBoxes)
+        private void tabPage1_HandleCreated(object? sender, EventArgs e)
+        {
+            tabPage1.HandleCreated -= tabPage1_HandleCreated;
+            tabPage1.BeginInvoke((Action)UpdateGroupBoxWidths);
+        }
+
+        private void UpdateGroupBoxWidths()
+        {
+            foreach (var groupBox in _groupBoxes)
             {
-                gb.Width = Math.Max(availableWidth, 300);
+                if (groupBox.Parent is not FlowLayoutPanel parent || parent.ClientSize.Width <= 0)
+                    continue;
+
+                int availableWidth = parent.ClientSize.Width - groupBox.Margin.Horizontal - 4;
+                groupBox.Width = Math.Max(availableWidth, 300);
             }
         }
 
