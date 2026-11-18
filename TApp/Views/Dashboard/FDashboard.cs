@@ -24,6 +24,7 @@ namespace TApp.Views.Dashboard
         private readonly object _cameraQueueLock = new object();
         private readonly Queue<(string Data, bool IsTimeout, long? CC320Session, long ReceivedTimestamp)> _cameraQueue = new();
         private PLCStatus _plcStatus = PLCStatus.Disconnect;
+        private int _cc320InitializationStarted;
         private bool _batchChangeMode = false;
         private int _blinkAlarm = 0;
         private bool _lastDeactiveState = false;
@@ -326,13 +327,13 @@ namespace TApp.Views.Dashboard
 
         private void InitializeCC320()
         {
-            if (!AppConfigs.Current.CC320_Enabled) return;
-
-            if (string.IsNullOrEmpty(AppConfigs.Current.CC320IP)) throw new InvalidOperationException("Lỗi: DA001 không có IP CC320.");
-            if (AppConfigs.Current.CC320Port <= 0) throw new InvalidOperationException("Lỗi: DA001 không có Port CC320.");
+            if (!AppConfigs.Current.CC320_Enabled || Interlocked.CompareExchange(ref _cc320InitializationStarted, 1, 0) != 0) return;
 
             try
             {
+                if (string.IsNullOrEmpty(AppConfigs.Current.CC320IP)) throw new InvalidOperationException("Lỗi: DA001 không có IP CC320.");
+                if (AppConfigs.Current.CC320Port <= 0) throw new InvalidOperationException("Lỗi: DA001 không có Port CC320.");
+
                 _cc320 = new DatalogicCamera(AppConfigs.Current.CC320IP, AppConfigs.Current.CC320Port);
                 _cc320.ClientCallback += _cc320_ClientCallback;
                 _cc320.Connect();
@@ -350,13 +351,13 @@ namespace TApp.Views.Dashboard
             switch (state)
             {
                 case eDatalogicCameraState.Connected:
-                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Info, "CC320 kết nối thành công", "", "INFO-FDASH-CC320-01");
+                    HandleCC320Connection(state, "CC320 kết nối thành công", "INFO-FDASH-CC320-01");
                     break;
                 case eDatalogicCameraState.Disconnected:
-                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Error, "CC320 mất kết nối", "", "ERR-FDASH-CC320-01");
+                    HandleCC320Connection(state, "CC320 mất kết nối", "ERR-FDASH-CC320-01", e_LogType.Error);
                     break;
                 case eDatalogicCameraState.Reconnecting:
-                    GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, e_LogType.Warning, "CC320 đang kết nối lại", "", "WARN-FDASH-CC320-01");
+                    HandleCC320Connection(state, "CC320 đang kết nối lại", "WARN-FDASH-CC320-01", e_LogType.Warning);
                     break;
                 case eDatalogicCameraState.Received:
                     // Xử lý dữ liệu nhận được từ CC320 nếu cần
@@ -546,6 +547,7 @@ namespace TApp.Views.Dashboard
             while (!WK_Render_HMI.CancellationPending)
             {
                 Render_PLC_Status();
+                Render_CC320_Status();
                 Render_App_Status();
                 Render_Camera_Status();
                 Render_Camera_Counter();
@@ -910,10 +912,39 @@ namespace TApp.Views.Dashboard
 
         private void Render_PLC_Status()
         {
-            if (FD_Globals.pLCStatus == _plcStatus) return;
             FD_Globals.pLCStatus = _plcStatus;
             if (_plcStatus == PLCStatus.Connected) SetDeviceStatus(opPLCStatus, opPLCLed, "Kết Nối", Color.FromArgb(0, 192, 0), false);
-            else SetDeviceStatus(opPLCStatus, opPLCLed, "Lỗi K01", Color.Red, true);
+            else SetDeviceStatus(opPLCStatus, opPLCLed, "Mất kết nối", Color.Red, true);
+        }
+
+        private void Render_CC320_Status()
+        {
+            if (!AppConfigs.Current.CC320_Enabled)
+            {
+                SetDeviceStatus(opCC320, opCC320Led, "K.Dùng", Color.Silver, false, Color.FromArgb(224, 224, 224));
+                return;
+            }
+
+            // Cho phép bật CC320 từ trang cài đặt mà không cần khởi động lại ứng dụng.
+            if (_cc320 == null && Volatile.Read(ref _cc320InitializationStarted) == 0 && IsHandleCreated && !IsDisposed)
+            {
+                BeginInvoke((Action)InitializeCC320);
+            }
+
+            switch (FD_Globals.CC320Status)
+            {
+                case CameraStatus.Connected:
+                    SetDeviceStatus(opCC320, opCC320Led, "Kết Nối", Color.FromArgb(0, 192, 0), false);
+                    break;
+                case CameraStatus.Reconnecting:
+                    SetDeviceStatus(opCC320, opCC320Led, "Đang kết nối lại", Color.OrangeRed, true, Color.Yellow);
+                    break;
+                case CameraStatus.Disconnected:
+                case CameraStatus.Error:
+                default:
+                    SetDeviceStatus(opCC320, opCC320Led, "Mất kết nối", Color.Red, true);
+                    break;
+            }
         }
 
         private void Render_Camera_Status()
@@ -967,6 +998,23 @@ namespace TApp.Views.Dashboard
             if (FD_Globals.CameraStatus != cameraStatus)
             {
                 FD_Globals.CameraStatus = cameraStatus;
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, logType, logMessage, "", logCode);
+            }
+        }
+
+        private void HandleCC320Connection(eDatalogicCameraState state, string logMessage, string logCode, e_LogType logType = e_LogType.Info)
+        {
+            var cc320Status = state switch
+            {
+                eDatalogicCameraState.Connected => CameraStatus.Connected,
+                eDatalogicCameraState.Disconnected => CameraStatus.Disconnected,
+                eDatalogicCameraState.Reconnecting => CameraStatus.Reconnecting,
+                _ => FD_Globals.CC320Status
+            };
+
+            if (FD_Globals.CC320Status != cc320Status)
+            {
+                FD_Globals.CC320Status = cc320Status;
                 GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser.Username, logType, logMessage, "", logCode);
             }
         }
@@ -1357,6 +1405,7 @@ namespace TApp.Views.Dashboard
         public static string BypassActiveDate { get; set; } = DateTime.Now.ToString("yyyy-MM-dd");
         public static bool BypassActive { get; set; } = false;
         public static CameraStatus CameraStatus { get; set; } = CameraStatus.Disconnected;
+        public static CameraStatus CC320Status { get; set; } = CameraStatus.Disconnected;
         public static ProductionData productionData { get; set; } = new ProductionData();
         public static int AlarmCount { get; set; } = 0;
         public static PLCStatus pLCStatus { get; set; } = PLCStatus.Disconnect;
