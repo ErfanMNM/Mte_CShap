@@ -14,6 +14,7 @@ namespace TTManager.PLCHelpers
         public int Ready { get; set; } = 0;
         public int Time_Update { get; set; } = 300;
         public OmronFinsUdp plc = new OmronFinsUdp();
+        public object CommunicationLock { get; } = new();
         public event EventHandler<PLCStatusEventArgs>? PLCStatus_OnChange;
 
         public OmronPLC_Hsl()
@@ -30,6 +31,7 @@ namespace TTManager.PLCHelpers
 
         public void InitPLC()
         {
+            if (WK_Update.IsBusy) return;
             plc.CommunicationPipe = new HslCommunication.Core.Pipe.PipeUdpNet(PLC_IP, PLC_PORT)
             {
                 ReceiveTimeOut = 1000,
@@ -52,7 +54,11 @@ namespace TTManager.PLCHelpers
             while (!WK_Update.CancellationPending)
             {
                 Thread.Sleep(Time_Update);
-                OperateResult write = plc.Write(PLC_Ready_DM, short.Parse(Ready.ToString()));
+                OperateResult write;
+                lock (CommunicationLock)
+                {
+                    write = plc.Write(PLC_Ready_DM, short.Parse(Ready.ToString()));
+                }
 
                 if (write.IsSuccess)
                 {

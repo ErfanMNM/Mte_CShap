@@ -622,7 +622,6 @@
             btnSave.TabIndex = 0;
             btnSave.Text = "Áp dụng";
             btnSave.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            btnSave.Click += btnSave_Click;
             // 
             // btnUndo
             // 
@@ -637,7 +636,6 @@
             btnUndo.TabIndex = 1;
             btnUndo.Text = "Tải lên";
             btnUndo.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            btnUndo.Click += btnUndo_Click;
             // 
             // btnDelete
             // 
@@ -653,7 +651,6 @@
             btnDelete.TabIndex = 2;
             btnDelete.Text = "Xóa";
             btnDelete.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            btnDelete.Click += btnDelete_Click;
             // 
             // uiTableLayoutPanel16
             // 
@@ -688,7 +685,6 @@
             btnNewRecipe.TabIndex = 2;
             btnNewRecipe.Text = "Mới";
             btnNewRecipe.TipsFont = new Font("Microsoft Sans Serif", 9F);
-            btnNewRecipe.Click += btnNewRecipe_Click;
             // 
             // ipRecipe
             // 
@@ -709,12 +705,10 @@
             ipRecipe.TabIndex = 1;
             ipRecipe.TextAlignment = ContentAlignment.MiddleLeft;
             ipRecipe.Watermark = "";
-            ipRecipe.SelectedIndexChanged += ipRecipe_SelectedIndexChanged;
             // 
             // uiTabControl1
             // 
             uiTabControl1.Controls.Add(tabPage1);
-            uiTabControl1.Controls.Add(tabPage3);
             uiTabControl1.Dock = DockStyle.Fill;
             uiTabControl1.DrawMode = TabDrawMode.OwnerDrawFixed;
             uiTabControl1.Font = new Font("Microsoft Sans Serif", 12F);

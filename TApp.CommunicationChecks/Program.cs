@@ -9,6 +9,7 @@ using TApp.Configs;
 using TApp.Helpers;
 using TApp.Infrastructure;
 using TApp.Models;
+using TApp.Views.Settings;
 using TApp.Views.Dashboard;
 using TTManager.Datalogic;
 
@@ -40,7 +41,9 @@ internal static class Program
             ("Thời gian camera đến CC320 bao gồm chờ hàng đợi", CheckTimingIncludesQueueWait),
             ("Listbox giữ số đo riêng cho từng code", CheckTimingSnapshotsOnListbox),
             ("Gửi lỗi xóa số đo Global và không gắn thời gian thành công", CheckFailedSendTiming),
-            ("Gửi đồng thời dữ liệu lớn không thiếu hoặc xen byte", CheckConcurrentTransport)
+            ("Gửi đồng thời dữ liệu lớn không thiếu hoặc xen byte", CheckConcurrentTransport),
+            ("Recipe PLC tương thích file cũ và lưu danh sách D", CheckPlcSettingsPersistence),
+            ("Trang PLC chỉ còn tab đầu với bảng tham số mới", CheckPlcSettingsPage)
         ];
 
         int failed = 0;
@@ -387,6 +390,81 @@ internal static class Program
         Assert(sent.All(value => value), "Gửi đồng thời phải thành công.");
         AssertBytes(receive.WaitAsync(CheckTimeout).GetAwaiter().GetResult(), first + second + "MP6");
         connection.AssertNoExtraBytes();
+    }
+
+    private static void CheckPlcSettingsPersistence()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "TApp-PLC-check-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new PLCSettingsStore(directory);
+            var parameters = store.LoadParameters("D100");
+            Assert(parameters.Select(x => x.Address).SequenceEqual(["D100", "D102", "D104"]),
+                "Danh sách khởi tạo phải dành hai word cho mỗi tham số Int32.");
+            store.SaveParameters(parameters);
+            Assert(PLCSettingsStore.NormalizeAddress("D100.3") == "D100.03", "Địa chỉ bit một chữ số phải được chuẩn hóa hai chữ số.");
+            Assert(PLCSettingsStore.ValidateAddress("D100.16", PlcValueType.Bit) != null, "Bit thứ 16 phải bị từ chối.");
+
+            File.WriteAllText(Path.Combine(directory, "Legacy.rplc"),
+                "{\"DelayCamera\":\"123\",\"DelayReject\":\"456\",\"RejectStreng\":\"7\"}");
+            var legacy = store.LoadRecipe("Legacy", parameters);
+            Assert(legacy.Values["D100"] == "123" && legacy.Values["D102"] == "456" && legacy.Values["D104"] == "7",
+                "Recipe cũ phải nạp được ba giá trị legacy vào địa chỉ tương ứng.");
+
+            Assert(store.CreateRecipe("Copy", legacy, parameters) == null, "Tạo recipe mới phải thành công.");
+            var copy = store.LoadRecipe("Copy", parameters);
+            Assert(copy.Values["D102"] == "456", "Recipe mới phải giữ nguyên giá trị được sao chép.");
+
+            var overlap = new[]
+            {
+                new PlcParameterDefinition { Name = "Value", Address = "D100", ValueType = PlcValueType.Int32 },
+                new PlcParameterDefinition { Name = "Bit", Address = "D101.00", ValueType = PlcValueType.Bit }
+            };
+            bool overlapRejected = false;
+            try { store.SaveParameters(overlap); }
+            catch (ArgumentException) { overlapRejected = true; }
+            Assert(overlapRejected, "Danh sách phải chặn bit nằm trong word thứ hai của Int32.");
+
+            bool readyWordRejected = false;
+            try
+            {
+                store.SaveParameters([new PlcParameterDefinition { Name = "Ready", Address = "D16", ValueType = PlcValueType.Int32 }]);
+            }
+            catch (ArgumentException) { readyWordRejected = true; }
+            Assert(readyWordRejected, "D16 phải được dành riêng cho trạng thái Ready của PLC.");
+
+            bool duplicateBitRejected = false;
+            try
+            {
+                store.SaveParameters([
+                    new PlcParameterDefinition { Name = "BitA", Address = "D100.3", ValueType = PlcValueType.Bit },
+                    new PlcParameterDefinition { Name = "BitB", Address = "D100.03", ValueType = PlcValueType.Bit }
+                ]);
+            }
+            catch (ArgumentException) { duplicateBitRejected = true; }
+            Assert(duplicateBitRejected, "Cùng bit phải bị nhận diện trùng dù cách viết khác nhau.");
+
+            Assert(store.DeleteRecipe("Copy"), "Recipe không mặc định phải xóa được.");
+            Assert(!store.DeleteRecipe("Default"), "Recipe mặc định không được xóa.");
+
+            var audit = new PLCRecipeAuditLog(directory);
+            audit.Record("SELECT", "Legacy", "D100=123", "test");
+            Assert(audit.GetLastSelectedRecipeName() == "Legacy", "Audit phải nhớ recipe được chọn gần nhất.");
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private static void CheckPlcSettingsPage()
+    {
+        using var page = new PLCSetting();
+        var tabs = GetField<Sunny.UI.UITabControl>(page, "uiTabControl1");
+        var grid = GetField<System.Windows.Forms.DataGridView>(page, "_grid");
+        Assert(tabs.TabPages.Count == 1, "Trang PLC phải chỉ giữ lại tab đầu.");
+        Assert(tabs.TabPages[0].Text == "Camera Trước", "Tab còn lại phải là tab Camera Trước.");
+        Assert(grid.Columns.Count == 8, "Bảng D phải có đủ cột tên, PLC, input, address, type, quyền, mô tả và trạng thái.");
     }
 
     private static FDashboard CreateDashboard(DatalogicCamera camera)
