@@ -97,6 +97,45 @@ namespace TApp.Views.Dashboard
             }
         }
 
+        /// <summary>
+        /// Gửi một lệnh tùy ý xuống CC320 để test. Gửi nguyên chuỗi như MP5/MP6,
+        /// không thêm CR/LF và không giao vào phiên kết nối nào.
+        /// </summary>
+        public async Task<(bool Success, string Message)> SendCustomCC320CommandAsync(string content)
+        {
+            string command = content ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(command))
+                return (false, "Nội dung lệnh CC320 không được để trống.");
+
+            try
+            {
+                if (_cc320 == null || !_cc320.Connected)
+                {
+                    string msg = "CC320 chưa kết nối (kiểm tra CC320_Enabled / IP / Port).";
+                    ReportResultSendError(msg, command);
+                    return (false, msg);
+                }
+
+                bool sent = await _cc320.SendAsync(command).ConfigureAwait(false);
+                if (!sent)
+                {
+                    string msg = "Không gửi được lệnh tùy ý xuống CC320.";
+                    ReportResultSendError(msg, command);
+                    return (false, msg);
+                }
+
+                GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser?.Username ?? "System",
+                    e_LogType.Info, "Gửi lệnh tùy ý xuống CC320", command, "INFO-FDASH-CC320-CUSTOM");
+                return (true, $"Đã gửi '{command}' xuống CC320.");
+            }
+            catch (Exception ex)
+            {
+                string msg = "Lỗi gửi lệnh tùy ý xuống CC320.";
+                ReportResultSendError(msg, $"{command}: {ex.Message}");
+                return (false, $"{msg} {ex.Message}");
+            }
+        }
+
         private void ReportResultSendError(string message, string detail)
         {
             GlobalVarialbles.Logger?.LogAsync(GlobalVarialbles.CurrentUser?.Username ?? "System",

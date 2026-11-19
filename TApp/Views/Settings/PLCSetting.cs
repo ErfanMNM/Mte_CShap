@@ -20,6 +20,8 @@ namespace TApp.Views.Settings
         private DataGridView _grid = null!;
         private ComboBox _recipeCombo = null!;
         private TextBox _recipeName = null!;
+        private Sunny.UI.UITextBox _cc320CustomText = null!;
+        private Button _cc320SendButton = null!;
         private Label _statusLabel = null!;
         private System.Windows.Forms.Timer? _pollTimer;
         private bool _isPolling;
@@ -95,71 +97,95 @@ namespace TApp.Views.Settings
             var root = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 2,
-                Padding = new Padding(4)
+                ColumnCount = 2,
+                RowCount = 1,
+                Padding = new Padding(2)
             };
-            root.RowStyles.Add(new RowStyle(SizeType.Percent, 34));
-            root.RowStyles.Add(new RowStyle(SizeType.Percent, 66));
-            root.Controls.Add(uiTitlePanel2, 0, 0);
-
+            // Bố cục ngang: cột trái (2/5) = Recipe + settings, cột phải (3/5) = webview camera
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
             var settings = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 3,
+                RowCount = 4,
                 Padding = new Padding(0, 6, 0, 0)
             };
-            settings.RowStyles.Add(new RowStyle(SizeType.Absolute, 78));
+            // Recipe 3 tầng (~118px), grid chiếm phần còn lại, rồi Test CC320 + status
+            settings.RowStyles.Add(new RowStyle(SizeType.Absolute, 118));
             settings.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            settings.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            settings.RowStyles.Add(new RowStyle(SizeType.Absolute, 68));
+            settings.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
             settings.Controls.Add(BuildRecipePanel(), 0, 0);
             settings.Controls.Add(BuildParameterPanel(), 0, 1);
-            _statusLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true };
-            settings.Controls.Add(_statusLabel, 0, 2);
-            root.Controls.Add(settings, 0, 1);
+            settings.Controls.Add(BuildCc320TestPanel(), 0, 2);
+            _statusLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true, ForeColor = Color.FromArgb(80, 80, 80), Padding = new Padding(6, 0, 0, 0) };
+            settings.Controls.Add(_statusLabel, 0, 3);
+
+            root.Controls.Add(settings, 0, 0);
+            root.Controls.Add(uiTitlePanel2, 1, 0);
             tabPage1.Controls.Add(root);
         }
 
         private Control BuildRecipePanel()
         {
-            var panel = new GroupBox { Text = "Recipe", Dock = DockStyle.Fill, Padding = new Padding(8) };
-            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 6, RowCount = 1 };
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22));
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 13));
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));
+            var panel = new GroupBox { Text = "Recipe", Dock = DockStyle.Fill, Padding = new Padding(6, 0, 6, 4) };
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 3, Margin = new Padding(0) };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 34));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 33));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 33));
 
-            _recipeCombo = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+            // Tầng 1: chọn recipe + nhập tên
+            _recipeCombo = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 9f) };
             _recipeCombo.SelectedIndexChanged += RecipeCombo_SelectedIndexChanged;
-            _recipeName = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Tên recipe mới" };
+            _recipeName = new TextBox { Dock = DockStyle.Fill, PlaceholderText = "Tên recipe mới", Font = new Font("Segoe UI", 9f) };
             layout.Controls.Add(_recipeCombo, 0, 0);
             layout.Controls.Add(_recipeName, 1, 0);
-            layout.Controls.Add(CreateButton("Tạo", CreateRecipe_Click), 2, 0);
-            layout.Controls.Add(CreateButton("Lưu giá trị", SaveRecipeValues_Click), 3, 0);
-            layout.Controls.Add(CreateButton("Áp dụng recipe", ApplyRecipe_Click), 4, 0);
-            layout.Controls.Add(CreateButton("Xóa", DeleteRecipe_Click), 5, 0);
+            // Tầng 2: tạo / xóa recipe
+            layout.Controls.Add(CreateDockedButton("Tạo", CreateRecipe_Click, ColorBlue), 0, 1);
+            layout.Controls.Add(CreateDockedButton("Xóa", DeleteRecipe_Click, ColorRed), 1, 1);
+            // Tầng 3: lưu giá trị / áp dụng recipe
+            layout.Controls.Add(CreateDockedButton("Lưu giá trị", SaveRecipeValues_Click, ColorGreen), 0, 2);
+            layout.Controls.Add(CreateDockedButton("Áp dụng recipe", ApplyRecipe_Click, ColorGreen), 1, 2);
+
             panel.Controls.Add(layout);
             return panel;
         }
 
+        private Button CreateDockedButton(string text, EventHandler onClick, Color accent)
+        {
+            var button = CreateButton(text, onClick, accent);
+            button.Dock = DockStyle.Fill;
+            button.AutoSize = false;
+            button.Margin = new Padding(2, 2, 2, 2);
+            return button;
+        }
+
         private Control BuildParameterPanel()
         {
-            var panel = new GroupBox { Text = "Danh sách ô nhớ D", Dock = DockStyle.Fill, Padding = new Padding(8) };
+            var panel = new GroupBox { Text = "Danh sách ô nhớ D", Dock = DockStyle.Fill, Padding = new Padding(6, 2, 6, 6) };
             var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2 };
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-            var toolbar = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true };
-            toolbar.Controls.Add(CreateButton("+ Tham số", AddParameter_Click));
-            toolbar.Controls.Add(CreateButton("Xóa dòng", DeleteParameter_Click));
-            toolbar.Controls.Add(CreateButton("Lưu danh sách", SaveParameterList_Click));
-            toolbar.Controls.Add(CreateButton("Đọc tất cả", ReadAll_Click));
-            toolbar.Controls.Add(CreateButton("Đọc dòng", ReadSelected_Click));
-            toolbar.Controls.Add(CreateButton("Ghi dòng", WriteSelected_Click));
-            toolbar.Controls.Add(CreateButton("Áp dụng + Lưu", ApplyAndSave_Click));
+            // Toolbar dạng lưới 2x4 — mỗi nút giãn đầy ô, không bao giờ tràn hàng
+            var toolbar = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4, RowCount = 2, Margin = new Padding(0), Padding = new Padding(0, 2, 0, 2) };
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            toolbar.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            toolbar.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            toolbar.Controls.Add(CreateDockedButton("+ Tham số", AddParameter_Click, ColorBlue), 0, 0);
+            toolbar.Controls.Add(CreateDockedButton("Xóa dòng", DeleteParameter_Click, ColorRed), 1, 0);
+            toolbar.Controls.Add(CreateDockedButton("Lưu danh sách", SaveParameterList_Click, ColorGreen), 2, 0);
+            toolbar.Controls.Add(CreateDockedButton("Đọc tất cả", ReadAll_Click, ColorBlue), 3, 0);
+            toolbar.Controls.Add(CreateDockedButton("Đọc dòng", ReadSelected_Click, ColorBlue), 0, 1);
+            toolbar.Controls.Add(CreateDockedButton("Ghi dòng", WriteSelected_Click, ColorGreen), 1, 1);
+            toolbar.Controls.Add(CreateDockedButton("Áp dụng + Lưu", ApplyAndSave_Click, ColorGreen), 2, 1);
+            toolbar.SetColumnSpan(toolbar.GetControlFromPosition(2, 1)!, 2);
 
             _grid = new DataGridView
             {
@@ -171,13 +197,20 @@ namespace TApp.Views.Settings
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RowHeadersVisible = false,
-                EditMode = DataGridViewEditMode.EditOnEnter
+                EditMode = DataGridViewEditMode.EditOnEnter,
+                Font = new Font("Segoe UI", 9f),
+                RowTemplate = { Height = 26 }
             };
-            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name", HeaderText = "Tên", FillWeight = 90 });
-            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "PlcValue", HeaderText = "PLC", ReadOnly = true, FillWeight = 55 });
+            _grid.EnableHeadersVisualStyles = false;
+            _grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(24, 144, 255);
+            _grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            _grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            _grid.ColumnHeadersHeight = 30;
+            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name", HeaderText = "Tên", FillWeight = 80 });
+            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "PlcValue", HeaderText = "PLC", ReadOnly = true, FillWeight = 62 });
             _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Input", HeaderText = "Giá trị nhập", FillWeight = 70 });
             _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Address", HeaderText = "Địa chỉ", FillWeight = 60 });
-            var typeColumn = new DataGridViewComboBoxColumn { Name = "ValueType", HeaderText = "Kiểu", FillWeight = 58, FlatStyle = FlatStyle.Flat };
+            var typeColumn = new DataGridViewComboBoxColumn { Name = "ValueType", HeaderText = "Kiểu", FillWeight = 60, FlatStyle = FlatStyle.Flat };
             typeColumn.Items.AddRange(nameof(PlcValueType.Int32), nameof(PlcValueType.Bit));
             _grid.Columns.Add(typeColumn);
             var accessColumn = new DataGridViewComboBoxColumn { Name = "AccessMode", HeaderText = "Quyền", FillWeight = 75, FlatStyle = FlatStyle.Flat };
@@ -205,12 +238,91 @@ namespace TApp.Views.Settings
             return panel;
         }
 
-        private static Button CreateButton(string text, EventHandler onClick)
+        private Control BuildCc320TestPanel()
         {
-            var button = new Button { Text = text, AutoSize = true, MinimumSize = new Size(76, 30), Margin = new Padding(2) };
+            // 2 tầng: ô nhập + nút Gửi (to, dễ bấm) trên, chú thích nguyên chuỗi dưới
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 2, Padding = new Padding(2, 0, 2, 0) };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 116));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 55));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 45));
+
+            layout.Controls.Add(new Label { Text = "Test CC320:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 11f, FontStyle.Bold) }, 0, 0);
+            _cc320CustomText = new Sunny.UI.UITextBox { Dock = DockStyle.Fill, Watermark = "VD: MP5", Radius = 8, Font = new Font("Segoe UI", 11.5f), Margin = new Padding(2, 4, 6, 4) };
+            _cc320CustomText.KeyDown += (_, args) =>
+            {
+                if (args.KeyCode != Keys.Enter) return;
+                args.SuppressKeyPress = true;
+                Cc320Send_Click(_cc320SendButton, EventArgs.Empty);
+            };
+            layout.Controls.Add(_cc320CustomText, 1, 0);
+            _cc320SendButton = CreateButton("Gửi", Cc320Send_Click, ColorOrange);
+            _cc320SendButton.Dock = DockStyle.Fill;
+            _cc320SendButton.AutoSize = false;
+            _cc320SendButton.Margin = new Padding(2, 2, 2, 2);
+            _cc320SendButton.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            layout.Controls.Add(_cc320SendButton, 2, 0);
+
+            var hint = new Label { Text = "Gửi nguyên chuỗi xuống CC320 (không CR/LF). Chỉ gửi khi biết lệnh hợp lệ.", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.Gray, Font = new Font("Segoe UI", 8.5f), AutoEllipsis = true, Padding = new Padding(2, 0, 0, 0) };
+            layout.Controls.Add(hint, 0, 1);
+            layout.SetColumnSpan(hint, 3);
+            return layout;
+        }
+
+        private async void Cc320Send_Click(object? sender, EventArgs e)
+        {
+            string text = _cc320CustomText.Text ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(text)) { this.ShowWarningTip("Nhập nội dung lệnh CC320."); return; }
+            _cc320SendButton.Enabled = false;
+            try
+            {
+                var dashboard = MainForm.Dashboard;
+                if (dashboard == null) { SetStatus("Dashboard chưa khởi tạo, không thể gửi CC320."); return; }
+                var result = await dashboard.SendCustomCC320CommandAsync(text);
+                SetStatus(result.Message);
+            }
+            catch (Exception ex)
+            {
+                SetStatus("Lỗi gửi CC320: " + ex.Message);
+            }
+            finally
+            {
+                if (!IsDisposed) _cc320SendButton.Enabled = true;
+            }
+        }
+
+        private static Button CreateButton(string text, EventHandler onClick, Color? accent = null)
+        {
+            Color baseColor = accent ?? Color.FromArgb(24, 144, 255);
+            var button = new Button
+            {
+                Text = text,
+                AutoSize = true,
+                MinimumSize = new Size(78, 30),
+                Margin = new Padding(2, 3, 2, 3),
+                Padding = new Padding(8, 0, 8, 0),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = baseColor,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                FlatAppearance =
+                {
+                    BorderSize = 0,
+                    MouseOverBackColor = ControlPaint.Light(baseColor, 0.18f),
+                    MouseDownBackColor = ControlPaint.Dark(baseColor, 0.12f)
+                }
+            };
             button.Click += onClick;
             return button;
         }
+
+        private static readonly Color ColorBlue = Color.FromArgb(24, 144, 255);
+        private static readonly Color ColorGreen = Color.FromArgb(82, 196, 26);
+        private static readonly Color ColorRed = Color.FromArgb(255, 77, 79);
+        private static readonly Color ColorOrange = Color.FromArgb(250, 140, 22);
+        private static readonly Color ColorGray = Color.FromArgb(89, 89, 89);
 
         private void LoadRecipes(IReadOnlyList<PlcParameterDefinition> parameters)
         {

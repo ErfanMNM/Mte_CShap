@@ -30,6 +30,11 @@ namespace TApp
         /// </summary>
         public static MainForm? Instance { get; private set; }
 
+        /// <summary>
+        /// Dashboard vận hành do MainForm quản lý; các trang con dùng chung để truy cập kết nối (vd. CC320).
+        /// </summary>
+        public static FDashboard? Dashboard => Instance?.fDashboard;
+
         private NotifyIcon? trayIcon;
         private ContextMenuStrip? trayMenu;
 

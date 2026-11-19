@@ -29,6 +29,7 @@ internal static class Program
         (string Name, Action Check)[] checks =
         [
             ("Pass/Fail gửi đúng MP5/MP6, không CR/LF", CheckExactCommands),
+            ("Lệnh CC320 tùy ý gửi nguyên văn và từ chối lệnh rỗng", CheckCustomCC320Command),
             ("Chưa kết nối trả false", CheckDisconnectedSend),
             ("Gửi Pass thành công mới kích hoạt mã", CheckPassActivation),
             ("Gửi Pass lỗi lưu Error và không kích hoạt mã", CheckFailedPass),
@@ -90,6 +91,27 @@ internal static class Program
         Assert(dashboard.Send_Result_To_PLC(e_PLC_Result.Pass), "Không gửi được Pass thứ hai.");
         AssertBytes(connection.ReadExactly(9), "MP5MP6MP5");
         connection.AssertNoExtraBytes();
+    }
+
+    private static void CheckCustomCC320Command()
+    {
+        using var connection = new LoopbackConnection();
+        using var dashboard = CreateDashboard(connection.Camera);
+
+        var empty = dashboard.SendCustomCC320CommandAsync("   ").WaitAsync(CheckTimeout).GetAwaiter().GetResult();
+        Assert(!empty.Success, "Lệnh rỗng phải bị từ chối.");
+        Assert(!string.IsNullOrWhiteSpace(empty.Message), "Lệnh rỗng phải trả về thông báo lý do.");
+        connection.AssertNoExtraBytes();
+
+        var sent = dashboard.SendCustomCC320CommandAsync("RR2,500").WaitAsync(CheckTimeout).GetAwaiter().GetResult();
+        Assert(sent.Success, "Lệnh tùy ý phải gửi được khi CC320 đã kết nối.");
+        AssertBytes(connection.ReadExactly(7), "RR2,500");
+        connection.AssertNoExtraBytes();
+
+        using var disconnected = CreateDashboard(new DatalogicCamera("127.0.0.1", 1));
+        var failed = disconnected.SendCustomCC320CommandAsync("MP5").WaitAsync(CheckTimeout).GetAwaiter().GetResult();
+        Assert(!failed.Success, "Chưa kết nối phải trả về thất bại.");
+        Assert(failed.Message.Contains("CC320"), "Thông báo lỗi phải nêu rõ CC320.");
     }
 
     private static void CheckDisconnectedSend()
