@@ -12,6 +12,7 @@ using TApp.Views.Test;
 using TApp.Views.Settings;
 using TTManager.Auth;
 using TTManager.Diaglogs;
+using TApp.Services.Updates;
 using static TApp.Views.Dashboard.FDashboard;
 
 namespace TApp
@@ -346,6 +347,7 @@ namespace TApp
             // Tạo menu chuột phải ở tray
             trayMenu = new ContextMenuStrip();
             trayMenu.Items.Add("Mở lại", null, OnShowClicked);
+            trayMenu.Items.Add("Kiểm tra cập nhật", null, OnCheckUpdatesClicked);
             trayMenu.Items.Add("Thoát", null, OnExitClicked);
 
             // Tạo icon tray
@@ -385,6 +387,54 @@ namespace TApp
             }
 
             CloseApplication();
+        }
+
+        private bool _updateCheckRunning;
+
+        private async void OnCheckUpdatesClicked(object? sender, EventArgs e)
+        {
+            if (_updateCheckRunning) return;
+            _updateCheckRunning = true;
+            if (sender is ToolStripItem item) item.Enabled = false;
+            try
+            {
+                using var client = new UpdateClient();
+                var (manifest, envelope) = await client.CheckAsync();
+                if (manifest is null || envelope is null)
+                {
+                    MessageBox.Show("TApp đang ở phiên bản mới nhất.", "Cập nhật TApp",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                if (GlobalVarialbles.CurrentAppState != e_AppState.Deactive)
+                {
+                    MessageBox.Show("TApp chỉ cho phép cài cập nhật khi trạng thái hệ thống là DEACTIVE. " +
+                        "Hãy dừng sản xuất, chuyển sang DEACTIVE rồi kiểm tra cập nhật lại.",
+                        "Chưa an toàn để cập nhật", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                string details = $"Có phiên bản TApp {manifest.Version}.\n\n{manifest.ReleaseNotes}\n\n" +
+                    "Chỉ cập nhật khi đã dừng sản xuất và thiết bị an toàn để ngắt. TApp sẽ đóng trong khi cài đặt.";
+                if (MessageBox.Show(details, "Cập nhật TApp", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                    return;
+
+                string stagedPath = await client.DownloadAndLaunchAgentAsync(manifest, envelope);
+                MessageBox.Show($"Đã xác minh package và chuẩn bị cài đặt. TApp sẽ đóng; bản tải tạm nằm tại:\n{stagedPath}",
+                    "Cập nhật TApp", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                CloseApplication();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Không thể cập nhật TApp:\n" + ex.Message, "Cập nhật TApp",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _updateCheckRunning = false;
+                if (sender is ToolStripItem menuItem) menuItem.Enabled = true;
+            }
         }
 
         private void CloseApplication()

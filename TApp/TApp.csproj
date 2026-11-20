@@ -6,11 +6,14 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Version>9.0.0</Version>
+    <AssemblyVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(Version)', '-.*$', ''))</AssemblyVersion>
+    <FileVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(Version)', '-.*$', ''))</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <TAppUpdateBaseUrl Condition="'$(TAppUpdateBaseUrl)' == ''">https://tapp-update.invalid/v1/</TAppUpdateBaseUrl>
     <Platforms>AnyCPU;x64</Platforms>
     <ApplicationIcon>logo (1).ico</ApplicationIcon>
     <PackageIcon>logo (1).png</PackageIcon>
-    <AssemblyVersion>8.0</AssemblyVersion>
-    <FileVersion>9.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,6 +48,12 @@
     <ProjectReference Include="..\PRINTERs\Printer\Printer.csproj" />
     <ProjectReference Include="..\PRINTERs\Unoplus\Norwix\Norwix.csproj" />
     <ProjectReference Include="..\TTManager\TTManager.csproj" />
+    <ProjectReference Include="..\TApp.Update.Shared\TApp.Update.Shared.csproj" GlobalPropertiesToRemove="Version" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\TApp.Update.Shared\TrustedUpdateKey.pem" Link="TrustedUpdateKey.pem" CopyToOutputDirectory="PreserveNewest" />
+    <AssemblyMetadata Include="TAppUpdateBaseUrl" Value="$(TAppUpdateBaseUrl)" />
   </ItemGroup>
 
   <ItemGroup>

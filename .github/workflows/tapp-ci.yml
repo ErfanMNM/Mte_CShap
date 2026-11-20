@@ -1,0 +1,54 @@
+name: TApp CI
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "TApp/**"
+      - "TTManager/**"
+      - "PRINTERs/**"
+      - "TApp.Update.Agent/**"
+      - "TApp.Update.Shared/**"
+      - "cloudflare/tapp-updates/**"
+      - "Mte.sln"
+      - ".github/workflows/tapp-ci.yml"
+  pull_request:
+    paths:
+      - "TApp/**"
+      - "TTManager/**"
+      - "PRINTERs/**"
+      - "TApp.Update.Agent/**"
+      - "TApp.Update.Shared/**"
+      - "cloudflare/tapp-updates/**"
+      - "Mte.sln"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare/tapp-updates
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npx wrangler deploy --dry-run
+
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet build TApp/TApp.csproj --configuration Release --runtime win-x64 --self-contained true
+      - run: dotnet build TApp.CommunicationChecks/TApp.CommunicationChecks.csproj --configuration Release
+      - run: dotnet run --project TApp.CommunicationChecks/TApp.CommunicationChecks.csproj --configuration Release --no-build
+      - run: dotnet run --project TApp.Update.Shared.Tests/TApp.Update.Shared.Tests.csproj --configuration Release

@@ -1,0 +1,113 @@
+name: TApp Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+concurrency:
+  group: tapp-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate tag and signing key configuration
+        id: release
+        shell: pwsh
+        env:
+          TAPP_UPDATE_PRIVATE_KEY_PEM: ${{ secrets.TAPP_UPDATE_PRIVATE_KEY_PEM }}
+          TAPP_UPDATE_PUBLIC_KEY_PEM: ${{ vars.TAPP_UPDATE_PUBLIC_KEY_PEM }}
+          TAPP_UPDATE_BASE_URL: ${{ vars.TAPP_UPDATE_BASE_URL }}
+        run: |
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          if ($version -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$') { throw "Invalid SemVer tag: $version" }
+          if ([string]::IsNullOrWhiteSpace($env:TAPP_UPDATE_PRIVATE_KEY_PEM)) { throw 'Set GitHub Actions secret TAPP_UPDATE_PRIVATE_KEY_PEM.' }
+          if ([string]::IsNullOrWhiteSpace($env:TAPP_UPDATE_PUBLIC_KEY_PEM)) { throw 'Set GitHub Actions variable TAPP_UPDATE_PUBLIC_KEY_PEM.' }
+          if ($env:TAPP_UPDATE_BASE_URL -notmatch '^https://[^/]+/(?:[^\s]+/)?v1/$') { throw 'Set TAPP_UPDATE_BASE_URL as the deployed HTTPS Worker URL ending in /v1/.' }
+          Set-Content -Path TApp.Update.Shared/TrustedUpdateKey.pem -Value $env:TAPP_UPDATE_PUBLIC_KEY_PEM -NoNewline
+          "version=$version" >> $env:GITHUB_OUTPUT
+      - name: Restore dependencies
+        run: dotnet restore TApp/TApp.csproj
+      - name: Test update verification and CC320 communication checks
+        shell: pwsh
+        run: |
+          dotnet run --project TApp.Update.Shared.Tests/TApp.Update.Shared.Tests.csproj --configuration Release
+          if ($LASTEXITCODE -ne 0) { throw 'Update verification tests failed.' }
+          dotnet run --project TApp.CommunicationChecks/TApp.CommunicationChecks.csproj --configuration Release
+          if ($LASTEXITCODE -ne 0) { throw 'Communication checks failed.' }
+      - name: Build and publish TApp
+        shell: pwsh
+        env:
+          TAPP_UPDATE_BASE_URL: ${{ vars.TAPP_UPDATE_BASE_URL }}
+        run: dotnet publish TApp/TApp.csproj --configuration Release --framework net8.0-windows --runtime win-x64 --self-contained true --no-restore -p:Version=${{ steps.release.outputs.version }} -p:TAppUpdateBaseUrl=$env:TAPP_UPDATE_BASE_URL -o artifacts/app
+      - name: Publish standalone updater
+        run: dotnet publish TApp.Update.Agent/TApp.Update.Agent.csproj --configuration Release --framework net8.0-windows --runtime win-x64 --self-contained true -p:Version=${{ steps.release.outputs.version }} -o artifacts/agent
+      - name: Assemble clean release package
+        shell: pwsh
+        run: |
+          Copy-Item artifacts/agent/TApp.Update.Agent.exe artifacts/app/TApp.Update.Agent.exe
+          Copy-Item TApp.Update.Shared/TrustedUpdateKey.pem artifacts/app/TrustedUpdateKey.pem -Force
+          Remove-Item artifacts/app/Configs -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item artifacts/app/Database -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item artifacts/app/CONFIG.txt -Force -ErrorAction SilentlyContinue
+          $forbidden = Get-ChildItem artifacts/app -Recurse -File | Where-Object {
+            $_.Name -match '^(license\.lic|public\.key|users\.database|App\.ini|CONFIG\.txt)$' -or
+            $_.Extension -eq '.pdb' -or
+            $_.Extension -match '^\.(db|sqlite|sqlite3)$' -or
+            $_.Name -match '(credential|secret).*\.json$'
+          }
+          if ($forbidden) { throw "Refusing to package local data or credentials: $($forbidden.FullName -join ', ')" }
+          Compress-Archive -Path artifacts/app/* -DestinationPath artifacts/TApp-win-x64.zip -CompressionLevel Optimal
+      - name: Create signed release manifest
+        shell: pwsh
+        env:
+          UPDATE_PRIVATE_KEY_PEM: ${{ secrets.TAPP_UPDATE_PRIVATE_KEY_PEM }}
+          UPDATE_VERSION: ${{ steps.release.outputs.version }}
+          UPDATE_SHA256: ${{ hashFiles('artifacts/TApp-win-x64.zip') }}
+          UPDATE_CHANNEL: ${{ contains(steps.release.outputs.version, '-') && 'beta' || 'stable' }}
+          UPDATE_RELEASE_NOTES: TApp ${{ steps.release.outputs.version }}
+          UPDATE_MANIFEST_OUT: artifacts/manifest.json
+        run: |
+          $env:UPDATE_SIZE = (Get-Item artifacts/TApp-win-x64.zip).Length
+          node scripts/create-update-manifest.mjs
+      - name: Install R2 S3 CLI
+        run: python -m pip install awscli
+      - name: Refuse package overwrite
+        shell: pwsh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.TAPP_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TAPP_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          UPDATE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          $endpoint = "https://$($env:CLOUDFLARE_ACCOUNT_ID).r2.cloudflarestorage.com"
+          $key = "releases/$($env:UPDATE_VERSION)/win-x64/TApp-win-x64.zip"
+          aws s3api head-object --bucket tapp-releases --key $key --endpoint-url $endpoint --region auto 2>$null
+          if ($LASTEXITCODE -eq 0) { throw "Release artifact already exists: $key. Use a new SemVer tag." }
+      - name: Upload immutable package, then promote channel manifest
+        shell: pwsh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.TAPP_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TAPP_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          UPDATE_VERSION: ${{ steps.release.outputs.version }}
+          UPDATE_CHANNEL: ${{ contains(steps.release.outputs.version, '-') && 'beta' || 'stable' }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:AWS_ACCESS_KEY_ID) -or [string]::IsNullOrWhiteSpace($env:AWS_SECRET_ACCESS_KEY) -or [string]::IsNullOrWhiteSpace($env:CLOUDFLARE_ACCOUNT_ID)) { throw 'Configure the TApp R2 credentials and CLOUDFLARE_ACCOUNT_ID GitHub Actions values.' }
+          $endpoint = "https://$($env:CLOUDFLARE_ACCOUNT_ID).r2.cloudflarestorage.com"
+          $key = "releases/$($env:UPDATE_VERSION)/win-x64/TApp-win-x64.zip"
+          aws s3 cp artifacts/TApp-win-x64.zip "s3://tapp-releases/$key" --endpoint-url $endpoint --region auto --no-progress --content-type application/zip
+          if ($LASTEXITCODE -ne 0) { throw 'Package upload failed; channel pointer was not updated.' }
+          aws s3 cp artifacts/manifest.json "s3://tapp-releases/channels/$($env:UPDATE_CHANNEL)/latest.json" --endpoint-url $endpoint --region auto --no-progress --content-type application/json --cache-control no-store
+          if ($LASTEXITCODE -ne 0) { throw 'Manifest upload failed.' }
