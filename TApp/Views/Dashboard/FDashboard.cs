@@ -506,7 +506,7 @@ namespace TApp.Views.Dashboard
                 data = data.Replace(";", ""); // Xóa khoảng trắng nếu có
             }
             // Tách riêng trường hợp camera trả về "FAIL" (lỗi đọc)
-            if (string.Equals(data, "FAIL", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(data, "<NOREAD>", StringComparison.OrdinalIgnoreCase))
             {
                 SendInspectionResult(e_Production_Status.ReadFail, data, cc320Session, cameraReceivedTimestamp);
                 return;
@@ -1004,7 +1004,7 @@ namespace TApp.Views.Dashboard
                 string timing = qRProductRecord.CameraToCC320ElapsedMs is double elapsedMs
                     ? $"[CC320: {elapsedMs:F3} ms] "
                     : "";
-                opView.Items.Insert(0, $"{timing}#{qRProductRecord.ID} - {qRProductRecord.Status} - {qRProductRecord.QRContent}");
+                opView.Items.Insert(0, $"{timing}#{qRProductRecord.TimeStampActive} - {qRProductRecord.Status} - {qRProductRecord.QRContent}");
                 if (opView.Items.Count >= 50) opView.Items.RemoveAt(opView.Items.Count - 1);
                 opResopse.Text = qRProductRecord.QRContent;
 
@@ -1208,7 +1208,9 @@ namespace TApp.Views.Dashboard
                         TimeUnixActive: record.TimeUnixActive,
                         productionDateTime: record.ProductionDatetime,
                         status: record.Status,
+                        
                         reason: record.Reason);
+                    
                     Render_Production_Result(record);
                 }
             }
@@ -1242,7 +1244,7 @@ namespace TApp.Views.Dashboard
             }
             else
             {
-                omronPLC_Hsl1.Ready = 0;
+                omronPLC_Hsl1.Ready = 1;
             }
             // GlobalVarialbles.CurrentAppState
             OperateResult<int[]> result = omronPLC_Hsl1.plc.ReadInt32(PLCAddressWithGoogleSheetHelper.Get("PLC_Total_Count_DM"), 5);
